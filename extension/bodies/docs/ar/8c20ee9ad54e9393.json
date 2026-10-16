@@ -1,0 +1,1 @@
+{"page":"/docs/en/api/organization/service_accounts/workspaces","blocks":{"4d36d0f1292c9214":"<b1>يتطلب رمز وصول OAuth بالنطاق <c2>org:admin</c2></b1>، يُحصل عليه من <c3>ant auth login --scope org:admin</c3> أو من قاعدة لاتحاد هوية أحمال العمل؛ ولا تُقبل مفاتيح API للمسؤول. راجع <a4>إدارة WIF باستخدام API المسؤول</a4>."}}

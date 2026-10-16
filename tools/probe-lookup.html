@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>probe</title>
+<!--
+  مِسبار البحث (أداة بناء — يستعمله harvest-dom.mjs): المحرّك الحقيقي بقاموس النطاق المشحون وحده
+  (بلا تصحيحات مستخدم)، ليُعرف «ما لم يُترجم» بسلسلة البحث نفسها — القاموس ثم الجموع ثم الأنماط —
+  لا بنسخةٍ منها. ‎?d=<النطاق>‎ يختار القاموس. الحاصد يُدخل المفاتيح فقرات ويقرأ ما تغيّر.
+-->
+<div id="probe"></div>
+<script src="../test/_chrome-mock.js"></script>
+<script>
+  var MOCK = makeChromeMock({ session: false });
+  Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: false });
+  window.chrome = MOCK.chrome;
+  var D = (/[?&]d=([a-z]+)/.exec(location.search) || [])[1] || "app";
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script>
+  var DOM = CMLConst.domain(D) || CMLConst.domain("app");
+  document.write('<script src="../extension/' + DOM.dict + '"><\/script>');
+</script>
+<script>
+  // المِسبار صفحةٌ محلية: حارس المسار والترطيب المؤجَّل لا معنى لهما هنا — البحث وحده المقصود
+  if (window.CLAUDE_L10N && window.CLAUDE_L10N.meta) {
+    window.CLAUDE_L10N.meta.routes = null;
+    window.CLAUDE_L10N.meta.hydrate = "none";
+    window.CLAUDE_L10N.meta.chat = false;
+  }
+  window.__probeReady = !!(window.CLAUDE_L10N && window.CLAUDE_L10N.domain === DOM.id);
+</script>
+<script src="../extension/engine.js"></script>

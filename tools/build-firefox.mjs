@@ -18,7 +18,7 @@ import { EXT } from "./paths.mjs";
 const OUT = path.join(path.dirname(EXT), "extension-firefox");
 
 // هوية الإضافة عند فايرفوكس: ثابتة كي يُعرَف التحديث أنه للإضافة نفسها.
-// وstrict_min_version = 127 عمدًا: هو أول إصدار MV3 يوقف منح أذون المواقع عند
+// وstrict_min_version = 127 عمدًا: هو أول إصدار MV3 يوقف منح أذونات المواقع عند
 // التثبيت — وشاشةُ الإرشاد في صفحة الإعدادات مبنية على سلوكه هذا بالذات.
 const GECKO_ID = "claude-ai-arabic@al-ashalash.github.io";
 const GECKO_MIN = "127.0";
@@ -58,7 +58,7 @@ delete mf.version_name; // فايرفوكس لا يعرفه ويحذّر من ا
 mf.background = { scripts: ["cml-const.js", "cml-shared.js", "cml-rtl.js", "cml-arbiter.js", "cml-sync.js", "sw.js"] };
 
 // ٣) هوية gecko: بدونها يرفض فايرفوكس MV3 الإضافة، وبحدّ 127 نضمن أن كل من
-//    ثبّتها يرى سلوكَ الأذون الذي بُنيت عليه شاشةُ الإرشاد.
+//    ثبّتها يرى سلوكَ الأذونات الذي بُنيت عليه شاشةُ الإرشاد.
 mf.browser_specific_settings = { gecko: { id: GECKO_ID, strict_min_version: GECKO_MIN } };
 
 fs.writeFileSync(mfPath, JSON.stringify(mf, null, 2) + "\n", "utf8");

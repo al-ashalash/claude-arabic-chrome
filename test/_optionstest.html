@@ -1,0 +1,1023 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>options test</title>
+<!--
+  اختبار صفحة الخيارات الحقيقية (options.html + options.js) وعامل الخدمة الحقيقي (sw.js) في إطارٍ
+  بقشرة chrome — يُثبت أن شكاوى المالك الأربع أُصلحت (v2-scope/options-page.md):
+   ١) «المواقع كلها» أولًا وافتراضيًّا.
+   ٢) الربط: إطفاء الرئيس يوقف مفاتيح المواقع عرضًا وتعطيلًا دون كتابتها، والتجميع المعاكس
+      («لا موقع مفعّل» / «يعمل في N من M»)، والتحديث الحيّ، وبقاء التركيز.
+   ٣) الأقسام نفسها في كل اختيار، وما لا ينطبق معطّلٌ بسببٍ مكتوب خارج حقله.
+   ٤) «الكل» يعمل على المواقع كلها: فحصٌ بالتتابع يشمل التطبيق والوثائق، وإضافةٌ تطلب الموقع،
+      وتصديرٌ يحمل النطاق، وحذفٌ يشمل الفقرات، وإعادة ضبط موقعٍ تُبقي مفاتيح غيره.
+  والنافذة: البوابة على مفتاح التبويب، والتحديث الحيّ، وفتح الإعدادات على موقع التبويب.
+  والخط العربي (DESIGN-fonts §٥.٤): البطاقة بخياراتها ومعايناتها وحالها، ونسخة العامل الحقيقي، وسطور التبويبات، و«حول»، وسطر النافذة.
+  ★ (ر8-د، ١ جمادى الأولى ١٤٤٨هـ) وملاحظات النسخة التجريبية 2: النافذة بلا سطر «اللغة» (N1)، والترحيب بلفظ المالك وحالِ كل موقعٍ من الجدول
+  (N2)، و«المواقع» بعد «التشغيل» بأعمدته الثلاثة ومحرّك الاتجاه ومصدره في قسم الاتجاه والمسارات معزولة (N3)، وتسميات الفحص ومضيفوه
+  معزولون (N4)، وحجم الترجمة من الأعداد المشحونة (N5).
+  العقد: document.title = "options N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1000px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vertical-align:top}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+#frames iframe{width:900px;height:700px;border:1px solid #999;display:block;margin-top:8px}</style>
+<h1>اختبار صفحة الخيارات: الموقع و«المواقع كلها»</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<div id="frames"></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script>var TEST_NAME = "options";</script>
+<script src="_options-harness.js"></script>
+<script>
+(async function () {
+  try {
+    OPTS_HTML = await fetch(EXT + "options.html").then(function (r) { return r.text(); });
+    POPUP_HTML = await fetch(EXT + "popup.html").then(function (r) { return r.text(); });
+    var IDS = CMLConst.DOMAINS.map(function (d) { return d.id; });
+    try { localStorage.removeItem("cml_ui_domain"); } catch (e) {}
+
+    // ══ ١) «المواقع كلها» أولًا وافتراضيًّا ══
+    var E = await makeFrame("options.html", {});
+    await until(function () { return E.$("masterState").textContent.length > 0; });
+    var sel = E.$("domainSel");
+    check("★ «المواقع كلها» هي الخيار الأول", "all", sel.options[0].value);
+    check("★ والافتراضي حين لا اختيار محفوظ", "all", sel.value);
+    check("عدد الخيارات = المواقع + «الكل» (من الجدول)", IDS.length + 1, sel.options.length);
+    check("المواقع في مجموعةٍ بعد «الكل»", "OPTGROUP/" + IDS.join(","),
+      sel.options[1].parentNode.tagName + "/" + [].slice.call(sel.options).slice(1).map(function (o) { return o.value; }).join(","));
+
+    // ══ ٢) الربط: البوابة والتجميع المعاكس والتحديث الحيّ ══
+    check("التجميع: كلها تعمل", "يعمل في المواقع كلها (" + IDS.length + " مواقع).", E.$("masterState").textContent);
+    await toggle(E, "enabled", false);
+    await until(function () { return E.$("siteOn_app").disabled; });
+    check("★ إطفاء الرئيس: مفاتيح المواقع كلها تُعرض مطفأةً ومعطّلة", IDS.map(function () { return "false/true"; }).join(","),
+      IDS.map(function (d) { var i = E.$("siteOn_" + d); return i.checked + "/" + i.disabled; }).join(","));
+    check("★ والحال المكتوبة «موقوف بالمفتاح الرئيس» وشريط البوابة ظاهر", "موقوف بالمفتاح الرئيس/true",
+      E.$("siteSt_docs").textContent + "/" + visible(E.$("gateBar")));
+    check("★ البوابة لا تكتب مفاتيح المواقع (اختياراتها محفوظة)", "false/0",
+      E.store.cml_enabled + "/" + Object.keys(E.store).filter(function (k) { return k.indexOf("cml_site.") === 0; }).length);
+    await toggle(E, "enabled", true);
+    await until(function () { return !E.$("siteOn_app").disabled; });
+    check("إعادة الرئيس تعيد كل موقعٍ إلى اختياره", IDS.map(function () { return "true/false"; }).join(","),
+      IDS.map(function (d) { var i = E.$("siteOn_" + d); return i.checked + "/" + i.disabled; }).join(","));
+    // ★ (ل٧) تبديل مفتاح موقعٍ لا يهدم الصفوف ولا يُسقط التركيز
+    var priv = E.$("siteOn_privacy");
+    await toggle(E, "siteOn_privacy", false);
+    await sleep(150);
+    check("★ تبديل مفتاح موقع يُبقي التركيز على العنصر نفسه", "true/true",
+      (E.w.document.activeElement === priv) + "/" + (E.$("siteOn_privacy") === priv));
+    check("التجميع: «يعمل في N−1 من N مواقع» (من الجدول: خمسة)", "يعمل في " + (IDS.length - 1) + " من " + IDS.length + " مواقع.", E.$("masterState").textContent);
+    for (var i = 0; i < IDS.length; i++) await toggle(E, "siteOn_" + IDS[i], false);
+    await until(function () { return E.$("masterState").textContent.indexOf("لا موقع") === 0; });
+    check("★ التجميع المعاكس: المواقع كلها مطفأة ⇒ «لا موقع مفعّل» وشريطٌ بزرّ التفعيل",
+      "true/true/true", (E.$("masterState").textContent.indexOf("لا موقع مفعّل") === 0) + "/" + visible(E.$("allOffBar")) + "/" + E.$("enabled").checked);
+    E.$("enableAllSites").focus();
+    E.$("enableAllSites").click();
+    await until(function () { return E.$("siteOn_support").checked; });
+    await sleep(120);
+    check("«تفعيل المواقع كلها» يعيدها كلها", "true/0", IDS.every(function (d) { return E.$("siteOn_" + d).checked; }) + "/" +
+      Object.keys(E.store).filter(function (k) { return k.indexOf("cml_site.") === 0; }).length);
+    check("★ والتركيز بعده على مفتاح أول موقع (لا يسقط إلى body مع الشريط المخفي)", "siteOn_" + IDS[0] + "/false",
+      (E.w.document.activeElement && E.w.document.activeElement.id) + "/" + visible(E.$("allOffBar")));
+    // (ج٢) الصفحة تتابع التخزين حيًّا: كتابةٌ من النافذة تنعكس بلا إعادة تحميل
+    E.mock.chrome.storage.local.set({ cml_enabled: false, cml_rtl: false, cml_chatrtl: false });
+    await until(function () { return !E.$("enabled").checked; });
+    check("★ تحديثٌ حيّ لكتابةٍ من خارج الصفحة (الرئيس والاتجاه والمحادثة)", "false/false/false/true",
+      E.$("enabled").checked + "/" + E.$("rtl").checked + "/" + E.$("chatrtl").checked + "/" + E.$("siteOn_app").disabled);
+    check("(ل٥) «عكس الاتجاه» مطفأ ⇒ قسم الاتجاه معطّلٌ بسببٍ ظاهر", "true/true/true",
+      E.$("rtlFs").disabled + "/" + visible(E.$("rtlOffWhy")) + "/" + E.$("siteEng_docs").disabled);
+    E.mock.chrome.storage.local.set({ cml_enabled: true, cml_rtl: true, cml_chatrtl: true });
+    await until(function () { return E.$("enabled").checked && !E.$("rtlFs").disabled; });
+
+    // ══ ٣) الأقسام نفسها في كل اختيار — وما لا ينطبق معطّلٌ بسببٍ مكتوب ══
+    var sets = {}, allShown = true;
+    for (var j = 0; j < ["all"].concat(IDS).length; j++) {
+      var v = ["all"].concat(IDS)[j];
+      await pick(E, v);
+      sets[v] = sectionsShown(E);
+      if (sets[v].indexOf("مخفي") >= 0) allShown = false;
+    }
+    check("★ مجموعة الأقسام واحدة في الاختيارات كلها", "true",
+      Object.keys(sets).every(function (k) { return sets[k] === sets.all; }));
+    check("★ لا قسم مخفيٌّ في أي اختيار", "true", allShown);
+    // ★ (DESIGN-fonts §٣.٢) بطاقة «الخط العربي» بعد «التشغيل»؛ ★ (ر8-د، N3) و«المواقع» بعد «التشغيل» مباشرةً وقبل «الخط العربي» (طلب المالك)
+    check("★ الأقسام بترتيبها", "run,sites,font,scan,rtl,dict,blocks,sync,reset,about", sets.all);
+    await pick(E, "support");
+    check("★ مركز المساعدة: الفحص معطّلٌ بسببٍ مكتوب خارج حقله", "true/true/false/true",
+      E.$("scanFs").disabled + "/" + (visible(E.$("scanWhy")) && E.$("scanWhy").textContent.length > 20) + "/" +
+      E.$("scanFs").contains(E.$("scanWhy")) + "/" + (E.$("scanFs").getAttribute("aria-describedby") === "scanWhy"));
+    check("مركز المساعدة: اتجاه المحادثة معطّلٌ بسببه، والورقة الحيّة كذلك", "true/true/true/true",
+      E.$("chatrtl").disabled + "/" + visible(E.$("chatWhy")) + "/" + E.$("rtlLiveRebuild").disabled + "/" + visible(E.$("rtlLiveWhy")));
+    await until(function () { return E.$("statLine").textContent.indexOf("مركز المساعدة") >= 0; }, 3000);
+    check("★ (§٥-٤) موقعٌ بلا فحص: لا دوائر فارغة، وسطرُ القاموس ظاهر", "false/false/true",
+      visible(E.$("donutBoxT")) + "/" + visible(E.$("donutBoxU")) + "/" + (E.$("statLine").textContent.indexOf("قاموس «مركز المساعدة»") === 0));
+    check("★ «تنزيل أمر الترجمة» معطّلٌ حيث لا فحص، وسببُه بجواره خارج أي حقلٍ معطّل", "true/true/false/scanExportWhy",
+      E.$("scanExport").disabled + "/" + (visible(E.$("scanExportWhy")) && E.$("scanExportWhy").textContent.indexOf("«مركز المساعدة»") >= 0) + "/" +
+      !!E.$("scanExportWhy").closest("fieldset[disabled]") + "/" + E.$("scanExport").getAttribute("aria-describedby"));
+    check("شارة الاتجاه بلا لامٍ ملصقةٍ باسم الموقع", "الافتراضي عام · الضبط لهذا الموقع", E.$("rtlScope").textContent);
+    await pick(E, "app");
+    await until(function () { return E.$("pctT").textContent === "؟"; }, 3000);
+    check("(ع٢) موقعٌ له فحص ولم يُفحص: الدائرتان ظاهرتان بلا قوسٍ صفري مرسوم", "true/true/true",
+      visible(E.$("donutBoxT")) + "/" + E.$("donutT").classList.contains("zero") + "/" + (E.w.getComputedStyle(E.$("donutT")).visibility === "hidden"));
+    check("«تنزيل أمر الترجمة» متاحٌ في التطبيق", "false/false", E.$("scanExport").disabled + "/" + visible(E.$("scanExportWhy")));
+    check("التطبيق: تصحيحات الفقرات معطّلةٌ بسببها (لا مخفية)", "true/true/true",
+      visible(E.$("blkSection")) + "/" + E.$("blkFs").disabled + "/" + visible(E.$("blkWhy")));
+    await pick(E, "docs");
+    check("الوثائق: الفحص متاح (ماسح llms) وفحص الاتجاه معطّلٌ بسببه", "false/true/true",
+      E.$("scanFs").disabled + "/" + E.$("rtlDocFs").disabled + "/" + visible(E.$("rtlDocWhy")));
+    check("(ع٣) رسالة الفحص باسم مضيف الموقع المختار", "true", E.$("scanWarn").textContent.indexOf("platform.claude.com") >= 0);
+    // (ع١) الشروح الخافتة كلها بحجمٍ واحد أينما وقعت
+    var sizes = [].slice.call(E.w.document.querySelectorAll(".card .desc")).filter(visible)
+      .map(function (el) { return E.w.getComputedStyle(el).fontSize; });
+    check("(ع١) كل ‎.desc‎ في البطاقات بخطّ 12.5px", "true", sizes.length > 5 && sizes.every(function (s) { return s === "12.5px"; }));
+
+    // ══ (ل٦) لا مستمع يتضاعف بعد عشرة تبديلات ══
+    E.mock.chrome.storage.local.set({ "cml_rtl_live.docs": { fp: "f", css: "x{}", at: Date.now(), sources: 1, bytes: 10, flipped: 1 } });
+    var l0 = E.L.changed;
+    var seq = ["app", "support", "all", "privacy", "docs", "app", "all", "support", "privacy", "docs"];
+    for (var s2 = 0; s2 < seq.length; s2++) await pick(E, seq[s2]);
+    var r0 = E.removes.filter(function (k) { return k === "cml_rtl_live.docs"; }).length;
+    E.$("rtlLiveRebuild").click();
+    await sleep(200);
+    check("★ عشرة تبديلات ثم ضغطةٌ واحدة = نداءُ حذفٍ واحد", "1",
+      E.removes.filter(function (k) { return k === "cml_rtl_live.docs"; }).length - r0);
+    check("ولا مستمع تخزينٍ جديد بعد التبديلات", "0", E.L.changed - l0);
+
+    // ══ ٤) «الكل» يعمل على المواقع كلها ══
+    await pick(E, "all");
+    E.$("newSrc").value = "Zzq all-view term"; E.$("newDst").value = "مصطلح";
+    E.$("addTerm").click();
+    await sleep(250);
+    check("★ الإضافة في «الكل» بلا موقع تُرفض ولا تكتب شيئًا", "true/false/true",
+      (E.$("termsStatus").textContent.indexOf("اختر الموقع") === 0) + "/" +
+      Object.keys(E.store).some(function (k) { return k.indexOf("cml_overrides") === 0; }) + "/" + visible(E.$("newDomain")));
+    E.$("newDomain").value = "support";
+    E.$("addTerm").click();
+    await until(function () { return E.store["cml_overrides.support"]; }, 3000);
+    check("★ ومع اختيار الموقع تُكتب له وحده (عبر العامل)", "مصطلح/false",
+      ((E.store["cml_overrides.support"] || {}).ar || {})["Zzq all-view term"] + "/" + ("cml_overrides" in E.store));
+    check("ورسالة النجاح تسمّي الموقع", "true",
+      await until(function () { return E.$("termsStatus").textContent.indexOf("«مركز المساعدة»") >= 0; }, 2000));
+    // فحص المواقع كلها: بالتتابع، ويشمل التطبيق والوثائق (ماسح llms)، ونتائج مفصولة
+    var asked = [];
+    E.mock.chrome.storage.onChanged.addListener(function (ch2, area) {
+      if (area !== "session" || !ch2.cml_scan_request || !ch2.cml_scan_request.newValue) return;
+      var d2 = ch2.cml_scan_request.newValue.d;
+      asked.push(d2);
+      setTimeout(function () {
+        var w = {};
+        w[CMLConst.key("cml_scan_result", d2)] = { status: "done", fetched: 1, found: 20, missing: 3, shown: 3,
+          list: ["Zq1 " + d2, "Zq2 " + d2, "Zq3 " + d2], varList: [], at: Date.now(), seconds: 1, source: d2 === "docs" ? "llms" : undefined };
+        E.mock.chrome.storage.local.set(w);
+      }, 80);
+    });
+    check("«الكل»: زرّ الفحص يفحص المواقع كلها", "فحص المواقع كلها", E.$("startScan").textContent);
+    E.$("startScan").click();
+    await until(function () { return asked.length >= 2 && E.store["cml_scan_result.docs"] && !E.$("startScan").disabled; }, 9000);
+    var scannable = IDS.filter(function (d) { return CMLConst.caps(d).scan.on; });
+    check("★ «فحص المواقع كلها» يمرّ بالتتابع على كل موقعٍ له ماسح (التطبيق ثم الوثائق)", scannable.join(","), asked.join(","));
+    check("★ النتائج مفصولة لكل موقع في صفّه", "true/true/true",
+      (E.$("scanRes_app").textContent.indexOf("وجد") === 0) + "/" + (E.$("scanRes_docs").textContent.indexOf("وجد") === 0) + "/" +
+      (E.$("scanRes_support").textContent.indexOf("بلا فحص") < 0));
+    // (ع) مطابقة المعدود بعد «وجد» (مفعول به)، وأرقامُ سطرٍ فيه تاريخٌ هجري هنديةٌ كتاريخه
+    check("★ «وجد ٢٠ نصًّا» و«وجد ٢٠ عنوانًا» — لا «وجد 20 نصّ» ولا رقمان في سطر", "true/true/false",
+      (E.$("scanRes_app").textContent.indexOf("وجد ٢٠ نصًّا") === 0) + "/" + (E.$("scanRes_docs").textContent.indexOf("وجد ٢٠ عنوانًا") === 0) + "/" +
+      /[0-9]/.test(E.$("scanRes_app").textContent));
+    await until(function () { return E.$("statLine").textContent.indexOf("العناوين") >= 0; }, 3000);
+    // (ر8-د، N5) وصدرُ السطر حجمُ الترجمة («… نصًّا للواجهة …») — فـ«لا تُجمع في نصًّا واحدة» تُمتحن في جزء الدائرتين وحده
+    var scanPart = E.$("statLine").textContent.split("الدائرتان")[1] || "";
+    check("سطر الإحصاء في «الكل»: نصوص التطبيق وعناوين الوثائق كلٌّ باسمه", "true/true/false",
+      (scanPart.indexOf("«تطبيق Claude»: النصوص 20") >= 0) + "/" +
+      (scanPart.indexOf("«وثائق المطوّرين»: العناوين 20") >= 0) + "/" + (scanPart.indexOf("نصًّا") >= 0));
+    check("★ زرّ فحص موقعٍ بلا ماسح يُوصف بسبب تعطيله لا بخانة النتيجة", "true/true",
+      (E.$("scanBtn_support").getAttribute("aria-describedby") === "scanNoWhy_support") + "/" +
+      (E.$("scanNoWhy_support").textContent === CMLConst.caps("support").scan.why));
+    check("زرّ الفحص لموقعٍ بلا ماسح معطّل", "true", E.$("scanBtn_privacy").disabled);
+    // أمر الترجمة في «الكل»: ملفٌّ واحد بأقسامٍ لكل موقعٍ له نتيجة، والردّ المطلوب يحمل مواقعه
+    E.$("scanExport").click();
+    await sleep(200);
+    var prompt = await blobText(E);
+    check("أمر الترجمة في «الكل» بأقسام المواقع وصيغة domains", "true/true/true",
+      (prompt.indexOf("Zq1 app") >= 0) + "/" + (prompt.indexOf("Zq1 docs") >= 0) + "/" + (prompt.indexOf('{"domains"') >= 0));
+    // تصدير المصدر في «الكل»: domains لكل المواقع
+    E.$("exportSrcBare").click();
+    await until(function () { return E.blobs.length >= 2; }, 5000);
+    var srcAll = JSON.parse(await blobText(E));
+    check("★ تصدير المصدر في «الكل» يحمل domains بالمواقع كلها", IDS.join(","), Object.keys(srcAll.domains || {}).join(","));
+    check("وبلا ترجمة فعلًا، وبإصدار الصيغة", "true/2", (srcAll.domains.support.terms.every(function (t) { return t.ar === ""; })) + "/" + srcAll._version);
+    // إعادة ضبط موقع في «الكل» تطلب اختياره صراحةً
+    check("إعادة ضبط موقعٍ في «الكل»: الزرّ معطّل حتى يُختار الموقع", "true", E.$("resetSite").disabled);
+
+    // ══ الموقع المختار: التصدير يحمل نطاقه، والاستيراد بلا نطاق يسأل، والحذف يشمل الفقرات ══
+    var FP = "0123456789abcdef";
+    FIX["bodies/support/ar/index.json"] = { v: 1, shards: ["a"], pages: 120, harvested: 361, harvestedAt: "2026-09-24" };
+    try { localStorage.setItem("cml_ui_domain", "support"); } catch (e) {}
+    var seed2 = {
+      "cml_overrides.support": { ar: { "Zzq sup": "تصحيح", "A guide for internal champions driving adoption": "دليل للمناصرين الداخليين الذين يقودون التبنّي" } },
+      "cml_block_ov.support": { ar: {} },
+    };
+    seed2["cml_block_ov.support"].ar[FP] = "فقرةٌ مصحّحة للاختبار";
+    E = await makeFrame("options.html", seed2);
+    await until(function () { return !E.$("reconBox").classList.contains("hidden") && E.$("scanCover").textContent.indexOf("١٢٠") >= 0; }, 5000);
+    check("اختيارٌ محفوظ يُستعاد (مركز المساعدة)", "support", E.$("domainSel").value);
+    check("★ (ل٨) مراجعة ما بعد التحديث بقاموس الموقع نفسه", "true", E.$("reconLines").textContent.indexOf("تصحيح واحد") >= 0);
+    check("التغطية المشحونة وقت البناء بالهجري، بتسمياتٍ وأرقامٍ هندية كتاريخها", "true/true/true/false",
+      (E.$("scanCover").textContent.indexOf("الصفحات المعرَّبة: ١٢٠") === 0) + "/" + (E.$("scanCover").textContent.indexOf("المحصودة من الموقع: ٣٦١") >= 0) + "/" +
+      (E.$("scanCover").textContent.indexOf("هـ") >= 0) + "/" + /[0-9]/.test(E.$("scanCover").textContent));
+    E.$("exportSrcFull").click();
+    await until(function () { return E.blobs.length >= 1; }, 5000);
+    var srcOne = JSON.parse(await blobText(E));
+    check("★ (ل١٠) تصدير المصدر لموقعٍ يحمل domain", "support/source-full/true",
+      srcOne.domain + "/" + srcOne._kind + "/" + (srcOne.terms.length >= 900 && srcOne.count === srcOne.terms.length));
+    // استيراد ملفٍّ بلا نطاق: يُسأل عنه، والافتراض الموقع المختار، والتأكيد يسمّيه
+    function importFile(obj) {
+      var dt = new E.w.DataTransfer();
+      dt.items.add(new E.w.File([JSON.stringify(obj)], "t.json", { type: "application/json" }));
+      var inp = E.$("importTransFile"); inp.files = dt.files; inp.dispatchEvent(new E.w.Event("change"));
+    }
+    importFile([{ en: "Zzq imported", ar: "مستورَد" }]);
+    await until(function () { return visible(E.$("importAsk")); }, 3000);
+    check("★ الملف بلا نطاق يُسأل عنه، والافتراض الموقع المختار", "true/support", visible(E.$("importAsk")) + "/" + E.$("importAskSel").value);
+    E.$("importAskGo").click();
+    await until(function () { return ((E.store["cml_overrides.support"] || {}).ar || {})["Zzq imported"]; }, 3000);
+    check("والتأكيد يسمّي الموقع ويُكتب له", "true/مستورَد",
+      (E.confirms[E.confirms.length - 1].indexOf("«مركز المساعدة» كما اخترت") >= 0) + "/" + E.store["cml_overrides.support"].ar["Zzq imported"]);
+    check("★ حالُ الاستيراد بجوار زرّه في بطاقة القاموس، لا في بطاقة الفحص المعطّلة", "true/",
+      await until(function () { return E.$("xferStatus").textContent.indexOf("تم استيراد") === 0; }, 2000) + "/" + E.$("scanStatus").textContent);
+    // كائنٌ مسطّح فيه نصوصٌ حقيقية اسمها «terms» و«data» و«domain»: يُستورد كله (لا يُعدّ ملفًّا منظَّمًا)
+    importFile({ "Zzq Settings": "الإعدادات", "terms": "الشروط", "data": "بيانات", "domain": "النطاق", "_note": "رأس" });
+    await until(function () { return visible(E.$("importAsk")); }, 3000);
+    E.$("importAskGo").click();
+    await until(function () { return ((E.store["cml_overrides.support"] || {}).ar || {}).terms; }, 3000);
+    var ovS = (E.store["cml_overrides.support"] || {}).ar || {};
+    check("★ كائنٌ مسطّح فيه «terms» و«data» و«domain» يُستورد كله، وحقلُ الشرطة السفلية لا", "الإعدادات/الشروط/بيانات/النطاق/false",
+      ovS["Zzq Settings"] + "/" + ovS.terms + "/" + ovS.data + "/" + ovS.domain + "/" + ("_note" in ovS));
+    // ملفٌّ ذو إصدار بفقراتٍ وحدها: لا تُستورد حقول رأسه تصحيحات، والتأكيد يعدّ الفقرات ويعاينها
+    var FP2 = "fedcba9876543210";
+    var bfile = { _app: "claude-mutarjim", _kind: "terms", _version: 2, lang: "ar", domain: "support", blocks: {} };
+    bfile.blocks[FP2] = "فقرةٌ مستوردة للمعاينة";
+    importFile(bfile);
+    await until(function () { return ((E.store["cml_block_ov.support"] || {}).ar || {})[FP2]; }, 3000);
+    var last = E.confirms[E.confirms.length - 1];
+    check("★ حقول رأس الملف لا تُستورد تصحيحاتٍ للواجهة", "false/false/false",
+      ["_app", "_kind", "lang"].map(function (k) { return k in ((E.store["cml_overrides.support"] || {}).ar || {}); }).join("/"));
+    check("★ التأكيد يعدّ الفقرات ويعاينها", "true/true",
+      (last.indexOf("تصحيح فقرة واحد") >= 0) + "/" + (last.indexOf("فقرةٌ مستوردة للمعاينة") >= 0));
+    // «الكل»: سؤال الموقع بلا افتراض — خطؤه بجوار المُنتقي، والتركيز بعد الإغلاق على زرّ الاستيراد
+    await pick(E, "all");
+    // ★ (S6-C، S6-A §٧ البند ٥) جدول «الكل» بسطر التغطية المشحونة الطويل لا يفيض على عرض الهاتف: كانت خليته td.num بلا التفاف
+    // فاتّسعت الصفحة إلى 626 بكسل على 375 (smoke-extension). الإطار نفسه بعرض 375 فتسري قاعدة الشاشة الضيقة كما في الهاتف
+    function covCell() { return [].filter.call(E.$("statsBody").querySelectorAll("td"), function (td) { return td.textContent.indexOf("الصفحات المعرَّبة") === 0; })[0]; }
+    await until(function () { return !!covCell(); }, 5000);
+    var frEl = document.querySelector("#frames iframe");
+    frEl.style.width = "375px";
+    await sleep(200);
+    var deW = E.w.document.documentElement;
+    check("★ جدول «الكل» بسطر التغطية الطويل: لا فيضان أفقي على 375 بكسل، والخلية تلتفّ", "true/cov/normal",
+      (deW.scrollWidth <= deW.clientWidth + 1) + "/" + (covCell() || {}).className + "/" + (covCell() ? E.w.getComputedStyle(covCell()).whiteSpace : "?"));
+    // ★ (ر8-د2، المراجعة) وبين قاعدة الهاتف (560) وعرض البطاقة الأقصى: اسم الموقع لا يلتفّ إلا من 768 بكسل — كان من 561 فبلغ أدنى عرضٍ
+    // للجدول 567 بكسل وجرّ الصفحة أفقيًّا بين 561 و630 (قِيس على 600: 600/585). وعلى 1000 الاسم سطرٌ واحد والخطّ الفاصل قبل أعمدة تصحيحاتك
+    var nameCell = function () { return E.$("statsBody").querySelector("tr > td:first-child"); };
+    frEl.style.width = "600px";
+    await sleep(200);
+    var ov600 = deW.scrollWidth <= deW.clientWidth + 1, ws600 = nameCell() ? E.w.getComputedStyle(nameCell()).whiteSpace : "?";
+    frEl.style.width = "1000px";
+    await sleep(200);
+    var ws1000 = nameCell() ? E.w.getComputedStyle(nameCell()).whiteSpace : "?";
+    var sep1000 = E.w.getComputedStyle(E.$("statsTable").querySelector("thead th:nth-child(6)")).borderInlineStartStyle;
+    check("★ (ر8-د2، المراجعة) جدول القاموس في «الكل»: لا فيضان أفقي على 600 بكسل، واسم الموقع سطرٌ واحد والخطّ الفاصل على 1000", "true/normal/nowrap/solid",
+      ov600 + "/" + ws600 + "/" + ws1000 + "/" + sep1000);
+    frEl.style.width = "";
+    await sleep(120);
+    // قرار المالك (٢٠ ربيع الآخر ١٤٤٨هـ): «أذونات» جمعًا في كل موضع — ومنه لوحة فايرفوكس في الإعدادات (ونسختها المولَّدة)
+    check("★ لوحة فايرفوكس: «أذوناتِ المواقع» لا «أذونَ»", "true/false",
+      (E.$("ffPermBox").textContent.indexOf("أذوناتِ المواقع") >= 0) + "/" + /أذونَ|أذونُ|أذونِ/.test(E.$("ffPermBox").textContent));
+    importFile([{ en: "Zzq all ask", ar: "سؤال" }]);
+    await until(function () { return visible(E.$("importAsk")); }, 3000);
+    E.$("importAskGo").focus(); E.$("importAskGo").click();
+    await sleep(80);
+    check("★ «متابعة» بلا موقعٍ في «الكل»: الخطأ داخل صندوق السؤال نفسه", "true/true/true",
+      (E.$("importAskSel").value === "") + "/" + (E.$("importAskStatus").textContent.indexOf("اختر الموقع") === 0) + "/" + E.$("importAsk").contains(E.$("importAskStatus")));
+    E.$("importAskCancel").focus(); E.$("importAskCancel").click();
+    await sleep(80);
+    check("★ إغلاق السؤال يعيد التركيز إلى «استيراد الترجمات» (لا body)", "scanImportBtn/false",
+      (E.w.document.activeElement && E.w.document.activeElement.id) + "/" + visible(E.$("importAsk")));
+    // (مراجعة) تبديل الموقع في تبويب إعداداتٍ لا يجرّ غيره: الصفحة لا تتبع cml_ui_domain، وتتبع تسليم النافذة وحده
+    E.w.dispatchEvent(new E.w.StorageEvent("storage", { key: "cml_ui_domain", newValue: "docs" }));
+    await sleep(80);
+    check("★ حدثُ cml_ui_domain من تبويبٍ آخر لا يبدّل الموقع هنا", "all", E.$("domainSel").value);
+    try { localStorage.setItem("cml_ui_goto", JSON.stringify({ d: "docs", t: Date.now() })); } catch (e) {}
+    E.w.dispatchEvent(new E.w.StorageEvent("storage", { key: "cml_ui_goto", newValue: JSON.stringify({ d: "docs", t: Date.now() }) }));
+    await sleep(120);
+    var gotoLeft = null; try { gotoLeft = localStorage.getItem("cml_ui_goto"); } catch (e) {}
+    check("★ وتسليمُ النافذة (cml_ui_goto) ينقلها ويُستهلك", "docs/null", E.$("domainSel").value + "/" + gotoLeft);
+    await pick(E, "support");
+    // حذف تصحيح فقرة: رسالةٌ صادقة
+    await until(function () { return E.$("blkList").querySelectorAll("button").length >= 2; }, 3000);
+    E.$("blkList").querySelector("button").click();
+    await until(function () { return E.$("blkStatusO").textContent; }, 3000);
+    check("رسالة حذف تصحيح الفقرة صادقة في الحالين", "true", E.$("blkStatusO").textContent.indexOf("إن كانت لها ترجمة") >= 0);
+    // المحرّك لهذا الموقع وحده، والرسالة باسم مضيفه — ★ (ر8-د، N3) بجوار جدول «لكل موقع» في قسم الاتجاه حيث انتقل محدِّده
+    var se = E.$("siteEng_support"); se.value = "v1"; se.dispatchEvent(new E.w.Event("change"));
+    await until(function () { return E.store["cml_engine_site.support"]; }, 2000);
+    check("★ تجاوز المحرّك لموقعٍ واحد لا يمسّ الافتراضي العام، ورسالته باسم مضيفه", "v1/false/true",
+      E.store["cml_engine_site.support"] + "/" + ("cml_rtl_engine" in E.store) + "/" +
+      (E.$("rtlSitesStatus").textContent.indexOf("support.claude.com") >= 0 && E.$("rtlSection").contains(E.$("rtlSitesStatus"))));
+    // حذف كل التصحيحات يشمل الفقرات ويقول ذلك
+    E.$("clearAllOv").click();
+    await until(function () { return !Object.keys((E.store["cml_block_ov.support"] || {}).ar || {}).length && !Object.keys((E.store["cml_overrides.support"] || {}).ar || {}).length; }, 4000);
+    last = E.confirms[E.confirms.length - 1];
+    check("★ (ل١٤) «حذف كل تصحيحاتك» يسرد الفقرات ويحذفها", "true/0/0",
+      (last.indexOf("تصحيحاتِ الفقرات") >= 0) + "/" + Object.keys(((E.store["cml_block_ov.support"] || {}).ar) || {}).length + "/" +
+      Object.keys(((E.store["cml_overrides.support"] || {}).ar) || {}).length);
+
+    // ══ مراجعة ما بعد التحديث: لا سباق في تحميلاتٍ جديدة متتالية ══
+    var reconOk = 0;
+    for (var rr = 0; rr < 2; rr++) {
+      try { localStorage.setItem("cml_ui_domain", "support"); } catch (e) {}
+      E = await makeFrame("options.html", { "cml_overrides.support": { ar: { "A guide for internal champions driving adoption": "دليل للمناصرين الداخليين الذين يقودون التبنّي" } } });
+      if (await until(function () { return !E.$("reconBox").classList.contains("hidden"); }, 4000)) reconOk++;
+    }
+    check("(ل٨) المراجعة تظهر في كل تحميلٍ جديد", "2", reconOk);
+
+    // ══ إعادة ضبط موقعٍ واحد تُبقي مفاتيح غيره (عبر العامل الحقيقي) ══
+    try { localStorage.setItem("cml_ui_domain", "support"); } catch (e) {}
+    E = await makeFrame("options.html", {
+      "cml_overrides": { ar: { "App": "تطبيق" } }, "cml_overrides.docs": { ar: { "Docs": "وثائق" } },
+      "cml_overrides.support": { ar: { "Sup": "مساعدة" } }, "cml_site.privacy": false, "cml_site.support": false,
+      "cml_engine_site.support": "v1", "cml_rtl_engine": "v1", "cml_scan_result.support": { status: "done" },
+    });
+    check("إعادة الضبط: الموقع المختار افتراضًا، والزرّ باسمه", "support/true",
+      E.$("resetSiteSel").value + "/" + (E.$("resetSite").textContent.indexOf("«مركز المساعدة»") >= 0));
+    // ومعها «امسح أيضًا ما رُفع»: مساحةُ الموقع وحده في السحابة
+    Object.assign(E.mock.syncStore, { cml_syncmeta: { v: 1 }, cml_syncd_0: "a", cmlm_support: { v: 1 }, cmlc_support_0: "b", cmlm_docs: { v: 1 } });
+    E.$("resetWipeSync").checked = true;
+    E.$("resetSite").click();
+    await until(function () { return !("cml_overrides.support" in E.store); }, 5000);
+    check("★ ومسحُ السحابة لموقعٍ واحد يمحو مساحته وحدها", "cml_syncd_0,cml_syncmeta,cmlm_docs",
+      Object.keys(E.mock.syncStore).sort().join(","));
+    E.$("resetWipeSync").checked = false;
+    check("★ إعادة ضبط «مركز المساعدة» تحذف مفاتيحه وحدها", "false/false/false",
+      ("cml_overrides.support" in E.store) + "/" + ("cml_site.support" in E.store) + "/" + ("cml_engine_site.support" in E.store));
+    check("★ وتُبقي مفاتيح المواقع الأخرى والإعدادات العامة", "true/true/true/true",
+      ("cml_overrides" in E.store) + "/" + ("cml_overrides.docs" in E.store) + "/" + (E.store["cml_site.privacy"] === false) + "/" + (E.store.cml_rtl_engine === "v1"));
+    check("والتأكيد يقول حدَّه", "true", E.confirms[E.confirms.length - 1].indexOf("وتبقى المواقع الأخرى") >= 0);
+    var bad = await new Promise(function (res) {
+      E.mock.chrome.runtime.sendMessage({ type: "sync-admin", op: "reset", domain: "support", keys: ["cml_overrides"] }, res);
+    });
+    check("★ العامل يرفض مفاتيح لا تخصّ الموقع المذكور", "true/true", !!(bad && bad.error) + "/" + ("cml_overrides" in E.store));
+
+    // ══ النصوص: الترحيب من الجدول، والخصوصية صادقة ══
+    var about = E.$("aboutSection").textContent;
+    check("الخصوصية: «لا تجمع بيانات عنك ولا عن استعمالك» وبلا الادّعاء القديم", "true/false/false",
+      (about.indexOf("لا تجمع بيانات عنك ولا عن استعمالك") >= 0) + "/" + (about.indexOf("لا تطلب الوصول إلى أي موقع غير claude.ai") >= 0) +
+      "/" + (about.indexOf("لا خادم") >= 0));
+    check("الخصوصية تسرد المواقع كلها من الجدول", "true",
+      CMLConst.DOMAINS.every(function (d) { return E.$("privSites").textContent.indexOf(CMLConst.siteLabel(d.id)) >= 0; }));
+    check("الترحيب بعدد المواقع من الجدول لا «الأربع»", "false/true",
+      (E.$("welcomeTitle").textContent.indexOf("الأربع") >= 0) + "/" + (E.$("welcomeTitle").textContent.indexOf(IDS.length + " مواقع") >= 0));
+    // ★ (ر8-ب) «ما لا يُعرَّب» في بطاقة الترحيب يصدق على المشحون (مراجعة ر8-أ، F10): «مقالات وثائق Claude Code» مذكورةٌ ما دام فهرس
+    // قطعها المشحون فارغًا، و«محتوى أكاديمية Claude عدا واجهتها» ما دامت الأكاديمية بلا مقالاتٍ في الجدول — فإن شُحن أحدهما أخفق هذا
+    // حتى تُحدَّث الجملة؛ ومرجع الواجهة البرمجية تبقى خصائصه ونماذجه لا محتواه كلّه؛ ولا «الشيفرة» في البطاقة (دليل الأسلوب §13)
+    var keepT = E.$("welcomeKeep").textContent.replace(/\s+/g, " ");
+    var codeIx = await fetch(EXT + "bodies/code/ar/index.json").then(function (r) { return r.ok ? r.json() : null; }, function () { return null; });
+    var codePages = codeIx ? (typeof codeIx.pages === "number" ? codeIx.pages : (codeIx.shards || []).length) : -1;
+    var acadDom = CMLConst.DOMAINS.filter(function (d) { return d.id === "academy"; })[0];
+    check("★ الترحيب: «ما لا يُعرَّب» يطابق المشحون — مقالات Claude Code ما دام فهرسها فارغًا، والأكاديمية ما دامت بلا مقالات، وخصائص المرجع ونماذجه، وبلا «الشيفرة»",
+      "true/true/true/false/false",
+      ((keepT.indexOf("مقالات وثائق Claude Code") >= 0) === (codePages === 0)) + "/" +
+      ((keepT.indexOf("ومحتوى أكاديمية Claude عدا واجهتها") >= 0) === !!(acadDom && !(acadDom.meta && acadDom.meta.bodies))) + "/" +
+      (keepT.indexOf("والخصائص والنماذج في مرجع الواجهة البرمجية") >= 0) + "/" +
+      (keepT.indexOf("ومحتوى مرجع الواجهة البرمجية") >= 0) + "/" +
+      (E.$("welcomeBox").textContent.indexOf("الشيفرة") >= 0));
+    // (ر8-ب) اسم الإضافة في «حول» هو short_name الذي يُرجعه المانيفست (والقشرة تحمل اسم 2.0.0 المختصر)؛ واحتياطُه يُمتحن في آخر الصفحة
+    var aboutNameE = E.$("aboutName").textContent;
+
+    // ══ ★ (ر8-د، ١ جمادى الأولى ١٤٤٨هـ) ملاحظات النسخة التجريبية 2: الترحيب (N2)، وجدولا «المواقع» و«لكل موقع» (N3)، وتسميات الفحص (N4)،
+    // وحجم الترجمة المشحون (N5) — في إطارٍ جديد على «المواقع كلها» ══
+    try { localStorage.setItem("cml_ui_domain", "all"); } catch (e) {}
+    var R = await makeFrame("options.html", {});
+    await until(function () { return !R.$("welcomeBox").classList.contains("hidden") && R.$("statsBody").children.length === IDS.length; }, 8000);
+    var DOMS = CMLConst.DOMAINS;
+    // N2: العنوان بلفظ المالك وعددِ الجدول، والاحتياط في options.html بلا «صار»
+    var staticTitle = (/<h2 id="welcomeTitle">([^<]*)<\/h2>/.exec(OPTS_HTML) || [])[1] || "";
+    check("★ (ر8-د) الترحيب: «الآن يعمل التعريب في N مواقع لـClaude» بعدد الجدول، واحتياطُه في options.html بلا «صار»",
+      "🎉 الآن يعمل التعريب في " + IDS.length + " مواقع لـClaude/🎉 الآن يعمل التعريب في مواقع Claude",
+      R.$("welcomeTitle").textContent + "/" + staticTitle);
+    // N2: حال كل موقعٍ من الجدول (status) — والقرار نفسه مثبَّتًا: الكامل التطبيق والمساعدة والخصوصية، والباقي جزئيٌّ بسببه
+    var wl = R.$("welcomeLines").textContent;
+    var stOk = DOMS.every(function (d) {
+      var b = R.$("welcomeSt_" + d.id), st = d.status || {};
+      if (!b) return false;
+      var line = b.parentNode.textContent.split("•").filter(function (x) { return x.indexOf(d.name + " — ") === 1; })[0] || "";
+      return st.full ? b.textContent === "كامل" && line.indexOf("كامل:") < 0
+                     : b.textContent === "جزئي" && !!st.part && line.indexOf("جزئي: " + st.part) >= 0;
+    });
+    check("★ (ر8-د) الترحيب: كل موقعٍ «كامل» أو «جزئي: سببه» من جدول النطاقات — الكامل التطبيق والمساعدة والخصوصية، والجزئي القانونية والأكاديمية والوثائق وClaude Code — وجملة الإكمال",
+      "true/app,support,privacy/legal,academy,docs,code/true",
+      stOk + "/" + DOMS.filter(function (d) { return d.status && d.status.full; }).map(function (d) { return d.id; }).join(",") + "/" +
+      DOMS.filter(function (d) { return !(d.status && d.status.full); }).map(function (d) { return d.id; }).join(",") + "/" +
+      (wl.indexOf("وتكتمل المواقع الجزئية في التحديثات القادمة.") >= 0));
+    // N2: «وتبقى بالإنجليزية في هذا الإصدار…» تسرد ما يبقى من كل موقعٍ جزئي (status.en) بالجدول نفسه — ومنه سياسة الاستخدام — وذيلُها العام
+    var keepR = R.$("welcomeKeep").textContent.replace(/\s+/g, " ");
+    check("★ (ر8-د) الترحيب: «ما لا يُعرَّب» يسرد ما يبقى من كل موقعٍ جزئي من الجدول، ومنه سياسة الاستخدام، وذيلُه ما غيّرته المواقع",
+      "true/true/true",
+      DOMS.every(function (d) { return !d.status || d.status.full || !d.status.en || keepR.indexOf(d.status.en) >= 0; }) + "/" +
+      (keepR.indexOf("سياسة الاستخدام في الوثائق القانونية") >= 0) + "/" + (keepR.indexOf("وما غيّرته المواقع أو أضافته بعد إعداده.") >= 0));
+    // N2: لا «صار» في نصّ الإعدادات (ومنه المولَّد ولوحة المراجعة المخفية و«حول»)، و«أصبح الافتراضي المبسّط» في رسالة المحرّك
+    var SAR = /(^|[^ء-ي])صار(?=[^ء-ي]|$)/;
+    R.$("rtlEngineV1").click();
+    await until(function () { return R.$("rtlEngineStatus").textContent.length > 0; }, 2000);
+    var v1msg = R.$("rtlEngineStatus").textContent;
+    R.$("rtlEngineV2").click();
+    await until(function () { return !("cml_rtl_engine" in R.store); }, 2000);
+    check("★ (ر8-د) لا «صار» في نصّ الإعدادات، ورسالة المحرّك «أصبح الافتراضي المبسّط»", "false/true",
+      SAR.test(R.w.document.body.textContent) + "/" + (v1msg.indexOf("أصبح الافتراضي المبسّط") === 0));
+    // N3: جدول «المواقع» بعد «التشغيل» بأعمدته الثلاثة، ومحرّك الاتجاه ومصدره جدولٌ لكل موقع في قسم الاتجاه بعد المحرّك الافتراضي
+    function heads(id) { return [].map.call(R.w.document.querySelectorAll("#" + id + " thead th"), function (th) { return th.textContent; }).join("|"); }
+    function before(a, b) { return !!(a && b && (a.compareDocumentPosition(b) & 4)); }
+    check("★ (ر8-د) جدول «المواقع»: الموقع | التعريب | الحال وحدها، بعد «التشغيل» وقبل «الخط العربي»، ولا محدِّد فيه", "الموقع|التعريب|الحال/0/true/true",
+      heads("sitesTable") + "/" + R.$("sitesTable").querySelectorAll("select").length + "/" +
+      before(R.$("runSection"), R.$("sitesSection")) + "/" + before(R.$("siteOn_" + IDS[IDS.length - 1]), R.$("fontSection")));
+    var engIn = IDS.every(function (d) {
+      return R.$("rtlSitesTable").contains(R.$("siteEng_" + d)) && R.$("rtlSitesTable").contains(R.$("siteDir_" + d)) &&
+        R.$("rtlRow_" + d).contains(R.$("siteEng_" + d));
+    });
+    check("★ (ر8-د) «لكل موقع» في قسم الاتجاه بعد المحرّك الافتراضي: الموقع | محرّك الاتجاه | الاتجاه من، ومحدِّد كل موقعٍ ومصدرُه فيه، وتعطّله «عكس الاتجاه»",
+      "الموقع|محرّك الاتجاه|الاتجاه من/true/true/true/true",
+      heads("rtlSitesTable") + "/" + engIn + "/" + R.$("rtlSection").contains(R.$("rtlSitesTable")) + "/" +
+      before(R.$("rtlEngineBox"), R.$("rtlSitesTable")) + "/" + R.$("rtlFs").contains(R.$("rtlSitesTable")));
+    // N3: كل مسارٍ في وصف نطاق الموقع معزولٌ في <bdi dir="ltr"> ولا «/» خارجه، والجملة هي هي (cap.where)
+    var isoOk = IDS.every(function (d) {
+      var wh = R.$("siteRow_" + d).querySelector(".where"), cap = CMLConst.caps(d);
+      var bdis = [].slice.call(wh.querySelectorAll("bdi"));
+      var outside = [].filter.call(wh.childNodes, function (n) { return n.nodeType === 3; }).map(function (n) { return n.textContent; }).join("");
+      return wh.textContent === cap.where && bdis.length === cap.whereSeg.filter(function (x) { return x.p !== undefined; }).length &&
+        bdis.every(function (b) { return b.dir === "ltr" && b.textContent.charAt(0) === "/"; }) && outside.indexOf("/") < 0;
+    });
+    var legalB = R.$("siteRow_legal").querySelector(".where bdi");
+    check("★ (ر8-د) مسارات كل موقع معزولة في <bdi dir=\"ltr\"> والفواصل العربية خارجها: «/legal/privacy» لا «legal/privacy/»", "true/true//legal/privacy",
+      isoOk + "/" + (R.$("siteRow_academy").querySelectorAll(".where bdi").length > 10) + "/" + (legalB ? legalB.textContent : "?"));
+    // N4: تسميات عمود «الفحص» بما يُفحص، وسطر التذييل بها
+    var scanLab = IDS.map(function (d) { return R.$("scanRes_" + d).parentNode.children[1].textContent; });
+    check("★ (ر8-د) عمود «الفحص»: «نصوص الواجهة كلها» و«عناوين الصفحات» و«عند كل إصدار» من القدرات، وسطر التذييل بها",
+      IDS.map(function (d) { var k = CMLConst.caps(d).scan.kind; return k === "app" ? "نصوص الواجهة كلها" : k === "llms" ? "عناوين الصفحات" : "عند كل إصدار"; }).join(",") + "/true/true/false",
+      scanLab.join(",") + "/" + (R.$("scanCount").textContent.indexOf("يفحص المتصفح نصوص الواجهة كلها في «تطبيق Claude»، وعناوين الصفحات في") === 0) + "/" +
+      (R.$("scanCount").textContent.indexOf("وتُحدَّث ترجمة غيرها عند كل إصدار: «مركز المساعدة»") >= 0) + "/" + /بلا فحص|ملفات الواجهة|llms\.txt/.test(scanLab.join(" ")));
+    // N4: مضيفو الفحص في الشرح معزولون، والفاصلة العربية بينهم خارج العزل
+    var warnB = [].map.call(R.$("scanWarn").querySelectorAll("bdi"), function (b) { return b.dir + ":" + b.textContent; });
+    var warnSep = [].filter.call(R.$("scanWarn").childNodes, function (n) { return n.nodeType === 3; }).map(function (n) { return n.textContent; });
+    var scanIdsR = IDS.filter(function (d) { return CMLConst.caps(d).scan.on; });
+    check("★ (ر8-د) مضيفو الفحص في شرح البطاقة معزولون (bdi ltr)، والفاصلة العربية بينهم خارج العزل", scanIdsR.map(function (d) { return "ltr:" + CMLConst.siteLabel(d); }).join("|") + "/true",
+      warnB.join("|") + "/" + (warnSep.filter(function (t) { return t === "، "; }).length === scanIdsR.length - 1));
+    // N5: «نصوص الواجهة» و«فقرات المقالات» و«الكلمات» من الأعداد المشحونة في القاموس (لا عدّ وقت التشغيل)، والأعداد المشحونة نفسها
+    // يعيد الاختبار حسابها من القواميس بمنهج البناء: الحرفيّ المترجَم (ترجمتُه غير أصله)، وفقرات قاموس الكتل، والكلمات العربية فيهما
+    // ★ (ر8-د، المراجعة — قرار المنسّق) والفقرات المشحونة وحدها: ما تشير إليه صفحات قاموس الكتل (pages) مرّةً لكل بصمة، فمدخلٌ لا تشير
+    // إليه صفحةٌ لا يُشحن ولا يُعدّ؛ ويُمتحن أن في القاموس اليوم مدخلاتٍ كهذه (فالعدّ يفرّق بينهما حقًّا)
+    var SHIP = {}, RECALC = {}, AW = /\p{Script=Arabic}+/gu, UNREF = 0;
+    var KEYS_N = 0, HV_DICT = [], HV_IX = [], HV_OK = 0, HV_BAD = 0;   // ★ (ر9-أ) لفحصي version_name وتاريخ الحصاد أدناه
+    for (var di = 0; di < DOMS.length; di++) {
+      var dd = DOMS[di];
+      var src = await fetch(EXT + dd.dict).then(function (r) { return r.text(); });
+      var gx = {}; new Function("globalThis", src)(gx);   // ملف القاموس المبنيّ كما يحمّله المتصفح، في كائنٍ معزول
+      SHIP[dd.id] = gx.CLAUDE_L10N.dicts.ar.counts;
+      var dj = await fetch(EXT + "../dictionaries/" + (dd.id === "app" ? "ar.json" : "ar-" + dd.id + ".json")).then(function (r) { return r.json(); });
+      var bj = dd.meta && dd.meta.bodies ? await fetch(EXT + "../dictionaries/ar-" + dd.id + ".blocks.json").then(function (r) { return r.ok ? r.json() : null; }, function () { return null; }) : null;
+      var rc = { strings: 0, blocks: 0, words: 0 };
+      Object.keys(dj.strings || {}).forEach(function (k) { var v = dj.strings[k]; if (v !== k) { rc.strings++; rc.words += (String(v).match(AW) || []).length; } });
+      if (bj) {
+        var shipFp = {};
+        Object.keys(bj.pages || {}).forEach(function (pk) {
+          (bj.pages[pk] || []).forEach(function (fp) { if (Object.prototype.hasOwnProperty.call(bj.blocks || {}, fp)) shipFp[fp] = 1; });
+        });
+        Object.keys(shipFp).forEach(function (fp) { rc.blocks++; rc.words += (String(bj.blocks[fp]).match(AW) || []).length; });
+        UNREF += Object.keys(bj.blocks || {}).length - rc.blocks;
+      }
+      RECALC[dd.id] = rc;
+      // ★ (ر9-أ) مفاتيح النصوص في القاموس المبنيّ (عدد version_name)، وتاريخ الحصاد: _meta.harvestedAt في قاموس الكتل وما شُحن في فهرس المتون
+      KEYS_N += Object.keys(gx.CLAUDE_L10N.dicts.ar.strings || {}).length;
+      if (dd.meta && dd.meta.bodies) {
+        var hvIx = await fetch(EXT + "bodies/" + dd.id + "/ar/index.json").then(function (r) { return r.ok ? r.json() : null; }, function () { return null; });
+        var hvAt = bj && bj._meta && bj._meta.harvestedAt !== undefined ? bj._meta.harvestedAt : null;
+        HV_DICT.push(dd.id + ":" + hvAt);
+        HV_IX.push(dd.id + ":" + (hvIx ? hvIx.harvestedAt : "(لا فهرس)"));
+        if (bj) { if (/^\d{4}-\d{2}-\d{2}$/.test(String(hvAt))) HV_OK++; else HV_BAD++; }
+      }
+    }
+    check("★ (ر9-أ) تاريخ الحصاد في فهرس متون كل موقعٍ هو _meta.harvestedAt في قاموس كتله (يكتبه merge-blocks فيُبنى المستودع العام بلا حصاد)، تاريخًا صالحًا؛ وموقعٌ بلا قاموس كتلٍ بلا تاريخ",
+      HV_DICT.join(",") + "/0/true", HV_IX.join(",") + "/" + HV_BAD + "/" + (HV_OK > 0));
+    check("★ (ر8-د) الأعداد المشحونة في القاموس (counts) تطابق إعادة حسابها من القواميس: نصوص الواجهة المترجَمة وفقرات المقالات المشحونة (ما تشير إليه صفحاتها) والكلمات العربية",
+      IDS.map(function (d) { return [RECALC[d].strings, RECALC[d].blocks, RECALC[d].words].join(":"); }).join(",") + "/true",
+      IDS.map(function (d) { var c = SHIP[d] || {}; return [c.strings, c.blocks, c.words].join(":"); }).join(",") + "/" + (UNREF > 0));
+    var cellsOk = IDS.every(function (d) {
+      var c = SHIP[d];
+      return R.$("size_strings_" + d).textContent === c.strings.toLocaleString("en") &&
+        R.$("size_blocks_" + d).textContent === (CMLConst.caps(d).bodies.on ? c.blocks.toLocaleString("en") : "—") &&
+        /^≈ \d/.test(R.$("size_words_" + d).textContent);
+    });
+    var appKeys = Object.keys(((R.w.CLAUDE_L10N || {}).dicts || {}).ar ? R.w.CLAUDE_L10N.dicts.ar.strings : {}).length;
+    var totS = IDS.reduce(function (a, d) { return a + SHIP[d].strings; }, 0), totB = IDS.reduce(function (a, d) { return a + SHIP[d].blocks; }, 0);
+    var totW = IDS.reduce(function (a, d) { return a + SHIP[d].words; }, 0);
+    check("★ (ر8-د) جدول «الكل»: «نصوص الواجهة» و«فقرات المقالات» و«الكلمات» من الأعداد المشحونة لا من عدّ القاموس المحمَّل، وسطرُه بمجموعها",
+      "نصوص الواجهة|فقرات المقالات|الكلمات/true/true/true/true",
+      heads("statsTable").split("|").slice(1, 4).join("|") + "/" + cellsOk + "/" + (R.$("size_strings_app").textContent !== appKeys.toLocaleString("en") || SHIP.app.strings === appKeys) + "/" +
+      (R.$("statLine").textContent.indexOf("في " + IDS.length + " مواقع: " + totS.toLocaleString("en") + " نصًّا للواجهة و" + totB.toLocaleString("en") + " فقرةً من المقالات، نحو ") === 0) + "/" +
+      (R.$("statLine").textContent.indexOf("نحو " + (Math.round(totW / 1000) >= 1000 ? (Math.round(totW / 1e4) / 100).toLocaleString("en") + " مليون"
+        : Math.round(totW / 1000).toLocaleString("en") + ([3, 4, 5, 6, 7, 8, 9, 10].indexOf(Math.round(totW / 1000) % 100) >= 0 ? " آلاف" : " ألف")) + " كلمة عربية") >= 0));
+    check("(ر8-د) الكلمات مقرَّبة بالألف في خلاياها («≈ 298 ألفًا»، «≈ 3 آلاف»)، وأعمدة تصحيحاتك كما هي", "true/true/تصحيحاتك|قواعدك|الفقرات",
+      (R.$("size_words_support").textContent === "≈ " + Math.round(SHIP.support.words / 1000) + " ألفًا") + "/" +
+      (R.$("size_words_code").textContent === "≈ " + Math.round(SHIP.code.words / 1000) + " آلاف") + "/" + heads("statsTable").split("|").slice(5).join("|"));
+
+    // ══ ★ (ر8-د2، ٢ جمادى الأولى ١٤٤٨هـ) ملاحظتا المالك N7 وN8: «حول» بأقسامٍ معنونة لم يُحذف منها شيء، وصياغة الصفحة والنافذة ══
+    var RD = R.w.document;
+    // N7: العناوين بترتيبها، وكل عنصرٍ معروفٍ في قسمه (بين عنوانه والعنوان الذي يليه)
+    var ABOUT_H = ["ما تفعله الإضافة", "الخصوصية: ما لا تفعله الإضافة أبدًا", "ما لا تعرّبه", "ماذا يحدث لترجماتك عند تحديث الإضافة؟",
+                   "كيف أُنجز التعريب، ومصادر مصطلحاته", "الخطوط العربية وتراخيصها", "الإصدار والرخصة", "المصدر المفتوح والتواصل"];
+    var aboutHs = [].slice.call(RD.querySelectorAll("#aboutSection h3"));
+    function inPart(el, h, next) { return !!el && before(h, el) && (!next || before(el, next)); }
+    var hEl = function (id) { return R.$("aboutH_" + id); };
+    var issues = RD.querySelector('#aboutSection a[href$="/issues/new/choose"]');
+    var partsOk = [
+      inPart(R.$("privSites"), hEl("does"), hEl("privacy")), inPart(R.$("privScanKinds"), hEl("does"), hEl("privacy")),
+      inPart(R.$("privLiveSites"), hEl("privacy"), hEl("keep")), inPart(R.$("aboutKeep"), hEl("keep"), hEl("update")),
+      inPart(R.$("lexSources"), hEl("sources"), hEl("fonts")), inPart(R.$("fontCredits"), hEl("fonts"), hEl("license")),
+      inPart(R.$("fontHolders"), hEl("fonts"), hEl("license")), inPart(R.$("aboutName"), hEl("license"), hEl("contact")),
+      inPart(R.$("licenseLine"), hEl("license"), hEl("contact")), inPart(issues, hEl("contact"), null)].join(",");
+    check("★ (ر8-د2) «حول» بأقسامٍ معنونة بترتيبها (ما تفعله، والخصوصية، وما لا تعرّبه، والتحديث، والمصادر، والخطوط، والإصدار والرخصة، والتواصل)، وكل عنصرٍ في قسمه",
+      ABOUT_H.join("|") + "/" + ABOUT_H.map(function () { return "true"; }).concat(["true", "true"]).join(","),
+      aboutHs.map(function (h) { return h.textContent; }).join("|") + "/" + partsOk);
+    // N7: قائمة المصادر كاملةٌ معدودة (ومطابقتها لملف المصادر بندًا بندًا في check-sources.mjs، خارج جذر الاختبارات): كل بندٍ «الاسم — الجهة» بلا
+    // تكرار، والأعداد بين قوسين أعدادُ البنود والمجموعُ مجموعهما، ومطويّةٌ في قسم المصادر
+    var lexLis = [].slice.call(RD.querySelectorAll("#lexSaudi > li, #lexOther > li"));
+    var lexTexts = lexLis.map(function (li) { return li.textContent.replace(/\s+/g, " ").replace(/\s*سوار\s*$/, "").trim(); });
+    var lexShape = lexTexts.length > 0 && lexTexts.every(function (t) { var p = t.split(" — "); return p.length >= 2 && !!p[0].trim() && !!p.slice(1).join(" — ").trim(); });
+    var lexNs = [].map.call(RD.querySelectorAll("#lexSources .n"), function (s) { return +s.textContent; });
+    var nSaR = RD.querySelectorAll("#lexSaudi > li").length, nOtR = RD.querySelectorAll("#lexOther > li").length;
+    check("★ (ر8-د2) «حول»: قائمة المصادر كاملةٌ معدودة — كل بندٍ «الاسم — الجهة» بلا تكرار، والعدد بين قوسين عددُ البنود والمجموع مجموعهما، ومطويّةٌ في قسم المصادر",
+      "true/true/" + [nSaR + nOtR, nSaR, nOtR].join(",") + "/true/false",
+      lexShape + "/" + (new Set(lexTexts).size === lexTexts.length) + "/" + lexNs.join(",") + "/" + (lexNs[0] === lexNs[1] + lexNs[2] && nSaR > 0 && nOtR > 0) + "/" + R.$("lexSources").open);
+    // N7: «ما لا تعرّبه» في «حول» نصُّ بطاقة الترحيب نفسه (بلا صدره «ما لا يُعرَّب:»)، من حال المواقع في الجدول
+    var keepW = R.$("welcomeKeep").textContent.replace(/\s+/g, " ").trim().replace(/^ما لا يُعرَّب: /, "");
+    var keepA = ((R.$("aboutKeep") || {}).textContent || "").replace(/\s+/g, " ").trim();   // بلا الفقرة (الحال القديمة) يُخفق الفحص ولا يرمي
+    check("★ (ر8-د2) «حول»: «ما لا تعرّبه» نصُّ بطاقة الترحيب نفسه من حال المواقع في الجدول، ومنه سياسة الاستخدام", "true/true",
+      (keepW === keepA && keepA.length > 100) + "/" + (keepA.indexOf("سياسة الاستخدام في الوثائق القانونية") >= 0));
+    // N8: لا «صار» ولا «تصير» (ولا أخواتهما بواوٍ أو فاء) في نصّ الصفحة المرسوم (ومنه اللوحات المخفية)، ولا في نصوص options.html وpopup.html،
+    // ولا في سلاسل options.js وpopup.js وcml-const.js (ما تبنيه الصفحتان من رسائل) — والتعليقات لا تُعدّ
+    function jsLiterals(s) {
+      var out = [], i = 0, last = "", word = "";
+      while (i < s.length) {
+        var c = s[i], n = s[i + 1];
+        if (c === "/" && n === "/") { while (i < s.length && s[i] !== "\n") i++; continue; }
+        if (c === "/" && n === "*") { i += 2; while (i < s.length && !(s[i] === "*" && s[i + 1] === "/")) i++; i += 2; continue; }
+        if (c === '"' || c === "'" || c === "`") {
+          var j = i + 1, b = "";
+          while (j < s.length && s[j] !== c) { if (s[j] === "\\") { b += s[j] + s[j + 1]; j += 2; continue; } b += s[j]; j++; }
+          out.push(b); i = j + 1; last = c; word = ""; continue;
+        }
+        if (c === "/" && (last === "" || /[(,=:\[!&|?{};+\-*%<>~^]/.test(last) || /^(return|typeof|case|in|of|new|delete|void|throw)$/.test(word))) {
+          var k = i + 1, cls = false;
+          while (k < s.length) { if (s[k] === "\\") { k += 2; continue; } if (s[k] === "[") cls = true; else if (s[k] === "]") cls = false; else if ((s[k] === "/" && !cls) || s[k] === "\n") break; k++; }
+          i = k + 1; while (/[a-z]/.test(s[i] || "")) i++; last = "/"; word = ""; continue;
+        }
+        if (/\s/.test(c)) { i++; continue; }
+        if (/[A-Za-z_$]/.test(c)) { var w = i; while (/[\w$]/.test(s[w] || "")) w++; word = s.slice(i, w); last = "w"; i = w; continue; }
+        last = c; word = ""; i++;
+      }
+      return out;
+    }
+    function htmlText(h) { return h.replace(/<!--[\s\S]*?-->/g, " ").replace(/<style[\s\S]*?<\/style>/g, " ").replace(/<script[\s\S]*?<\/script>/g, " ").replace(/<[^>]+>/g, " "); }
+    var SRC_LITS = await Promise.all(["options.js", "popup.js", "cml-const.js"].map(function (f) {
+      return fetch(EXT + f).then(function (r) { return r.text(); }).then(jsLiterals);
+    }));
+    var COLLOQ = /(^|[^ء-ي])[وف]?(?:صار|صارت|صاروا|يصير|تصير|يصيران|تصيران)(?=[^ء-ي]|$)/;
+    var R_TEXT = RD.body.textContent;
+    check("★ (ر8-د2) لا «صار» ولا «تصير» في الصفحة: نصّ الإعدادات المرسوم، ونصّا options.html وpopup.html، وسلاسل options.js وpopup.js وcml-const.js",
+      "false/false/false/false/false/false/true",
+      [COLLOQ.test(R_TEXT), COLLOQ.test(htmlText(OPTS_HTML)), COLLOQ.test(htmlText(POPUP_HTML))].concat(SRC_LITS.map(function (L) { return COLLOQ.test(L.join("\n")); })).join("/") + "/" +
+      (SRC_LITS[0].length > 300 && SRC_LITS[1].length > 30));
+    // دليل الأسلوب §13 والقاعدة الملزمة: «مطفأ/مطفأة» متروكة (الحال «متوقّف» مع «تفعيل/إيقاف»)، و«Claude» لا يُكتب «كلود» إلا في اسم الإضافة
+    // ★ (ر9-ج) واسما الإضافة بالقرار 100 يبدآن كلاهما بـ«تعريب كلود» (الكامل في رأس الإعدادات، والمختصر في «حول»)، فيُستثنى هذا وحده
+    var RETIRED = /مطفأ/;
+    function claudeAr(t) { return String(t).replace(/تعريب كلود/g, "").indexOf("كلود") >= 0; }
+    var lits3 = SRC_LITS.map(function (L) { return L.join("\n"); }).join("\n");
+    check("★ (ر8-د2) لا «مطفأ» في نصّ الإعدادات ونصّي الصفحتين وسلاسلهما (الحال «متوقّف»)، ولا «كلود» خارج اسم الإضافة في نصّ الإعدادات المرسوم",
+      "false/false/false/false/false", [RETIRED.test(R_TEXT), RETIRED.test(htmlText(OPTS_HTML)), RETIRED.test(htmlText(POPUP_HTML)), RETIRED.test(lits3), claudeAr(R_TEXT)].join("/"));
+    // ★ (ر9-أ) رسائل الإضافة بلا صيغة متكلّم («لم أعثر»، «لم أجد»، «أنا»…) ولا Ctrl+F5: سلاسل المحرّك وعامل الخدمة والمشترك (ومنه أسباب
+    // checkBlock في نافذة تصحيح الفقرة)، وسلاسل الصفحتين والثوابت ونصّا options.html وpopup.html — والتحديث الكامل في الإضافة كلها
+    // Ctrl+Shift+R. ورسالة الفحص حين لا تُرى ملفات الموقع واحدةٌ بصيغة «تعذّر العثور…» وبـCtrl+Shift+R
+    var W_FILES = ["engine.js", "sw.js", "cml-shared.js"];
+    var W_LITS = await Promise.all(W_FILES.map(function (f) { return fetch(EXT + f).then(function (r) { return r.text(); }).then(jsLiterals); }));
+    var W_TEXTS = W_LITS.map(function (L) { return L.join("\n"); }).concat(SRC_LITS.map(function (L) { return L.join("\n"); }), [htmlText(OPTS_HTML), htmlText(POPUP_HTML)]);
+    var W_NAMES = W_FILES.concat(["options.js", "popup.js", "cml-const.js", "options.html", "popup.html"]);
+    var FIRST_P = /(^|[^ء-ي])(?:لم|لن|لا)\s+[أن](?:عثر|جد|ستطع|ستطيع|تمكّ?ن)(?=[^ء-ي]|$)|(^|[^ء-ي])(?:أنا|نحن)(?=[^ء-ي]|$)/;
+    var F5 = /\bF5\b/;
+    var scanNoFiles = W_LITS[0].filter(function (s) { return s.indexOf("ملفات الموقع في هذه الصفحة") >= 0; });
+    function offenders(re) { return W_NAMES.filter(function (n, i) { return re.test(W_TEXTS[i]); }).join("،") || "—"; }
+    check("★ (ر9-أ) لا صيغة متكلّم ولا Ctrl+F5 في رسائل الإضافة (engine.js وsw.js وcml-shared.js والصفحتين والثوابت)، ورسالة الفحص «تعذّر العثور على ملفات الموقع…» بـCtrl+Shift+R",
+      "—/—/1/true/true/true",
+      offenders(FIRST_P) + "/" + offenders(F5) + "/" + scanNoFiles.length + "/" +
+      (scanNoFiles.length === 1 && scanNoFiles[0].indexOf("تعذّر العثور على ملفات الموقع في هذه الصفحة.") === 0) + "/" +
+      (scanNoFiles.length === 1 && scanNoFiles[0].indexOf("(Ctrl+Shift+R)") >= 0) + "/" +
+      (W_LITS[0].length > 300 && W_LITS[1].length > 50 && W_LITS[2].length > 100));   // السلاسل قُرئت فعلًا (لا فحصٌ فارغ)
+    // F7 من مراجعة ر8-د1: جدول «المواقع» مسمًّى لقارئ الشاشة بعنوان قسمه؛ وجدول القاموس بعنوانٍ يقول إن أعمدته الأخيرة تصحيحاتُك
+    var stLab = R.$("sitesTable").getAttribute("aria-labelledby"), stCap = RD.querySelector("#statsTable > caption");
+    check("★ (ر8-د2) جدول «المواقع» مسمًّى لقارئ الشاشة بعنوان قسمه، وجدول القاموس بعنوانٍ يميّز تصحيحاتك (ومنها تصحيحات الفقرات) من حجم الترجمة",
+      "المواقع/true", (stLab && R.$(stLab) ? R.$(stLab).textContent : "?") + "/" + (!!stCap && stCap.textContent.indexOf("تصحيحات الفقرات") >= 0));
+    // N8: رسالة حدّ الطول بمعدودها («أطول من 300 حرف»، لا «300 حرفًا») — في «الكل» بموقعٍ مختار
+    function charsN(n) { var m = n % 100; return n.toLocaleString("en") + (m >= 3 && m <= 10 ? " أحرف" : m >= 11 && m <= 99 ? " حرفًا" : " حرف"); }
+    R.$("newDomain").value = "support"; R.$("newSrc").value = "Zzq " + "long ".repeat(CMLConst.TEXT_MAX); R.$("newDst").value = "ط";
+    R.$("addTerm").click();
+    await until(function () { return R.$("termsStatus").textContent.indexOf("تعذّر الحفظ") === 0; }, 2000);
+    check("(ر8-د2) رسالة حدّ الطول بمعدودٍ صحيح: «أطول من " + charsN(CMLConst.TEXT_MAX) + " أو الترجمة أطول من " + charsN(CMLConst.TEXT_MAX * 2) + "»", "true",
+      R.$("termsStatus").textContent.indexOf("النص أطول من " + charsN(CMLConst.TEXT_MAX) + " أو الترجمة أطول من " + charsN(CMLConst.TEXT_MAX * 2) + "،") >= 0);
+
+    // ★ (ر8-د، المراجعة — قرار المنسّق) مفتاح إغلاق الترحيب الجديد (cml_welcome_v2b) — في إطارٍ خاصّ بعد فحوص الإطار R (الإطار الجديد يحلّ محلّه): من أغلقه في test-2.0.0-2 (cml_welcome_v2) يراه مرّةً
+    // أخرى بحال المواقع ويُمحى القديم، و«حسنًا» يكتب الجديد فتُخفى البطاقة؛ والجديد في «إعادة الضبط» (صنف ui) والقديم بقيّةٌ (legacy)
+    var WV = await makeFrame("options.html", { cml_welcome_v2: 1 });
+    await until(function () { return !WV.$("welcomeBox").classList.contains("hidden") && !("cml_welcome_v2" in WV.store); }, 6000);
+    var wvShown = !WV.$("welcomeBox").classList.contains("hidden") && !!WV.$("welcomeSt_legal"), wvOld = "cml_welcome_v2" in WV.store;
+    WV.$("welcomeDismiss").click();
+    await until(function () { return WV.store.cml_welcome_v2b === 1 && WV.$("welcomeBox").classList.contains("hidden"); }, 3000);
+    check("★ (ر8-د) الترحيب بمفتاحٍ جديد: يُعرض لمن أغلقه في test-2.0.0-2 ويُمحى المفتاح القديم، و«حسنًا» يكتب الجديد فيُخفيه، والجديد في «إعادة الضبط» والقديم بقيّة",
+      "true/false/1/true/ui/legacy/true",
+      wvShown + "/" + wvOld + "/" + WV.store.cml_welcome_v2b + "/" + WV.$("welcomeBox").classList.contains("hidden") + "/" +
+      CMLConst.classOf("cml_welcome_v2b") + "/" + CMLConst.classOf("cml_welcome_v2") + "/" + (CMLConst.RESET_KEYS.indexOf("cml_welcome_v2b") >= 0));
+
+    // ══ النافذة: البوابة على مفتاح التبويب، والتحديث الحيّ، وفتح الإعدادات على موقع التبويب ══
+    try { localStorage.setItem("cml_ui_domain", "all"); } catch (e) {}
+    var P = await makeFrame("popup.html", {}, { tabs: {
+      query: function (q, cb) { setTimeout(function () { cb([{ id: 5 }]); }, 0); },
+      sendMessage: function (id, msg, o, cb) { setTimeout(function () { cb(msg.type === "cml-hello" ? { domain: "docs", route: "full", bodies: null } : null); }, 0); },
+    } });
+    await until(function () { return P.$("tabLabel").textContent.indexOf("وثائق") >= 0; }, 4000);
+    await sleep(150);
+    check("النافذة: مفتاح التبويب مفعّل والرئيس مفعّل", "true/false", P.$("siteOn").checked + "/" + P.$("siteOn").disabled);
+    P.mock.chrome.storage.local.set({ cml_enabled: false });
+    await until(function () { return P.$("siteOn").disabled; }, 2000);
+    check("★ النافذة: إطفاء الرئيس (حيًّا) يعرض مفتاح التبويب مطفأً ومعطّلًا بسطرٍ مكتوب", "false/true/true/false",
+      P.$("enabled").checked + "/" + P.$("siteOn").disabled + "/" + visible(P.$("gateNote")) + "/" + P.$("siteOn").checked);
+    P.mock.chrome.storage.local.set({ cml_enabled: true });
+    await until(function () { return !P.$("siteOn").disabled; }, 2000);
+    check("والعودة تُرجع اختيار الموقع", "true/false", P.$("siteOn").checked + "/" + visible(P.$("gateNote")));
+    // (نقرةٌ حقيقية بحدثٍ — click() على الروابط معطّلٌ في القشرة لالتقاط التنزيلات)
+    P.$("openOptions").dispatchEvent(new P.w.MouseEvent("click", { bubbles: true, cancelable: true }));
+    var ui = null; try { ui = localStorage.getItem("cml_ui_domain"); } catch (e) {}
+    var gotoV = null; try { gotoV = JSON.parse(localStorage.getItem("cml_ui_goto") || "null"); } catch (e) {}
+    check("★ (ج٥) «الإعدادات» تُفتح على موقع التبويب", "docs/1/docs", ui + "/" + (P.L.openedOptions || 0) + "/" + (gotoV && gotoV.d));
+    try { localStorage.removeItem("cml_ui_goto"); } catch (e) {}
+    // ★ (ر8-د، ١ جمادى الأولى ١٤٤٨هـ — N1) لا سطر «اللغة» في النافذة (الإضافة عربيةٌ وحدها)، وتطبيعُ اللغة المخزَّنة باقٍ كما كان: رمزٌ لا يعرفه
+    // languages.json يُردّ إلى الافتراضي ويُكتب، فلا يتغيّر سلوك الترجمة
+    var PL = await makeFrame("popup.html", { cml_lang: "zz" }, { tabs: {
+      query: function (q, cb) { setTimeout(function () { cb([{ id: 15 }]); }, 0); },
+      sendMessage: function (id, msg, o, cb) { setTimeout(function () { cb(msg.type === "cml-hello" ? { domain: "docs", route: "full", bodies: null } : null); }, 0); },
+    } });
+    await until(function () { return PL.store.cml_lang === "ar"; }, 4000);
+    var plLabs = [].map.call(PL.w.document.querySelectorAll("label"), function (l) { return l.textContent.trim(); });
+    check("★ (ر8-د) النافذة: لا سطر «اللغة» (لا مُنتقي ولا شارة RTL)، وتطبيعُ اللغة المخزَّنة باقٍ: رمزٌ مجهول يُردّ إلى ar ويُكتب", "false/false/false/0/ar",
+      !!PL.$("lang") + "/" + !!PL.$("dirBadge") + "/" + (plLabs.indexOf("اللغة") >= 0) + "/" + PL.w.document.querySelectorAll("select").length + "/" + PL.store.cml_lang);
+    // ★ (١٦ ربيع الآخر ١٤٤٨هـ) ملاحظة التبويب: حارس لغة الموقع (جواب التبويب يحمل لغته) — سطرٌ بالسبب والعلاج؛
+    // وصفحةٌ خاملة بحارس المسار تُسمّى بمقطع لغتها (code.claude.com/docs/en/) لا بعنوانٍ يصف الصفحة نفسها
+    var PA = await makeFrame("popup.html", {}, { tabs: {
+      query: function (q, cb) { setTimeout(function () { cb([{ id: 6 }]); }, 0); },
+      sendMessage: function (id, msg, o, cb) { setTimeout(function () { cb(msg.type === "cml-hello" ? { domain: "app", route: "full", enabled: false, siteLang: "xx-YY", bodies: null } : null); }, 0); },
+    } });
+    await until(function () { return PA.$("tabNote").textContent.indexOf("English") >= 0; }, 4000);
+    check("★ النافذة: واجهة claude.ai بلغةٍ غير الإنجليزية ⇒ سطرٌ بالسبب والعلاج ظاهر", "true/true/true",
+      (PA.$("tabNote").textContent.indexOf("claude.ai") >= 0) + "/" + (PA.$("tabNote").textContent.indexOf("غير الإنجليزية") >= 0) + "/" + visible(PA.$("tabNote")));
+    var PC = await makeFrame("popup.html", {}, { tabs: {
+      query: function (q, cb) { setTimeout(function () { cb([{ id: 7 }]); }, 0); },
+      sendMessage: function (id, msg, o, cb) { setTimeout(function () { cb(msg.type === "cml-hello" ? { domain: "code", route: "inactive", enabled: false, bodies: null } : null); }, 0); },
+    } });
+    await until(function () { return PC.$("tabNote").textContent.indexOf("وحدها") >= 0; }, 4000);
+    check("النافذة: صفحةٌ خاملة بحارس المسار تُسمّى بمقطع لغتها", "true",
+      PC.$("tabNote").textContent.indexOf("code.claude.com/docs/en/") >= 0);
+    // (المراجعة المستقلة لـر4-أ، ٢٨ ربيع الآخر ١٤٤٨هـ) والأكاديمية بعنوانها الصريح (meta.siteLabel) لا بأول بادئة («‎/all/‎»)، وبادئاتها كثيرة
+    // فالجملة «صفحاتٍ بعينها من …»
+    var PD = await makeFrame("popup.html", {}, { tabs: {
+      query: function (q, cb) { setTimeout(function () { cb([{ id: 8 }]); }, 0); },
+      sendMessage: function (id, msg, o, cb) { setTimeout(function () { cb(msg.type === "cml-hello" ? { domain: "academy", route: "inactive", enabled: false, bodies: null } : null); }, 0); },
+    } });
+    await until(function () { return PD.$("tabNote").textContent.indexOf("وحدها") >= 0; }, 4000);
+    check("النافذة: صفحة الأكاديمية الخاملة تُسمّى بعنوانها الصريح (meta.siteLabel) لا بأول بادئة", "true/false/true",
+      (PD.$("tabNote").textContent.indexOf("academy.claude.com") >= 0) + "/" + (PD.$("tabNote").textContent.indexOf("/all") >= 0) + "/" +
+      (PD.$("tabNote").textContent.indexOf("صفحاتٍ بعينها") >= 0));
+    // ★ (ر5، ٢٩ ربيع الآخر ١٤٤٨هـ — مراجعة ر4-أ L6) علاج «الواجهة بلغةٍ أخرى» بحسب الموقع (meta.siteLangHow): الأكاديمية تُختار لغتها من منتقي التذييل
+    // لا من إعدادات الحساب؛ وclaude.ai بلا علاجٍ في الجدول على الجملة العامة كما كانت، والوثائق القانونية (منتقي الوثيقة، siteLangBy "sel") كما كانت
+    var HOW = (CMLConst.domain("academy").meta || {}).siteLangHow || "";
+    var PE = await makeFrame("popup.html", {}, { tabs: {
+      query: function (q, cb) { setTimeout(function () { cb([{ id: 9 }]); }, 0); },
+      sendMessage: function (id, msg, o, cb) { setTimeout(function () { cb(msg.type === "cml-hello" ? { domain: "academy", route: "full", enabled: false, siteLang: "xx-YY", siteLangBy: "html", bodies: null } : null); }, 0); },
+    } });
+    await until(function () { return PE.$("tabNote").textContent.indexOf("English") >= 0; }, 4000);
+    check("★ النافذة: الأكاديمية بلغةٍ غير الإنجليزية ⇒ العلاج منتقي اللغة في التذييل (meta.siteLangHow) لا إعدادات الحساب", "true/true/true/false/true",
+      (HOW.indexOf("تذييل") >= 0) + "/" + (PE.$("tabNote").textContent.indexOf(HOW + " لتعمل الإضافة.") >= 0) + "/" +
+      (PE.$("tabNote").textContent.indexOf("academy.claude.com") >= 0) + "/" + (PE.$("tabNote").textContent.indexOf("من إعداداتها") >= 0) + "/" + visible(PE.$("tabNote")));
+    check("النافذة: claude.ai بلا علاجٍ في الجدول ⇒ الجملة العامة كما كانت («من إعداداتها»)", "false/true",
+      !!(CMLConst.domain("app").meta || {}).siteLangHow + "/" + (PA.$("tabNote").textContent.indexOf("اجعلها English من إعداداتها لتعمل الإضافة.") >= 0));
+    var PF = await makeFrame("popup.html", {}, { tabs: {
+      query: function (q, cb) { setTimeout(function () { cb([{ id: 10 }]); }, 0); },
+      sendMessage: function (id, msg, o, cb) { setTimeout(function () { cb(msg.type === "cml-hello" ? { domain: "legal", route: "full", enabled: false, siteLang: "Zq Other", siteLangBy: "sel", bodies: null } : null); }, 0); },
+    } });
+    await until(function () { return PF.$("tabNote").textContent.indexOf("English") >= 0; }, 4000);
+    check("النافذة: الوثائق القانونية (منتقي الوثيقة) على علاجها كما كان، لا علاج الأكاديمية", "true/false",
+      (PF.$("tabNote").textContent.indexOf("من منتقي اللغة في الصفحة") >= 0) + "/" + (PF.$("tabNote").textContent.indexOf("تذييل") >= 0));
+    // ★ (ر6-د، القرار 84) صفحةٌ حجب حارسُ المتن متنها: سطرٌ في ملاحظة التبويب بسببها من جواب التبويب (bodies.guard.why)، وصندوق تصحيح الفقرة
+    // يقول السبب نفسه؛ ولا سطر لصفحةٍ لم تُحجب ولا والإضافة خاملة فيها؛ والنافذة دون سقف كروم بالسطر وسطر الخط وصندوق التصحيح معًا
+    var HELD_DRIFT = "تغيّر متن هذه الصفحة في الموقع بعد ترجمتها، فيبقى إنجليزيًّا كلُّه حتى تُحدَّث ترجمته.";
+    var HELD_NONE = "لم يُعرَّب متن هذه الصفحة في هذا الإصدار، فيبقى إنجليزيًّا كلُّه.";
+    async function popHeld(dom, guard, enabled) {
+      var Q = await makeFrame("popup.html", {}, { tabs: {
+        query: function (q, cb) { setTimeout(function () { cb([{ id: 12 }]); }, 0); },
+        sendMessage: function (id, msg, o, cb) { setTimeout(function () {
+          cb(msg.type === "cml-hello" ? { domain: dom, route: "full", enabled: enabled !== false, font: { reach: "ok" },
+              bodies: { page: "/zq", have: 0, pending: false, bad: 0, guard: guard } }
+            : msg.type === "cml-block-at" ? (guard && guard.held ? { error: "held", why: guard.why } : { error: "nosel" }) : null); }, 0); },
+      } });
+      await until(function () { return Q.$("tabLabel").textContent.indexOf("هذا التبويب:") === 0; }, 4000);
+      await sleep(150);
+      Q.$("blkGet").click();
+      await until(function () { return Q.$("blkStatus").textContent.length > 0; }, 3000);
+      return { note: Q.$("tabNote").textContent, v: visible(Q.$("tabNote")), foot: visible(Q.$("footHint")), font: visible(Q.$("fontNote")),
+               box: visible(Q.$("blkBox")), blk: Q.$("blkStatus").textContent, h: Math.ceil(Q.w.document.documentElement.getBoundingClientRect().height) };
+    }
+    var hN = await popHeld("code", { judged: true, held: true, why: "none", blocks: 120, uncovered: 110 });
+    var hD = await popHeld("support", { judged: true, held: true, why: "drift", blocks: 40, uncovered: 9 });
+    check("★ (ر6-د) النافذة: صفحةٌ بلا قطعة محجوبة ⇒ سطر «لم يُعرَّب متن هذه الصفحة في هذا الإصدار» ظاهرٌ مكان التلميح السفلي، وصندوق التصحيح يقوله",
+      HELD_NONE + "/true/false/true/" + HELD_NONE, [hN.note, hN.v, hN.foot, hN.box, hN.blk].join("/"));
+    check("★ (ر6-د) النافذة: صفحةٌ تغيّر متنها بعد ترجمتها محجوبة ⇒ سطر «تغيّر متن هذه الصفحة…» ظاهر، وصندوق التصحيح يقوله",
+      HELD_DRIFT + "/true/false/true/" + HELD_DRIFT, [hD.note, hD.v, hD.foot, hD.box, hD.blk].join("/"));
+    var hT = await popHeld("docs", { judged: true, held: false, why: "drift", blocks: 250, uncovered: 9 });
+    var hI = await popHeld("code", { judged: true, held: true, why: "none", blocks: 120, uncovered: 110 }, false);
+    check("(ر6-د) النافذة: لا سطر حجبٍ لصفحةٍ لم تُحجب، ولا والإضافة خاملة في الموقع", "false/true/false/true",
+      [hT.v, hT.note === "", hI.v, hI.note === ""].join("/"));
+    check("(ر6-د) النافذة: سطر الحجب مع سطر الخط وصندوق التصحيح لا يتجاوز بها سقف كروم (600 بكسل)", "true/true",
+      hN.font + "/" + (Math.max(hN.h, hD.h) <= 600 || "h=" + hN.h + "/" + hD.h));
+    // ★ (ر7-ب، ٣٠ ربيع الآخر ١٤٤٨هـ — الفحص الحيّ ر7، L7) إطفاء «هذا التبويب» من النافذة نفسها في صفحةٍ محجوبة: كان سطر الحجب يبقى حتى تُفتح
+    // النافذة من جديد. فسطرا حال المحرّك (الحجب والخط) يسقطان فورًا — في حدث النقر نفسه قبل ارتداد التخزين — ويظهر التلميح السفلي مكانهما،
+    // وإعادة التشغيل تعيدهما (الصفحة هي هي)
+    var QT = await makeFrame("popup.html", {}, { tabs: {
+      query: function (q, cb) { setTimeout(function () { cb([{ id: 14 }]); }, 0); },
+      sendMessage: function (id, msg, o, cb) { setTimeout(function () {
+        cb(msg.type === "cml-hello" ? { domain: "docs", route: "full", enabled: true, font: { reach: "ok" },
+            bodies: { page: "/zq", have: 0, pending: false, bad: 0, guard: { judged: true, held: true, why: "drift", blocks: 40, uncovered: 9 } } } : null); }, 0); },
+    } });
+    await until(function () { return visible(QT.$("tabNote")) && !QT.$("siteOn").disabled; }, 4000);
+    var l7a = [visible(QT.$("tabNote")), visible(QT.$("fontNote")), visible(QT.$("footHint"))].join("/");
+    QT.$("siteOn").click();
+    var l7b = [QT.$("siteOn").checked, visible(QT.$("tabNote")), visible(QT.$("fontNote")), visible(QT.$("footHint"))].join("/");
+    await sleep(150);
+    var l7s = [QT.store["cml_site.docs"], visible(QT.$("tabNote"))].join("/");
+    QT.$("siteOn").click();
+    await sleep(150);
+    var l7c = [QT.$("siteOn").checked, visible(QT.$("tabNote")), QT.$("tabNote").textContent === HELD_DRIFT, visible(QT.$("fontNote")), visible(QT.$("footHint"))].join("/");
+    check("★ (ر7-ب) النافذة: إطفاء «هذا التبويب» في صفحةٍ محجوبة يُسقط سطر الحجب وسطر الخط فورًا ويظهر التلميح السفلي، وبعد ارتداد التخزين كذلك، وإعادة تشغيله تعيدهما",
+      "true/true/false|false/false/false/true|false/false|true/true/true/true/false", l7a + "|" + l7b + "|" + l7s + "|" + l7c);
+    // ★ (ر6-د) «التعليمات البرمجية» لا «الشيفرة» في النص الظاهر (دليل الأسلوب §13): نصُّ الإعدادات كلُّه بعد ملئه (ومنه شرح محرّك الاتجاه
+    // وأنواع الفحص المولَّدان)، ونصُّ النافذة، ورسالةُ تحديدٍ يقع في تعليماتٍ برمجية في صندوق تصحيح الفقرة
+    var QC = await makeFrame("popup.html", {}, { tabs: {
+      query: function (q, cb) { setTimeout(function () { cb([{ id: 13 }]); }, 0); },
+      sendMessage: function (id, msg, o, cb) { setTimeout(function () {
+        cb(msg.type === "cml-hello" ? { domain: "docs", route: "full", enabled: true, bodies: { page: "/zq", have: 1, pending: false, bad: 0, guard: null } }
+          : msg.type === "cml-block-at" ? { error: "code" } : null); }, 0); },
+    } });
+    await until(function () { return QC.$("tabLabel").textContent.indexOf("هذا التبويب:") === 0; }, 4000);
+    QC.$("blkGet").click();
+    await until(function () { return QC.$("blkStatus").textContent.length > 0; }, 3000);
+    var shif = function (env) { return ((env.w.document.body.textContent || "").match(/شيفر/g) || []).length; };
+    check("★ (ر6-د) لا «الشيفرة» في نصّ الإعدادات والنافذة (ومنه المولَّد)، ورسالة التحديد في التعليمات البرمجية بلفظها",
+      "0/0/هذه تعليماتٌ برمجية، وتبقى كما هي./true", shif(E) + "/" + shif(QC) + "/" + QC.$("blkStatus").textContent + "/" +
+      (E.$("rtlEngineV2Why").textContent.indexOf("وتبقى التعليمات البرمجية والمعادلات") >= 0));
+
+    // ══ الخط العربي (DESIGN-fonts §٣.٢–٣.٥، §٥.٤): البطاقة الحقيقية مع عامل الخدمة الحقيقي ══
+    var FONTS = CMLConst.FONTS, DEF = CMLConst.fontResolve(undefined);
+    // (ر7-ب، L6) سطر المعاينة: العددُ ومعدودُه بمسافةٍ لا تنكسر — على عرض الهاتف كان «3» آخر سطرٍ و«ملفات» أول التالي
+    var SMP = CMLConst.FONT_SAMPLE.b + CMLConst.FONT_SAMPLE.t;
+    check("(ر7-ب) سطر معاينة الخط: كل عددٍ ومعدوده بمسافةٍ لا تنكسر (U+00A0)، ولا مسافةَ عادية بعد رقم", "true/0",
+      (SMP.indexOf("3" + String.fromCharCode(0xA0) + "ملفات") >= 0) + "/" + (SMP.match(/[0-9] /g) || []).length);
+    function b64ok(d, e) { return !!(d && e && d.id === e.id && d.v === e.sha && typeof d.b64 === "string" && d.b64.length === Math.ceil(e.bytes / 3) * 4); }
+    function head4(d) { try { var u = new Uint8Array(FT.w.CMLShared.b64ToBuf(d.b64)); return String.fromCharCode(u[0], u[1], u[2], u[3]) + "/" + u.length; } catch (e) { return "x"; } }
+    try { localStorage.setItem("cml_ui_domain", "all"); } catch (e) {}
+    var FT = await makeFrame("options.html", {}, { tabs: {
+      query: function (q, cb) { setTimeout(function () { cb([{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }]); }, 0); },
+      sendMessage: function (id, msg, o, cb) {
+        var R = { 1: { domain: "app", font: { reach: "ok" } }, 2: { domain: "docs", font: { reach: "none" } },
+                  3: { domain: "support", font: { reach: "off" } }, 4: { domain: "code", font: { reach: "err" } }, 5: undefined };
+        setTimeout(function () { cb(msg.type === "cml-hello" && R[id] ? Object.assign({ route: "full", bodies: null }, R[id]) : undefined); }, 0);
+      },
+    } });
+    var radios = [].slice.call(FT.w.document.querySelectorAll('#fontList input[name="font"]'));
+    // ★ (ر5ب، القرار 71) و«خط النظام» قبل «خط الموقع كما هو»
+    check("★ الخط: أزرار اختيارٍ بعدد خطوط الفهرس ومعها «خط النظام» ثم «خط الموقع كما هو»، بترتيب الفهرس", FONTS.map(function (e) { return e.id; }).concat(["system", "site"]).join(","),
+      radios.map(function (r) { return r.value; }).join(","));
+    check("★ الخط: مع غياب المفتاح يكون الافتراضي هو المختار، ووسمه «تلقائي · الأكثر طلبًا»", DEF.id + "/true",
+      (radios.filter(function (r) { return r.checked; })[0] || {}).value + "/" +
+      (FT.$("font_" + DEF.id).closest("label").querySelector(".tag").textContent === "تلقائي · الأكثر طلبًا"));
+    check("الخط: الإتاحة — aria-describedby لكل خيار يشير إلى شرحه، والمعاينات aria-hidden وlang=ar", "true/true",
+      radios.every(function (r) { var w = FT.$(r.getAttribute("aria-describedby")); return !!w && w.textContent.length > 20; }) + "/" +
+      [].slice.call(FT.w.document.querySelectorAll("#fontList .fontsample")).every(function (s) { return s.getAttribute("aria-hidden") === "true" && s.lang === "ar"; }));
+    // (المراجعة العدائية S6-B) سطر المعاينة سطرٌ واحد: عريضه سطريٌّ لا كتلة (قاعدة «.engopt b»)، والاسم والوسم كلمتان لقارئ الشاشة
+    var defLab = FT.$("font_" + DEF.id).closest("label");
+    check("الخط: عريض المعاينة سطريٌّ (المعاينة سطرٌ واحد)، وبين الاسم والوسم مسافة", "inline/true",
+      FT.w.getComputedStyle(defLab.querySelector(".fontsample b")).display + "/" + / تلقائي/.test(defLab.querySelector("b").textContent));
+    // أول فتحٍ بلا نسخة: تُطلب بصمت فيكتبها العامل الحقيقي
+    await until(function () { return b64ok(FT.store.cml_font_data, DEF); }, 6000);
+    check("الخط: أول فتحٍ للصفحة بلا نسخةٍ يطلبها من العامل بصمت", "true", b64ok(FT.store.cml_font_data, DEF));
+    // المعاينات: وجوهٌ من الملفات المحزومة، والعريض غير العادي (مدى المحور وزنًا — ن١٤)
+    await Promise.all(FONTS.map(function (e) { return FT.w.document.fonts.load("16px cml-prev-" + e.id, "ب"); }));
+    function prevW(id, w) {
+      var s = FT.w.document.createElement("span"); s.style.cssText = "font:" + w + " 16px 'cml-prev-" + id + "';white-space:nowrap"; s.textContent = CMLConst.FONT_SAMPLE.b;
+      FT.w.document.body.appendChild(s); var r = s.getBoundingClientRect().width; s.remove(); return r;
+    }
+    check("★ الخط: كل معاينةٍ محمَّلة (document.fonts.check)، وعرض «محادثة جديدة» العريض غير عرضها العادي", FONTS.map(function () { return "true/true"; }).join(","),
+      FONTS.map(function (e) { return FT.w.document.fonts.check("16px cml-prev-" + e.id, "ب") + "/" + (Math.abs(prevW(e.id, 700) - prevW(e.id, 400)) > 0.5); }).join(","));
+    // الكتابة والحال: غير الافتراضي يكتب المفتاح، والعامل الحقيقي يكتب نسخته، والحال بالتتابع
+    var NSK = CMLConst.fontResolve("noto-naskh-arabic");
+    FT.$("font_noto-naskh-arabic").click();
+    var st0 = FT.$("fontStatus").textContent;
+    await until(function () { return b64ok(FT.store.cml_font_data, NSK); }, 6000);
+    await until(function () { return FT.$("fontStatus").textContent.indexOf("جُهِّز") === 0; }, 2000);
+    check("★ الخط: اختيار خطٍّ غير الافتراضي يكتب المفتاح، و«جارٍ تجهيز الخط…» ثم «جُهِّز خط …»", "noto-naskh-arabic/جارٍ تجهيز الخط…/true",
+      FT.store.cml_font + "/" + st0 + "/" + (FT.$("fontStatus").textContent === "جُهِّز خط «Noto Naskh Arabic»، ويُطبَّق على تبويبات المواقع المفتوحة دون إعادة تحميل."));
+    check("★ الخط: بعد الاختيار يكتب العامل الحقيقي cml_font_data بالمعرّف والبصمة، والبايتات wOF2 بطول الفهرس", "noto-naskh-arabic/" + NSK.sha + "/wOF2/" + NSK.bytes,
+      FT.store.cml_font_data.id + "/" + FT.store.cml_font_data.v + "/" + head4(FT.store.cml_font_data));
+    FT.$("font_" + DEF.id).click();
+    await until(function () { return b64ok(FT.store.cml_font_data, DEF); }, 6000);
+    check("★ الخط: اختيار الافتراضي يحذف المفتاح (والعامل يعيد نسخته)", "false/" + DEF.id, ("cml_font" in FT.store) + "/" + FT.store.cml_font_data.id);
+    FT.$("font_site").click();
+    await until(function () { return !("cml_font_data" in FT.store); }, 4000);
+    check("★ الخط: «خط الموقع كما هو» يكتب \"site\"، ويحذف العامل النسخة، والحال «حُفظ: …»", "site/false/حُفظ: عادت الحروف العربية إلى خطوط الموقع.",
+      FT.store.cml_font + "/" + ("cml_font_data" in FT.store) + "/" + FT.$("fontStatus").textContent);
+    // ★ (ر5ب، القرار 71) «خط النظام»: يكتب "system" (بلا ملف فلا «جارٍ تجهيز»)، والعامل لا يكتب نسخة، ومعاينته بأوجهه المحلية وعريضُها عريض
+    FT.$("font_" + DEF.id).click();
+    await until(function () { return b64ok(FT.store.cml_font_data, DEF); }, 6000);
+    FT.$("font_system").click();
+    await until(function () { return !("cml_font_data" in FT.store) && FT.$("fontStatus").textContent.indexOf("حُفظ") === 0; }, 4000);
+    check("★ الخط: «خط النظام» يكتب \"system\"، ويحذف العامل النسخة، والحال «حُفظ: …» بلا «جارٍ تجهيز»", "system/false/حُفظ: تُرسم الحروف العربية الآن بخط جهازك./true",
+      FT.store.cml_font + "/" + ("cml_font_data" in FT.store) + "/" + FT.$("fontStatus").textContent + "/" + FT.$("font_system").checked);
+    await FT.w.document.fonts.load("700 16px cml-prev-system", "ب");
+    await FT.w.document.fonts.load("400 16px cml-prev-system", "ب");
+    var sysLab = FT.$("font_system").closest("label"), sysSmp = sysLab.querySelector(".fontsample");
+    var nSysPrev = 0; FT.w.document.fonts.forEach(function (f) { if (f.family.replace(/["']/g, "") === "cml-prev-system") nSysPrev++; });
+    check("★ الخط: معاينة «خط النظام» بأوجهه المحلية لكل نطاق وزن (C.FONT_SYS)، وعرض «محادثة جديدة» العريض غير عرضها العادي", CMLConst.FONT_SYS.bands.length + "/true/true",
+      nSysPrev + "/" + (sysSmp.style.fontFamily.indexOf("cml-prev-system") >= 0) + "/" + (Math.abs(prevW("system", 700) - prevW("system", 400)) > 0.5));
+    check("الخط: شرح «خط النظام» وتسميته (DESIGN-fonts §٣.٢)", "خط النظام/خطُّ جهازك العربي نفسه في كل المواقع، كما كانت الإضافة ترسمه قبل هذا الإصدار، ولا يُضاف ملفٌّ ولا يُجلب شيء.",
+      sysLab.querySelector("b").textContent + "/" + FT.$("font_systemWhy").textContent);
+    FT.$("font_site").click();
+    await until(function () { return FT.store.cml_font === "site"; }, 2000);
+    // الأخطاء: سجلُّ err وسجلُّ quota بنصّيهما وزرّ «إعادة المحاولة»، والإعادة تُصلح عبر العامل
+    FT.$("font_" + DEF.id).click();
+    await until(function () { return b64ok(FT.store.cml_font_data, DEF); }, 6000);
+    await sleep(100);
+    FT.mock.chrome.storage.local.set({ cml_font_data: { id: DEF.id, v: DEF.sha, err: "file" } });
+    await until(function () { return FT.$("fontStatus").textContent.indexOf("تعذّر تجهيز") === 0; }, 2000);
+    var errT = FT.$("fontStatus").textContent + "/" + visible(FT.$("fontRetryRow")) + "/" + FT.$("fontStatus").classList.contains("err");
+    FT.mock.chrome.storage.local.set({ cml_font_data: { id: DEF.id, v: DEF.sha, err: "quota" } });
+    await until(function () { return FT.$("fontStatus").textContent.indexOf("تعذّر حفظ") === 0; }, 2000);
+    check("★ الخط: سجلُّ err ثم quota بنصّيهما الدائمين وزرّ «إعادة المحاولة»",
+      "تعذّر تجهيز ملف الخط من داخل الإضافة، ولم يتغيّر شيء. أعد المحاولة، أو أعد تحميل الإضافة من صفحة الإضافات./true/true|" +
+      "تعذّر حفظ نسخة الخط لأن تخزين الإضافة ممتلئ، ولم يُمسّ شيءٌ من تصحيحاتك. يمكنك تصدير التصحيحات وحذف ما لا تحتاجه، ثم «إعادة المحاولة»./true",
+      errT + "|" + FT.$("fontStatus").textContent + "/" + visible(FT.$("fontRetryRow")));
+    FT.$("fontRetry").click();
+    await until(function () { return b64ok(FT.store.cml_font_data, DEF) && FT.$("fontStatus").textContent.indexOf("جُهِّز") === 0; }, 6000);
+    check("الخط: «إعادة المحاولة» ترسل font-ensure فيعيد العامل النسخة، ويختفي الزرّ", "true/false/true",
+      b64ok(FT.store.cml_font_data, DEF) + "/" + visible(FT.$("fontRetryRow")) + "/" + (FT.$("fontStatus").textContent.indexOf("جُهِّز خط «" + DEF.family + "»") === 0));
+    // مضت خمس ثوانٍ بلا نسخة (الملف لا يصل): «لم يُجهَّز الخط بعد…»
+    var wf = FT.w.fetch;
+    FT.w.fetch = function (u, o) { return String(u).indexOf("/fonts/") >= 0 ? new Promise(function () {}) : wf(u, o); };
+    FT.$("font_markazi-text").click();
+    await sleep(5400);
+    check("الخط: مضت خمس ثوانٍ بلا جاهزية ⇒ «لم يُجهَّز الخط بعد؛ سيُطبَّق حين يجهز.»", "لم يُجهَّز الخط بعد؛ سيُطبَّق حين يجهز.", FT.$("fontStatus").textContent);
+    FT.w.fetch = wf;
+    // قيمةٌ محفوظة لم تعد في الفهرس، والسبب مع إطفاء الرئيس
+    FT.mock.chrome.storage.local.set({ cml_font: "zz-dropped-font" });
+    await until(function () { return FT.$("fontStatus").textContent.indexOf("الخط الذي اخترته") === 0; }, 2000);
+    check("الخط: قيمةٌ محفوظة لم تعد في الفهرس ⇒ الافتراضي مختار، ورسالتها", DEF.id + "/الخط الذي اخترته لم يعد متاحًا، فاستُعمل الافتراضي.",
+      (radios.filter(function (r) { return r.checked; })[0] || {}).value + "/" + FT.$("fontStatus").textContent);
+    // ★ (ر5ب) والقيمة "system" المكتوبة من غير البطاقة (تبويبٌ آخر أو المزامنة) تُعرض «خط النظام» كما يُرسم، بلا رسالة الإسقاط
+    FT.mock.chrome.storage.local.set({ cml_font: CMLConst.FONT_SYSTEM });
+    await until(function () { return FT.$("font_system").checked; }, 2000);
+    check("الخط: القيمة \"system\" ⇒ «خط النظام» مختار كما يُرسم، بلا رسالة «لم يعد متاحًا»", "system/false",
+      (radios.filter(function (r) { return r.checked; })[0] || {}).value + "/" + (FT.$("fontStatus").textContent.indexOf("لم يعد متاحًا") >= 0));
+    FT.mock.chrome.storage.local.set({ cml_enabled: false });
+    await until(function () { return visible(FT.$("fontOffWhy")); }, 2000);
+    check("★ الخط: #fontOffWhy ظاهرٌ مع إطفاء الرئيس، والبطاقة لا تُعطَّل", "true/false/false",
+      visible(FT.$("fontOffWhy")) + "/" + FT.$("fontFs").disabled + "/" + radios.some(function (r) { return r.disabled; }));
+    // (المراجعة العدائية S6-B) والوصف لقارئ الشاشة يتبع الظهور: aria-describedby يقرأ المخفيَّ أيضًا
+    var descOff = FT.$("fontFs").getAttribute("aria-describedby");
+    FT.mock.chrome.storage.local.set({ cml_enabled: true });
+    await until(function () { return !visible(FT.$("fontOffWhy")); }, 2000);
+    check("الخط: وصف الحقل «التعريب متوقف» لقارئ الشاشة مع الإطفاء وحده", "fontOffWhy/null", descOff + "/" + FT.$("fontFs").getAttribute("aria-describedby"));
+    FT.mock.chrome.storage.local.set({ cml_enabled: false });
+    await until(function () { return visible(FT.$("fontOffWhy")); }, 2000);
+    FT.mock.chrome.storage.local.set({ cml_enabled: true });
+    // سطور الحال لكل موقعٍ مفتوح من ردود cml-hello (الحالات الأربع، وتبويبٌ لا يجيب لا يُعرض)
+    await until(function () { return FT.$("fontReach").children.length === 4; }, 4000);
+    var lines = [].slice.call(FT.$("fontReach").children).map(function (li) { return li.textContent; });
+    check("★ الخط: سطور #fontReach من cml-hello بالحالات الأربع", "true/true/true/true/4",
+      (lines.indexOf("«تطبيق Claude»: الخط مطبَّق.") >= 0) + "/" +
+      lines.some(function (l) { return l.indexOf("«وثائق المطوّرين»: لم يجد الخطُّ خطوطَ الموقع المعروفة") === 0; }) + "/" +
+      lines.some(function (l) { return l.indexOf("«مركز المساعدة»: الخط لا يعمل هنا الآن") === 0; }) + "/" +
+      (lines.indexOf("«وثائق Claude Code»: تعذّر تحميل الخط في هذه الصفحة؛ أعد تحميلها.") >= 0) + "/" + lines.length);
+    // «حول»: الأسماء من الفهرس، وروابط التراخيص وCREDITS ملفاتٌ موجودة
+    var credA = [].slice.call(FT.w.document.querySelectorAll("#fontCreditNames a"));
+    var exist = await Promise.all(credA.map(function (a) { return a.getAttribute("href"); }).concat([FT.$("fontCreditsLink").getAttribute("href")]).map(function (h) {
+      return fetch(EXT + h).then(function (r) { return r.ok; }, function () { return false; });
+    }));
+    check("★ «حول» تعدّد خطوط الفهرس، وروابط التراخيص وCREDITS تُحلّ إلى ملفاتٍ موجودة", FONTS.map(function (e) { return e.family; }).join("|") + "/true",
+      credA.map(function (a) { return a.textContent; }).join("|") + "/" + exist.every(Boolean));
+    var aboutT = FT.$("aboutSection").textContent;
+    // ★ (ر8-ب) التسمية بما يُمتحن فعلًا (مراجعة ر8-أ، F1؛ كانت «ولا تُقرأ»): نصّ المحادثات «لا تلمسه الترجمة» ويُرسم بالخط المختار —
+    // ومفتاح «ضبط اتجاه نص المحادثة» يقرؤه قراءةً عابرة (القرار 16)، فلا تقول «حول» ولا بطاقة «الخط العربي» إن الإضافة لا تقرؤه
+    var fontCardT = FT.$("fontSection").textContent;
+    check("«حول»: نصّ المحادثات لا تلمسه الترجمة ويُرسم بالخط المختار، والإذن يحفظ نسخة الخط، ولا ادّعاء «لا تقرؤه» فيها ولا في بطاقة الخط", "true/true/true/false",
+      (aboutT.indexOf("وإنما يرسم متصفحك حروفه العربية بالخط الذي تختاره في «الخط العربي»") >= 0) + "/" +
+      (aboutT.indexOf("ونسخةٍ من ملف الخط الذي تختاره ليُرسم مع الصفحة من أول لحظة") >= 0) + "/" +
+      (aboutT.indexOf("لا تلمسه الترجمة") >= 0) + "/" + /لا تقرؤه|ولا تقرأ الإضافة/.test(aboutT + " " + fontCardT));
+    // ★ (ر8-ب) سطر الرخصة يحدّ MIT بما أنشأه المشروع (مراجعة ر8-أ، F12): التعليمات البرمجية والترجمة العربية، والخطوط برخصة SIL،
+    // ونصوص المواقع الإنجليزية التي تطابقها الإضافة لـ Anthropic — لا «والإضافة نفسها مفتوحة المصدر برخصة MIT» كلّها
+    var licT = FT.$("licenseLine").textContent;
+    check("«حول»: سطر الرخصة — MIT للتعليمات البرمجية والترجمة العربية، والخطوط برخصة SIL، ونصوص المواقع الإنجليزية لـ Anthropic", "true/true/true/false",
+      (licT.indexOf("تعليماتها البرمجية وترجمتها العربية برخصة MIT") >= 0) + "/" + (licT.indexOf("برخصة SIL للخطوط المفتوحة") >= 0) + "/" +
+      (licT.indexOf("نصوص المواقع الإنجليزية التي تطابقها الإضافة فحقوقها لشركة Anthropic") >= 0) + "/" +
+      (licT.indexOf("والإضافة نفسها مفتوحة المصدر برخصة MIT") >= 0));
+    // ★ (ر8-أ) أصحاب حقوق الخطوط في «حول» مكتوبون في الصفحة نفسها: هم خطوط الفهرس كلها بمعرّفاتها، وكل سطر حقوقٍ في سطر خطّه من CREDITS.txt حرفًا
+    var credTxt = await fetch(EXT + "fonts/CREDITS.txt").then(function (r) { return r.ok ? r.text() : ""; }, function () { return ""; });
+    var holders = [].slice.call(FT.w.document.querySelectorAll("#fontHolders [data-font]"));
+    check("«حول»: أصحاب حقوق الخطوط هم خطوط الفهرس، وكلٌّ في سطر خطّه من CREDITS.txt", FONTS.map(function (e) { return e.id; }).join("|") + "/true",
+      holders.map(function (h) { return h.getAttribute("data-font"); }).join("|") + "/" + (holders.length > 0 && holders.every(function (h) {
+        var cr = (h.querySelector(".cr") || {}).textContent || "", fam = (h.querySelector(".fam") || {}).textContent || "";
+        var line = credTxt.split("\n").filter(function (l) { return l.indexOf(h.getAttribute("data-font") + ".woff2 ") === 0; })[0] || "";
+        return !!cr && !!fam && line.indexOf(cr) >= 0 && line.indexOf(fam) >= 0;
+      })));
+    // ★ (ر8-أ) قائمة المعاجم والمصادر: كل عددٍ بين قوسين عددُ بنود قائمته، والعنوان مجموعهما، والقائمة مطويّة افتراضيًّا
+    var lexN = [].slice.call(FT.w.document.querySelectorAll("#lexSources .n")).map(function (s) { return s.textContent; });
+    var nSa = FT.w.document.querySelectorAll("#lexSaudi > li").length, nOt = FT.w.document.querySelectorAll("#lexOther > li").length;
+    check("«حول»: أعداد المعاجم والمصادر تطابق بنود قوائمها، والقائمة مطويّة", (nSa + nOt) + "/" + nSa + "/" + nOt + "/false",
+      lexN.join("/") + "/" + FT.$("lexSources").open);
+    check("الترحيب: سطر الخط باسم الافتراضي من الفهرس وزرّ «اختيار الخط»", "true/true",
+      (FT.$("welcomeFont").textContent.indexOf("بخط " + DEF.family + "،") >= 0) + "/" + visible(FT.$("welcomeFontBtn")));
+    // النصوص التي تسمّي الافتراضي تتبع C.FONT_DEFAULT إن غُيِّر (قاعدة ق١)
+    var OPTS_SAVED = OPTS_HTML;
+    OPTS_HTML = OPTS_HTML.replace('<script src="cml-const.js"><\/script>', '<script src="cml-const.js"><\/script><script>CMLConst.FONT_DEFAULT = "markazi-text";<\/script>');
+    var FD = await makeFrame("options.html", {});
+    OPTS_HTML = OPTS_SAVED;
+    check("الخط: الوسم والترحيب والجملة الأولى تتبع C.FONT_DEFAULT إذا غُيِّر", "markazi-text/true/true/Markazi Text",
+      (FD.w.document.querySelector('#fontList input[name="font"]:checked') || {}).value + "/" +
+      (FD.$("font_markazi-text").closest("label").querySelector(".tag") !== null && !FD.$("font_cairo").closest("label").querySelector(".tag")) + "/" +
+      (FD.$("welcomeFont").textContent.indexOf("بخط Markazi Text،") >= 0 && FD.$("font_markazi-textWhy").textContent.indexOf("أكثر الخطوط العربية طلبًا") === 0) + "/" +
+      FD.$("fontDefaultName").textContent);
+    // النافذة: سطر حال الخط من ردّ cml-hello، ولا يظهر مع «خط الموقع» ولا مع الخمول، وارتفاعها دون 600
+    async function popFont(font, enabled) {
+      var Q = await makeFrame("popup.html", {}, { tabs: {
+        query: function (q, cb) { setTimeout(function () { cb([{ id: 8 }]); }, 0); },
+        sendMessage: function (id, msg, o, cb) { setTimeout(function () { cb(msg.type === "cml-hello" ? { domain: "app", route: "full", enabled: enabled !== false, font: font, bodies: null } : null); }, 0); },
+      } });
+      await until(function () { return Q.$("tabLabel").textContent.indexOf("تطبيق") >= 0; }, 4000);
+      await sleep(120);
+      return { t: Q.$("fontNote").textContent, v: visible(Q.$("fontNote")), h: Math.ceil(Q.w.document.documentElement.getBoundingClientRect().height) };
+    }
+    var pOk = await popFont({ reach: "ok" }), pNone = await popFont({ reach: "none" }), pErr = await popFont({ reach: "err" });
+    var pOff = await popFont({ reach: "off" }), pIdle = await popFont({ reach: "ok" }, false);
+    check("★ النافذة: سطر الخط «مطبَّق» و«لم يجد خطوط هذا الموقع» و«تعذّر تحميله»، ولا سطر مع off ولا مع الخمول",
+      "الخط: مطبَّق/الخط: لم يجد خطوط هذا الموقع/الخط: تعذّر تحميله؛ أعد تحميل الصفحة/false/false",
+      pOk.t + "/" + pNone.t + "/" + pErr.t + "/" + pOff.v + "/" + pIdle.v);
+    check("النافذة: سطر الخط لا يتجاوز بها سقف كروم (600 بكسل) — تبويب التطبيق والخط مطبَّق", "true", pOk.h <= 600 || "h=" + pOk.h + " off=" + pOff.h);
+    // ★ (ر8-ب) اسم الإضافة في «حول»: short_name من المانيفست، واحتياطُه حين يغيب short_name وname معًا هو short_name الحقيقي في
+    // manifest.json لا اسم 1.0.0 (مراجعة ر8-أ، F17) — بإطارٍ يُرجع مانيفستًا بلا اسم
+    var MF = await fetch(EXT + "manifest.json").then(function (r) { return r.json(); }, function () { return {}; });
+    var NM = await makeFrame("options.html", {}, { manifest: { version: "2.0.0" } });
+    check("★ «حول»: الاسم المختصر من المانيفست، واحتياطه (مانيفستٌ بلا اسم) اسمُ 2.0.0 المختصر في manifest.json",
+      MF.short_name + "/" + MF.short_name + "/v2.0.0", aboutNameE + "/" + NM.$("aboutName").textContent + "/" + NM.$("aboutVersion").textContent);
+    // ★ (ر9-أ) version_name (يُعرض تحت اسم الإضافة في chrome://extensions وفي «حول»): «<الإصدار> — قاموس <العدد> <المعدود>» بعددٍ مجمَّع
+    // المراتب ومعدودٍ بصيغته بعد العدد (قاعدة arCount، والعدد مضافٌ إليه)، والعدد مفاتيح النصوص في قواميس المواقع المبنيّة كلها
+    function phrasesN(n) {
+      var m = n % 100, ns = n.toLocaleString("en");
+      return n === 1 ? "عبارة واحدة" : n === 2 ? "عبارتين" : (n === 0 || (m >= 3 && m <= 10)) ? ns + " عبارات" : (m >= 11 && m <= 99) ? ns + " عبارةً" : ns + " عبارة";
+    }
+    check("★ (ر9-أ) version_name في المانيفست: «الإصدار — قاموس» ثم عدد مفاتيح القواميس المبنيّة كلها مجمَّع المراتب، والمعدود بعده بصيغته العربية (مثل «40,219 عبارةً»)",
+      MF.version + " — قاموس " + phrasesN(KEYS_N) + "/true",
+      MF.version_name + "/" + (KEYS_N > 1000 && /^\d+\.\d+\.\d+ — قاموس \d{1,3}(,\d{3})+ (عبارة|عبارةً|عبارات)$/.test(MF.version_name)));
+    // ★ (ر9-ج، ٥ جمادى الأولى ١٤٤٨هـ — القرار 100) اسم الإضافة بقرار المالك حرفًا بحرف: name الكامل، وshort_name المختصر (عشرة أحرف،
+    // وكروم يوصي باثني عشر فأقل)، وتلميح أيقونتها action.default_title بالمختصر؛ ونسخُه الثابتة في الصفحتين، فهي لا تُقرأ من المانيفست:
+    // عنوان الإعدادات ورأسها، واسمها في «حول» قبل أن يكتبه options.js، ورأس النافذة. فإن بقي اسمٌ سابق في موضعٍ منها أخفق هذا
+    var NAME_FULL = "تعريب كلود (Claude) لنسخة الويب (غير رسمي)", NAME_SHORT = "تعريب كلود";
+    function tagText(html, re) { var mt = re.exec(html); return mt ? mt[1].replace(/\s+/g, " ").trim() : "(غائب)"; }
+    check("★ (ر9-ج) اسم الإضافة بالقرار 100: name وshort_name (12 حرفًا فأقل) وaction.default_title في المانيفست، وعنوان الإعدادات ورأسها واسمها في «حول»، ورأس النافذة",
+      [NAME_FULL, NAME_SHORT, NAME_SHORT, true, "إعدادات " + NAME_SHORT, NAME_FULL, NAME_SHORT, NAME_SHORT].join("/"),
+      [MF.name, MF.short_name, (MF.action || {}).default_title, String(MF.short_name || "").length <= 12,
+       tagText(OPTS_HTML, /<title>([^<]*)<\/title>/), tagText(OPTS_HTML, /<h1 id="appName">([^<]*)<\/h1>/),
+       tagText(OPTS_HTML, /<strong id="aboutName">([^<]*)<\/strong>/), tagText(POPUP_HTML, /<h1>([^<]*)<\/h1>/)].join("/"));
+    check("لا أخطاء جافاسكربت في الصفحة", 0, jsErrors);
+  } catch (e) {
+    check("استثناء في الاختبار", "", String(e && (e.stack || e.message) || e).slice(0, 400));
+  }
+  document.title = "options " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "OPTIONS: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+  try { localStorage.removeItem("cml_ui_domain"); } catch (e) {}
+})();
+</script>

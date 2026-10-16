@@ -1,0 +1,174 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>blocksync test</title>
+<!--
+  مزامنة تصحيحات الفقرات (المرحلة ٢، قرار المالك ق٢): مساحةٌ مستقلة لكل نطاقٍ ذي متون بأدنى أولوية.
+   ١) القيم الطويلة (قوالب فقرات) تعبر بين جهازين كما هي، والمفاتيح بصماتٌ وحدها (المعقِّم بحدود المساحة).
+   ٢) لا تمسّ مساحة الواجهة ولا مفاتيحها، والحذف يسري بشواهده كسائر المساحات.
+   ٣) أدنى أولوية: ميزانيتها ما يبقى ناقصًا هامش نموّ الواجهة؛ وما لا يسع يبقى محليًّا بحالٍ صريحة.
+   ٤) الواجهة لا تتوقف أبدًا: إن احتاجت السعة أُخليت مساحات الفقرات من السحابة (لا من الأجهزة) —
+      فلا فقد على أيّ جهاز، وحالُها «أُخليت» ثم «فيض» عند المحاولة التالية.
+  كل جهازٍ إطارٌ بنسخته من cml-sync.js، والسحابة مخزنٌ واحد بحصّة كروم (102400 بايت).
+  العقد: document.title = "blocksync N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1000px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vertical-align:top}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>
+var jsErrors = 0; window.onerror = function () { jsErrors++; };
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function cp(v) { return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
+function makeFrame() {
+  return new Promise(function (res, rej) {
+    var f = document.createElement("iframe");
+    f.style.display = "none";
+    var base = "../extension/";
+    f.srcdoc = '<script src="' + base + 'cml-const.js"><\/script><script src="' + base + 'cml-shared.js"><\/script>' +
+      '<script src="' + base + 'cml-sync.js"><\/script>';
+    f.onload = function () { f.contentWindow.CMLSync ? res(f) : rej(new Error("لم تُحمَّل الوحدة")); };
+    document.body.appendChild(f);
+  });
+}
+var CLOUD = {}, clock = 1700000000000;
+function cloudBytes(S) { var b = 0; for (var k in CLOUD) b += S.byteLen(k) + S.jsonBytes(CLOUD[k]); return b; }
+function Dev(name, frame) {
+  var D = this;
+  D.S = frame.contentWindow.CMLSync; D.C = frame.contentWindow.CMLConst;
+  D.local = {}; D.events = [];
+  D.env = {
+    getLocal: function (keys, cb) { var o = {}; keys.forEach(function (k) { if (D.local[k] !== undefined) o[k] = cp(D.local[k]); }); cb(o); },
+    setLocal: function (obj, cb) { for (var k in obj) D.local[k] = cp(obj[k]); cb(null); },
+    removeLocal: function (keys, cb) { keys.forEach(function (k) { delete D.local[k]; }); cb(null); },
+    getSyncAll: function (cb) { cb(cp(CLOUD)); },
+    setSync: function (obj, cb) {
+      var next = cp(CLOUD), b = 0, k;
+      for (k in obj) next[k] = cp(obj[k]);
+      for (k in next) b += D.S.byteLen(k) + D.S.jsonBytes(next[k]);
+      if (b > 102400) { cb("QUOTA_BYTES quota exceeded"); return; }
+      var ch = {};
+      for (k in obj) { ch[k] = { oldValue: cp(CLOUD[k]), newValue: cp(obj[k]) }; CLOUD[k] = cp(obj[k]); }
+      cb(null); others(D).forEach(function (o) { o.events.push(ch); });
+    },
+    removeSync: function (keys, cb) {
+      var ch = {};
+      keys.forEach(function (k) { ch[k] = { oldValue: cp(CLOUD[k]) }; delete CLOUD[k]; });
+      cb(null); others(D).forEach(function (o) { o.events.push(ch); });
+    },
+    now: function () { return clock; },
+  };
+  D.local[D.C.K.SYNC_ENABLED] = true;
+  D.local[D.C.K.SYNC_DEVICE] = name;
+}
+var DEVS = [];
+function others(D) { return DEVS.filter(function (x) { return x !== D; }); }
+// كما يفعل العامل: تعديلٌ محلي ⇒ شواهد الحذف ثم جولةٌ محلية للمساحة
+function edit(D, sp, key, value) {
+  var old = cp(D.local[key]);
+  D.local[key] = cp(value);
+  var ch = {}; ch[key] = { oldValue: old, newValue: cp(value) };
+  var removed = D.S.diffRemovedKeys(old, value);
+  var pre = removed.length ? sp.recordTombs(D.env, removed, clock) : Promise.resolve();
+  return pre.then(function () { return sp.handleLocalChange(D.env, ch); });
+}
+// تسليم أحداث السحابة المعلّقة إلى كل مساحةٍ تملك مفاتيحها
+function deliver(D) {
+  var evs = D.events; D.events = [];
+  var chain = Promise.resolve();
+  evs.forEach(function (ch) {
+    D.S.spaces.forEach(function (sp) {
+      if (Object.keys(ch).some(function (k) { return sp.owns(k); })) chain = chain.then(function () { return sp.handleSyncChange(D.env, ch); });
+    });
+  });
+  return chain;
+}
+function fp(i) { return ("0000000000000000" + (i * 2654435761 >>> 0).toString(16)).slice(-16); }
+function longAr(n, seed) { var s = ""; while (s.length < n) s += "تصحيح فقرةٍ طويلة رقم " + seed + " "; return s.slice(0, n); }
+
+(async function () {
+  var fa = await makeFrame(), fb = await makeFrame();
+  var A = new Dev("devA", fa), B = new Dev("devB", fb);
+  DEVS.push(A, B);
+  var KB = "cml_block_ov.privacy", KUI = "cml_overrides.privacy";
+  var bA = A.S.spaceOfBlocks("privacy"), bB = B.S.spaceOfBlocks("privacy");
+  // النطاقات ذات المتون من الجدول نفسه (meta.bodies) لا قائمةٌ مكتوبة — وثائق Claude Code أُضيفت صفًّا
+  var BODY_IDS = A.C.DOMAINS.filter(function (d) { return d.meta && d.meta.bodies; }).map(function (d) { return d.id; }).sort().join(",");
+  check("مساحات الفقرات للنطاقات ذات المتون وحدها، بأدنى أولوية", BODY_IDS + "/true/null",
+        Object.keys(A.S.blockSpaces).sort().join(",") + "/" + bA.low + "/" + A.S.spaceOfBlocks("app"));
+
+  // ١) قيمةٌ طويلة تعبر كما هي
+  var v1 = longAr(3000, 1);
+  var r1 = await edit(A, bA, KB, { ar: (function () { var o = {}; o[fp(1)] = v1; o["not-a-fingerprint"] = "س"; return o; })() });
+  check("★ دفعُ تصحيح فقرةٍ طويلة (3000 حرف)", "pushed", r1 && r1.done);
+  check("★ السحابة: مفاتيح مساحة الفقرات وحدها، لا مساحة الواجهة", "true/false",
+        !!CLOUD["cmlbm_privacy"] + "/" + !!CLOUD["cmlm_privacy"]);
+  await deliver(B);
+  var gotB = B.local[KB] && B.local[KB].ar;
+  check("★ الجهاز الآخر يستلمها كما هي حرفًا بحرف", "true", !!gotB && gotB[fp(1)] === v1);
+  check("★ ومفتاحٌ ليس بصمةً لا يعبر (المعقِّم بحدود المساحة)", "false", !!gotB && Object.prototype.hasOwnProperty.call(gotB, "not-a-fingerprint"));
+  check("مساحة الواجهة على الجهاز الآخر لم تُمسّ", "undefined", typeof B.local[KUI]);
+
+  // ٢) الحذف يسري بشواهده
+  clock += 60000;
+  var bNow = cp(B.local[KB]); bNow.ar[fp(2)] = longAr(500, 2); delete bNow.ar[fp(1)];
+  var r2 = await edit(B, bB, KB, bNow);
+  await deliver(A);
+  check("★ حذفُ تصحيحٍ وإضافةُ آخر من الجهاز الثاني يصلان الأول", "pushed/false/true",
+        (r2 && r2.done) + "/" + !!A.local[KB].ar[fp(1)] + "/" + (A.local[KB].ar[fp(2)] === longAr(500, 2)));
+
+  // ٣) أدنى أولوية: ما لا يسع يبقى محليًّا بحالٍ صريحة — والواجهة تدفع كاملةً
+  clock += 60000;
+  var big = { ar: {} };
+  for (var i = 10; i < 60; i++) big.ar[fp(i)] = longAr(1500, i);     // ≈ 50 × 3 ك.ب
+  var r3 = await edit(A, bA, KB, big);
+  check("★ تصحيحاتُ فقراتٍ تتجاوز سعتها: فيضٌ لا دفعٌ جزئي ولا فقد", "overflow/50",
+        (r3 && r3.done) + "/" + Object.keys(A.local[KB].ar).length);
+  check("حالُ المساحة تقول ذلك صراحةً", "overflow", (A.local["cml_bsync_state.privacy"] || {}).status);
+
+  // ٤) الواجهة تحتاج السعة: تُخلى الفقرات من السحابة وتُدفع الواجهة
+  clock += 60000;
+  var mid = { ar: {} };
+  for (var j = 100; j < 120; j++) mid.ar[fp(j)] = longAr(900, j);    // ≈ 20 × 1.8 ك.ب = 36 ك.ب
+  var r4 = await edit(A, bA, KB, mid);
+  check("فقراتٌ بقدر ما يسع تُدفع", "pushed", r4 && r4.done);
+  await deliver(B);
+  var bBefore = Object.keys((B.local[KB] || {}).ar || {}).length;
+  clock += 60000;
+  var ui = { ar: {} };
+  for (var u = 0; u < 380; u++) ui.ar["Interface string number " + u + " in the help center"] = "نصّ الواجهة رقم " + u + " في مركز المساعدة، بترجمةٍ طويلة بعض الشيء للاختبار";
+  var r5 = await edit(A, A.S.spaceOfDomain("privacy"), KUI, ui);
+  check("★ تصحيحات الواجهة تُدفع كاملةً ولو شغلت الفقراتُ السعة", "pushed", r5 && r5.done);
+  check("★ ومفاتيح الفقرات أُخليت من السحابة لا غير", "false/true",
+        !!CLOUD["cmlbm_privacy"] + "/" + (Object.keys(A.local[KB].ar).length === 20));
+  check("حالُ مساحة الفقرات «أُخليت» وطابعٌ معلّق لإعادة المحاولة", "yielded/true",
+        (A.local["cml_bsync_state.privacy"] || {}).status + "/" + !!A.local["cml_bsync_pending.privacy"]);
+  await deliver(B);
+  check("★ الجهاز الآخر لا يفقد تصحيحات فقراته حين تُخلى السحابة", bBefore + "/true",
+        Object.keys((B.local[KB] || {}).ar || {}).length + "/" + (bBefore > 0));
+  check("والجهاز الآخر يستلم تصحيحات الواجهة", "380", Object.keys(((B.local[KUI] || {}).ar) || {}).length);
+  var r6 = await bA.handleLocalChange(A.env, null);
+  check("إعادةُ المحاولة بميزانيتها الجديدة: فيضٌ صريح، والمحلي كما هو", "overflow/20",
+        (r6 && r6.done) + "/" + Object.keys(A.local[KB].ar).length);
+  check("السحابة ضمن حصّة كروم", "true", cloudBytes(A.S) <= 102400);
+
+  // ٥) أمر التعديل الجزئي على مساحة الفقرات: البصمات والقوالب الطويلة، ورفض ما ليس بصمة
+  var rep = await bA.editLocal(A.env, "ar", [{ op: "set", k: fp(900), v: longAr(3500, 9) }, { op: "set", k: "Hello", v: "مرحبا" },
+                                             { op: "set", k: fp(901), v: longAr(9000, 9) }]);
+  check("★ التعديل الجزئي: بصمةٌ بقالبٍ طويل تُقبل، ومفتاحٌ نصّي أو قيمةٌ فوق السقف تُرفض", "1/2",
+        rep.set + "/" + rep.skipped);
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "blocksync " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "BLOCKSYNC: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})().catch(function (e) { jsErrors++; document.title = "blocksync 0/1"; console.error(e); var p = document.createElement("pre"); p.textContent = String(e && e.stack || e); document.body.appendChild(p); });
+</script>

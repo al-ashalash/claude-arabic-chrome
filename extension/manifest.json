@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "تعريب كلود للويب — واجهة Claude.ai بالعربية (غير رسمي)",
-  "short_name": "تعريب كلود للويب",
-  "version": "1.0.0",
-  "version_name": "1.0.0 — قاموس 28305 عبارة",
-  "description": "يعرّب واجهة claude.ai بالاتجاه من اليمين إلى اليسار. مستقل غير رسمي. لا يخزّن محادثاتك ولا يرسل محتواك. المزامنة اختيارية ومتوقّفة.",
-  "homepage_url": "https://github.com/al-ashalash/claude-ai-arabic-chrome",
+  "name": "تعريب كلود (Claude) لنسخة الويب (غير رسمي)",
+  "short_name": "تعريب كلود",
+  "version": "2.0.0",
+  "version_name": "2.0.0 — قاموس 41,472 عبارةً",
+  "description": "يعرّب صفحات Claude على الويب ويعكس اتجاهها: التطبيق والمساعدة والخصوصية وأكاديمية Claude والوثائق القانونية والبرمجية. غير رسمي.",
+  "homepage_url": "https://github.com/al-ashalash/claude-arabic-chrome",
   "author": "عبدالسلام الشلاش",
   "icons": {
     "16": "icons/icon16.png",
@@ -30,20 +30,147 @@
         "cml-shared.js",
         "cml-rtl.js",
         "rtl-coverage.js",
+        "cml-font.js",
         "dictionary.js",
         "engine.js"
       ],
       "css": [
+        "base.css",
         "rtl-overrides.css",
-        "base.css"
+        "app-point.css"
       ],
       "run_at": "document_start",
-      "all_frames": true
+      "all_frames": true,
+      "exclude_matches": [
+        "https://assets.claude.ai/*",
+        "https://pivot.claude.ai/*",
+        "https://*.livepreview.claude.ai/*"
+      ]
+    },
+    {
+      "matches": [
+        "https://support.claude.com/en/*"
+      ],
+      "js": [
+        "cml-const.js",
+        "cml-shared.js",
+        "cml-rtl.js",
+        "cml-font.js",
+        "dict-support.js",
+        "engine.js"
+      ],
+      "css": [
+        "base.css",
+        "rtl-intercom.css",
+        "intercom-point.css"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://privacy.claude.com/en/*"
+      ],
+      "js": [
+        "cml-const.js",
+        "cml-shared.js",
+        "cml-rtl.js",
+        "cml-font.js",
+        "dict-privacy.js",
+        "engine.js"
+      ],
+      "css": [
+        "base.css",
+        "rtl-intercom.css",
+        "intercom-point.css"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://www.anthropic.com/legal/*"
+      ],
+      "js": [
+        "cml-const.js",
+        "cml-shared.js",
+        "cml-rtl.js",
+        "cml-font.js",
+        "dict-legal.js",
+        "engine.js"
+      ],
+      "css": [
+        "base.css",
+        "rtl-legal.css",
+        "legal-point.css"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://academy.claude.com/*"
+      ],
+      "js": [
+        "cml-const.js",
+        "cml-shared.js",
+        "cml-rtl.js",
+        "cml-font.js",
+        "dict-academy.js",
+        "engine.js"
+      ],
+      "css": [
+        "base.css",
+        "rtl-academy.css",
+        "academy-point.css"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://platform.claude.com/*"
+      ],
+      "js": [
+        "cml-const.js",
+        "cml-shared.js",
+        "cml-rtl.js",
+        "cml-font.js",
+        "dict-docs.js",
+        "engine.js"
+      ],
+      "css": [
+        "base.css",
+        "rtl-docs.css",
+        "docs-point.css"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "https://code.claude.com/docs*"
+      ],
+      "js": [
+        "cml-const.js",
+        "cml-shared.js",
+        "cml-rtl.js",
+        "cml-font.js",
+        "dict-code.js",
+        "engine.js"
+      ],
+      "css": [
+        "base.css",
+        "rtl-code.css",
+        "code-point.css"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
     }
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "تعريب كلود للويب",
+    "default_title": "تعريب كلود",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
@@ -54,5 +181,5 @@
     "page": "options.html",
     "open_in_tab": true
   },
-  "minimum_chrome_version": "102"
+  "minimum_chrome_version": "120"
 }

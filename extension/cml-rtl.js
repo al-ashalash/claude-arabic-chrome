@@ -46,6 +46,13 @@
 
   var GATE = 'html[data-cml-rtl="v2"]';
   var PH = String.fromCharCode(1); // نائب داخلي — لا يرد في CSS سليم
+  // مواضع القفز في المحلّل (عامّةٌ بـlastIndex يُضبط قبل كل exec — لا نداء يتداخل بين الضبط والتنفيذ)
+  var READ_RE = /[\/"'\\()\[\]{};]/g;
+  var BLOCK_RE = /[\/"'\\{}]/g;
+  var STR_DQ_RE = /["\\]/g, STR_SQ_RE = /['\\]/g;
+  var SPLIT_SEMI_RE = /[\\"'()\[\];]/g, SPLIT_COMMA_RE = /[\\"'()\[\],]/g;
+  var BRACKET_RE = /[()\[\]]/;
+  var IMPORTANT_RE = /!\s*important\s*$/i;
 
   // ---------- 1) محلّل CSS متدرّج ----------
   // يتحمل: التعليقات، السلاسل بمحارفها المهرَّبة، url() غير المقتبس، أقواس التداخل،
@@ -63,36 +70,43 @@
     function noteLayer(name) {
       if (name && !layerSeen[name]) { layerSeen[name] = 1; layerOrder.push(name); }
     }
-    // يقفز فوق تعليق أو سلسلة أو محرف مهرَّب بدءًا من j؛ يرجع الموضع الجديد أو j نفسه
-    function skipOpaque(j) {
-      var c = text[j];
-      if (c === "/" && text[j + 1] === "*") {
-        var e = text.indexOf("*/", j + 2);
-        return e === -1 ? n : e + 2;
+    /* ★ (S8-C، المراجعة العدائية، ٢٢ ربيع الآخر ١٤٤٨هـ) المسح يقفز إلى المحرف ذي الشأن التالي بتعبيرٍ نمطيٍّ أصيل
+     * وينسخ ما بينهما قطعةً واحدة (slice) — لا نداءَ دالةٍ ولا إلحاقَ محرفٍ لكل محرف. ورقةُ الوثائق (881 ك.ب) كانت
+     * تُبنى في عامل الخدمة 11.8–31 ث والمعالج مشغول، والمِلمَح جُلُّه في skipOpaque وreadUntil. والعلّة ليست مسارًا
+     * تربيعيًّا بل كثرةُ العمل لكل محرف: عمليةُ الإضافة في الخلفية بأولويةٍ منخفضة، فلا ينال خيطُ العامل والجهازُ
+     * مشغولٌ إلا عُشرَ نواةٍ أو أقل (قِيس بالتتبّع: 0.48 ث من زمن الخيط امتدّت 56 ث) — فالساعةُ تتبع العملَ مضروبًا.
+     * والدلالة هي هي حرفًا بحرف (المخرجات بالبايت على أوراق المواقع كلها وعلى عشرين ألف مدخلٍ عشوائي). */
+    // يقفز فوق سلسلةٍ تبدأ عند j (بمحارفها المهرَّبة)؛ غيرُ المغلقة تمتد إلى النهاية
+    function skipString(j) {
+      var re = text.charAt(j) === '"' ? STR_DQ_RE : STR_SQ_RE, m;
+      re.lastIndex = j + 1;
+      while ((m = re.exec(text))) {
+        if (m[0] === "\\") { re.lastIndex = m.index + 2; continue; }
+        return m.index + 1;
       }
-      if (c === '"' || c === "'") {
-        for (var k = j + 1; k < n; k++) {
-          if (text[k] === "\\") { k++; continue; }
-          if (text[k] === c) return k + 1;
-        }
-        return n;
-      }
-      if (c === "\\") return j + 2;
-      return j;
+      return n;
+    }
+    // يقفز فوق تعليقٍ يبدأ عند j؛ غيرُ المغلق يمتد إلى النهاية
+    function skipComment(j) {
+      var e = text.indexOf("*/", j + 2);
+      return e === -1 ? n : e + 2;
     }
     // يجمع نصًّا حتى أول محرف فاصل في عمق أقواس صفر؛ يرجع {chunk, stop, next}.
     // التعليقات تُسقَط إسقاطًا (لا تُلحق) — وإلا التصقت بالمحدِّد الذي يليها.
+    // (stopChars من «{;}» وحدها — والمحارف الأخرى ذات الشأن لا تكون فاصلًا)
     function readUntil(j, stopChars) {
-      var depth = 0, out = "";
+      var depth = 0, out = "", m;
       while (j < n) {
-        if (text[j] === "/" && text[j + 1] === "*") {
-          var ce = text.indexOf("*/", j + 2);
-          j = ce === -1 ? n : ce + 2;
-          continue;
+        READ_RE.lastIndex = j;
+        if (!(m = READ_RE.exec(text))) { out += text.slice(j); break; }
+        var k = m.index, c = m[0];
+        if (k > j) out += text.slice(j, k);
+        if (c === "/") {
+          if (text.charCodeAt(k + 1) === 42) { j = skipComment(k); continue; }
+          out += c; j = k + 1; continue;
         }
-        var j2 = skipOpaque(j);
-        if (j2 !== j) { out += text.slice(j, j2); j = j2; continue; }
-        var c = text[j];
+        if (c === '"' || c === "'") { j = skipString(k); out += text.slice(k, j); continue; }
+        if (c === "\\") { out += text.slice(k, k + 2); j = k + 2; continue; }
         // قوس إغلاق كتلة داخل عمق أقواس مفتوح = قيمة مكسورة (قوس دائري لم يُغلق).
         // بلا هذا التصفير كان قوسٌ واحد غير متوازن يبتلع بقية الورقة كلها بصمت —
         // فيعمى الطبيب عمًى لا يُبلَّغ عنه. (الفاصلة المنقوطة لا تُصفِّر: شرعية داخل
@@ -100,39 +114,44 @@
         if (c === "}" && depth > 0) { depth = 0; stats.parseErrors++; }
         if (c === "(" || c === "[") depth++;
         else if (c === ")" || c === "]") { if (depth > 0) depth--; }
-        else if (depth === 0 && stopChars.indexOf(c) !== -1) return { chunk: out, stop: c, next: j + 1 };
-        out += c; j++;
+        else if (depth === 0 && stopChars.indexOf(c) !== -1) return { chunk: out, stop: c, next: k + 1 };
+        out += c; j = k + 1;
       }
       return { chunk: out, stop: "", next: n };
     }
     // يتخطى كتلة { ... } كاملة (القوس الفاتح استُهلك قبل النداء)
     function skipBlock(j) {
-      var depth = 1;
+      var depth = 1, m;
       while (j < n && depth > 0) {
-        var j2 = skipOpaque(j);
-        if (j2 !== j) { j = j2; continue; }
-        if (text[j] === "{") depth++;
-        else if (text[j] === "}") depth--;
-        j++;
+        BLOCK_RE.lastIndex = j;
+        if (!(m = BLOCK_RE.exec(text))) return n;
+        var k = m.index, c = m[0];
+        if (c === "/") { j = text.charCodeAt(k + 1) === 42 ? skipComment(k) : k + 1; continue; }
+        if (c === '"' || c === "'") { j = skipString(k); continue; }
+        if (c === "\\") { j = k + 2; continue; }
+        if (c === "{") depth++;
+        else depth--;
+        j = k + 1;
       }
       return j;
     }
     function splitTop(s, sep) {
-      var parts = [], depth = 0, cur = "";
-      for (var j = 0; j < s.length; j++) {
-        var c = s[j];
-        if (c === "\\") { cur += c + (s[j + 1] || ""); j++; continue; }
+      var re = sep === ";" ? SPLIT_SEMI_RE : SPLIT_COMMA_RE;
+      var parts = [], depth = 0, start = 0, m;
+      re.lastIndex = 0;
+      while ((m = re.exec(s))) {
+        var j = m.index, c = m[0];
+        if (c === "\\") { re.lastIndex = j + 2; continue; }
         if (c === '"' || c === "'") {
           var e = j + 1;
           while (e < s.length && s[e] !== c) { if (s[e] === "\\") e++; e++; }
-          cur += s.slice(j, e + 1); j = e; continue;
+          re.lastIndex = e + 1; continue;
         }
         if (c === "(" || c === "[") depth++;
         else if (c === ")" || c === "]") depth--;
-        if (c === sep && depth === 0) { parts.push(cur); cur = ""; }
-        else cur += c;
+        else if (depth === 0) { parts.push(s.slice(start, j)); start = j + 1; } // c === sep
       }
-      parts.push(cur);
+      parts.push(s.slice(start));
       return parts;
     }
     function pushDecls(sel, body, ctx, layer) {
@@ -141,19 +160,22 @@
       for (var d = 0; d < parts.length; d++) {
         var t = parts[d].trim();
         if (!t) continue;
-        var colon = -1, depth = 0;
-        for (var j = 0; j < t.length; j++) {
-          var c = t[j];
-          if (c === "(" || c === "[") depth++;
-          else if (c === ")" || c === "]") depth--;
-          else if (c === ":" && depth === 0) { colon = j; break; }
+        // أولُ نقطتين في عمق صفر: هي أولاهما ما لم يسبقها قوس (الغالب) — وإلا العدُّ محرفًا محرفًا
+        var colon = t.indexOf(":"), br = t.search(BRACKET_RE);
+        if (colon !== -1 && br !== -1 && br < colon) {
+          colon = -1;
+          for (var j = 0, depth = 0; j < t.length; j++) {
+            var c = t[j];
+            if (c === "(" || c === "[") depth++;
+            else if (c === ")" || c === "]") depth--;
+            else if (c === ":" && depth === 0) { colon = j; break; }
+          }
         }
         if (colon === -1) { stats.parseErrors++; continue; }
         var prop = t.slice(0, colon).trim();
         var value = t.slice(colon + 1).trim();
         var important = false;
-        var im = /!\s*important\s*$/i;
-        if (im.test(value)) { important = true; value = value.replace(im, "").trim(); }
+        if (value.indexOf("!") !== -1 && IMPORTANT_RE.test(value)) { important = true; value = value.replace(IMPORTANT_RE, "").trim(); }
         // «متغيّرات التبديل» (‎--x: ;‎ بقيمة فارغة) CSS صالحٌ محايد اتجاهيًّا — تُهمل بصمت
         if (!value && prop.slice(0, 2) === "--") continue;
         if (!prop || !value) { stats.parseErrors++; continue; }
@@ -178,12 +200,66 @@
       }
       return out.join(", ");
     }
-    // بادئة @: يرجع {kind:"cond",ctx} أو {kind:"layer",name} أو null (تخطٍّ)
+    // بادئة @: يرجع {kind:"cond",ctx} أو {kind:"layer",name} أو {kind:"scope",start,end} أو null (تخطٍّ)
     function classifyAt(prelude) {
       if (/^@(media|supports|container)\b/i.test(prelude)) return { kind: "cond", cond: prelude.replace(/\s+/g, " ") };
       var ml = /^@layer\b\s*([^{]*)$/i.exec(prelude);
       if (ml) return { kind: "layer", name: (ml[1] || "").trim() || "(anonymous)" };
-      return null;
+      return scopePrelude(prelude);
+    }
+    // ★ (ر5-ج، ٢٩ ربيع الآخر ١٤٤٨هـ — القرار 75) ‎@scope (S) to (E)‎ كانت تُتخطّى كتلةً كاملة، وفيها نثرُ التصميم (CDS) كلّه في وثائق
+    // المنصّة وclaude.ai: ‎@scope(.prose) to (.not-prose,[data-not-prose]) { th,td{padding:.4375em .75em} … }‎ (131 قاعدةً في الوثائق و92 في
+    // التطبيق، منطقيةٌ أو متناظرة كلها: حشوة الخلايا وحدود الجداول وشيفرة السطر وkbd وpre وdetails). فلم تُعَد لها نسخٌ مطابقة، فغلبتها نسخةُ
+    // مُصفِّر Tailwind ‎:where(*){padding-inline:0;border-inline:0 solid}‎ في سلّمنا: فقدت خلايا الجداول حشوتها الأفقية في RTL (صنفا th/td
+    // في فحص الاتجاه على 390). فتُسطَّح القواعد المحدودة إلى محدِّدٍ غير محدود بمعناها: الجذر ‎:where(S)‎ سلفًا ضمنيًّا (أو مكان ‎:scope‎
+    // و‎&‎)، والحدّ ‎:not(:where(E), :where(E) *)‎ على الموضوع قبل العنصر الزائف — بلا تخصيصٍ زائد (المحدود يحمل تخصيص محدِّده وحده)،
+    // فتمرّ في القلب والنسخ المطابقة بترتيب الموقع كسائر قواعده. والفرق الباقي قربُ النطاق (scope proximity) بعد التخصيص، ولا أثر له هنا.
+    // ★ (ر5-ج، المراجعة المستقلة) والتسطيح أضيقُ من النطاق لا أوسع (قِيس في كروم): يستثني ما تحت E ولو كان E فوق الجذر أو بين جذرين
+    // متداخلين، فيبقى ذلك على حاله قبل التسطيح. وما كان يوسّعه يُترك كما كان: جذرٌ أو حدٌّ فيه ‎:scope‎ أو ‎&‎ أو يبدأ بمركِّب (‎:scope‎ خارج
+    // النطاق جذرُ المستند، والمحدِّد النسبي يبطل في ‎:where()‎ فيسقط الحدّ كلّه)، ومحدِّدٌ يبدأ بـ‎+‎ أو ‎~‎ (إخوةُ الجذر خارجه أبدًا)، أو فيه
+    // ‎:scope‎ أو ‎&‎ في غير صدره (داخل ‎:not()‎ أو ‎:has()‎ مثلًا). ولا شيء من ذلك في أوراق المواقع اليوم
+    var SCOPE_REF_RE = /:scope(?![\w-])|(^|[^\\])&/, SCOPE_REL_RE = /:scope(?![\w-])|(^|[^\\])&|(^|,)\s*[>+~]/;
+    function scopePrelude(p) {
+      var m = /^@scope\b\s*/i.exec(p);
+      if (!m) return null;
+      var k = m[0].length;
+      function group(str, at) { // (…) متوازنٌ من الموضع at ⇒ {v, next} أو null
+        if (str.charAt(at) !== "(") return null;
+        for (var q = at, depth = 0; q < str.length; q++) {
+          var c = str.charAt(q);
+          if (c === "\\") { q++; continue; }
+          if (c === "(") depth++;
+          else if (c === ")" && --depth === 0) return { v: str.slice(at + 1, q).trim(), next: q + 1 };
+        }
+        return null;
+      }
+      var s = group(p, k);
+      if (!s || !s.v) return null;
+      var rest = p.slice(s.next).trim(), end = null;
+      if (rest) {
+        var t = /^to\s*/i.exec(rest);
+        var e = t && group(rest, t[0].length);
+        if (!e || !e.v || rest.slice(e.next).trim()) return null;
+        end = e.v;
+      }
+      if (SCOPE_REL_RE.test(s.v) || (end !== null && SCOPE_REL_RE.test(end))) return null;
+      return { kind: "scope", start: s.v, end: end };
+    }
+    var PSEUDO_EL_RE = /(?<!\\)(?:::|:(?:before|after|first-line|first-letter)(?![\w-]))/;
+    function scopeSel(prelude, sc) {
+      var root = ":where(" + sc.start + ")";
+      var lim = sc.end ? ":not(:where(" + sc.end + "),:where(" + sc.end + ") *)" : "";
+      var parts = splitTop(prelude, ","), out = [];
+      for (var q = 0; q < parts.length; q++) {
+        var s = parts[q].trim();
+        if (!s) continue;
+        var lead = /^(?::scope(?![\w-])|&)/.exec(s), body = lead ? s.slice(lead[0].length) : s;
+        if (/^\s*[+~]/.test(body) || SCOPE_REF_RE.test(body)) continue; // يتّسع عن النطاق (أعلاه) ⇒ يُسقط
+        s = lead ? root + body : root + " " + s;
+        if (lim) { var pm = PSEUDO_EL_RE.exec(s); s = pm ? s.slice(0, pm.index) + lim + s.slice(pm.index) : s + lim; }
+        out.push(s);
+      }
+      return out.join(", ");
     }
     // كتلة قاعدة: خليط إعلانات وقواعد متداخلة. depth: سقف تداخل وقائي — تداخل
     // بآلاف المستويات (مدخل عدائي) كان يفجّر مكدس الاستدعاء؛ فوق السقف تُتخطى الكتلة.
@@ -230,8 +306,8 @@
       }
       return end;
     }
-    function parseGroup(j, ctx, layer, depth) {
-      // يستهلك محتوى كتلة (أو المستوى الأعلى) حتى قوس إغلاقها
+    function parseGroup(j, ctx, layer, depth, scope) {
+      // يستهلك محتوى كتلة (أو المستوى الأعلى) حتى قوس إغلاقها. scope: نطاق ‎@scope‎ المحيط (قواعده تُسطَّح بـscopeSel)
       if (depth > 100) { stats.parseErrors++; return skipBlock(j); }
       while (j < n) {
         var r = readUntil(j, "{;}");
@@ -240,11 +316,13 @@
           if (!prelude) { j = skipBlock(r.next); continue; }
           if (prelude.charAt(0) === "@") {
             var at = classifyAt(prelude);
-            if (at && at.kind === "cond") j = parseGroup(r.next, ctx.concat([at.cond]), layer, depth + 1);
-            else if (at && at.kind === "layer") { noteLayer(at.name); j = parseGroup(r.next, ctx, at.name, depth + 1);
-            } else { j = skipAtBlock(prelude, r.next); }
+            if (at && at.kind === "cond") j = parseGroup(r.next, ctx.concat([at.cond]), layer, depth + 1, scope);
+            else if (at && at.kind === "layer") { noteLayer(at.name); j = parseGroup(r.next, ctx, at.name, depth + 1, scope);
+            } else if (at && at.kind === "scope" && !scope) { stats.scoped = (stats.scoped || 0) + 1; j = parseGroup(r.next, ctx, layer, depth + 1, at);
+            } else { j = skipAtBlock(prelude, r.next); } // ومنها ‎@scope‎ داخل ‎@scope‎ (نادرة): تُتخطّى كما كانت
           } else {
-            j = parseRuleBody(r.next, prelude, ctx, layer, depth + 1);
+            var ssel = scope ? scopeSel(prelude, scope) : prelude;
+            j = ssel ? parseRuleBody(r.next, ssel, ctx, layer, depth + 1) : skipBlock(r.next);
           }
         } else if (r.stop === ";") {
           var st = r.chunk.trim();
@@ -481,10 +559,12 @@
       }
       if (e4[1] === e4[3]) return null; // متناظر — لا شأن للاتجاه به
       var slots = SHORTHAND4[prop];
+      // ★ (فحص الاتجاه الشامل، ق١) الخانتان الأفقيتان وحدهما: العمودية لا يغيّرها الاتجاه، وبثُّها بتخصيصنا
+      // العالي كان يغلب أدوات الموقع العمودية على العنصر نفسه (‎.mt-8‎ و‎.border-b‎ و‎.py-1‎) فيمحوها. والمختصر
+      // الأصلي باقٍ في طبقة الموقع بخاناته العمودية، وأفقيّتاه تغلبهما منطقيّتانا هنا
       return { kind: "flip", flips: [
-        { prop: slots[0], value: e4[0] }, { prop: slots[1], value: e4[1] },
-        { prop: slots[2], value: e4[2] }, { prop: slots[3], value: e4[3] },
-      ], neutral: [] }; // الخانات الأربع كلها مغطاة — لا حاجة لمصفِّر
+        { prop: slots[1], value: e4[1] }, { prop: slots[3], value: e4[3] },
+      ], neutral: [] };
     }
     if (prop === "border-radius") {
       // الفاصل البيضاوي «/» يُعتدّ به في العمق صفر فقط — القسمة داخل calc() ليست
@@ -638,6 +718,7 @@
    * فيتبع الصفحة. وكان الاستثناء يُنفَّذ بفرض direction:ltr عليه، فانقلبت قوائمُ
    * منبثقةٌ كاملةٌ إلى اليسار (شُخّص حيًّا). و:not(:where(…)) صفرُ تخصيصٍ فلا يزحزح السلّم. */
   var NOFLIP_EXEMPT = ':not(:where([data-cml-noflip="computed"]))';
+  var DIR_AWARE_RE = /\[dir\s*[=\]]|:dir\(/; // قاعدةٌ واعيةٌ بالاتجاه (سمة dir أو :dir())
   // خصائصُ المرساة وحدها تحمل الاستثناء — وإلحاقُه بكل قاعدةٍ يضخّم الورقة بلا فائدة
   var ANCHOR_PROPS = {
     "left": 1, "right": 1, "inset-inline-start": 1, "inset-inline-end": 1, "inset-inline": 1,
@@ -670,7 +751,14 @@
       if (m) {
         // متجذّر في html: مركّبُه يلتصق بالرأس داخل :where، وذيلُه (إن وجد) يُلفّ بعده
         var rest = core.slice(m[0].length);
-        var cm = /^[^\s>+~]*/.exec(rest)[0];
+        // ★ (ر9-هـ، ٥ جمادى الأولى ١٤٤٨هـ) آخرُ المركّب أولُ مسافةٍ أو رابطٍ (> + ~) في المستوى الأعلى وحده (compoundLen). كان يُقطع عند أول
+        // محرفٍ منها أينما وقع، فقُطعت سمةٌ بمطابقة الكلمة (‎~=‎) في متغيّر Tailwind الجديد في وثائق Claude Code
+        // (‎html[data-auth-pending~=nav] .auth-nav-pending\:max-lg\:mx-4‎) إلى ‎:where([data-auth-pending) ~ :where(=nav] …)‎: معقوفٌ وقوسٌ
+        // مفتوحان يبتلعان في الورقة الحيّة كلَّ قاعدةٍ بعدها حتى آخرها (177 من 1,189 قاعدةً في overview: قرأ المتصفح 1,012، ومع الإصلاح
+        // 1,189)، من المنطقيات والنسخ المطابقة، ومنها قاعدتا زرّ طيّ الفهرس
+        // ‎#toc-collapse-toggle‎ (موضعُه inset-inline-end واستدارتُه 9999px) — فبقي مصفِّرُ right وحده فلصق الزرُّ بحافة الشاشة اليمنى، وغلبت
+        // استدارتَه نسخةُ تمهيد Tailwind ‎button{border-radius:0}‎ فصار مربّعًا (صنفا فحص الاتجاه e222fbffd940 و361aee9e69f8)
+        var cm = rest.slice(0, compoundLen(rest));
         var tail = rest.slice(cm.length).trim();
         var comb = "";
         if (/^[>+~]/.test(tail)) { comb = tail.charAt(0) + " "; tail = tail.slice(1).trim(); }
@@ -688,6 +776,21 @@
       }
     }
     return out.join(",");
+    // طولُ المركّب الأول في المستوى الأعلى: المعقوفات والأقواس والسلاسل وما بعد الهروب داخله، فلا تقطعه ‎~=‎ في سمة،
+    // ولا ‎+‎ في ‎:nth-child(2n+1)‎، ولا مسافةٌ في ‎:not(.a .b)‎ أو في قيمة سمةٍ بين علامتي تنصيص
+    function compoundLen(str) {
+      var depth = 0, qt = null;
+      for (var q = 0; q < str.length; q++) {
+        var c = str.charAt(q);
+        if (c === "\\") { q++; continue; }
+        if (qt) { if (c === qt) qt = null; continue; }
+        if (c === '"' || c === "'") { qt = c; continue; }
+        if (c === "(" || c === "[") depth++;
+        else if (c === ")" || c === "]") depth--;
+        else if (depth <= 0 && /[\s>+~]/.test(c)) return q;
+      }
+      return str.length;
+    }
     function splitList(str) {
       var ps = [], depth = 0, cur = "";
       for (var q = 0; q < str.length; q++) {
@@ -708,6 +811,29 @@
   // unset يمحو نصفَ قطرٍ متناظرٍ مجاور). النسخة المطابقة تُعيده في مستوى
   // المنطقيات بموضعه من تعاقب الموقع. وقصًّا للحجم لا تُبثّ إلا لما تتقاطع
   // خاناتُه فعلًا مع خاناتٍ بثثناها (slotsOf أدناه) — لا لكل العائلات جزافًا.
+  // النسخة المطابقة بخاناتها الأفقية وحدها: [{prop, value}] — الخاصية كما هي إن كانت أفقيةً أصلًا (منطقية inline،
+  // أو left/right، أو زوايا الإطار)، وnull إن لم يبقَ فيها أفقيٌّ متنازَع (عمودية خالصة: block/top/bottom)
+  var VERTICAL_ONLY = /(^|-)(top|bottom)(-|$)|(^|-)block(-|$)/;
+  function identitySplit(prop, value) {
+    // النسخ المطابقة متناظرةٌ أفقيًّا (غير المتناظر يُقلب لا يُنسخ) ⇒ تُبثّ بالمختصر المنطقي الأفقي (‎-inline‎)؛
+    // وما لم يتناظر لسببٍ ما يبقى كما كان احتياطًا
+    var m = /^(margin|padding|scroll-margin|scroll-padding|inset)$/.exec(prop);
+    if (m) {
+      var e4 = expand4(splitVals(value));
+      if (!e4 || e4[1] !== e4[3]) return [{ prop: prop, value: value }];
+      return [{ prop: prop + "-inline", value: e4[1] }];
+    }
+    if (prop === "border") return [{ prop: "border-inline", value: value }];
+    m = /^border-(width|style|color)$/.exec(prop);
+    if (m) {
+      var e = expand4(splitVals(value));
+      if (!e || e[1] !== e[3]) return [{ prop: prop, value: value }];
+      return [{ prop: "border-inline-" + m[1], value: e[1] }];
+    }
+    if (/radius/.test(prop)) return [{ prop: prop, value: value }];
+    if (VERTICAL_ONLY.test(prop)) return null;
+    return [{ prop: prop, value: value }];
+  }
   function slotsOf(prop) {
     if (/translate-x$/.test(prop)) return ["tx"];
     if (prop.charAt(0) === "-") return null;
@@ -779,10 +905,11 @@
   // تخصيصُ محدِّدٍ واحد رقمًا واحدًا (معرّفات×10⁶ + أصناف×10³ + عناصر): :where صفر،
   // و:is/:not/:has تأخذ أعلى تخصيصٍ في وسائطها. الهروب (\:) لا يُعدّ رمزًا.
   function specificity(sel) {
-    var s = String(sel).replace(/\\(?:[0-9a-fA-F]{1,6}\s?|.)/g, "_");
+    // كل استبدالٍ أدناه لا يقع إلا على محرفه (\ ( [ # : .) — فيُتخطّى إن غاب (المحدِّد البسيط هو الغالب)
+    var s = String(sel);
+    if (s.indexOf("\\") !== -1) s = s.replace(SPEC_ESC_RE, "_");
     var a = 0, b = 0, c = 0, m;
-    var FN = /:(where|is|not|has|matches|-webkit-any)\(/i;
-    while ((m = FN.exec(s))) {
+    while (s.indexOf("(") !== -1 && (m = SPEC_FN_RE.exec(s))) {
       var st = m.index + m[0].length, d = 1, e = st;
       while (e < s.length && d > 0) { var ch2 = s.charAt(e); if (ch2 === "(") d++; else if (ch2 === ")") d--; e++; }
       var inner = s.slice(st, e - 1);
@@ -793,29 +920,36 @@
       }
       s = s.slice(0, m.index) + " " + s.slice(e);
     }
-    s = s.replace(/\[[^\]]*\]/g, function () { b++; return " "; });
-    s = s.replace(/#[\w-]+/g, function () { a++; return " "; });
-    s = s.replace(/::[\w-]+/g, function () { c++; return " "; });
-    s = s.replace(/:[\w-]+(?:\([^)]*\))?/g, function () { b++; return " "; });
-    s = s.replace(/\.[\w-]+/g, function () { b++; return " "; });
-    s = s.replace(/(^|[\s>+~])([a-zA-Z][\w-]*)/g, function () { c++; return " "; });
+    if (s.indexOf("[") !== -1) s = s.replace(/\[[^\]]*\]/g, function () { b++; return " "; });
+    if (s.indexOf("#") !== -1) s = s.replace(/#[\w-]+/g, function () { a++; return " "; });
+    if (s.indexOf("::") !== -1) s = s.replace(/::[\w-]+/g, function () { c++; return " "; });
+    if (s.indexOf(":") !== -1) s = s.replace(/:[\w-]+(?:\([^)]*\))?/g, function () { b++; return " "; });
+    if (s.indexOf(".") !== -1) s = s.replace(/\.[\w-]+/g, function () { b++; return " "; });
+    var tm = s.match(SPEC_TYPE_RE); // الأخير: يكفي عدُّ المطابقات (هي مطابقاتُ الاستبدال نفسها)
+    if (tm) c += tm.length;
     return a * 1000000 + b * 1000 + c;
   }
+  var SPEC_TYPE_RE = /(^|[\s>+~])([a-zA-Z][\w-]*)/g;
+  var SPEC_ESC_RE = /\\(?:[0-9a-fA-F]{1,6}\s?|.)/g;
+  var SPEC_FN_RE = /:(where|is|not|has|matches|-webkit-any)\(/i;
   // الفاصل \u0001 لا يرد في CSS: «|» كان يرد في @supports selector(a|b) فيُغلق القوس مرتين
   function ctxKey(ctx) { return ctx.join("\u0001"); }
-  function fnv1a(str) {
-    var h = 0x811c9dc5;
+  // الحالة متدرّجة: بصمةُ (أ + ب) = متابعةُ حالة أ على ب — فتُحسب بادئةُ القاعدة مرةً لكل إعلاناتها
+  function fnvStep(h, str) {
     for (var j = 0; j < str.length; j++) {
       h ^= str.charCodeAt(j);
       h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
     }
-    return ("0000000" + h.toString(16)).slice(-8);
+    return h;
   }
+  function fnvHex(h) { return ("0000000" + h.toString(16)).slice(-8); }
+  function fnv1a(str) { return fnvHex(fnvStep(0x811c9dc5, str)); }
   // مفتاح التغطية عمدًا بلا طبقة: أسماء الطبقات قد تتبدل بين نشرات الموقع
   // والمقصود «هل هذا (السياق، المحدِّد، الخاصية) مغطًّى؟»
-  function coverageKey(ctx, sel, prop) {
-    return fnv1a(ctxKey(ctx) + "{" + sel.replace(/\s+/g, " ").trim() + "}" + prop);
+  function coveragePrefix(ctx, sel) {
+    return fnvStep(0x811c9dc5, ctxKey(ctx) + "{" + sel.replace(/\s+/g, " ").trim() + "}");
   }
+  function coverageKey(ctx, sel, prop) { return fnvHex(fnvStep(coveragePrefix(ctx, sel), prop)); }
 
   /* يقلب قائمة قواعد (من parseCss واحد أو أكثر). opts.layerOrder يعيد ترتيب البثّ
    * بحسب رتبة الطبقة (الطبقة المتأخرة تغلب، وغير المطبَّق يغلب الكل فيُبثّ أخيرًا).
@@ -834,7 +968,10 @@
     // وقائمةُ محدِّداتٍ متفاوتةِ التخصيص تُفصل قاعدةً لكل محدِّد كي يُفرز كلٌّ بحقّه.
     var expanded = [];
     for (var ei = 0; ei < rules.length; ei++) {
-      var er = rules[ei], parts = splitSelList(er.sel);
+      var er = rules[ei];
+      // بلا فاصلةٍ أصلًا فهو محدِّدٌ واحد — لا حاجة إلى التقسيم (الغالب)
+      if (er.sel.indexOf(",") === -1) { er.spec = specificity(er.sel); expanded.push(er); continue; }
+      var parts = splitSelList(er.sel);
       if (parts.length < 2) { er.spec = specificity(er.sel); expanded.push(er); continue; }
       var specs = parts.map(specificity), same = specs.every(function (s) { return s === specs[0]; });
       if (same) { er.spec = specs[0]; expanded.push(er); continue; }
@@ -852,7 +989,14 @@
     });
     var neutral = [], neutralImp = [], logical = [], logicalImp = [];
     var dirBoost = [], dirBoostImp = [], coverage = [], covSeen = {};
-    var seen = {}; // إزالة تكرار (سياق+محدِّد+خاصية+قيمة) — الملفات تكرر قواعد
+    // ★ إزالة التكرار (مراجعة كودكس ٩، مثبتة في كروم): كانت تُبقي **أولَ** ظهورٍ لـ(سياق
+    // + محدِّد + خاصية + قيمة) وتُهمل الأهمية — فـ‎.a{ml:1px}.a{ml:2px}.a{ml:1px}‎ صارت
+    // يمينًا 2px والأصل 1px، ونسخةُ ‎!important‎ المكرّرة تسقط فيبقى الهامش في الجهتين.
+    // والصواب إبقاءُ **آخِر** ظهورٍ بالمفتاح نفسه مع الطبقة والأهمية: المحدِّد نفسه يطابق
+    // العناصر نفسها في السياق نفسه، فالظهور الأخير يغلب كلَّ ما بينهما كما كان يغلبه
+    // الأول وأكثر — فحذفُ ما قبله لا يغيّر الحسم لأي عنصر.
+    // (المفتاح: الرتبة، فبصمةُ التغطية رقمًا لا ستّ عشريًّا — تكافؤٌ واحد، و«!» بعدها لا يكون رقمًا فلا التباس)
+    var lastAt = new Map();
     var stats = { flipped: 0, neutralized: 0, identity: 0, unflippable: {}, logicalAlready: 0, dirAware: 0, dirBoosted: 0, gateSkipped: 0, rules: rules.length };
     // قواعد الموقع المشروطة بـRTL (أدوات ‎rtl:‎ و‎:dir(rtl)‎) هي **قصد المؤلف** في RTL،
     // وتخصيصها واطئ (:where) فقلبُنا المعزَّز للأداة الأساس كان سيدهسها على العناصر
@@ -867,32 +1011,65 @@
       var sl = slotsOf(prop);
       if (sl) for (var z = 0; z < sl.length; z++) contested[sl[z]] = 1;
     }
+    // ★ (S8-C) ما يتكرّر في التمريرات الثلاثة يُحسب مرةً لكل قاعدة: نوعُها (1 مخرجاتنا، 2 واعيةٌ بالاتجاه)،
+    // وتحليلُ إعلاناتها (analyzeDecl دالةٌ خالصة في الخاصية والقيمة)، ومفاتيحُ إزالة التكرار وبصماتُ التغطية
+    var kindAt = new Array(sorted.length), anAt = new Array(sorted.length);
+    var keyAt = new Array(sorted.length), covAt = new Array(sorted.length);
+    var flipTails = new Set(); // ذيول مفاتيح المقلوبات (القيمة + علامة الأهمية) — انظر التمرير الثاني
     for (var r0 = 0; r0 < sorted.length; r0++) {
       var rule0 = sorted[r0];
-      if (rule0.sel.indexOf("data-cml") !== -1 || /\[dir\s*[=\]]|:dir\(/.test(rule0.sel)) continue;
+      kindAt[r0] = rule0.sel.indexOf("data-cml") !== -1 ? 1 : DIR_AWARE_RE.test(rule0.sel) ? 2 : 0;
+      if (kindAt[r0]) continue;
+      var an0 = anAt[r0] = new Array(rule0.decls.length);
       for (var d0 = 0; d0 < rule0.decls.length; d0++) {
-        var a0 = analyzeDecl(rule0.decls[d0].prop, rule0.decls[d0].value);
+        var a0 = an0[d0] = analyzeDecl(rule0.decls[d0].prop, rule0.decls[d0].value);
         if (!a0 || a0.kind !== "flip") continue;
+        flipTails.add(rule0.decls[d0].value + (rule0.decls[d0].important ? "!i" : ""));
         for (var f0 = 0; f0 < a0.flips.length; f0++) markSlots(a0.flips[f0].prop);
         for (var q0 = 0; q0 < a0.neutral.length; q0++) markSlots(a0.neutral[q0].prop);
       }
     }
+    // (الخانات المتنازَعة ثبتت بعد التمرير الأول — فالجواب لكل خاصيةٍ يُحسب مرة)
+    var idNeed = new Map();
     function identityNeeded(prop) {
+      var v = idNeed.get(prop);
+      if (v !== undefined) return v;
       var sl = slotsOf(prop);
-      if (!sl) return false;
-      for (var z = 0; z < sl.length; z++) if (contested[sl[z]]) return true;
-      return false;
+      v = false;
+      if (sl) for (var z = 0; z < sl.length; z++) if (contested[sl[z]]) { v = true; break; }
+      idNeed.set(prop, v);
+      return v;
+    }
+    // آخِرُ ظهورٍ لكل مفتاح. لا يُسأل عنه إلا المقلوب — لكن مفتاحَ غيرِه قد يساويه (تصادمُ بصمةٍ بقيمةٍ واحدة)
+    // فيحسم أيَّهما الأخير؛ فيُحسب مفتاحُ غير المقلوب أيضًا متى كان ذيلُه ذيلَ مقلوب. ولا يتساوى مفتاحان إلا
+    // بتساوي ذيلَيهما: صدرُ المفتاح أرقامٌ وفاصلٌ لا «!» فيه، فأولُ «!» حدُّه — فما سوى ذلك لا أثر له ويُتخطّى
+    for (var rl = 0; rl < sorted.length; rl++) {
+      var ruleL = sorted[rl];
+      if (kindAt[rl]) continue;
+      var preL = -1, rkL = "", keysL = null, covL = null;
+      for (var dl = 0; dl < ruleL.decls.length; dl++) {
+        var decL = ruleL.decls[dl], aL = anAt[rl][dl];
+        var tailL = decL.value + (decL.important ? "!i" : "");
+        if (!(aL && aL.kind === "flip") && !flipTails.has(tailL)) continue;
+        if (preL === -1) {
+          preL = coveragePrefix(ruleL.ctx, ruleL.sel); rkL = rank(ruleL.layer) + "\u0002";
+          keysL = keyAt[rl] = new Array(ruleL.decls.length); covL = covAt[rl] = new Array(ruleL.decls.length);
+        }
+        covL[dl] = fnvStep(preL, decL.prop);
+        keysL[dl] = rkL + covL[dl] + "!" + tailL;
+        lastAt.set(keysL[dl], rl * 100000 + dl);
+      }
     }
     for (var r = 0; r < sorted.length; r++) {
       var rule = sorted[r];
-      if (rule.sel.indexOf("data-cml") !== -1) { stats.gateSkipped++; continue; } // مخرجاتنا نحن
-      if (/\[dir\s*[=\]]|:dir\(/.test(rule.sel)) {
+      if (kindAt[r] === 1) { stats.gateSkipped++; continue; } // مخرجاتنا نحن
+      if (kindAt[r] === 2) {
         stats.dirAware++;
         if (RTL_COND_RE.test(rule.sel)) {
           var bn = [], bi = [];
           for (var bx = 0; bx < rule.decls.length; bx++) (rule.decls[bx].important ? bi : bn).push(rule.decls[bx]);
           if (bn.length) dirBoost.push({ sel: prefixTier(rule.sel, 4), decls: bn, ctx: rule.ctx });
-          if (bi.length) dirBoostImp.push({ sel: prefixTier(rule.sel, 4), decls: bi, ctx: rule.ctx });
+          if (bi.length) dirBoostImp.push({ sel: prefixTier(rule.sel, 4), decls: bi, ctx: rule.ctx, _o: impOrder(rule, r) });
           stats.dirBoosted++;
         }
         continue;
@@ -900,13 +1077,17 @@
       var flips = [], neut = [];
       for (var d = 0; d < rule.decls.length; d++) {
         var dec = rule.decls[d];
-        var a = analyzeDecl(dec.prop, dec.value);
+        var a = anAt[r][d];
         if (!a || a.kind === "logical") {
           if (a) stats.logicalAlready++;
           // النسخة المطابقة: محايدٌ أو منطقيٌّ خاناتُه متنازَعةٌ فعلًا يُعاد بثُّه
           // كما هو في مستوى المنطقيات — وإلا محاه مصفِّرُ قاعدةٍ مجاورة
           if (identityNeeded(dec.prop)) {
-            flips.push({ prop: dec.prop, value: dec.value, important: dec.important });
+            // ★ (ق١) لا يُعاد المختصر كاملًا: ‎:where(*){padding:0;margin:0;border:0 solid}‎ كان يُبثّ بتخصيصنا خارج
+            // الطبقات فيمحو الهوامش والحشوات والحدود العمودية لأدوات الموقع (5,958 عنصرًا في 43 من 49 تشغيلًا)
+            var parts0 = identitySplit(dec.prop, dec.value);
+            if (parts0 === null) { stats.identitySkipped = (stats.identitySkipped || 0) + 1; continue; }
+            for (var ip = 0; ip < parts0.length; ip++) flips.push({ prop: parts0[ip].prop, value: parts0[ip].value, important: dec.important });
             stats.identity++;
           }
           continue;
@@ -915,10 +1096,9 @@
           stats.unflippable[a.reason] = (stats.unflippable[a.reason] || 0) + 1;
           continue;
         }
-        var ck = coverageKey(rule.ctx, rule.sel, dec.prop);
-        if (seen[ck + "!" + dec.value]) continue;
-        seen[ck + "!" + dec.value] = 1;
+        var ck = fnvHex(covAt[r][d]);
         if (!covSeen[ck]) { covSeen[ck] = 1; coverage.push(ck); }
+        if (lastAt.get(keyAt[r][d]) !== r * 100000 + d) { stats.deduped = (stats.deduped || 0) + 1; continue; }
         for (var f = 0; f < a.flips.length; f++) flips.push({ prop: a.flips[f].prop, value: a.flips[f].value, important: dec.important });
         for (var q = 0; q < a.neutral.length; q++) neut.push({ prop: a.neutral[q].prop, value: a.neutral[q].value, important: dec.important });
         stats.flipped++;
@@ -926,24 +1106,40 @@
       // فرز المهمّات: !important داخل طبقات الموقع يقلب قانون الطبقات (المهمّ المبكر
       // يغلب المتأخر) فيهزم مهمّاتُ الموقع المطبَّقةُ مهمّاتِنا غيرَ المطبَّقة — لذا
       // تُفصل الإعلانات الحاملة له لتُبثّ داخل ‎@layer cml-imp‎ المعلَنة أولَ الورقة.
-      var exN = anchorish(neut) ? NOFLIP_EXEMPT : "";
-      var exF = anchorish(flips) ? NOFLIP_EXEMPT : "";
-      pushSplit(neutral, neutralImp, prefixTier(rule.sel, 2, exN), neut, rule.ctx);
-      pushSplit(logical, logicalImp, prefixTier(rule.sel, 3, exF), flips, rule.ctx);
+      // (البادئة تُبنى لما له ناتجٌ وحده — وكانت تُبنى مرتين لكل قاعدة ثم تُهمل في الغالب)
+      if (neut.length) pushSplit(neutral, neutralImp, prefixTier(rule.sel, 2, anchorish(neut) ? NOFLIP_EXEMPT : ""), neut, rule.ctx, impOrder(rule, r));
+      if (flips.length) pushSplit(logical, logicalImp, prefixTier(rule.sel, 3, anchorish(flips) ? NOFLIP_EXEMPT : ""), flips, rule.ctx, impOrder(rule, r));
       stats.neutralized += neut.length;
     }
+    // ★ ترتيب المهمّات مستقلٌّ عن ترتيب العاديات (مراجعة كودكس ١٠، مثبتة في كروم): في
+    // المهمّات ينقلب قانون الطبقات — الطبقةُ الأسبق تغلب، وغيرُ المطبَّق أضعفُها — وكنّا
+    // نبثّها بترتيب العاديات فيغلب في طبقتنا الواحدة ‎cml-imp‎ ما كان مغلوبًا عند الموقع
+    // (‎@layer first,second‎ بهامشين مهمّين: الأصل 1px، والمقلوب كان 2px). فتُرتَّب هنا
+    // بأولوية المهمّات: الأضعف أولًا فالأقوى آخِرًا، والتخصيصُ فالموضعُ داخل الطبقة.
+    sortImp(neutralImp); sortImp(logicalImp); sortImp(dirBoostImp);
     return {
       neutral: neutral, neutralImp: neutralImp,
       logical: logical, logicalImp: logicalImp,
       dirBoost: dirBoost, dirBoostImp: dirBoostImp,
       coverage: coverage, stats: stats,
     };
-    function pushSplit(normalList, impList, sel, decls, ctx) {
+    function pushSplit(normalList, impList, sel, decls, ctx, order) {
       if (!decls.length) return;
       var nd = [], id = [];
       for (var x = 0; x < decls.length; x++) (decls[x].important ? id : nd).push(decls[x]);
       if (nd.length) normalList.push({ sel: sel, decls: nd, ctx: ctx });
-      if (id.length) impList.push({ sel: sel, decls: id, ctx: ctx });
+      if (id.length) impList.push({ sel: sel, decls: id, ctx: ctx, _o: order });
+    }
+    // أولوية المهمّات: غير المطبَّق -1 (أضعفها)، ثم الطبقات بعكس ترتيبها (الأسبق أقوى)
+    function impOrder(rule, pos) {
+      var ik = (rule.layer === null || rule.layer === undefined) ? -1 : (layerOrder.length + 1) - rank(rule.layer);
+      return { ik: ik, spec: rule.spec || 0, pos: pos };
+    }
+    function sortImp(list) {
+      list.sort(function (a, b) {
+        var oa = a._o || { ik: 0, spec: 0, pos: 0 }, ob = b._o || { ik: 0, spec: 0, pos: 0 };
+        return (oa.ik - ob.ik) || (oa.spec - ob.spec) || (oa.pos - ob.pos);
+      });
     }
   }
 
@@ -994,10 +1190,45 @@
    * حرفيًّا (بوابتها v2) — فلا تتزاحمان أبدًا، وإخفاقُ الحيّ يُبقي اللقطة عاملة.
    * والترتيب هنا هو ترتيب gen-rtl نفسه: جزرٌ، فمهمّات، فمصفِّرات، فمنطقيات، فمعزَّزات. */
   var LIVE_GATE = 'html[data-cml-rtl="live"]';
-  function buildLiveSheet(texts) {
+  // ★ (ر9-د، ٥ جمادى الأولى ١٤٤٨هـ) عتبتا «المدخل الهزيل» للورقة الحيّة. كانتا عتبتَي المولّد للتطبيق (1000 قاعدة و200 مقلوبٍ)،
+  // وهما معايَرتان على اتحاد أوراق الموقع كلها في لقطته؛ أما مدخل الحيّ فأوراق الصفحة الحاضرة كاملةً (الكلُّ أو لا شيء في العامل)،
+  // والصفحة الخفيفة أوراقُها الكاملة قليلة. قِيس: claude.ai/login بوكيل مستخدمٍ محمول (الموقع يختار الحزمة بالوكيل لا بالعرض) ورقتان
+  // فيهما 2,675 قاعدة و87 مقلوبًا، فكانت تُرفض «هزيلة» وتبقى اللقطة عليها أبدًا (فحص الاتجاه بعرض 390: الورقة الحيّة لم تُحقن).
+  // فعتبة المقلوب الآن أدنى عتبات المولّد لموقعٍ كامل (60: Intercom والوثائق)، وعتبة القواعد باقية. والناتج لما يُقبل لم يتغيّر،
+  // فلا تتغيّر REV
+  var LIVE_MIN_RULES = 1000, LIVE_MIN_FLIPPED = 60;
+  // ★ (مراجعة كودكس ١٣) المدخل سجلّاتٌ {text, base, media} بترتيب المستند — والنصُّ
+  // المجرّد مقبولٌ للتوافق. وسيطُ الورقة يصير سياقًا (@media) على قواعدها، والعناوين
+  // النسبية في القيم تُطلق على عنوان الورقة (نسخُها إلى <style> في الصفحة يغيّر أساسَها
+  // فتنكسر الصورة)، و@import لا نتبعه فنرفض البناء صراحةً وتبقى اللقطة عاملة.
+  // info (اختياري) يستقبل سبب الرفض.
+  var URL_IN_VALUE = /url\(\s*(['"]?)([^'")]*)\1\s*\)/g;
+  function absolutizeUrls(value, base) {
+    if (!base || value.indexOf("url(") === -1 || typeof URL !== "function") return value;
+    return value.replace(URL_IN_VALUE, function (all, q, u) {
+      if (!u || /^(?:data:|#|[a-z][a-z0-9+.-]*:)/i.test(u)) return all;
+      try { return "url(" + q + new URL(u, base).href + q + ")"; } catch (e) { return all; }
+    });
+  }
+  function buildLiveSheet(texts, info) {
+    info = info || {};
     var all = [], layerOrder = [], parseErrors = 0;
     for (var i = 0; i < texts.length; i++) {
-      var p = parseCss(texts[i]);
+      var src = texts[i];
+      var rec = typeof src === "string" ? { text: src } : (src || {});
+      var p = parseCss(String(rec.text || ""));
+      if (p.imports && p.imports.length) { info.reason = "import"; return null; }
+      var media = String(rec.media || "").trim();
+      var mediaCtx = media && !/^(?:all|screen)$/i.test(media) ? "@media " + media : null;
+      for (var rr = 0; rr < p.rules.length; rr++) {
+        var rule = p.rules[rr];
+        if (mediaCtx) rule.ctx = [mediaCtx].concat(rule.ctx || []);
+        if (rec.base) {
+          for (var dd = 0; dd < rule.decls.length; dd++) {
+            rule.decls[dd].value = absolutizeUrls(rule.decls[dd].value, rec.base);
+          }
+        }
+      }
       parseErrors += p.stats.parseErrors;
       for (var L = 0; L < p.layerOrder.length; L++) {
         if (layerOrder.indexOf(p.layerOrder[L]) === -1) layerOrder.push(p.layerOrder[L]);
@@ -1006,9 +1237,9 @@
     }
     // بوابتا صحّةٍ كبوابتَي المولّد: مدخلٌ هزيلٌ أو أخطاءُ تحليلٍ كثيرة ⇒ لا ورقة
     // (فتبقى اللقطة عاملةً بدل ورقةٍ ناقصةٍ تُفسد الصفحة)
-    if (parseErrors > 50) return null;
+    if (parseErrors > 50) { info.reason = "parse"; return null; }
     var out = flipSheet(all, { layerOrder: layerOrder });
-    if (all.length < 1000 || out.stats.flipped < 200) return null;
+    if (all.length < LIVE_MIN_RULES || out.stats.flipped < LIVE_MIN_FLIPPED) { info.reason = "thin"; return null; }
     var impRules = out.neutralImp.concat(out.logicalImp, out.dirBoostImp);
     var css = "@layer cml-point, cml-imp;\n" + ISLANDS_CSS +
       (impRules.length ? "@layer cml-imp{\n" + serializeRules(impRules) + "\n}\n" : "") +
@@ -1022,6 +1253,11 @@
 
   g.CMLRtl = {
     LIVE_GATE: LIVE_GATE,
+    // مراجعة المحرّك: تدخل بصمة الورقة الحيّة فتُبنى من جديد عند كل إصلاحٍ في القلب (لا تبقى ورقةُ محرّكٍ قديم
+    // مخزَّنةً ما دامت عناوين أوراق الموقع كما هي). ٢: النسخ المطابقة والمختصرات أفقيةٌ وحدها (فحص الاتجاه ق١)
+    // ٣ ★ (ر5-ج): قواعد ‎@scope‎ تُسطَّح فتدخل القلب والنسخ المطابقة (حشوة خلايا الجداول في النثر)
+    // ٤ ★ (ر9-هـ): مركّب html يُقطع في المستوى الأعلى وحده (compoundLen) — فلا تبقى في الذاكرة ورقةٌ حيّة مبتورة بُنيت قبله
+    REV: 4,
     buildLiveSheet: buildLiveSheet,
     GATE: GATE,
     parseCss: parseCss,

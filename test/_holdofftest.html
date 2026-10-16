@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>holdoff test</title>
+<!--
+  الإمساك المبكّر (عند بدء المستند قبل قراءة الإعدادات) لا يخفي موقعًا أطفأه المستخدم: الإعدادات
+  تُقرأ فيُرفع الإمساك فورًا، والصفحة تظهر بنصّها الأصلي بلا سمات الإضافة.
+  العقد: document.title = "holdoff N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<link rel="stylesheet" href="../extension/base.css">
+<div id="__next"><div dir="ltr"><p id="t">Contact Support</p></div></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true, "cml_site.support": false });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "support",
+  meta: { scan: "none", live: false, chat: false, hydrate: "defer", intercom: true },
+  default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Contact Support": "التواصل مع الدعم" }, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-const.js"></script>
+<script>CMLConst.HOLD_MAX_MS = 300; CMLConst.HYDRATE_MAX_MS = 60000;</script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g"), ""); }
+var H = document.documentElement;
+
+(async function () {
+  await wait(250);
+  check("★ موقعٌ أطفأه المستخدم: لا إمساك ولا إخفاء بعد قراءة الإعدادات", "null/null/visible",
+        H.getAttribute("data-cml-hold") + "/" + H.getAttribute("data-cml-boot") + "/" + getComputedStyle(H).visibility);
+  check("ولا سمات الإضافة على html، والنص على أصله", "null/Contact Support",
+        H.getAttribute("data-cml") + "/" + noBidi(document.getElementById("t").textContent));
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "holdoff " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "HOLDOFF: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

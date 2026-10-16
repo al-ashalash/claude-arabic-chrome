@@ -1,0 +1,393 @@
+/* app-point.css — إصلاحاتٌ نقطية لتطبيق claude.ai وحده (كانت في base.css).
+   تُحقن بعد base.css (الذي يعلن @layer cml-point, cml-imp أولًا)، فتبقى للنقطيات
+   المهمّة الكلمةُ الأخيرة فوق مهمّات المحرّك (cml-imp) ومهمّات الموقع المطبَّقة. */
+/* --- Full RTL layout (only when the RTL toggle is ON: html dir="rtl") --- */
+/* الإصلاحات النقطية كلها !important، وقانون الطبقات في المهمّات منقلب (المبكر
+   يغلب) — فتُلفّ في @layer cml-point التي يعلنها base.css **قبل** طبقة
+   مهمّات المحرّك cml-imp: فتبقى للنقطيات الكلمة الأخيرة فوق المحرّك وفوق مهمّات
+   الموقع المطبَّقة جميعًا (التي كانت قبل هذا اللفّ تغلب مهمّاتنا غير المطبَّقة). */
+@layer cml-point {
+/* claude.ai pins its sidebar to the physical left; mirror it to the right and
+   move the content offset, tracking the live --df-sidebar-width variable. */
+html[data-cml="on"][dir="rtl"] .dframe-sidebar { left: auto !important; right: 0 !important; }
+html[data-cml="on"][dir="rtl"] .dframe-content-inner { padding-left: 0 !important; padding-right: calc(var(--df-sidebar-width, 288px) + 16px) !important; }
+/* Sidebar chat/recents titles use Tailwind's text-left; realign right so RTL
+   titles truncate on the correct (left) side instead of clipping their start. */
+html[data-cml="on"][dir="rtl"] .dframe-sidebar .text-left { text-align: right !important; }
+/* Settings/other dialogs: claude.ai uses Tailwind `text-left` (physical left) on nav
+   items and labels, leaving a gap before the RTL icon; realign to the right. */
+html[data-cml="on"][dir="rtl"] [role="dialog"] .text-left { text-align: right !important; }
+/* The hover "⋮ more options" button is pinned to the PHYSICAL right (right-[calc…]),
+   which overlaps the RTL title's start; move it to the trailing (left) edge in RTL. */
+html[data-cml="on"][dir="rtl"] .dframe-sidebar [class*="right-[calc"] {
+  right: auto !important;
+  left: calc((var(--df-row-h) - var(--df-row-ctl)) / 2) !important;
+}
+
+/* --- صندوق الإدخال (composer): عناصر مثبتة فيزيائيًا فلا تنقلب مع RTL ---
+   شريطه السفلي عنقودان بتثبيت مطلق: رقاقات الوضع (محادثة/العمل المشترك) على left-0،
+   والمايك ومنتقي النموذج على right-0 — فيبقيان في الجهة الخطأ. نبدّلهما.
+   (فُحصت الصفحة الحية 2026-08-16: هذه والنص الدالّ أدناه كل المثبَّت فيزيائيًا في
+   الصندوق؛ إبهام التبديل المتحرك يُحسب بالإحداثيات الفعلية فهو محايد ولا يُمسّ.) */
+html[data-cml="on"][dir="rtl"] fieldset div.absolute.bottom-0.left-0 {
+  left: auto !important; right: 0 !important;
+}
+html[data-cml="on"][dir="rtl"] fieldset div.absolute.bottom-0.right-0 {
+  right: auto !important; left: 0 !important;
+}
+/* النص الدالّ (placeholder) مثبت left-0 بينما مؤشر الكتابة في RTL على اليمين —
+   فيظهر الدالّ في طرفٍ والمؤشر في طرف. ننقله إلى جهة المؤشر. */
+html[data-cml="on"][dir="rtl"] fieldset span.pointer-events-none.absolute.left-0.top-0 {
+  left: auto !important; right: 0 !important;
+}
+
+/* --- شبكة الأسعار في /login (فحص الاتجاه الشامل ١٤٤٨هـ، ق٥): الموقع يفرض ‎direction:ltr‎ على
+   ‎#pricing > .grid > .[direction:ltr]‎ فتُعرض البطاقات المعرَّبة كلها LTR («بلا التزام · ألغِ في أي وقت»،
+   «ابتداءً من $100»…: 24 عنصرًا). البطاقات نفسها لا شأن لها بالاتجاه، فترتيبها في RTL مرآةُ ترتيبها
+   في LTR كسائر الشبكات. والمحصور بـ#pricing لا يمسّ ‎[direction:ltr]‎ في غيرها (الشيفرة مثلًا). */
+html[data-cml="on"][dir="rtl"] #pricing .\[direction\:ltr\] {
+  direction: rtl !important;
+}
+
+/* ★ (ر9-ب، ٣ جمادى الأولى ١٤٤٨هـ — القرار 95) حقل البريد في /login: صار الموقع يضع عليه dir="ltr" (input#email.cds-input،
+   صنف فحص الاتجاه 28656611610c) والمحرّك يعرّب نصّه المؤقت، فيقف «أدخل بريدك الإلكتروني» يسارًا في نموذجٍ محاذًى يمينًا.
+   فالحقل وهو فارغ (:placeholder-shown) وحده RTL: النص المؤقت ومؤشر الكتابة يمينًا معًا، ومن أول حرفٍ يُكتب يعود LTR بسمة
+   الموقع، فيبقى البريد المكتوب LTR. ومحصورٌ بحقول البريد التي يجعلها الموقع LTR، فلا يمسّ حقلًا LTR غيرها (الروابط والشيفرة)،
+   ولا حقلًا نصّه المؤقت فارغ (كروم يعدّه ظاهرًا ولا نصّ يُحاذى)، ومعلَّقٌ على تشغيل الإضافة وقلب الصفحة كسائر هذه الطبقة. */
+html[data-cml="on"][dir="rtl"] input[dir="ltr"]:is([type="email"], #email):not([placeholder=""]):placeholder-shown {
+  direction: rtl !important;
+}
+} /* نهاية @layer cml-point */
+
+/* ★ العلاج النقطي للقصّ مع الخط العربي المضاف (DESIGN-fonts §٤.٦؛ قرار المالك — الخيار ٢، ١٩ ربيع الآخر ١٤٤٨هـ).
+   الخطوط العربية المحزومة أعمقُ ذيولًا تحت خط الأساس (ي ن ر و ع ج) من Segoe UI، وclaude.ai يقطع السطر الواحد بـ
+   overflow: hidden عند ارتفاعٍ ثابت، فيُقصّ من الذيل أكثر مما يُقصّ اليوم. فيصير القطع clip بهامشٍ حول صندوق الحشوة
+   بوحدة em لأن زيادة الذيل تتبع حجم الخط (0.16em أصغر هامشٍ يجتاز به Cairo وNoto Naskh Arabic القاعدة؛ 2px لا يكفي فوق 20px):
+   - لا يتغيّر صندوقٌ ولا موضع، وعلامة الحذف (text-overflow) تعمل مع clip كما مع hidden، ولا يُرسم بعدها شيء؛
+   - hidden يجعل العنصر حاويةَ تمرير فيصير أدنى حجمه في الصفّ المرن والشبكة صفرًا، وclip لا يفعل؛ فيُعاد الصفر بإعلانٍ
+     عاديٍّ في أدنى طبقات الصفحة (cml-point أولُ الطبقات المعلنة)، فيغلبه كل حدٍّ يضعه الموقع بنفسه؛
+   - وخطُّ أساس inline-block تحت hidden حافته السفلى وتحت clip سطره الأخير، فيُستثنى المعروض سطريًّا بأصنافه (inline-*).
+   - ويُستثنى ما عليه أداة overflow-auto/scroll/visible أو overflow-x-… وoverflow-y-…: أدوات Tailwind تأتي بعد truncate فتغلبه في
+     الموقع، وclip المهمّ كان سيوقف تمريرَ حاويةِ تمرير أو يُحدث قصًّا لم يكن (المراجعة العدائية، ٢٠ ربيع الآخر ١٤٤٨هـ).
+   - ويُستثنى ما عليه صنف line-clamp-: إن قطع الموقع به بعد سطرين أظهر الهامشُ أعالي السطر التالي، فيعالجه علاج القطع بعدد الأسطر أدناه.
+   معلَّقٌ على data-cml-font (C.FONT_ATTR) وحدها، فبلا خطٍّ مضاف — «خط الموقع» أو الإطفاء — تبقى المواقع كما هي حرفًا.
+   و«fonts.mjs measure» يقرأ المحدِّدات داخل :is() والهامش من هذه القاعدة نفسها (لا نسخة)، والقفل يحفظ بصمتها:
+   فكل تعديلٍ هنا يُسقط «fonts.mjs verify» حتى تُعاد المعايرة. */
+@layer cml-point {
+  html[data-cml="on"][data-cml-font] :is(
+    .truncate, /* Tailwind: عناوين الشريط الجانبي والقوائم وما أشبهها */
+    .dframe-pane-drag-label>span, /* لافتة سحب اللوحة (12.24/18.35) */
+    .df-pill-label, /* رقاقات الصفوف (13/19.5، 14/21) */
+    ._cardTitle_xr9fn_333, /* عنوان البطاقة (15/22.5) */
+    /* قواعد القطع بلا حجم خط (يرث حجمه، فيمثّله «fonts.mjs measure» بأحجام الأدوات؛ مراجعة S5-B): */
+    .\!truncate, /* truncate المهمّ */
+    ._pillLabel_xr9fn_267, /* وسم الرقاقة */
+    ._cardSourceLabel_xr9fn_359, /* مصدر البطاقة (13/19.5) */
+    .df-update-strip-title, .df-update-strip-status /* شريط التحديث */
+  ):not([class*="inline-"], [class*="overflow-auto"], [class*="overflow-scroll"], [class*="overflow-visible"], [class*="overflow-x-"], [class*="overflow-y-"], [class*="line-clamp-"]) {
+    overflow: clip !important;
+    overflow-clip-margin: 0.16em !important;
+    min-width: 0;
+    min-height: 0;
+  }
+  /* صيغ truncate المشروطة: بشرط الموقع نفسه لا غير، فخارجه لا قطع عند الموقع فلا علاج (ولا تُمسّ أدنى الأحجام) */
+  @media (width>=40rem) {
+    html[data-cml="on"][data-cml-font] :is(.sm\:truncate):not([class*="inline-"], [class*="overflow-auto"], [class*="overflow-scroll"], [class*="overflow-visible"], [class*="overflow-x-"], [class*="overflow-y-"], [class*="line-clamp-"]) {
+      overflow: clip !important; overflow-clip-margin: 0.16em !important; min-width: 0; min-height: 0;
+    }
+  }
+  @container (width>=28rem) {
+    html[data-cml="on"][data-cml-font] :is(.\@md\:truncate):not([class*="inline-"], [class*="overflow-auto"], [class*="overflow-scroll"], [class*="overflow-visible"], [class*="overflow-x-"], [class*="overflow-y-"], [class*="line-clamp-"]) {
+      overflow: clip !important; overflow-clip-margin: 0.16em !important; min-width: 0; min-height: 0;
+    }
+  }
+  @container (width>=480px) {
+    html[data-cml="on"][data-cml-font] :is(.\@\[480px\]\:truncate):not([class*="inline-"], [class*="overflow-auto"], [class*="overflow-scroll"], [class*="overflow-visible"], [class*="overflow-x-"], [class*="overflow-y-"], [class*="line-clamp-"]) {
+      overflow: clip !important; overflow-clip-margin: 0.16em !important; min-width: 0; min-height: 0;
+    }
+  }
+  /* العبارة النائبة في مربع الكتابة (::before مطلق الموضع، فلا أدنى حجمٍ ولا خط أساس يتغيّر) */
+  html[data-cml="on"][data-cml-font] .\[\&_\.ProseMirror_p\.is-editor-empty\:first-child\:\:before\]\:truncate .ProseMirror p.is-editor-empty:first-child:before {
+    overflow: clip !important;
+    overflow-clip-margin: 0.16em !important;
+  }
+  /* ولا يُعالَج line-clamp-*: السطر التالي للحدّ مرسومٌ تحت الصندوق، فالهامش يُظهر أعالي حروفه وحركاته */
+} /* نهاية العلاج النقطي للقصّ */
+
+/* ★ علاج القطع بعدد الأسطر (line-clamp) مع الخط العربي المضاف (S5d-B، ٢٠ ربيع الآخر ١٤٤٨هـ؛ «طبّقها حسب المتاح دون حصول خلل»).
+   claude.ai يقطع بعض النصوص بعد عددٍ من الأسطر فيُخفي ما بعد السطر الأخير بـ overflow: hidden، وهامش القصّ لا يصلح هنا
+   لأنه يُظهر أعالي السطر التالي للحدّ. فتُرسم العربية داخل عنصر القطع وكل ما تحته بعائلةٍ تُلحق أولَ قائمة خطه:
+   - «cml-ar-compact»: تسجّلها الوحدة من بايتات الخط المختار نفسه بحجمٍ أصغر (size-adjust = s_c، ولا يقلّ عن 0.85) وتجاوزاتٍ
+     B.asc/s_c وB.desc/s_c ومدًى عربي، متى اجتاز بها الخطُّ ارتفاعاتِ القطع الحقيقية في هذا الموقع (web/code/fonts.clamp.json)؛
+   - فإن لم تسجّلها وقعت العربية على «cml-ar-today»: أوجهٌ محلية بمدًى عربي وبلا تجاوز، لكلٍّ مدى وزنٍ يطابق ما يختاره ويندوز
+     لـ "Segoe UI" عند ذلك الوزن (قيس كل وزنٍ من 1 إلى 1000: الخفيف حتى 325، ونصف الخفيف حتى 375، والعادي حتى 499، ونصف العريض
+     حتى 649، والعريض حتى 799، وفوقه لا عربية في Segoe UI Black فيرسمها النظام بـ Times New Roman العريض)، والمائل وجهٌ عادي
+     قائمٌ واحد يعرّضه المتصفح من 600 كما يفعل اليوم (بلا ميلٍ مصطنع في العربية، كالوجه الرئيس) — فترسم كالمرجع «Segoe UI» في القياس عند كل وزنٍ وميل، ولا يزيد القصّ عليه؛
+   - ثم var(--cml-ff): قائمة خط العنصر نفسها كما يعلنها الموقع (المرآة المولَّدة آخر الملف، بترتيب أوراقه وطبقاته)، فلا يتغيّر حرفٌ إنجليزي.
+   هذه القاعدة للجذور (عنصر القطع نفسه)، وما تحتها يرثها؛ وما يعلن له الموقع خطًّا قد يحمل وجهنا الرئيس (عائلةٌ معكوسة أو متغيّر)
+   تشمله قاعدةٌ مولَّدة آخر المرآة على أي عمق، وما يعلن له خطَّ نظامٍ صريحًا (monospace المجرّد …) يبقى كما هو فعربيته كاليوم.
+   ولا يتغيّر صندوقٌ ولا موضع: المسافة خارج المدى العربي، فأول خطٍّ متاح يبقى خط الموقع، وخط الأساس خطه.
+   معلَّقٌ على data-cml-font كالعلاج النقطي؛ و«fonts.mjs measure» يقرأ الجذور والمحدِّدات وأوجه اليوم من هنا (لا نسخة)،
+   والقفل يحفظ بصمتها فيسقط «fonts.mjs verify» إن تغيّرت بعد المعايرة. */
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI Light"), local("SegoeUI-Light"); font-weight: 1 325; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI Semilight"), local("SegoeUI-Semilight"); font-weight: 326 375; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI"), local("SegoeUI"); font-weight: 376 499; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI Semibold"), local("SegoeUI-Semibold"); font-weight: 500 649; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI Bold"), local("SegoeUI-Bold"); font-weight: 650 799; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Times New Roman Bold"), local("TimesNewRomanPS-BoldMT"); font-weight: 800 1000; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI"), local("SegoeUI"); font-weight: 400; font-style: italic; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@layer cml-point {
+  html[data-cml="on"][data-cml-font] :is(
+    [class*="line-clamp-"], /* أصناف line-clamp كلها وصيغها المشروطة */
+    [style*="line-clamp"], /* القطع بنمطٍ مضمَّن */
+    ._bubbleClamped_xr9fn_377 /* فقاعة الرسالة المقطوعة في رسم الهاتف (وحدة CSS، 14/18.9) */
+  ) {
+    font-family: "cml-ar-compact", "cml-ar-today", var(--cml-ff) !important;
+  }
+} /* نهاية علاج القطع بعدد الأسطر */
+
+/* ── مرآة --cml-ff: مولَّدة من لقطة sitecss/ بـ «node web/code/toolchain/fonts.mjs clamp-css»، فلا تُحرَّر باليد. ──
+   تعريف متغيّرٍ لا يقرؤه إلا علاج القطع (المعلَّق على السمة)، فلا أثر له في الرسم: 120 قاعدة بترتيب أوراق الموقع وطبقاته (properties، cds-card، theme، base، components، utilities)؛ ثم 82 محدِّدًا لما تحت الجذور يعلن له الموقع خطًّا قد يحمل وجهنا. */
+@layer cml-point {
+@layer cml-ua, properties, cds-card, theme, base, components, utilities;
+@layer cml-ua{:where(code,kbd,samp,pre,tt,xmp,listing,plaintext,textarea){--cml-ff:monospace}:where(math){--cml-ff:math}}
+.dframe-sidebar{--cml-ff:var(--cds-font-sans)}
+.epitaxy-root .epitaxy-prompt[data-bash-mode] .tiptap,.epitaxy-root .epitaxy-prompt[data-bash-mode] [data-composer-placeholder]{--cml-ff:var(--cds-font-mono)}
+.epitaxy-root div.ProseMirror :not(pre)>code{--cml-ff:var(--cds-font-mono)}
+.epitaxy-root .ProseMirror .code-block pre{--cml-ff:var(--cds-font-mono)}
+.epitaxy-root .epitaxy-sticky-prompt-bubble{--cml-ff:var(--cds-font-sans)}
+@layer base{
+ html,:host{--cml-ff:var(--default-font-family,-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji")}
+ code,kbd,samp,pre{--cml-ff:var(--default-mono-font-family,ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace)}
+ button,input,select,optgroup,textarea{--cml-ff:inherit}
+}
+@layer components{
+ :where(.cds-root) :where(input,textarea,select).cds-input{--cml-ff:inherit}
+ :where(.text-title,.text-title-regular,.text-title-medium,.text-title-semibold,.text-title-bold){--cml-ff:var(--_cds-title-family,var(--cds-font-sans-display))}
+ .prose{--cml-ff:var(--_prose-font-body)}
+ :where(.prose) h1:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)),:where(.prose) h2:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)),:where(.prose) h3:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)),:where(.prose) h4:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)),:where(.prose) h5:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)),:where(.prose) h6:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)){--cml-ff:var(--_prose-noscope) var(--_prose-font-heading)}
+ :where(.prose) h1:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)),:where(.prose) h2:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)),:where(.prose) h3:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)){--cml-ff:var(--_prose-noscope) var(--_prose-font-heading-display)}
+ :where(.prose) kbd:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)){--cml-ff:var(--_prose-noscope) var(--_prose-font-mono)}
+ :where(.prose) code:not(pre code):not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)){--cml-ff:var(--_prose-noscope) var(--_prose-font-mono)}
+ :where(.prose) pre:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)){--cml-ff:var(--_prose-noscope) var(--_prose-font-mono)}
+ @scope(.prose) to (.not-prose,[data-not-prose]){
+  h1,h2,h3,h4,h5,h6{--cml-ff:var(--_prose-font-heading)}
+  h1,h2,h3{--cml-ff:var(--_prose-font-heading-display)}
+  kbd{--cml-ff:var(--_prose-font-mono)}
+  code:not(pre code){--cml-ff:var(--_prose-font-mono)}
+  pre{--cml-ff:var(--_prose-font-mono)}
+  pre code{--cml-ff:inherit}
+  table{--cml-ff:inherit}
+ }
+}
+@layer utilities{
+ .text-code-medium{--cml-ff:var(--cds-font-mono)}
+ .text-code-regular{--cml-ff:var(--cds-font-mono)}
+ .font-claude-response-heading{--cml-ff:var(--font-claude-response)}
+ .font-claude-response-title{--cml-ff:var(--font-claude-response)}
+ .font-display{--cml-ff:var(--font-ui-serif)}
+ .font-heading{--cml-ff:var(--font-ui-serif)}
+ .font-title{--cml-ff:var(--font-ui-serif)}
+ .font-xl{--cml-ff:var(--cds-font-sans)}
+ .font-xl-bold{--cml-ff:var(--cds-font-sans)}
+ .\!font-base{--cml-ff:var(--cds-font-sans)!important}
+ .font-base{--cml-ff:var(--cds-font-sans)}
+ .font-base-bold{--cml-ff:var(--cds-font-sans)}
+ .font-claude-response-body{--cml-ff:var(--font-claude-response)}
+ .font-claude-response-body-bold{--cml-ff:var(--font-claude-response)}
+ .font-claude-response-code{--cml-ff:var(--font-mono)}
+ .font-claude-response-code-small{--cml-ff:var(--font-mono)}
+ .font-claude-response-small{--cml-ff:var(--font-claude-response)}
+ .font-claude-response-small-bold{--cml-ff:var(--font-claude-response)}
+ .font-claude-response-subheading{--cml-ff:var(--font-claude-response)}
+ .font-large{--cml-ff:var(--cds-font-sans)}
+ .font-large-bold{--cml-ff:var(--cds-font-sans)}
+ .font-small{--cml-ff:var(--cds-font-sans)}
+ .font-small-bold{--cml-ff:var(--cds-font-sans)}
+ .\!text-code{--cml-ff:var(--cds-font-mono)!important}
+ .text-code{--cml-ff:var(--cds-font-mono)}
+ .font-\[-apple-system\,BlinkMacSystemFont\,system-ui\,sans-serif\]{--cml-ff:-apple-system, BlinkMacSystemFont, system-ui, sans-serif}
+ .font-\[N\]{--cml-ff:N}
+ .font-\[inherit\]{--cml-ff:inherit}
+ .font-claude-response{--cml-ff:var(--font-claude-response)}
+ .font-inherit{--cml-ff:inherit}
+ .font-mono{--cml-ff:var(--cds-font-mono)}
+ .font-mono-ui{--cml-ff:var(--cds-font-mono-ui)}
+ .font-sans{--cml-ff:var(--cds-font-sans)}
+ .font-sans-display{--cml-ff:var(--cds-font-sans-display)}
+ .font-serif{--cml-ff:var(--font-ui-serif), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif}
+ .font-ui{--cml-ff:var(--font-ui)}
+ .font-ui-serif{--cml-ff:var(--font-ui-serif)}
+ .font-user-message{--cml-ff:var(--font-user-message)}
+ .font-voice{--cml-ff:var(--cds-font-voice)}
+ .\*\:font-small>*{--cml-ff:var(--cds-font-sans)}
+ @media (width>=40rem){
+  .sm\:font-base{--cml-ff:var(--cds-font-sans)}
+ }
+ @media (width>=48rem){
+  .md\:font-xl{--cml-ff:var(--cds-font-sans)}
+  .md\:font-xl-bold{--cml-ff:var(--cds-font-sans)}
+  .md\:font-large{--cml-ff:var(--cds-font-sans)}
+ }
+ @media (width>=64rem){
+  .lg\:font-xl{--cml-ff:var(--cds-font-sans)}
+ }
+ @container (width>=640px){
+  .\@\[640px\]\:font-display{--cml-ff:var(--font-ui-serif)}
+ }
+ .compact\:font-small:where([data-density=compact],[data-density=compact] *){--cml-ff:var(--cds-font-sans)}
+ .\[\&_\.ProseMirror_pre\]\:text-code .ProseMirror pre{--cml-ff:var(--cds-font-mono)}
+ .\[\&_code\]\:\!text-code code{--cml-ff:var(--cds-font-mono)!important}
+ .\[\&_code\]\:text-code code{--cml-ff:var(--cds-font-mono)}
+ .\[\&_code\]\:font-mono code{--cml-ff:var(--cds-font-mono)}
+ .\[\&_input\]\:font-mono input{--cml-ff:var(--cds-font-mono)}
+ .\[\&_pre\]\:\!text-code pre{--cml-ff:var(--cds-font-mono)!important}
+ html,body{--cml-ff:var(--font-ui)}
+ .font-system{--cml-ff:var(--font-system)}
+}
+.cds-root[data-font]{--cml-ff:var(--cds-font-sans)}
+[data-cds=Icon]:not(svg){--cml-ff:var(--font-anthropicons,Anthropicons-Variable)}
+@supports (font:-apple-system-body) and (-webkit-touch-callout:default){
+ :root{--cml-ff:var(--font-ui)}
+}
+.codicon[class*=codicon-]{--cml-ff:codicon}
+.epitaxy-markdown{--cml-ff:var(--cds-font-sans)}
+.epitaxy-markdown kbd{--cml-ff:var(--cds-font-mono)}
+.epitaxy-markdown :not(pre)>code{--cml-ff:var(--cds-font-mono)}
+.epitaxy-markdown :is(a,button,[role=button])>code{--cml-ff:inherit}
+.epitaxy-markdown :is(a,button,[role=button])>[data-wf]>code{--cml-ff:inherit}
+.epitaxy-markdown table{--cml-ff:inherit}
+.epitaxy-root .epitaxy-code-chip{--cml-ff:var(--cds-font-mono)}
+.epitaxy-root :is(a,button,[role=button])>.epitaxy-code-chip{--cml-ff:inherit}
+.katex{--cml-ff:KaTeX_Main, Times New Roman, serif}
+.katex .textrm{--cml-ff:KaTeX_Main}
+.katex .textsf{--cml-ff:KaTeX_SansSerif}
+.katex .texttt{--cml-ff:KaTeX_Typewriter}
+.katex .mathnormal{--cml-ff:KaTeX_Math}
+.katex .mathit{--cml-ff:KaTeX_Main}
+.katex .mathbf{--cml-ff:KaTeX_Main}
+.katex .boldsymbol{--cml-ff:KaTeX_Math}
+.katex .amsrm,.katex .mathbb,.katex .textbb{--cml-ff:KaTeX_AMS}
+.katex .mathcal{--cml-ff:KaTeX_Caligraphic}
+.katex .mathfrak,.katex .textfrak{--cml-ff:KaTeX_Fraktur}
+.katex .mathboldfrak,.katex .textboldfrak{--cml-ff:KaTeX_Fraktur}
+.katex .mathtt{--cml-ff:KaTeX_Typewriter}
+.katex .mathscr,.katex .textscr{--cml-ff:KaTeX_Script}
+.katex .mathsf,.katex .textsf{--cml-ff:KaTeX_SansSerif}
+.katex .mathboldsf,.katex .textboldsf{--cml-ff:KaTeX_SansSerif}
+.katex .mathitsf,.katex .mathsfit,.katex .textitsf{--cml-ff:KaTeX_SansSerif}
+.katex .mainrm{--cml-ff:KaTeX_Main}
+.katex .delimsizing.size1{--cml-ff:KaTeX_Size1}
+.katex .delimsizing.size2{--cml-ff:KaTeX_Size2}
+.katex .delimsizing.size3{--cml-ff:KaTeX_Size3}
+.katex .delimsizing.size4{--cml-ff:KaTeX_Size4}
+.katex .delimsizing.mult .delim-size1>span{--cml-ff:KaTeX_Size1}
+.katex .delimsizing.mult .delim-size4>span{--cml-ff:KaTeX_Size4}
+.katex .op-symbol.small-op{--cml-ff:KaTeX_Size1}
+.katex .op-symbol.large-op{--cml-ff:KaTeX_Size2}
+._commandCode_1osay_162{--cml-ff:var(--font-mono)}
+._primaryButton_1osay_247{--cml-ff:inherit}
+._cancelButton_1osay_377{--cml-ff:inherit}
+._screen_xr9fn_1{--cml-ff:var(--cds-font-sans)}
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .dframe-sidebar,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .tiptap:is(.epitaxy-root .epitaxy-prompt[data-bash-mode] .tiptap),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) [data-composer-placeholder]:is(.epitaxy-root .epitaxy-prompt[data-bash-mode] [data-composer-placeholder]),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) code:is(.epitaxy-root div.ProseMirror :not(pre)>code),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) pre:is(.epitaxy-root .ProseMirror .code-block pre),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .epitaxy-sticky-prompt-bubble:is(.epitaxy-root .epitaxy-sticky-prompt-bubble),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) code,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) kbd,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) samp,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) pre,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) :where(.text-title,.text-title-regular,.text-title-medium,.text-title-semibold,.text-title-bold),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .prose,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) h1:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)):is(:where(.prose) h1:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *))),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) h2:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)):is(:where(.prose) h2:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *))),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) h3:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)):is(:where(.prose) h3:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *))),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) h4:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)):is(:where(.prose) h4:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *))),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) h5:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)):is(:where(.prose) h5:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *))),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) h6:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)):is(:where(.prose) h6:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *))),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) kbd:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)):is(:where(.prose) kbd:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *))),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) code:not(pre code):not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)):is(:where(.prose) code:not(pre code):not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *))),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) pre:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *)):is(:where(.prose) pre:not(:where(.not-prose,[data-not-prose],.not-prose *,[data-not-prose] *))),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) h1:is(:where(.prose) h1),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) h2:is(:where(.prose) h2),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) h3:is(:where(.prose) h3),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) h4:is(:where(.prose) h4),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) h5:is(:where(.prose) h5),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) h6:is(:where(.prose) h6),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) kbd:is(:where(.prose) kbd),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) code:not(pre code):is(:where(.prose) code:not(pre code)),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) pre:is(:where(.prose) pre),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .text-code-medium,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .text-code-regular,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-claude-response-heading,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-claude-response-title,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-display,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-heading,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-title,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-xl,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-xl-bold,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .\!font-base,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-base,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-base-bold,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-claude-response-body,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-claude-response-body-bold,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-claude-response-code,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-claude-response-code-small,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-claude-response-small,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-claude-response-small-bold,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-claude-response-subheading,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-large,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-large-bold,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-small,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-small-bold,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .\!text-code,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .text-code,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-claude-response,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-mono,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-mono-ui,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-sans,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-sans-display,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-serif,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-ui,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-ui-serif,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-user-message,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-voice,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) :is(.\*\:font-small>*),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .compact\:font-small:where([data-density=compact],[data-density=compact] *),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .font-system,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .cds-root[data-font],
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) [data-cds=Icon]:not(svg),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .epitaxy-markdown,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) kbd:is(.epitaxy-markdown kbd),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) code:is(.epitaxy-markdown :not(pre)>code),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .epitaxy-code-chip:is(.epitaxy-root .epitaxy-code-chip),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) ._commandCode_1osay_162,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) ._screen_xr9fn_1 {
+  font-family: "cml-ar-compact", "cml-ar-today", var(--cml-ff) !important;
+}
+@media (width>=40rem){
+ html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .sm\:font-base {
+   font-family: "cml-ar-compact", "cml-ar-today", var(--cml-ff) !important;
+ }
+}
+@media (width>=48rem){
+ html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .md\:font-xl,
+ html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .md\:font-xl-bold,
+ html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .md\:font-large {
+   font-family: "cml-ar-compact", "cml-ar-today", var(--cml-ff) !important;
+ }
+}
+@media (width>=64rem){
+ html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .lg\:font-xl {
+   font-family: "cml-ar-compact", "cml-ar-today", var(--cml-ff) !important;
+ }
+}
+@container (width>=640px){
+ html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"], ._bubbleClamped_xr9fn_377) .\@\[640px\]\:font-display {
+   font-family: "cml-ar-compact", "cml-ar-today", var(--cml-ff) !important;
+ }
+}
+}
+/* ── نهاية مرآة --cml-ff ── */

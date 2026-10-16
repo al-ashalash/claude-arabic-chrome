@@ -1,0 +1,145 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>optionsrev test</title>
+<!--
+  تتمّة اختبار صفحة الخيارات (مراجعة ما بعد إعادة البناء) — ما يحتاج انتظارًا حقيقيًّا فأُفرد عن
+  _optionstest.html كي لا تبلغ صفحةٌ واحدة سقف المشغّل:
+   ١) إعادة ضبط موقعٍ والمزامنة مفعّلة (العامل الحقيقي sw.js وcml-sync.js): بلا مسحٍ يبقى ما رُفع
+      في السحابة ويعود إلى الجهاز، ولا شواهد حذف؛ ومع المسح لا مفاتيح سحابةٍ للموقع ولا دفعٌ فارغ.
+   ٢) «فحص» صفٍّ بلا تبويبٍ مفتوح: لا تُمحى النتيجة السابقة، وسطرُ الحال في «الكل» يُختم بحال الموقع
+      لا «أُرسل الطلب…»، والملاحظة تسمّي زرّ «الكل»؛ والتبديل بين العروض لا يُبقي نصَّ عرضٍ سابق.
+   ٣) وصول المتصفح مقيَّد (ج٣): السبب «لا وصول» لا «مطفأة في الجدول»؛ وسطر المراجعة في «الكل»؛
+      وارتفاع النافذة والرئيس مطفأ دون سقف كروم (600 بكسل).
+  العقد: document.title = "optionsrev N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1000px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vertical-align:top}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+#frames iframe{width:900px;height:700px;border:1px solid #999;display:block;margin-top:8px}</style>
+<h1>اختبار صفحة الخيارات: إعادة ضبط موقعٍ مع المزامنة، والفحص بلا تبويب</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<div id="frames"></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script>var TEST_NAME = "optionsrev";</script>
+<script src="_options-harness.js"></script>
+<script>
+(async function () {
+  try {
+    OPTS_HTML = await fetch(EXT + "options.html").then(function (r) { return r.text(); });
+    POPUP_HTML = await fetch(EXT + "popup.html").then(function (r) { return r.text(); });
+
+    // ══ ١) إعادة ضبط «مركز المساعدة» والمزامنة مفعّلة — عبر العامل الحقيقي ══
+    try { localStorage.setItem("cml_ui_domain", "support"); } catch (e) {}
+    var E = await makeFrame("options.html", { cml_sync_enabled: true });
+    var TERM = "Zq support term", OVK = "cml_overrides.support";
+    function cloudSupport() {
+      var sp = E.w.CMLSync.domainSpaces.support, u = E.w.CMLSync.unpack(E.mock.syncStore, sp.keys);
+      return u && u.payload && u.payload.overrides && u.payload.overrides.ar ? u.payload.overrides.ar : null;
+    }
+    function cloudKeys() { return Object.keys(E.mock.syncStore).filter(function (k) { return k === "cmlm_support" || k.indexOf("cmlc_support_") === 0; }); }
+    var o = {}; o[OVK] = { ar: {} }; o[OVK].ar[TERM] = "مصطلح";
+    E.mock.chrome.storage.local.set(o);
+    await until(function () { var c = cloudSupport(); return c && c[TERM]; }, 8000);
+    check("تمهيد: الدفع إلى مساحة «مركز المساعدة» في السحابة", "مصطلح", (cloudSupport() || {})[TERM]);
+    E.$("resetWipeSync").checked = false;
+    E.$("resetSite").click();
+    await until(function () { return E.$("dangerStatus").textContent.indexOf("أُعيد ضبط") === 0; }, 5000);
+    await until(function () { return ((E.store[OVK] || {}).ar || {})[TERM]; }, 4000);
+    await sleep(2800); // مهلة تجميع الدفع (2ث) وجولةٌ بعدها — كان يُدفع هنا لقطةٌ فارغة
+    var tombs = E.store["cml_sync_tombs.support"] || {};
+    check("★ إعادة ضبط موقعٍ بلا مسح والمزامنة مفعّلة: ما رُفع يبقى في السحابة", "مصطلح", (cloudSupport() || {})[TERM]);
+    check("★ ويعود إلى هذا الجهاز كما يقول التأكيد، بلا شاهد حذف", "مصطلح/false",
+      ((E.store[OVK] || {}).ar || {})[TERM] + "/" + Object.keys(tombs).some(function (k) { return k.indexOf(TERM) >= 0; }));
+    check("والتأكيد يقول ذلك", "true", E.confirms[E.confirms.length - 1].indexOf("ويعود إلى هذا الجهاز ما دامت المزامنة مفعّلة") >= 0);
+    // ومع «وامسح أيضًا»: لا مفاتيح سحابةٍ للموقع بعد جولة، ولا شواهد، والحال «مُحي ما رُفع»
+    E.$("resetWipeSync").checked = true;
+    E.$("resetSite").click();
+    await until(function () { return !((E.store[OVK] || {}).ar || {})[TERM]; }, 5000);
+    await sleep(2800);
+    check("★ ومع المسح: لا مفاتيح سحابةٍ للموقع ولا دفعٌ فارغ بعده، ولا شواهد حذف", "0/0/wiped",
+      cloudKeys().length + "/" + Object.keys(E.store["cml_sync_tombs.support"] || {}).length + "/" +
+      ((E.store["cml_sync_state.support"] || {}).status));
+    E.$("resetWipeSync").checked = false;
+
+    // ══ ٢) «فحص» صفٍّ بلا تبويبٍ مفتوح في «الكل» ══
+    try { localStorage.setItem("cml_ui_domain", "docs"); } catch (e) {}
+    var now = Date.now();
+    E = await makeFrame("options.html", {
+      "cml_scan_result": { status: "done", fetched: 90, found: 20000, missing: 2, shown: 2, list: ["Zq a", "Zq b"], varList: [], at: now - 3600e3, seconds: 30 },
+      "cml_scan_result.docs": { status: "done", source: "llms", fetched: 1, found: 50, missing: 3, shown: 3, list: ["Zq d1", "Zq d2", "Zq d3"], varList: [], at: now - 3600e3, seconds: 1 },
+    });
+    await until(function () { return E.$("scanStatus").textContent.indexOf("قُرئ فهرس الصفحات") === 0; }, 4000);
+    check("تمهيد: عرض «وثائق المطوّرين» يكتب سطر نتيجته", "true", E.$("scanStatus").textContent.indexOf("قُرئ فهرس الصفحات") === 0);
+    await pick(E, "all");
+    await until(function () { return E.$("scanStatus").textContent === ""; }, 3000);
+    check("★ التبديل إلى «الكل» لا يُبقي سطر الوثائق في حال الفحص", "", E.$("scanStatus").textContent);
+    E.$("scanBtn_docs").click();
+    await until(function () { return E.$("scanRes_docs").textContent.indexOf("أُرسل الطلب") === 0; }, 3000);
+    await until(function () { return E.$("scanRes_docs").textContent.indexOf("لم يستجب") === 0; }, 16000);
+    await sleep(300);
+    var kept = E.store["cml_scan_result.docs"];
+    check("★ فحصٌ بلا تبويبٍ مفتوح لا يمحو النتيجة السابقة", "done/50/3", (kept && kept.status) + "/" + (kept && kept.found) + "/" + (kept && kept.list.length));
+    check("★ وصفُّه يقول السبب ومعه النتيجة السابقة، ويسمّي زرّ «الكل» والمسار", "true/true/true",
+      (E.$("scanRes_docs").textContent.indexOf("والمعروض نتيجة الفحص السابق") >= 0) + "/" +
+      (E.$("scanRes_docs").textContent.indexOf("«فحص» في صفّه") >= 0) + "/" + (E.$("scanRes_docs").textContent.indexOf("platform.claude.com/docs") >= 0));
+    check("★ وسطرُ الحال في «الكل» يُختم بحال الموقع لا «أُرسل الطلب…»", "true/false",
+      (E.$("scanStatus").textContent.indexOf("«وثائق المطوّرين»: لم يستجب") === 0) + "/" + (E.$("scanStatus").textContent.indexOf("أُرسل الطلب") >= 0));
+    check("ونتيجة التطبيق لم تُمسّ", "20000", (E.store.cml_scan_result || {}).found);
+    await pick(E, "support");
+    await until(function () { return E.$("scanStatus").textContent === ""; }, 3000);
+    check("★ عرضُ موقعٍ بلا فحص يمحو سطر الحال (لا يرث نصّ «الكل»)", "", E.$("scanStatus").textContent);
+
+    var IDS = CMLConst.DOMAINS.map(function (d) { return d.id; });
+    // ══ (ج٣) وصول المتصفح مقيَّد: السبب «لا وصول» لا «مطفأة في الجدول» ══
+    try { localStorage.setItem("cml_ui_domain", "all"); } catch (e) {}
+    var A = await makeFrame("options.html", {}, { noAccess: true });
+    await until(function () { return A.$("masterState").textContent.indexOf("لا يصل") >= 0; }, 3000);
+    check("★ المواقع كلها بلا وصول: الملخّص يقول السبب لا «مطفأة في جدول المواقع»، وشريط «تفعيل المواقع كلها» مخفي",
+      "true/true/false/false",
+      (A.$("masterState").textContent.indexOf("لا يعمل التعريب الآن في أيٍّ من المواقع") === 0) + "/" +
+      (A.$("masterState").textContent.indexOf("وما لا يصل إليه المتصفح: " + IDS.length) >= 0) + "/" +
+      // ★ (ر8-د2) وصيغة «المواقع كلها في الجدول» اليوم «متوقّفة» («مطفأة» متروكة، دليل الأسلوب §13): السبب لا يقول أيًّا منهما
+      (/المواقع كلها (?:مطفأة|متوقّفة)/.test(A.$("masterState").textContent)) + "/" + visible(A.$("allOffBar")));
+    check("وقائمة الموقع تقول «(بلا وصول)» والمفتاح مفعّل", "true/true",
+      (A.$("domainSel").options[1].textContent.indexOf("(بلا وصول)") >= 0) + "/" + A.$("siteOn_app").checked);
+
+    // ══ مراجعة ما بعد التحديث في «الكل»: أجزاءٌ مسمّاة بلا الأصفار ══
+    try { localStorage.setItem("cml_ui_domain", "all"); } catch (e) {}
+    E = await makeFrame("options.html", { "cml_overrides.support": { ar: {
+      "A guide for internal champions driving adoption": "دليل للمناصرين الداخليين الذين يقودون التبنّي", "Zzq only here": "هنا وحده" } } });
+    await until(function () { return !E.$("reconBox").classList.contains("hidden"); }, 5000);
+    check("★ سطر المراجعة في «الكل» بتسمياتٍ صادقة (لا «وليس فيه تصحيح واحد»)",
+      "• «مركز المساعدة»: مطابقٌ للقاموس: تصحيح واحد · لا مقابل له في القاموس: تصحيح واحد", E.$("reconLines").textContent);
+
+
+    // ══ النافذة ══
+    // (ب١) سقف كروم للنافذة 600 بكسل: سطرُ البوابة لا يزيدها — تبويب التطبيق وتبويب مقالة، والرئيس مطفأ
+    async function popupHeight(hello) {
+      var Q = await makeFrame("popup.html", { cml_enabled: false }, { tabs: {
+        query: function (q, cb) { setTimeout(function () { cb([{ id: 5 }]); }, 0); },
+        sendMessage: function (id, msg, o, cb) { setTimeout(function () { cb(msg.type === "cml-hello" ? hello : null); }, 0); },
+      } });
+      await until(function () { return visible(Q.$("gateNote")); }, 3000);
+      await sleep(100);
+      return Math.ceil(Q.w.document.documentElement.getBoundingClientRect().height) + "/" + visible(Q.$("gateNote")) + "/" + Q.$("siteOn").disabled;
+    }
+    var hApp = (await popupHeight({ domain: "app", route: "full", bodies: null })).split("/");
+    var hArt = (await popupHeight({ domain: "support", route: "full", bodies: { page: "x" } })).split("/");
+    check("★ النافذة والرئيس مطفأ: سطر البوابة ظاهر وارتفاعها ≤ 600 (تبويب التطبيق، وتبويب مقالة)", "true/true/true/true",
+      (+hApp[0] <= 600) + "/" + (hApp[1] === "true" && hApp[2] === "true") + "/" + (+hArt[0] <= 600) + "/" + (hArt[1] === "true"));
+
+    check("لا أخطاء جافاسكربت في الصفحة", 0, jsErrors);
+  } catch (e) {
+    check("استثناء في الاختبار", "", String(e && (e.stack || e.message) || e).slice(0, 400));
+  }
+  document.title = "optionsrev " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "OPTIONSREV: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+  try { localStorage.removeItem("cml_ui_domain"); } catch (e) {}
+})();
+</script>

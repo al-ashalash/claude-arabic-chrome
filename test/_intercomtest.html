@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>intercom test</title>
+<!--
+  اختبار آلية منصة Intercom (١-١) على صفحةٍ بهيئتها: #__next > div[dir="ltr"] ومتن .article_body article.
+   ١) بوابة الترطيب: السمات والاتجاه فورًا، والنصوص لا تُمسّ حتى يُدرَج next-route-announcer
+      (إشارة اكتمال الترطيب — تعريبُ نصٍّ قبلها يُفشل ترطيب React، مقيسٌ على الموقع الحقيقي).
+   ٢) الغلاف: dir="rtl" بملكية، ويُعاد إلى غلافٍ استبدله الترطيب، ويُثبَّت إن أعاده الموقع بسقف.
+   ٣) الاتجاه لكل كتلة: الفقرة الإنجليزية LTR داخل صفحةٍ RTL، والمعرَّبة RTL.
+   ٤) الإطفاء يعيد الغلاف إلى ltr والنصوص إلى أصلها.
+   ٥) ★ (ر5) قوسان محتواهما لاتيني في تسميةٍ معرَّبة («إدارة الهوية (SSO, JIT, SCIM)» في الشريط وقائمة المجموعة) يبقيان وحدةً
+      حين تلتفّ التسمية (علامة LRM تلاصقهما من الخارج في النص المكتوب)، ولا يُعلَّم قوسٌ بعد كلمةٍ لاتينية، ولا تكرار في جولةٍ ثانية،
+      والإطفاء يعيد الأصل.
+  العقد: document.title = "intercom N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<div id="__next"><div dir="ltr" class="h-full w-full" id="wrap">
+  <button id="srch" aria-label="Search for articles...">Search</button>
+  <nav id="side"><a id="lblIdm" href="#" style="display:block;width:min-content;font-size:14px">Identity management (SSO, JIT, SCIM)</a>
+    <a id="lblBeta" href="#" style="display:block">New Claude (beta) feature</a></nav>
+  <h1 id="title">How long do you store my data?</h1>
+  <div class="article_body"><article>
+    <div class="intercom-interblocks-paragraph" id="blkEn"><p id="pEn">This paragraph stays in English for now.</p></div>
+    <div class="intercom-interblocks-paragraph" id="blkAr"><p id="pAr">Contact Support</p></div>
+    <div class="intercom-interblocks-paragraph"><p id="pMix">If you need help, <a id="aMix" href="#">Contact Support</a> today.</p></div>
+    <div class="intercom-interblocks-paragraph" id="blkCard"><p>This card has an English intro sentence before its button.</p><div id="dvCopy"><span>Copy page</span></div></div>
+    <table><tbody><tr><th id="thApi">Messages API</th><td id="tdEn">English cell text stays left to right here.</td></tr></tbody></table>
+    <div class="intercom-interblocks-table" id="blkCk"><table><tbody><tr><th id="thCk1">Cookie name</th><th id="thCk2">Purpose</th></tr>
+      <tr><td>__cf_bm</td><td>Security</td></tr><tr><td>anthropic-consent-preferences</td><td>Preferences</td></tr>
+      <tr><td>console-sidebar-expanded</td><td>Preferences</td></tr><tr><td>user-sidebar-visible-on-load</td><td>Preferences</td></tr></tbody></table></div>
+    <div class="intercom-interblocks-table" id="blkBom"><table><tbody><tr><th id="thBom1">Plan</th><th id="thBom2">Seats</th></tr>
+      <tr><td id="tdBom">Monthly</td><td>Annual</td></tr></tbody></table></div>
+    <div class="DocsArticleBody_body__T"><div class="intercom-interblocks-table" id="wrapM" style="overflow-x:auto;width:300px">
+      <table id="tblM" style="margin:0 -20px;width:100%"><tbody><tr><td>Purpose</td><td>Security</td></tr></tbody></table></div></div>
+  </article></div>
+</div></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "privacy",
+  meta: { scan: "none", live: false, chat: false, hydrate: "defer", intercom: true, dirSel: ".article_body article, h1", bodySel: ".article_body" },
+  default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Search": "بحث", "Search for articles...": "ابحث في المقالات…",
+    "Contact Support": "تواصل مع الدعم", "How long do you store my data?": "كم تحتفظون ببياناتي؟",
+    "Copy page": "نسخ الصفحة", "Messages API": "API الرسائل",
+    "Identity management (SSO, JIT, SCIM)": "إدارة الهوية (SSO, JIT, SCIM)", "New Claude (beta) feature": "ميزة Claude (beta) الجديدة",
+    "Cookie name": "اسم ملف تعريف الارتباط", "Purpose": "الغرض", "Security": "الأمان", "Preferences": "التفضيلات" }, patterns: [], plurals: {} } } };
+// (المراجعة المستقلة E8) محرف U+FEFF شاردٌ في خليةٍ من جدولٍ إنجليزي كلّه (يُبنى من رقمه هنا فلا يُكتب في الملف)
+document.getElementById("tdBom").firstChild.nodeValue += String.fromCharCode(0xFEFF);
+</script>
+<link rel="stylesheet" href="../extension/base.css">
+<link rel="stylesheet" href="../extension/intercom-point.css">
+<script src="../extension/cml-const.js"></script>
+<script>CMLConst.HYDRATE_MAX_MS = 60000; // لا يفتح المؤقّت الاحتياطي البوابةَ أثناء الاختبار</script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g"), ""); }
+function $(id) { return document.getElementById(id); }
+function wrap() { return document.querySelector("#__next > div[dir]"); }
+
+(async function () {
+  await wait(600);
+  // ١) قبل إشارة الترطيب
+  check("★ قبل الترطيب: الاتجاه على html والغلاف فورًا", "rtl/rtl", document.documentElement.dir + "/" + wrap().getAttribute("dir"));
+  check("★ قبل الترطيب: السمات تُعرَّب (اختلافها لا يُفشل الترطيب)", "ابحث في المقالات…", noBidi($("srch").getAttribute("aria-label")));
+  check("★ قبل الترطيب: النصوص لا تُمسّ", "Search/Contact Support", $("srch").textContent + "/" + $("pAr").textContent);
+  check("★ قبل الترطيب: الصفحة ممسوكةٌ مخفيّة (لا إنجليزية قبل العربية — قرار المالك)", "1/hidden",
+        document.documentElement.getAttribute("data-cml-hold") + "/" + getComputedStyle(document.documentElement).visibility);
+  // ٢) الإشارة: عنصر next-route-announcer يُدرَج بعد إيداع React
+  document.body.appendChild(document.createElement("next-route-announcer"));
+  await wait(700);
+  check("★ بعد الإشارة: النصوص تُعرَّب", "بحث/تواصل مع الدعم", noBidi($("srch").textContent) + "/" + noBidi($("pAr").textContent));
+  check("★ وبعد التعريب يُرفع الإمساك فتظهر الصفحة عربيةً", "null/visible",
+        document.documentElement.getAttribute("data-cml-hold") + "/" + getComputedStyle(document.documentElement).visibility);
+  check("★ جزءٌ من جملةٍ إنجليزية في المتن لا يُعرَّب وحده (لا جملة مختلطة)، والكتلة الكاملة تُعرَّب", "Contact Support/تواصل مع الدعم",
+        $("aMix").textContent + "/" + noBidi($("pAr").textContent));
+  // ٣) الاتجاه لكل كتلة: الإنجليزية LTR والمعرَّبة RTL، والعنوان المعرَّب RTL
+  check("★ كتلةٌ إنجليزية داخل صفحةٍ RTL تُحسم LTR، والمعرَّبة RTL", "ltr/rtl/rtl",
+        getComputedStyle($("pEn")).direction + "/" + getComputedStyle($("pAr")).direction + "/" + getComputedStyle($("title")).direction);
+  // ★ (فحص الاتجاه الشامل ١٤٤٨هـ، ق٢) مالك كتلةٍ خارج قائمة الوسوم يُحسم بنصّه لا بالغلاف الإنجليزي حوله،
+  // والتسمية القصيرة المختلطة تُحسم RTL (7 عربية و3 لاتينية دون عتبة الأغلبية)، والإنجليزية بجوارها LTR
+  check("★ (ق٢) زرٌّ معرَّب داخل غلافٍ إنجليزي: RTL", "rtl", getComputedStyle($("dvCopy")).direction);
+  check("★ (ق٢) «API الرسائل» في رأس الجدول: RTL، والخلية الإنجليزية LTR", "rtl/ltr",
+        getComputedStyle($("thApi")).direction + "/" + getComputedStyle($("tdEn")).direction);
+  // ★ (ر5-ج، ٢٩ ربيع الآخر ١٤٤٨هـ — ملاحظة المالك ٢(أ)) جدولٌ عُرِّبت رؤوسه وأغلب نصّه لاتيني (أسماء ملفات تعريف الارتباط): غلافه يأخذ اتجاه
+  // الصفحة فيبدأ عموده الأول يمينًا (كان يُحسم بأغلبية نصّه LTR)، وخلاياه اللاتينية تبقى LTR
+  check("★ (ر5-ج) جدولٌ معرَّب الرؤوس لاتينيُّ أغلب النص: غلافه RTL وعموده الأول يمين الثاني، والخلية اللاتينية LTR", "rtl/true/ltr",
+        getComputedStyle($("blkCk")).direction + "/" + ($("thCk1").getBoundingClientRect().left > $("thCk2").getBoundingClientRect().left) + "/" +
+        getComputedStyle($("blkCk").querySelector("td")).direction);
+  // ★ (ر5-ج، المراجعة المستقلة E8) جدولٌ إنجليزي كلّه في نصّه محرف U+FEFF (من مدى أشكال العرض العربية وليس حرفًا): يبقى على اتجاهه هو
+  // (dir=auto بأول حرفٍ قويّ فيه ⇒ LTR، وعموده الأول يسار الثاني) — كان المدى كلّه يُعدّ تعريبًا فيأخذ الجدول اتجاه الصفحة
+  check("★ (ر5-ج) جدولٌ إنجليزي كلّه فيه U+FEFF شارد: يبقى LTR وعموده الأول يسار الثاني", "ltr/true/true",
+        getComputedStyle($("blkBom")).direction + "/" + ($("thBom1").getBoundingClientRect().left < $("thBom2").getBoundingClientRect().left) + "/" +
+        ($("tdBom").textContent.indexOf(String.fromCharCode(0xFEFF)) >= 0));
+  // ★ (ر5-ج) قالب المقالات (DocsArticleBody_body): الجدول يبدأ عند حافّة غلافه الذي يمرّر — الهامش السالب (نسخة الورقة المولَّدة) يُلغى
+  check("★ (ر5-ج) جدولٌ في غلافٍ يمرّر داخل متن المقالة: يبدأ عند حافّته اليمنى (لا هامش سالب يخرجه عنها)", "0/0",
+        Math.round($("wrapM").getBoundingClientRect().right - $("tblM").getBoundingClientRect().right) + "/" + parseFloat(getComputedStyle($("tblM")).marginRight));
+  // ★ (ج-١) العزل بـRLI يرتّب «API» يمين «الرسائل» — بـFSI كانت يسارها لأنها أول حرفٍ قويّ
+  (function () {
+    var tn = $("thApi").firstChild, tx = tn && tn.nodeValue || "", ia = tx.indexOf("API"), ib = tx.indexOf("الرسائل");
+    var ok = "(لا نص)";
+    if (ia >= 0 && ib >= 0) {
+      var ra = document.createRange(); ra.setStart(tn, ia); ra.setEnd(tn, ia + 3);
+      var rb = document.createRange(); rb.setStart(tn, ib); rb.setEnd(tn, ib + 7);
+      ok = String(ra.getBoundingClientRect().left > rb.getBoundingClientRect().left);
+    }
+    check("★ (ج-١) «API» يمين «الرسائل» في السطر (عزل RLI)", "true", ok);
+  })();
+  // ★ (ر5، ٢٩ ربيع الآخر ١٤٤٨هـ — ملاحظة المالك ٢(ج)) القوسان ذوا المحتوى اللاتيني وحدةٌ حين تلتفّ التسمية: «min-content» يكسر عند كل مسافة
+  // (مستقلٌّ عن الخط)، فالسطر «(SSO,» والسطر «SCIM)». بلا العلامة يأخذ القوسان اتجاه الفقرة فيُرسم «SSO,)» و«(SCIM» (القوس في الجهة الأخرى)
+  var LRM = String.fromCharCode(0x200E), RLI = String.fromCharCode(0x2067), PDI = String.fromCharCode(0x2069);
+  var plainT = function (s) { return noBidi(s).split(LRM).join(""); };
+  var idmWant = RLI + "إدارة الهوية " + LRM + "(SSO, JIT, SCIM)" + LRM + PDI;
+  check("★ (ر5) التسمية «إدارة الهوية (SSO, JIT, SCIM)»: علامة LRM تلاصق القوسين من الخارج داخل العزل من اليمين", "true/إدارة الهوية (SSO, JIT, SCIM)",
+        ($("lblIdm").textContent === idmWant) + "/" + plainT($("lblIdm").textContent));
+  (function () {
+    var tn = $("lblIdm").firstChild, tx = tn && tn.nodeValue || "", ip = tx.indexOf("("), iq = tx.indexOf(")"), is = tx.indexOf("SSO"), im = tx.indexOf("SCIM");
+    var R = function (a, b) { var r = document.createRange(); r.setStart(tn, a); r.setEnd(tn, b); return r.getBoundingClientRect(); };
+    var got = "(لا نص)";
+    if (ip >= 0 && iq >= 0 && is >= 0 && im >= 0) {
+      var rp = R(ip, ip + 1), rs = R(is, is + 1), rm = R(im + 3, im + 4), rq = R(iq, iq + 1);
+      got = ($("lblIdm").getClientRects().length && $("lblIdm").getBoundingClientRect().height > 2.5 * rs.height) + "/" +
+            (Math.abs(rp.top - rs.top) < 2 && rp.right <= rs.left + 0.5) + "/" + (Math.abs(rq.top - rm.top) < 2 && rq.left >= rm.right - 0.5);
+    }
+    check("★ (ر5) والتسمية ملتفّة: «(» يسار «SSO» في سطره، و«)» يمين «SCIM» في سطره (لا «SSO,)» ولا «(SCIM»)", "true/true/true", got);
+  })();
+  check("(ر5) قوسٌ بعد كلمةٍ لاتينية («Claude (beta)») لا يُعلَّم: القاعدة نفسها تضمّه إلى العبارة اللاتينية", "false/ميزة Claude (beta) الجديدة",
+        ($("lblBeta").textContent.indexOf(LRM) >= 0) + "/" + noBidi($("lblBeta").textContent));
+  // ٤) الترطيب يستبدل الغلاف: الجديد يُعاد إليه الاتجاه
+  var old = wrap(), nw = document.createElement("div");
+  nw.setAttribute("dir", "ltr"); nw.className = "h-full w-full";
+  while (old.firstChild) nw.appendChild(old.firstChild);
+  old.parentNode.replaceChild(nw, old);
+  await wait(300);
+  check("★ غلافٌ استبدله الترطيب يُعاد إليه الاتجاه", "rtl", wrap().getAttribute("dir"));
+  // ٥) الموقع يعيد dir على الغلاف نفسه: يُثبَّت، وبسقفٍ لا تقاذفَ بعده
+  wrap().setAttribute("dir", "ltr"); await wait(100);
+  var once = wrap().getAttribute("dir");
+  for (var i = 0; i < 8; i++) { wrap().setAttribute("dir", "ltr"); await wait(60); }
+  check("الموقع يعيد ltr: يُثبَّت، ثم يُترك بعد السقف (لا تقاذف بلا نهاية)", "rtl/ltr", once + "/" + wrap().getAttribute("dir"));
+  // ★ (ر5) جولاتٌ بعد نقل العقد (الغلاف المستبدل): المكتوب كما هو، بعلامتين لا مكرّرتين (الدالة متكافئة التكرار وlastWritten يصدق)
+  check("★ (ر5) بعد جولاتٍ أخرى: التسمية كما كُتبت أول مرة (لا علامة مكرّرة)", "true/2",
+        ($("lblIdm").textContent === idmWant) + "/" + ($("lblIdm").textContent.split(LRM).length - 1));
+  // ٦) الموقع يمحو سمات html (إعادة رسم الجذر في App Router): تُعاد، وبسقفٍ لا تقاذف بعده
+  var H = document.documentElement;
+  ["dir", "lang", "data-cml", "data-cml-rtl", "style"].forEach(function (a) { H.removeAttribute(a); });
+  await wait(150);
+  check("★ سمات html محاها الموقع: يعيد المحرّك تثبيتها", "rtl/on/ar", H.getAttribute("dir") + "/" + H.getAttribute("data-cml") + "/" + H.getAttribute("lang"));
+  for (var j = 0; j < 14; j++) { H.removeAttribute("data-cml"); await wait(30); }
+  check("وإن أصرّ الموقع: يُترك بعد السقف (لا تقاذف بلا نهاية)", "null", H.getAttribute("data-cml"));
+  H.setAttribute("data-cml", "on");
+  // ٧) الإطفاء يعيد الغلاف والنصوص
+  wrap().setAttribute("dir", "rtl");       // حالٌ نظيفة: إعادة تركيب الغلاف
+  var ch = {}; ch["cml_site.privacy"] = { newValue: false }; MOCK.localStore["cml_site.privacy"] = false;
+  MOCK.fireChanged(ch, "local");
+  await wait(400);
+  check("★ إطفاء الموقع: html بلا data-cml، والنصوص إلى أصلها، والغلاف إلى ltr", "null/Contact Support/ltr",
+        document.documentElement.getAttribute("data-cml") + "/" + $("pAr").textContent + "/" + wrap().getAttribute("dir"));
+  check("(ر5) والتسمية ذات القوسين إلى أصلها الإنجليزي حرفًا", "Identity management (SSO, JIT, SCIM)", $("lblIdm").textContent);
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "intercom " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "INTERCOM: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

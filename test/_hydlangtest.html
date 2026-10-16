@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>hydlang test</title>
+<!--
+  اختبار إشارة الترطيب "lang" (meta.hydrateSignal = "lang"، الأكاديمية — ر4، ٢٨ ربيع الآخر ١٤٤٨هـ): موقعٌ بلا next-route-announcer يكتب
+  لغة واجهته في <html lang> عند تركيب تطبيقه (أثر IntlProvider)، وكتابتُنا قبل ذلك ثم load وفترتي خمول تُفشل ترطيبه (دراسة ر4 §1.4).
+   ١) الصفحة: قبل كتابة الموقع لا كتابة ولو بعد load والخمول (والصفحة ممسوكة ولغتنا ar مثبَّتة)، وnext-route-announcer ليس إشارة؛ ثم
+      الموقع يكتب lang="en" والخيط مشغول (مُجدوِل React) ⇒ لا كتابة حتى يكتمل العمل ⇒ خمول ⇒ تُعرَّب، والبوابة «open:lang+idle»،
+      والإمساك ينتهي مع أول ظهورٍ عربي، وlang يعود ar.
+   ٢) الإطار ?frame=own: كتابتانا نحن لسمة lang (الإرجاع عند الإطفاء والتثبيت عند التشغيل) لا تفتحان البوابة؛ ثم كتابة الموقع تفتحها.
+   ٣) الإطار ?frame=foreign: أول كتابةٍ من الموقع لغةٌ أخرى ⇒ خمولٌ تام ولا تعريب؛ ثم English ⇒ تُعرَّب.
+   ٤) الإطار ?frame=parse: كتابةٌ لـlang أثناء التحليل (سكربتٌ مضمَّن) ليست إشارة؛ وكتابة الموقع بعد التحليل تفتح البوابة.
+   ٥) الإطار ?frame=cap: لا كتابة من الموقع أبدًا ⇒ سقف HYDRATE_MAX يفتح البوابة كما كان.
+  العقد: document.title = "hydlang N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+iframe{width:600px;height:100px;border:1px solid #999}</style>
+<link rel="stylesheet" href="../extension/base.css">
+<div id="root"><header><p id="t">Contact Support</p></header></div>
+<script>
+var FM = /[?&]frame=(own|foreign|parse|cap)/.exec(location.search), FRAME = FM ? FM[1] : null;
+var T0 = performance.now(), jsErrors = 0;
+window.onerror = function () { jsErrors++; };
+// زمن أول تعريبٍ للنص في الإطار (ما يقيسه الإطار لنفسه، فلا جواب نافذةٍ في إطارٍ داخلي)
+if (FRAME) {
+  window.__tr = null;
+  new MutationObserver(function () {
+    if (window.__tr === null && document.getElementById("t").textContent !== "Contact Support") window.__tr = performance.now() - T0;
+  }).observe(document.getElementById("t"), { childList: true, characterData: true, subtree: true });
+}
+</script>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+// المحرّك يجيب «cml-hello» على runtime.onMessage — قشرةٌ تلتقط مستمعه فنسأله عن البوابة (في الصفحة الأعلى وحدها)
+var HELLO = [];
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { HELLO.push(fn); } };
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "academy",
+  meta: { scan: "none", live: false, chat: false, hydrate: "defer", hydrateSignal: "lang", siteLang: true },
+  default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Contact Support": "التواصل مع الدعم" }, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-const.js"></script>
+<script>
+if (FRAME === "cap") { CMLConst.HOLD_MAX_MS = 300; CMLConst.HOLD_ABS_MS = 4000; CMLConst.HYDRATE_MAX_MS = 1500; }
+else { CMLConst.HOLD_MAX_MS = 60000; CMLConst.HOLD_ABS_MS = 60000; CMLConst.HYDRATE_MAX_MS = 60000; }
+</script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+// (٤) كتابةٌ لـlang أثناء التحليل — سكربتٌ مضمَّن بعد المحرّك (قشرة التخزين تجيب متزامنةً فمراقب الحارس مركَّبٌ الآن)
+if (FRAME === "parse") { window.__parseState = document.readyState; document.documentElement.lang = "en"; }
+</script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g"), ""); }
+function hello() { var out = null; HELLO.forEach(function (fn) { fn({ type: "cml-hello" }, {}, function (r) { out = r; }); }); return out; }
+// مُجدوِلٌ مشغول كمُجدوِل React: مهمّةٌ تعمل ~4 مث ثم تنشر التالية عبر MessageChannel حتى «until» — فلا فترة خمولٍ بينها
+function busyUntil(until) {
+  return new Promise(function (done) {
+    var ch = new MessageChannel();
+    ch.port1.onmessage = function () {
+      var s = performance.now(); while (performance.now() - s < 4) {}
+      if (performance.now() < until) ch.port2.postMessage(0); else { ch.port1.close(); done(); }
+    };
+    ch.port2.postMessage(0);
+  });
+}
+var H = document.documentElement;
+function txt() { return noBidi(document.getElementById("t").textContent); }
+function attrs() { return [H.getAttribute("dir") || "-", H.getAttribute("lang") || "-", H.getAttribute("data-cml") || "-"].join("|"); }
+function loaded() { return new Promise(function (r) { if (document.readyState === "complete") r(); else window.addEventListener("load", r, { once: true }); }); }
+
+if (FRAME) (async function () {
+  // الإطارات: كلٌّ يجري سيناريوه ويكتب نتيجته في window.__res
+  var R = {};
+  await loaded();
+  await wait(500); // بعد load وفترات خمول
+  if (FRAME === "own") {
+    R.before = txt();
+    // إطفاءٌ ثم تشغيل: المحرّك يُرجع lang الأصلي ثم يثبّت ar — كتابتانا نحن
+    MOCK.localStore.cml_enabled = false; MOCK.fireChanged({ cml_enabled: { newValue: false } }, "local");
+    await wait(150);
+    R.offLang = H.getAttribute("lang");
+    MOCK.localStore.cml_enabled = true; MOCK.fireChanged({ cml_enabled: { newValue: true } }, "local");
+    await wait(600);
+    R.afterOwn = txt() + "|" + H.getAttribute("lang");
+    H.lang = "en";
+    await wait(600);
+    R.afterSite = txt() + "|" + attrs();
+  } else if (FRAME === "foreign") {
+    R.before = txt();
+    H.lang = "xx-YY";
+    await wait(700);
+    R.foreign = txt() + "|" + attrs();
+    H.lang = "en";
+    await wait(600);
+    R.back = txt() + "|" + attrs();
+  } else if (FRAME === "parse") {
+    R.parseState = window.__parseState;
+    R.afterLoad = txt() + "|" + H.getAttribute("lang");
+    H.lang = "en-US";
+    await wait(600);
+    R.afterSite = txt() + "|" + attrs();
+  } else if (FRAME === "cap") {
+    var t0 = performance.now();
+    while (window.__tr === null && performance.now() - t0 < 6000) await wait(100);
+    R.tr = window.__tr; R.final = txt() + "|" + attrs();
+  }
+  R.errors = jsErrors;
+  window.__res = R;
+})();
+else (async function () {
+  await loaded();
+  await wait(600);
+  // ١) قبل كتابة الموقع
+  check("★ قبل كتابة الموقع لـ<html lang> (بعد load والخمول): الصفحة ممسوكة والنص لم يُمسّ ولغتنا ar مثبَّتة والبوابة تنتظر",
+        "1/Contact Support/ar/wait", H.getAttribute("data-cml-hold") + "/" + txt() + "/" + H.getAttribute("lang") + "/" + (hello() || {}).text);
+  document.body.appendChild(document.createElement("next-route-announcer"));
+  await wait(500);
+  check("★ next-route-announcer ليس إشارةً في هذا الوضع (لا يكون في الموقع)", "Contact Support/wait", txt() + "/" + (hello() || {}).text);
+  // الموقع يكتب لغة واجهته عند التركيب والخيط مشغولٌ بالترطيب
+  var busy = busyUntil(performance.now() + 900);
+  H.lang = "en";
+  await wait(450);
+  var mid = txt() + "/" + (hello() || {}).text;
+  await busy;
+  check("★ كتابة الموقع والخيط مشغول: النص لم يُمسّ بعد (لا كتابة أثناء الترطيب)", "Contact Support/wait", mid);
+  await wait(400);
+  check("★ بعد اكتمال العمل وفترتَي خمول: تُعرَّب، والبوابة بإشارة lang", "التواصل مع الدعم/open:lang+idle", txt() + "/" + (hello() || {}).text);
+  check("والإمساك انتهى مع أول ظهورٍ عربي، والاتجاه RTL", "null/visible/rtl", H.getAttribute("data-cml-hold") + "/" + getComputedStyle(H).visibility + "/" + H.getAttribute("dir"));
+  check("★ ولغة الصفحة تعود ar بعد كتابة الموقع en (المرور الكامل عند فتح البوابة)، ولا لغة أجنبية في جواب النافذة", "ar/null", H.getAttribute("lang") + "/" + (hello() || {}).siteLang);
+  // ★ (المراجعة المستقلة لـر4-أ، ٢٨ ربيع الآخر ١٤٤٨هـ) والنطاق الحقيقي يعتمد هذه الإشارة: جدولُ هذه الصفحة نسخةٌ للاختبار، واختبار
+  // الأكاديمية يطفئ الترطيب لنفسه، فتغييرُ الإعدادات المقيسة في الجدول (‎hydrate‎ أو ‎hydrateSignal‎ أو ‎siteLang‎) كان لا يُرى إلا في الدخان
+  var AM = (CMLConst.domain("academy") || {}).meta || {};
+  check("★ جدول النطاقات: الأكاديمية بترطيبٍ مؤجَّل وإشارة lang وحارس <html lang> كما قِيست", "defer/lang/true",
+        AM.hydrate + "/" + AM.hydrateSignal + "/" + AM.siteLang);
+
+  // الإطارات
+  async function frame(kind, ms) {
+    var fr = document.createElement("iframe");
+    fr.src = location.pathname + "?frame=" + kind + "&cdp";
+    document.body.appendChild(fr);
+    var t0 = performance.now(), R = null;
+    while (performance.now() - t0 < (ms || 8000)) {
+      await wait(100);
+      try { R = fr.contentWindow.__res; if (R) break; } catch (e) {}
+    }
+    return R || {};
+  }
+  var O = await frame("own");
+  check("★ إطار own: إرجاعُنا lang الأصلي عند الإطفاء وتثبيتُنا ar عند التشغيل لا يفتحان البوابة", "Contact Support|en|Contact Support|ar",
+        O.before + "|" + O.offLang + "|" + O.afterOwn);
+  check("★ إطار own: ثم كتابة الموقع تفتحها (تُعرَّب)", "التواصل مع الدعم|rtl|ar|on", O.afterSite);
+  var F = await frame("foreign");
+  check("★ إطار foreign: أول كتابةٍ من الموقع لغةٌ أخرى ⇒ خمولٌ تام ولا تعريب", "Contact Support|Contact Support|-|xx-YY|-", F.before + "|" + F.foreign);
+  check("★ إطار foreign: ثم English ⇒ تعمل وتُعرَّب", "التواصل مع الدعم|rtl|ar|on", F.back);
+  var P = await frame("parse");
+  check("★ إطار parse: كتابة lang أثناء التحليل ليست إشارة (لا تعريب بعد load والخمول)", "loading|Contact Support|en", P.parseState + "|" + P.afterLoad);
+  check("★ إطار parse: وكتابة الموقع بعد التحليل تفتح البوابة", "التواصل مع الدعم|rtl|ar|on", P.afterSite);
+  var K = await frame("cap");
+  check("★ إطار cap: لا كتابة من الموقع ⇒ سقف HYDRATE_MAX يفتح البوابة (1500 مث، لا انتظار بلا حد)", "true|التواصل مع الدعم|rtl|ar|on",
+        (K.tr !== null && K.tr !== undefined && K.tr >= 1400 && K.tr < 4000) + "|" + K.final);
+  check("لا أخطاء JS غير ملتقطة (الصفحة والإطارات)", "0", jsErrors + (O.errors || 0) + (F.errors || 0) + (P.errors || 0) + (K.errors || 0));
+  document.title = "hydlang " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "HYDLANG: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})().catch(function (e) { jsErrors++; document.title = "hydlang 0/1"; var p = document.createElement("pre"); p.textContent = String(e && e.stack || e); document.body.appendChild(p); });
+</script>

@@ -11,6 +11,10 @@
 //     — السكربت ذاتي الاكتفاء حكمًا (يُلصق في وحدة التحكم) فنسخته قسرية، والعقد
 //     «أبقِهما متطابقتين» صار آليًا بهذا الفحص لا يدويًا.
 //  ٦) تحذيرات مصطلح (لا تُفشل): chat بلا «محادث»، skill بلا «مهار».
+//  ٧) ★ مفاتيح لا يطابقها المحرّك أبدًا (١-٠د): محفوفةٌ ببياض (المحرّك يقصّ النصّ قبل البحث
+//     بـCMLShared.textKey) — مدخلٌ ميّتٌ يوهم بتغطيةٍ غير موجودة. (لا سقف طول: المحرّك يطلب المفتاح مهما طال منذ ٢١ ربيع الآخر ١٤٤٨هـ)
+//
+//   node lint-dict.mjs [--domain=<نطاق>|all]   (الافتراضي all: قواميس المواقع كلها)
 import fs from "node:fs";
 import path from "node:path";
 import * as __P from "./paths.mjs";
@@ -20,11 +24,18 @@ const CODE = __P.CODE || null; // غير مُصدَّر في بنية النشر
 await import(new URL("file:///" + path.join(__P.EXT, "cml-shared.js").split(path.sep).join("/")).href);
 const { sortBySpecificity, patternLiteralLen } = globalThis.CMLShared;
 
-const AR = path.join(DICTS, "ar.json");
-const raw = fs.readFileSync(AR, "utf8");
+const { C, domainArg, domainsOf, dictFile, label } = await import(new URL("./domain-arg.mjs", import.meta.url).href);
+const SEL = domainArg(process.argv, { allowAll: true, fallback: "all" });
 let fails = 0, warns = 0;
 const fail = (m) => { console.error("✗ " + m); fails++; };
 const warn = (m) => { console.warn("⚠ " + m); warns++; };
+
+for (const D of domainsOf(SEL)) {
+const AR = dictFile(D);
+if (!fs.existsSync(AR)) { fail(`${label(D)}: قاموسه غير موجود — ${path.basename(AR)}`); continue; }
+console.log(`
+— ${label(D)}: ${path.basename(AR)}`);
+const raw = fs.readFileSync(AR, "utf8");
 
 // ١) المفاتيح المكررة — مسح خام قبل التحليل، **داخل قسم strings وحده**
 // (درسٌ من أول تشغيل: الإزاحة وحدها لا تكفي نطاقًا — قسم notes التوثيقي يشارك المستوى
@@ -92,6 +103,32 @@ const patterns = dict.patterns || [];
   else console.log("✓ القواعد مرتبة بالتخصيص (الأخصّ أولًا)");
 }
 
+// ٧) مفاتيح ميّتة: المفتاح هو ما يبحث به المحرّك بعينه (textKey) أو لا يُطابَق أبدًا
+{
+  // المفتاح يُطلب مهما طال (engine.js KEY_MAX = Infinity، توجيه المالك ٢١ ربيع الآخر ١٤٤٨هـ) — فالميّت هنا ما حفّه البياض وحده
+  const KEY_MAX = Infinity;
+  let dead = 0;
+  for (const k of Object.keys(strings)) {
+    if (globalThis.CMLShared.textKey(k, KEY_MAX) !== k) {
+      dead++;
+      if (dead <= 5) fail(`مفتاحٌ لا يطابقه المحرّك (بياضٌ في طرفيه): ${JSON.stringify(k).slice(0, 70)}`);
+    }
+  }
+  if (dead > 5) fail(`… و${dead - 5} مفتاحًا ميّتًا آخر`);
+  if (!dead) console.log("✓ كل مفتاحٍ يطابقه المحرّك كما هو (لا بياض في الأطراف؛ ولا سقف طول)");
+}
+
+// ٦) تحذيرات المصطلح (لا تُفشل)
+{
+  let t = 0;
+  for (const [k, v] of Object.entries(strings)) {
+    if (/\bchats?\b/i.test(k) && !/محادث|Chat/.test(v)) { t++; if (t <= 3) warn(`chat بلا «محادثة»: ${JSON.stringify(k).slice(0, 50)}`); }
+  }
+  if (t > 3) warn(`… و${t - 3} تحذير مصطلح آخر`);
+}
+
+}
+
 // ٥) حارس عقد الحصاد: النسخة القسرية مطابقة نصيًا للمشتركة
 {
   const norm = (s) => s.replace(/\/\/[^\n]*/g, "").replace(/\s+/g, " ").trim();
@@ -124,15 +161,6 @@ const patterns = dict.patterns || [];
     else console.log("✓ نسخة الحصاد القسرية من unescapeLiteral مطابقة جوهريًا للمشتركة");
   }
   }
-}
-
-// ٦) تحذيرات المصطلح (لا تُفشل)
-{
-  let t = 0;
-  for (const [k, v] of Object.entries(strings)) {
-    if (/\bchats?\b/i.test(k) && !/محادث|Chat/.test(v)) { t++; if (t <= 3) warn(`chat بلا «محادثة»: ${JSON.stringify(k).slice(0, 50)}`); }
-  }
-  if (t > 3) warn(`… و${t - 3} تحذير مصطلح آخر`);
 }
 
 console.log(fails ? `\n✗ ${fails} فشلًا و${warns} تحذيرًا` : `\n✓ القاموس سليم (${warns} تحذيرًا)`);

@@ -1,0 +1,49 @@
+@charset "UTF-8";
+/* legal-point.css — إصلاحاتٌ نقطية للوثائق القانونية الخمس (www.anthropic.com/legal — دراسة ر3، ٢٨ ربيع الآخر ١٤٤٨هـ).
+   تُحقن بعد base.css وrtl-legal.css.
+   ★ لا قاعدة هنا معلَّقةٌ على سمة الخط (C.FONT_ATTR): بصمتا علاج القصّ والقطع في fonts.lock.json تشملان كل *-point.css، وأي قاعدةٍ
+   كهذه تُسقط «fonts.mjs verify» حتى تُعاد المعايرة على ويندوز (بيد المالك). */
+
+/* ١) التنبيه (RULES §1، والقرار 36 بنصّه): فوق متن الوثيقة متى كُتبت فيه كتلةٌ معرَّبة (data-cml-body يكتبها المحرّك ويمحوها عند تبدّل الصفحة
+   أو الإطفاء أو الخمول أو اختيار لغةٍ أخرى من منتقي الصفحة). صندوقٌ مولَّد لا عقدة: لا يمسّ شجرة React ولا الترطيب، وواحدٌ
+   بمتنٍ واحد، ويتبع المتن الجديد في كل تنقّل. وdata-cml-route لا يكون إلا في المسارات الخمسة بأعيانها (حارس المسار) */
+html[data-cml="on"][data-cml-route="full"][data-cml-body="tr"]:lang(ar) [class*="LegalPageDetail-module"][class*="__body"]::before {
+  content: "ترجمة غير رسمية للاطلاع، والنص الإنجليزي هو المعتمد";
+  display: block;
+  box-sizing: border-box;
+  margin: 0 0 var(--gap-sm, 24px);
+  padding: 12px 16px;
+  direction: rtl;
+  unicode-bidi: isolate;
+  text-align: start;
+  font-family: var(--anthropic-sans), sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--color-slate-dark, #141413);
+  background-color: var(--color-ivory-dark, #e8e6dc);
+  border-inline-start: 4px solid var(--color-clay, #d97757);
+  border-radius: var(--radius-sm, 8px);
+}
+
+/* ٢) غلاف الموقع الإنجليزي ومنتقي لغة الوثيقة يبقيان كما يرسمهما الموقع (LTR) داخل صفحةٍ RTL: الشركة لا تعرّبهما (قاعدة النطاق)،
+   وقلبهما يعكس ترتيب لافتاتٍ إنجليزية ويقلب «©» في سطر الحقوق. والقواعد المولَّدة منطقيةٌ فتعود فيها كما كانت.
+   (العنصر الثابت إلى الشاشة يحسم موضعه المنطقي باتجاه الصفحة: لافتة الموافقة تنتقل إلى الركن المقابل — مقبولٌ في الدراسة §٣) */
+html[data-cml="on"][dir="rtl"] :is(header[class*="SiteHeader-module"], footer[class*="SiteFooter-module"],
+  [class*="SiteMobileNav-module"], [class*="Dropdown-module"], [class*="ConsentBanner-module"],
+  [class*="LegalPageDetail-module"][class*="__language-options"]) {
+  direction: ltr;
+}
+
+/* ٣) (ر3-ب، فحص الاتجاه على الصفحات الخمس، ٢٨ ربيع الآخر ١٤٤٨هـ) ما يتوسّط في الغلاف بـ«left:50%; transform:translate(-50%)» يقلبه المولِّد
+   زوجًا (inset-inline-start:50% وtranslate(50%)) فيصحّ في سياقٍ RTL وحده؛ والغلاف LTR بالقاعدة ٢ فيُحسم الموضع المنطقي يسارًا وتبقى
+   الإزاحة مقلوبةً فيزيائيًّا، فينزاح العنصر بعرضه كلّه يمينًا: رابطا التخطّي في الترويسة (يظهران بالتركيز من لوحة المفاتيح) خارج الشاشة
+   على عرض 390 (عالٍ في الصفحات الخمس)، والقائمة المنسدلة الموسَّطة في الترويسة مثلهما. فتُعاد إزاحة الموقع نفسها. وسائر تحويلات الغلاف في
+   الورقة المولَّدة نسخٌ مطابقة (رأسيةٌ أو دوران) لا يغيّرها الاتجاه. في cml-point مهمّةً لتغلب الورقتين المولَّدتين (اللقطة والحيّة). ورابطا التخطّي مقيّدان بالترويسة: الإزاحة صحيحةٌ ما دام سياقهما LTR
+   بالقاعدة ٢، فلو نقلهما الموقع خارجها لم تمسّهما (المراجعة المستقلة) */
+@layer cml-point {
+  html[data-cml="on"][dir="rtl"] :is(header[class*="SiteHeader-module"] [class*="SiteHeader-module"][class*="__skipLinks"] [class*="SiteHeader-module"][class*="__skipLink"],
+    [class*="Dropdown-module"][class*="__dropdown"][data-align="center"]) {
+    transform: translate(-50%) !important;
+  }
+}

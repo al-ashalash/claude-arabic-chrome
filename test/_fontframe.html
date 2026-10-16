@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>font frame</title>
+<!--
+  إطار سيناريو لـ_fonttest.html: الصفحة الأم تجهّز قشرة chrome وتخزينها وقاموس النطاق (‎__fsetup‎) بحسب ‎?n=‎،
+  ثم تُحمَّل الوحدات الحقيقية بترتيب المانيفست — الثوابت فالمشترك فالاتجاه فوحدة الخط فالمحرّك — في <head>
+  كما تُحقن عند document_start، وأوجه «الموقع» المقلَّدة قبلها أو بعدها بحسب السيناريو.
+-->
+<script>var CFG = parent.__fsetup(window);</script>
+<script>document.write(CFG.headEarly || "");</script>
+<script src="../extension/cml-const.js"></script>
+<script>if (CFG.afterConst) CFG.afterConst(window);</script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/cml-font.js"></script>
+<script src="../extension/engine.js"></script>
+<script>if (CFG.afterEngine) CFG.afterEngine(window);</script>
+<script>document.write(CFG.headLate || "");</script>
+</head>
+<body>
+<script>document.write(CFG.body || "");</script>
+</body>
+</html>

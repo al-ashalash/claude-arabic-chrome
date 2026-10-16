@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>block test</title>
+<!--
+  اختبار وضع الكتلة (المرحلة ٢): المتون بوحدة الفقرة داخل meta.bodySel.
+   ١) الحاصد والمحرّك يتطابقان: القاموس مبنيٌّ من بصمات harvestBlocks على الصفحة الخام، والمحرّك يجدها.
+   ٢) الكتابة قيمٌ في عقد النص القائمة وحدها: الروابط والشيفرة وعقد النص هي نفسها، ومستمع النقر يعمل.
+   ٣) عقد قابلية التمثيل: نصٌّ في خانةٍ بلا عقدة، أو عنصرٌ نائب ساقط ⇒ تبقى الكتلة إنجليزية كلّها.
+   ٤) ترتيب البحث: عقدةٌ وحيدة ⇒ قاموس الواجهة أولًا؛ تصحيح المستخدم للكتلة يسبق قطعة الصفحة؛
+      وما لم يوجد يبقى إنجليزيًّا بلا جملةٍ مختلطة، ومجموعة أزرارٍ خارج الكتل تُعرَّب عقدةً عقدة.
+   ٥) مالكٌ واحد: نصُّ البند قبل قائمته المتداخلة كتلة، والبند المتداخل كتلةٌ أخرى.
+   ٦) الإمساك ينتظر قطعة المتون بعد الترطيب، ثم تظهر الصفحة عربيةً بمتنها.
+   ٧) لا تقاذف بعد الاستقرار (رابطٌ أفرغته العربية لا يغيّر القالب)، والموقع إن غيّر نصًّا عادت كتلته
+      إنجليزيةً كلّها، ثم تُعرَّب إن رجع.
+   ٨) الإطفاء يعيد المتن حرفًا بحرف (innerHTML كما كان).
+   ٩) (S6-C، ٢١ ربيع الآخر ١٤٤٨هـ) المدخل الصريح لكتلةٍ في قطعة صفحتها (ترجمةٌ أو علامة إبقاء keep) يسبق قاموس الواجهة في
+      الكتلة ذات العقدة الوحيدة (جدول «الصفحات المتاحة» في صفحة Claude Platform on AWS)؛ والعبارة المختلطة في رسم SVG معزولةٌ
+      بـRLI…PDI عبر عقدها؛ وعلامة الترقيم المنفردة في ذرّتها («,») عربيةٌ مع الكتلة المعرَّبة ولا تُمسّ في الشيفرة؛ واللافتة
+      اللاتينية وحدها برمزٍ في طرفها («C#») معزولةٌ بـLRI…PDI في سياق RTL (meta.isoLabels) لا جزءُ جملةٍ ولا في سياق LTR.
+  ١٠) ★ (ر6-هـ، ٣٠ ربيع الآخر ١٤٤٨هـ — الفحص الحيّ لـت4) تركيبات المفاتيح المنتهية بـ/ و] و[ و\ قبل عربي تُرسم بترتيبها (علامة LRM بعد الذيل كلّه)،
+      و«/» الفاصلة بين لاتيني وعربيٍّ ملاصق لا تُمسّ؛ وخلية المفاتيح بلا حروف («], [») LTR؛ وحاوية المخطط التي نصُّها كلُّه تسمياتُ SVG تبقى LTR،
+      والتسمية العربية الخالصة بترقيمٍ أو رقم معزولةٌ بـRLI…PDI.
+  العقد: document.title = "block N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<div id="__next"><div dir="ltr" id="wrap">
+  <h1 id="title">How long do you store my data?</h1>
+  <div class="article_body"><article id="art">
+    <div class="intercom-interblocks-paragraph"><p id="p1">  See <a id="a1" href="#">best <b id="b1">practices</b></a> for <code id="c1">max_tokens</code>.<br>Then <a id="a2" href="#">the</a> docs.  </p></div>
+    <h2 id="h2"><a href="#h">Contact Support</a></h2>
+    <p id="pMix">If you need help, <a id="aMix" href="#">Contact Support</a> today.</p>
+    <ul><li id="li1">Intro <b>bold</b> text<ul><li id="li2">Nested item here</li></ul></li></ul>
+    <p id="pBad"><b>Bad</b><a href="#">block</a> here.</p>
+    <p id="pTok">Token <a href="#">mismatch</a> case.</p>
+    <p id="pOv">Override <b>me</b> please.</p>
+    <p id="pSite">Site <span id="sp">changes</span> this.</p>
+    <p id="pSplit">Hello <!-- -->world <a href="#">link</a></p>
+    <div class="tabs"><button id="tb1">Copy</button><button id="tb2">Share</button></div>
+    <h3 id="h3"><a href="#m"><span id="ic1" class="icon">&#xE001;</span>Choosing a model</a></h3>
+    <ul><li id="liCard"><span><span id="cd1">Most capable</span></span><span><span id="cd2">Research</span></span></li></ul>
+    <div id="dMix">If you need help, <a href="#">Contact Support</a> today.</div>
+    <p id="pLoose"><a href="#">Contact Support</a><span> if you cannot sign in.</span></p>
+    <p id="pRem">Remove <b id="remB">this</b> part.</p>
+    <p id="pIns">Stable <b id="insB">text</b> here.</p>
+    <p id="pBadOv">Fallback <a href="#">link</a> case.</p>
+    <div class="tabs2"><button id="g1">Copy</button><button id="g2">Share <b>link</b></button></div>
+    <p id="pIcon">Open <span id="ic2" class="icon">&#xE002;</span> the settings panel.</p>
+    <p id="pLat">Claude Code CLI with OAuth in Claude Enterprise.</p>
+    <table><tbody><tr><td id="tdKeep"><b>Rate limits</b></td><td id="tdTr"><b>Files</b></td><td id="tdUi"><b>Agents</b></td></tr></tbody></table>
+    <!-- (ر6) غلاف الجدول في وثائق Claude Code (Mintlify): أغلفةٌ متداخلة قبل table، وبجوارها على الجوال شريط تمريرٍ بلا نص، وأغلب نصّ الجدول لاتيني -->
+    <div id="twN"><div><div><table id="tblN"><tbody><tr><th id="thN1">Setting key</th><th id="thN2">Effect notes</th></tr>
+      <tr><td><code>apiKeyHelper</code></td><td id="tdN">Custom script that returns an API key for model requests</td></tr></tbody></table></div></div><div class="zq-scrollbar"><div></div></div></div>
+    <!-- (ر6، المراجعة) غلافٌ فيه جدولٌ واحد ونصٌّ غيرُه: قاعدة الغلاف لا تشمله (النصّ كلّه ليس نصَّ الجدول)، فيبقى على حكم نصّه -->
+    <div id="twT">Keep this whole sentence in English for the reader.<div><table id="tblT"><tbody><tr><th id="thT1">Setting key</th><th id="thT2">Default value</th></tr></tbody></table></div></div>
+    <div id="twG"><div><div><table id="tblG"><tbody><tr><th id="thG1">Hook event name</th><th id="thG2">Blocking behavior</th></tr>
+      <tr><td>PreToolUse fires before every tool call</td><td id="tdG">Agents</td></tr></tbody></table></div></div></div>
+    <p id="pPunct">In <b id="pPunctB">Settings</b><span id="cm">,</span>click the tab.</p>
+    <p id="pCode">Use <code id="cc">,</code> as separator.</p>
+    <p id="pLtr">Supports Python, C# and .docx files.</p>
+    <p id="pLtr2">Use Node.js with Visual C++ Redistributable.</p>
+    <p id="pParen">Settings for <a href="#">Identity management</a> (SSO, JIT, SCIM).</p>
+    <p id="pParenCode" style="width:min-content">Use <code>--verbose</code> (Command Line Interface) here.</p>
+    <p id="pParenNum" style="white-space:nowrap">Unsigned (uint8) 77.</p>
+    <p id="pParenBtn" style="white-space:nowrap">Claude Consumption Unit (<button id="ccuBtn" type="button">CCU</button>)</p>
+    <!-- ★ (ر6-ب) جدولٌ في أغلفةٍ داخل أكورديون حاويته LTR (كلوحة تبويبٍ يغلب عليها الإنجليزي): غلافه الأبعد ليس ابنًا مباشرًا ولا مالك كتلة -->
+    <details open id="acc" dir="ltr"><summary>Accordion title stays in English</summary><div><div id="twA"><div><table id="tblA"><tbody><tr><th id="thA1">Setting key</th><th id="thA2">Effect notes</th></tr></tbody></table></div><div class="zq-scrollbar"><div></div></div></div><p>Some English paragraph inside the accordion body keeps the container left to right.</p></div></details>
+    <!-- ★ (ر6-ب) فقرة Mintlify السطرية (span[data-as=p]) أكثرُ نصّها شيفرةٌ سطرية، في لوحةٍ مالكُ كتلتها؛ وبندٌ معرَّب بعد قائمته المتداخلة (الإنجليزية) بياضٌ -->
+    <div id="tpD1"><span data-as="p" id="spD1">Event: <code>claude_code.tool_result</code> or <code>OTEL_LOGS_EXPORTER</code>.</span></div>
+    <ul><li id="liD2">Type: Boolean value<ul><li id="liD2n">Nested item keeps its long English sentence for every reader here</li></ul> <b id="liD2x"></b></li></ul>
+    <!-- ★ (ر6-ب، المراجعة) رابطٌ ابنٌ مباشرٌ لجذر اتجاه (h1 هنا، و‎#table-of-contents li‎ في Claude Code): بند فهرسٍ ترجمته أكثرُ حروفها لاتينية -->
+    <h1 id="hT"><a id="aT" href="#t">Configure Claude Code on Amazon Bedrock</a></h1>
+    <svg id="dg" width="320" height="70" viewBox="0 0 320 70" style="direction:ltr"><text id="sv1" x="160" y="20" text-anchor="middle">API request</text><text id="sv2" x="160" y="50" text-anchor="middle">Read <a href="#">docs</a> now</text></svg>
+    <!-- ★ (ر6-هـ) تركيبات مفاتيح تنتهي بـ/ و] و[ و\ قبل عربي (المساعدة a/17458093)، و«/» فاصلةٌ بين لاتيني وعربي لا تُمسّ -->
+    <p id="pKeys">Press Cmd+/ (Ctrl+/ on Windows) and Cmd+] or Cmd+[ or Cmd+\ now.</p>
+    <p id="pSep">Sign in to Claude/Console with SSO.</p>
+    <!-- ★ (ر6-هـ) خلية مفاتيح بلا حروف («], [» في جدول اختصارات Slides، a/17153992) وخليةٌ برقمٍ لا تُمسّ -->
+    <!-- ★ (ر6-هـ، المراجعة F2) وخلية سهمٍ بلا حروف («->»): ليست مفاتيح بأقواسٍ أو شرطة، فلا dir منّا وتُعكس مع الصفحة -->
+    <table id="tKeys"><tbody><tr><td id="tdK1"><p id="pK1">Bring forward</p></td><td id="tdK2"><p id="pK2">], [</p></td><td id="tdK3"><p id="pK3">[1]</p></td><td id="tdK4"><p id="pK4">-&gt;</p></td></tr></tbody></table>
+    <!-- ★ (ر6-هـ) مخططٌ في figure ابنٍ مباشرٍ للجذر نصُّه كلُّه تسمياتُ SVG (preserved-thinking)، بتسمياتٍ عربيةٍ خالصة فيها ترقيمٌ ورقم -->
+    <figure id="fig" style="margin:8px 0"><div><svg id="fsv" width="420" height="96" viewBox="0 0 420 96"><text id="fl1" x="10" y="20">Cost per solved task:</text><text id="fl2" x="10" y="50">Scores 80% correct</text><text id="fl3" x="10" y="80">Original</text></svg></div></figure>
+    <!-- ★ (ر6-هـ، المراجعة F2) وحاوية مخططٍ فيها مع تسميات SVG تعليقٌ عربي في HTML (figcaption): ليست «نصُّها كلُّه رسم»، فتُحكم بنصّها كما كانت -->
+    <figure id="figCap" style="margin:8px 0"><div><svg width="420" height="36" viewBox="0 0 420 36"><text x="10" y="20">Cost per solved task:</text></svg></div><figcaption id="fcap">Cost per task by effort level.</figcaption></figure>
+  </article></div>
+</div></div>
+<nav id="sdk" dir="rtl"><div><a href="#"><span id="cs">C#</span></a></div><div><a href="#"><span id="cpp">C++</span></a></div><div><a href="#"><span id="py">Python</span></a></div>
+  <p id="sent">Install <span id="csIn">C#</span> SDK</p>
+  <!-- كما في شريط الوثائق الحيّ (client-sdks): بنودٌ روابطُ flex متجاورة في حاويةٍ واحدة، ونصّ كلٍّ في span كتلي -->
+  <div id="sdk2"><a href="#" style="display:flex"><span id="cs2" style="display:block">C#</span></a><a href="#" style="display:flex"><span style="display:block">Go</span></a></div></nav>
+<div dir="ltr"><div><span id="csL">C#</span></div></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script>CMLConst.HYDRATE_MAX_MS = 60000; CMLConst.HOLD_MAX_MS = 60000; CMLConst.HOLD_ABS_MS = 60000;</script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var META = { scan: "none", live: false, chat: false, hydrate: "defer", intercom: true, bodies: true, isoLabels: true,
+             dirSel: ".article_body article, h1", bodySel: ".article_body" };
+// الترجمات بقوالبها الإنجليزية — والقاموس يُبنى من بصمات الحاصد على الصفحة الخام (الهوية مع المحرّك)
+var TR = {
+  "Stable <b1>text</b1> here.": "ثابت <b1>نص</b1> هنا.",
+  "Remove <b1>this</b1> part.": "احذف <b1>هذا</b1> الجزء.",
+  "Fallback <a1>link</a1> case.": "حالة <a1>رابط</a1> احتياطية.",
+  "See <a1>best <b2>practices</b2></a1> for <c3>max_tokens</c3>.<g4/>Then <a5>the</a5> docs.":
+    "راجع <a1>أفضل <b2>الممارسات</b2></a1> لضبط <c3/>.<g4/>ثم <a5></a5>الوثائق.",
+  "Intro <b1>bold</b1> text": "مقدمة <b1>غامق</b1> نص",
+  "Nested item here": "بند متداخل هنا",
+  "<b1>Bad</b1><a2>block</a2> here.": "<b1>سيئ</b1> و<a2>كتلة</a2> هنا.",      // نصٌّ في خانةٍ بلا عقدة
+  "Token <a1>mismatch</a1> case.": "رمز عدم تطابق حالة.",                      // عنصرٌ نائبٌ ساقط
+  "Override <b1>me</b1> please.": "تجاوز <b1>ني</b1> رجاءً.",
+  "Site <s1>changes</s1> this.": "الموقع <s1>يغيّر</s1> هذا.",
+  "Hello world <a1>link</a1>": "مرحبا بالعالم <a1>رابط</a1>",
+  "Claude Code CLI with OAuth in Claude Enterprise.": "Claude Code CLI عبر OAuth في Claude Enterprise.",
+  "Open <c1></c1> the settings panel.": "افتح <c1/> لوحة الإعدادات.",
+  "<b1>Files</b1>": "<b1>ملفات الصفحة</b1>",                                // ترجمةٌ صريحة لكتلةٍ يعرّبها القاموس أيضًا
+  "In <b1>Settings</b1><c2>,</c2>click the tab.": "في <b1>الإعدادات</b1><c2>,</c2>انقر التبويب.",
+  "Use <c1>,</c1> as separator.": "استعمل <c1>,</c1> فاصلًا.",
+  "Supports Python, C# and .docx files.": "يدعم Python وC# وملفات .docx.",
+  "Use Node.js with Visual C++ Redistributable.": "استعمل Node.js مع Visual C++ Redistributable.",
+  "Settings for <a1>Identity management</a1> (SSO, JIT, SCIM).": "إعدادات <a1>إدارة الهوية</a1> (SSO, JIT, SCIM).",
+  "Use <c1>--verbose</c1> (Command Line Interface) here.": "استعمل <c1>--verbose</c1> (Command Line Interface) هنا.",
+  "Unsigned (uint8) 77.": "عديم الإشارة (uint8) 77.",
+  "Claude Consumption Unit (<s1>CCU</s1>)": "وحدة استهلاك Claude (<s1>CCU</s1>)",
+  "API request": "طلب API",
+  "Read <a1>docs</a1> now": "اقرأ <a1>وثائق API</a1> الآن",
+  "Setting key": "مفتاح الإعداد",
+  "Effect notes": "ملاحظات الأثر",
+  "<s1>Event: <c2>claude_code.tool_result</c2> or <c3>OTEL_LOGS_EXPORTER</c3>.</s1>": "<s1>الحدث: <c2/> أو <c3/>.</s1>",
+  "Type: Boolean value": "النوع: قيمة منطقية",
+  "<a1>Configure Claude Code on Amazon Bedrock</a1>": "<a1>تهيئة Claude Code على Amazon Bedrock</a1>",
+  "Press Cmd+/ (Ctrl+/ on Windows) and Cmd+] or Cmd+[ or Cmd+\\ now.": "اضغط Cmd+/ (Ctrl+/ على Windows) وCmd+] أو Cmd+[ أو Cmd+\\ الآن.",
+  "Sign in to Claude/Console with SSO.": "سجّل الدخول إلى Claude/وحدة التحكّم عبر SSO.",
+  "Bring forward": "إحضار إلى المقدمة",
+  "Cost per solved task:": "التكلفة لكل مهمة محلولة:",
+  "Scores 80% correct": "صحيحة بنسبة 80%",
+  "Original": "الأصل",
+  "Cost per task by effort level.": "التكلفة لكل مهمة بحسب مستوى الجهد.",
+};
+var ORIG = document.querySelector(".article_body").innerHTML;
+var HV = CMLShared.harvestBlocks(document, { body: META.bodySel });
+var BLOCKS = {}, hvTpl = {};
+HV.forEach(function (h) { hvTpl[h.tpl] = h; if (Object.prototype.hasOwnProperty.call(TR, h.tpl)) BLOCKS[h.fp] = TR[h.tpl]; });
+// علامة الإبقاء (keep) في القطعة: قرار المترجم أن تبقى الكتلة كما في المصدر — بصمةٌ فقط
+var KEEP = [CMLShared.blockFp("<b1>Rate limits</b1>")];
+var BODY_DELAY = 1200, bodyReqs = [];
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) {
+  bodyReqs.push(msg);
+  if (!msg || msg.type !== "bodies") { if (cb) cb(null); return; }
+  // (ر6) صفحةٌ حُجب متنها لا قطعة لها: العامل يجيب null (كما في sw.js حين لا تكون القطعة في الفهرس)
+  setTimeout(function () { if (cb) cb(/zq-withheld/.test(msg.path || "") ? null : { page: CMLShared.pageKey(META, msg.path), blocks: BLOCKS, keep: KEEP }); }, BODY_DELAY);
+} });
+var OV = {}; OV[CMLShared.blockFp("Override <b1>me</b1> please.")] = "تصحيحي <b1>أنا</b1> هنا.";
+OV[CMLShared.blockFp("Fallback <a1>link</a1> case.")] = "تصحيحٌ أسقط الرابط";   // لا يطابق فقرته ⇒ ترجمة الإضافة
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true, "cml_block_ov.privacy": { ar: OV } });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "privacy", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Contact Support": "التواصل مع الدعم", "Copy": "نسخ", "Share": "مشاركة",
+    "Choosing a model": "اختيار نموذج", "Most capable": "الأكثر قدرة",
+    "How long do you store my data?": "كم تحتفظون ببياناتي؟",
+    "Rate limits": "حدود المعدل", "Files": "الملفات", "Agents": "الوكلاء" }, patterns: [], plurals: {} } } };
+// مراجعُ قبل المحرّك: العقد نفسها يجب أن تبقى
+var P1_TEXTS = [], w = document.createTreeWalker(document.getElementById("p1"), NodeFilter.SHOW_TEXT), tn;
+while ((tn = w.nextNode())) P1_TEXTS.push(tn);
+var A1 = document.getElementById("a1"), C1 = document.getElementById("c1"), clicks = 0;
+A1.addEventListener("click", function (e) { e.preventDefault(); clicks++; });
+</script>
+<link rel="stylesheet" href="../extension/base.css">
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g"), ""); }
+function $(id) { return document.getElementById(id); }
+function txt(id) { return noBidi($(id).textContent).replace(/\s+/g, " ").trim(); }
+var H = document.documentElement;
+
+(async function () {
+  check("★ الحاصد يستخرج قوالب الترجمات كلها من الصفحة الخام (لا انحراف في التطبيع)", "0",
+        Object.keys(TR).filter(function (t) { return !hvTpl[t]; }).length);
+  await wait(500);
+  check("★ قبل الترطيب: المتن لا يُمسّ والصفحة ممسوكة", "See best practices for max_tokens.Then the docs./1",
+        txt("p1") + "/" + H.getAttribute("data-cml-hold"));
+  document.body.appendChild(document.createElement("next-route-announcer"));
+  await wait(300);
+  check("★ بعد الترطيب والقطعة لم تصل: ما زالت ممسوكة (المتن جزءٌ من أول ظهور)، والواجهة معرَّبة",
+        "1/التواصل مع الدعم", H.getAttribute("data-cml-hold") + "/" + txt("h2"));
+  await wait(1300);
+  check("★ وصلت القطعة: تظهر الصفحة والمتن عربي", "null/visible", H.getAttribute("data-cml-hold") + "/" + getComputedStyle(H).visibility);
+  check("★ فقرةٌ برابطٍ متداخل وشيفرةٍ وسطر تُعرَّب بقالبها", "راجع أفضل الممارسات لضبط max_tokens.ثم الوثائق.", txt("p1"));
+  check("★ الرابط والشيفرة هما العنصران نفسهما، والشيفرة كما هي", "true/true/max_tokens",
+        (document.getElementById("a1") === A1 && A1.isConnected) + "/" + (C1.isConnected && C1.parentNode === $("p1")) + "/" + C1.textContent);
+  check("★ عقد النص نفسها في مواضعها (لا إنشاء ولا حذف ولا نقل)", "true",
+        P1_TEXTS.every(function (t) { return t.isConnected && $("p1").contains(t); }) && P1_TEXTS.length === 9 &&
+        document.createTreeWalker($("p1"), NodeFilter.SHOW_TEXT).nextNode() === P1_TEXTS[0]);
+  A1.click();
+  check("★ مستمع النقر على الرابط ما زال يعمل", "1", clicks);
+  check("مسافة صدر الكتلة الأصلية باقية", "true", /^ {2}\S/.test(P1_TEXTS[0].nodeValue));
+  check("★ عقدةٌ وحيدة في قاموس الواجهة: الواجهة أولًا", "التواصل مع الدعم", txt("h2"));
+  check("★ كتلةٌ ليست في القاموس تبقى إنجليزية كلّها (لا جملة مختلطة)", "If you need help, Contact Support today.", txt("pMix"));
+  var li1own = Array.prototype.filter.call($("li1").childNodes, function (n) { return n.nodeName !== "UL"; })
+    .map(function (n) { return n.textContent; }).join("");
+  check("★ مالكٌ واحد: نصُّ البند قبل قائمته كتلة، والمتداخل كتلةٌ أخرى", "مقدمة غامق نص|بند متداخل هنا", noBidi(li1own) + "|" + txt("li2"));
+  check("★ نصٌّ في خانةٍ لا عقدة لها ⇒ الكتلة إنجليزية", "Badblock here.", txt("pBad"));
+  check("★ عنصرٌ نائبٌ ساقط من العربية ⇒ الكتلة إنجليزية", "Token mismatch case.", txt("pTok"));
+  check("★ تصحيح المستخدم للكتلة يسبق قطعة الصفحة", "تصحيحي أنا هنا.", txt("pOv"));
+  check("خانةٌ بعقدتين (فاصل React): الخانة في الأولى والثانية تُفرَّغ", "مرحبا بالعالم رابط", txt("pSplit"));
+  check("★ أزرارٌ خارج الكتل تُعرَّب عقدةً عقدة (قاعدة المرحلة ١)", "نسخ/مشاركة", txt("tb1") + "/" + txt("tb2"));
+  check("العنوان خارج المتن يُعرَّب كالمعتاد", "كم تحتفظون ببياناتي؟", txt("title"));
+  check("★ أيقونةٌ بمحرفٍ خاص في رابط عنوانٍ: ذرّةٌ لا تُمسّ، والعنوان من قاموس الواجهة", "true/اختيار نموذج",
+        ($("ic1").textContent === String.fromCharCode(0xE001)) + "/" + noBidi($("h3").textContent.replace(String.fromCharCode(0xE001), "")).trim());
+  check("★ صفُّ لافتاتٍ داخل بند: كل لافتةٍ تُعرَّب وحدها (لا جملة فتُمنع)", "الأكثر قدرة/Research", txt("cd1") + "/" + txt("cd2"));
+  check("★ جملةٌ لم تُترجم مالكها div تبقى إنجليزيةً كلّها (لا يُعرَّب الرابط وحده)", "If you need help, Contact Support today.", txt("dMix"));
+  check("★ تصحيح مستخدمٍ لا يطابق فقرته ⇒ ترجمة الإضافة لا الإنجليزية", "حالة رابط احتياطية.", txt("pBadOv"));
+  check("★ صفّ لافتاتٍ: بندٌ بعقدٍ عدّة لا يُعرَّب وحده، والبند الوحيد يُعرَّب", "نسخ/Share link", txt("g1") + "/" + txt("g2"));
+  check("★ جملةٌ موزّعة على وسومٍ متجاورة ليست صفّ لافتات: تبقى إنجليزيةً كلّها", "Contact Support if you cannot sign in.", txt("pLoose"));
+  check("★ فقرةٌ فيها أيقونة تُعرَّب بقالبها والأيقونة كما هي", "true/افتح لوحة الإعدادات.",
+        ($("ic2").textContent === String.fromCharCode(0xE002)) + "/" + noBidi($("pIcon").textContent.replace(String.fromCharCode(0xE002), "")).replace(/\s+/g, " ").trim());
+  check("★ اتجاه الفقرة المعرَّبة RTL، والإنجليزية LTR", "rtl/ltr", getComputedStyle($("p1")).direction + "/" + getComputedStyle($("pMix")).direction);
+  // ★ (المرحلة ٤) فقرةٌ معرَّبة كلّها لاتينيّها أكثر (أسماء منتجات): اتجاهها اتجاه اللغة لا عدّ الحروف
+  check("★ فقرةٌ معرَّبة لاتينيّها أكثر: RTL", "rtl", getComputedStyle($("pLat")).direction);
+  // ومالكٌ نصُّه كتلةٌ معرَّبة وقائمةٌ متداخلة (كتلةٌ أخرى باتجاهها): اتجاه اللغة كذلك
+  check("بندٌ معرَّب فيه قائمةٌ متداخلة: RTL", "rtl", getComputedStyle($("li1")).direction);
+  // ★ (ر6-ب — مراجعة ر6، السبب D1) فقرة Mintlify السطرية المعرَّبة كلُّها وأكثرُ حروفها شيفرة: اتجاه اللغة لا عدّ الحروف مع الشيفرة (كان LTR)
+  check("★ (ر6-ب) فقرةٌ سطرية span[data-as=p] معرَّبة أكثرُ حروفها شيفرةٌ سطرية: RTL، والشيفرة كما هي", "rtl/الحدث: claude_code.tool_result أو OTEL_LOGS_EXPORTER.",
+        getComputedStyle($("spD1")).direction + "/" + txt("spD1"));
+  // ★ (ر6-ب — السبب D2) بندٌ معرَّب بعد قائمته المتداخلة الإنجليزية بياض: التتابع بلا حروف لا يمحو عضويته فلا يتقاذف، فيبقى RTL وقائمته LTR
+  check("(ر6-ب) بندٌ معرَّب بعد قائمته المتداخلة الإنجليزية بياض: RTL، والمتداخل الإنجليزي LTR", "rtl/ltr/النوع: قيمة منطقية",
+        getComputedStyle($("liD2")).direction + "/" + getComputedStyle($("liD2n")).direction + "/" + noBidi($("liD2").firstChild.nodeValue).trim());
+  // ★ (ر6-ب، المراجعة) والرابط الذي هو بندُ فهرسٍ كاملٌ تحت جذر اتجاه: اتجاه اللغة كعنوانه (كان LTR بعدّ الحروف)
+  check("★ (ر6-ب، المراجعة) رابطٌ ابنٌ مباشرٌ لجذر اتجاه (كبند الفهرس) معرَّبٌ أكثرُ حروفه لاتينية: RTL كعنوانه، لا LTR بعدّ الحروف", "rtl/rtl/تهيئة Claude Code على Amazon Bedrock",
+        getComputedStyle($("aT")).direction + "/" + getComputedStyle($("hT")).direction + "/" + txt("aT"));
+  // إزالةٌ داخل البند (عنصرٌ فارغ بعد البياض) تعيد تقدير تتابعاته كلها بترتيبها (pendRem ← walk(البند)): المعرَّب ثم البياض — والبياض لا يمحو العضوية
+  var liD2x = $("liD2x");
+  $("liD2").removeChild(liD2x);
+  await wait(700);
+  check("★ (ر6-ب) وبعد إعادة تقدير تتابعات البند كلها (إزالةٌ فيه): يبقى RTL، فالتتابع بلا حروف لا يمحو عضويته (لا تقاذف)", "rtl/ltr",
+        getComputedStyle($("liD2")).direction + "/" + getComputedStyle($("liD2n")).direction);
+  $("liD2").appendChild(liD2x);   // الصفحة إلى أصلها (تحقّق الإطفاء أدناه يقارن بالأصل حرفًا)
+  await wait(500);
+  // ٩) S6-C: المدخل الصريح يسبق قاموس الواجهة في الكتلة ذات العقدة الوحيدة، وبلا مدخلٍ فالواجهة أولًا كما كانت
+  check("★ علامة الإبقاء في القطعة تسبق قاموس الواجهة (كتلةٌ بعقدةٍ وحيدة تبقى كما في المصدر)", "Rate limits", txt("tdKeep"));
+  check("★ ترجمة القطعة الصريحة تسبق قاموس الواجهة في الكتلة ذات العقدة الوحيدة", "ملفات الصفحة", txt("tdTr"));
+  check("وكتلةٌ بلا مدخلٍ صريح: قاموس الواجهة أولًا كما كان", "الوكلاء", txt("tdUi"));
+  // علامة الترقيم المنفردة في ذرّتها: عربيةٌ مع الكتلة المعرَّبة، والشيفرة كما هي
+  check("★ فاصلةٌ لاتينية منفردة في عنصرها تصير «،» مع الكتلة المعرَّبة", "في الإعدادات،انقر التبويب./" + String.fromCharCode(0x060C), txt("pPunct") + "/" + $("cm").textContent);
+  check("★ الفاصلة داخل شيفرةٍ حقيقية لا تُمسّ", "استعمل , فاصلًا./,", txt("pCode") + "/" + $("cc").textContent);
+  // رسم SVG: العبارة المختلطة معزولةٌ بـRLI…PDI فتُرتَّب من اليمين (أول حرفٍ منطقيًّا أقصى اليمين)
+  var RLIc = String.fromCharCode(0x2067), PDIc = String.fromCharCode(0x2069), LRIc = String.fromCharCode(0x2066);
+  var LETTER = new RegExp("[A-Za-z" + String.fromCharCode(0x0621) + "-" + String.fromCharCode(0x064A) + "]");
+  var MARKS = new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]");
+  function rtlOrderSvg(el) {
+    var t = el.textContent, a = -1, z = -1;
+    for (var i = 0; i < t.length; i++) if (LETTER.test(t[i])) { if (a < 0) a = i; z = i; }
+    try { return el.getStartPositionOfChar(a).x > el.getStartPositionOfChar(z).x; } catch (e) { return "err"; }
+  }
+  var sv1 = $("sv1").textContent;
+  check("★ عبارةٌ مختلطة في رسم SVG: معزولةٌ بـRLI…PDI ومرسومةٌ من اليمين", "true/طلب API/true",
+        (sv1.charAt(0) === RLIc && sv1.charAt(sv1.length - 1) === PDIc) + "/" + noBidi(sv1) + "/" + rtlOrderSvg($("sv1")));
+  var sv2n = []; (function c(x) { for (var k = x.firstChild; k; k = k.nextSibling) { if (k.nodeType === 3) sv2n.push(k); else c(k); } })($("sv2"));
+  check("★ وعبر عقدها (رابطٌ داخل النص): RLI في أول عقدة وPDI في آخرها", "true/true/اقرأ وثائق API الآن",
+        (sv2n[0].nodeValue.charAt(0) === RLIc) + "/" + (sv2n[sv2n.length - 1].nodeValue.slice(-1) === PDIc) + "/" + noBidi($("sv2").textContent).replace(/\s+/g, " ").trim());
+  // اللافتات اللاتينية (meta.isoLabels): وحدها برمزٍ في طرفها وفي سياق RTL ⇒ معزولة
+  function ltrOrder(el) {
+    var n = el.firstChild, v = n.nodeValue, a = v.search(/[A-Za-z]/), z = v.length - 1;
+    while (z > 0 && MARKS.test(v[z])) z--;
+    var r0 = document.createRange(); r0.setStart(n, a); r0.setEnd(n, a + 1);
+    var r1 = document.createRange(); r1.setStart(n, z); r1.setEnd(n, z + 1);
+    return r0.getBoundingClientRect().left < r1.getBoundingClientRect().left;
+  }
+  check("★ لافتةٌ لاتينية وحدها برمزٍ في طرفها في سياق RTL: معزولةٌ بـLRI…PDI وتُرسم «C#» لا «#C»", "true/true/true",
+        ($("cs").textContent === LRIc + "C#" + PDIc) + "/" + ($("cpp").textContent === LRIc + "C++" + PDIc) + "/" + ltrOrder($("cs")));
+  check("★ وبنود قائمةٍ روابطُ flex متجاورة في حاويةٍ واحدة (شريط الوثائق): صندوقُ كل رابطٍ سطرُه فتُعزل", "true",
+        $("cs2").textContent === LRIc + "C#" + PDIc);
+  check("لافتةٌ بلا رمزٍ في طرفها لا تُمسّ", "Python", $("py").textContent);
+  check("★ اللافتة جزءًا من جملة لا تُعزل (العزل يُفسد ترتيب الجملة)", "C#", $("csIn").textContent);
+  check("ولا في سياق LTR", "C#", $("csL").textContent);
+  // (S6-C، المراجعة العدائية) مقطعٌ لاتيني في طرفه محايدٌ داخل الترجمة: LRM ملاصقة (كما في البيانات «.md») فيُرسم «C#» لا «#C»
+  // و«.docx» لا «docx.»؛ وما يليه لاتيني أو لا محايد في طرفه لا يُمسّ. والإطفاء (innerHTML) والثبات أدناه يشملانهما
+  var LRMc = String.fromCharCode(0x200E), pl = $("pLtr").textContent;
+  function glyphLeft(el, sub, k) {   // موضع الحرف k من المقطع sub في عقدة نصّ el الأولى: يسار حدّه
+    var n = el.firstChild, i = n.nodeValue.indexOf(sub) + k, r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + 1);
+    return r.getBoundingClientRect().left;
+  }
+  check("★ مقطعٌ لاتيني في طرفه محايدٌ داخل الترجمة: LRM بعد «C#» وقبل «.docx» ويُرسمان بترتيبهما (C قبل #، و. قبل d)",
+        "true/true/true/true/يدعم Python وC# وملفات .docx.",
+        (pl.indexOf("C#" + LRMc) >= 0) + "/" + (pl.indexOf(LRMc + ".docx") >= 0) + "/" +
+        (glyphLeft($("pLtr"), "C#", 0) < glyphLeft($("pLtr"), "C#", 1)) + "/" + (glyphLeft($("pLtr"), ".docx", 0) < glyphLeft($("pLtr"), ".docx", 1)) + "/" +
+        pl.split(LRMc).join("").replace(/\s+/g, " ").trim());
+  check("وما يليه لاتيني أو لا محايد في طرفه لا يُمسّ (Node.js وVisual C++ Redistributable)", "false/استعمل Node.js مع Visual C++ Redistributable.",
+        ($("pLtr2").textContent.indexOf(LRMc) >= 0) + "/" + txt("pLtr2"));
+  // ★ (ر5، ٢٩ ربيع الآخر ١٤٤٨هـ — ملاحظة المالك ٢(ج)) قالب الكتلة: القوسان ذوا المحتوى اللاتيني بعد كلمةٍ عربية تلاصقهما علامة LRM من الخارج في
+  // خانتهما (الرموز محايدة)، والقالب المحفوظ كما هو. والثبات والإطفاء أدناه يشملانهما.
+  // ★ (ر5-ج، ٢٩ ربيع الآخر ١٤٤٨هـ — مراجعة ر5-أ F1) وبعد شيفرةٍ سطرية يُعلَّمان كذلك: base.css يعزل code في الصفحة فيراه السطر محايدًا، وتنظر قاعدة
+  // الأقواس من ورائه إلى الكلمة العربية — فكان القوسان بلا علامةٍ ينكسران حين تلتفّ الفقرة («Interface)» في سطر و«(Command» في آخر)
+  check("★ (ر5) كتلةٌ معرَّبة: «(SSO, JIT, SCIM)» بعد كلمةٍ عربية تلاصقها علامة LRM من الخارج في خانتها، والنص كما هو", "true/إعدادات إدارة الهوية (SSO, JIT, SCIM).",
+        ($("pParen").lastChild.nodeValue.indexOf(LRMc + "(SSO, JIT, SCIM)" + LRMc) >= 0) + "/" + txt("pParen").split(LRMc).join(""));
+  check("(ر5-ج) وبعد شيفرةٍ سطرية («--verbose (Command Line Interface)») يُعلَّم: الشيفرة معزولةٌ في الصفحة فهي محايدة", "true/استعمل --verbose (Command Line Interface) هنا.",
+        ($("pParenCode").lastChild.nodeValue.indexOf(LRMc + "(Command Line Interface)" + LRMc) >= 0) + "/" + txt("pParenCode").split(LRMc).join(""));
+  (function () {
+    // الفقرة بعرض min-content (تنكسر عند كل مسافة): «(» يسار «Command» في سطره، و«)» يمين «Interface» في سطره
+    var tn = $("pParenCode").lastChild, tx = tn && tn.nodeType === 3 ? tn.nodeValue : "", ip = tx.indexOf("("), iq = tx.indexOf(")"), ic = tx.indexOf("Command"), ie = tx.indexOf("Interface");
+    var R = function (a) { var r = document.createRange(); r.setStart(tn, a); r.setEnd(tn, a + 1); return r.getBoundingClientRect(); };
+    var got = "(لا نص)";
+    if (ip >= 0 && iq >= 0 && ic >= 0 && ie >= 0) {
+      var rp = R(ip), rc = R(ic), re = R(ie + 8), rq = R(iq);
+      got = (rc.top !== re.top) + "/" + (Math.abs(rp.top - rc.top) < 2 && rp.right <= rc.left + 0.5) + "/" + (Math.abs(rq.top - re.top) < 2 && rq.left >= re.right - 0.5);
+    }
+    check("★ (ر5-ج) والفقرة ملتفّة بعد الشيفرة: «(» يسار «Command» في سطره، و«)» يمين «Interface» في سطره", "true/true/true", got);
+  })();
+  // ★ (ر5-ج — مراجعة ر5-أ F2) رقمٌ أوروبي بعد زوجٍ معلَّم كان ينضمّ إليه بعد علامته الختامية فيقع على الجانب الآخر («77 (uint8)»):
+  // تليه علامة RLM فيبقى «77» يسار القوسين كما يُرسم بلا علامة
+  (function () {
+    var RLMc = String.fromCharCode(0x200F), tn = $("pParenNum").firstChild, tx = tn && tn.nodeValue || "", ip = tx.indexOf("("), i7 = tx.indexOf("77");
+    var R = function (a) { var r = document.createRange(); r.setStart(tn, a); r.setEnd(tn, a + 1); return r.getBoundingClientRect(); };
+    check("★ (ر5-ج) «(uint8) 77»: علامة RLM بعد الزوج المعلَّم، و«77» يسار القوسين في السطر", "true/true/عديم الإشارة (uint8) 77.",
+          (tx.indexOf(LRMc + "(uint8)" + LRMc + RLMc + " 77") >= 0) + "/" + (ip >= 0 && i7 >= 0 && R(i7).left < R(ip).left && R(i7).left < R(tx.indexOf(")")).left) + "/" +
+          txt("pParenNum").split(LRMc).join("").split(RLMc).join(""));
+  })();
+  // ★ (ر5-ج، المراجعة المستقلة — الصنف c944fede1d7c) زوجٌ لا يحوي إلا زرًّا (inline-block، ذرّةٌ محايدة) بعد لاتيني: تلاصقه علامة LRM فيصير
+  // قوساه من اليسار حول الزرّ («Claude (CCU)» كما في جدول الأسعار)؛ وبلا العلامة يأخذان اتجاه الفقرة فينقلبان («(» يمين الزرّ)
+  (function () {
+    var btn = $("ccuBtn"), n1 = btn && btn.previousSibling, n2 = btn && btn.nextSibling, got = "(لا نص)";
+    if (n1 && n2 && n1.nodeType === 3 && n2.nodeType === 3 && n1.nodeValue.lastIndexOf("(") >= 0 && n2.nodeValue.indexOf(")") >= 0) {
+      var R = function (n, a) { var r = document.createRange(); r.setStart(n, a); r.setEnd(n, a + 1); return r.getBoundingClientRect(); };
+      var br = btn.getBoundingClientRect(), op = R(n1, n1.nodeValue.lastIndexOf("(")), cl = R(n2, n2.nodeValue.indexOf(")"));
+      got = (op.right <= br.left + 0.5) + "/" + (cl.left >= br.right - 0.5) + "/" + txt("pParenBtn").split(LRMc).join("");
+    }
+    check("★ (ر5-ج) «وحدة استهلاك Claude (CCU)» والزرّ داخل القوسين: «(» يسار الزرّ و«)» يمينه", "true/true/وحدة استهلاك Claude (CCU)", got);
+  })();
+  // ★ (ر6-هـ، ٣٠ ربيع الآخر ١٤٤٨هـ — الفحص الحيّ لـت4) ترتيب حروف المقطع في السطر (يسارًا فيمينًا) كترتيبه المنطقي؟ — بمستطيلات المدى في عقدة نصٍّ واحدة
+  function tokVisualOk(el, tok) {
+    // (علامات LRM خارج المقطع: يُبحث عنه في النص بلا علامات، وتُقاس حروفه في مواضعها من العقدة)
+    var n = el.firstChild, v = n && n.nodeValue || "", pos = [], bare = "", xs = [];
+    for (var i = 0; i < v.length; i++) if (v.charCodeAt(i) !== 0x200E) { pos.push(i); bare += v[i]; }
+    var at = bare.indexOf(tok);
+    if (at < 0) return "(لا مقطع)";
+    for (var k = 0; k < tok.length; k++) { var r = document.createRange(); r.setStart(n, pos[at + k]); r.setEnd(n, pos[at + k] + 1); xs.push(r.getBoundingClientRect().left); }
+    for (k = 1; k < xs.length; k++) if (!(xs[k] > xs[k - 1])) return false;
+    return true;
+  }
+  (function () {
+    // R1: الذيل كلّه («+/» و«+]» و«+[» و«+\») تليه علامة LRM فيُرسم المقطع بترتيبه؛ كان «/Cmd+» و«]Cmd+» (والقوس معكوس الشكل)
+    var kv = $("pKeys").firstChild.nodeValue, BS = String.fromCharCode(92);
+    check("★ (ر6-هـ) تركيبات المفاتيح المنتهية بـ/ و] و[ و\\ قبل عربي: علامة LRM بعد الذيل كلّه (لا بين «+» وما بعده)، وكلٌّ يُرسم بترتيبه (Cmd+/ لا /Cmd+)",
+          "true/true/true/true/true/false|true/true/true/true/true",
+          [kv.indexOf("Cmd+/" + LRMc) >= 0, kv.indexOf("Ctrl+/" + LRMc) >= 0, kv.indexOf("Cmd+]" + LRMc) >= 0, kv.indexOf("Cmd+[" + LRMc) >= 0,
+           kv.indexOf("Cmd+" + BS + LRMc) >= 0, kv.indexOf("+" + LRMc) >= 0].join("/") + "|" +
+          [tokVisualOk($("pKeys"), "Cmd+/"), tokVisualOk($("pKeys"), "Ctrl+/"), tokVisualOk($("pKeys"), "Cmd+]"), tokVisualOk($("pKeys"), "Cmd+["),
+           tokVisualOk($("pKeys"), "Cmd+" + BS)].join("/"));
+    // و«/» بين لاتيني وعربيٍّ ملاصق فاصلةٌ لا ذيل: لا علامة، فتبقى بين الكلمتين («Claude/وحدة التحكّم»: الشرطة يسار «Claude» في السطر RTL)
+    var sn = $("pSep").firstChild, sv = sn.nodeValue, si = sv.indexOf("Claude/"), rr = function (a) { var r = document.createRange(); r.setStart(sn, a); r.setEnd(sn, a + 1); return r.getBoundingClientRect().left; };
+    check("★ (ر6-هـ) «/» بين كلمةٍ لاتينية وعربيةٍ ملاصقة لا تُعلَّم (فاصلة)، وتُرسم بين الكلمتين", "false/true",
+          (sv.indexOf("/" + LRMc) >= 0) + "/" + (si >= 0 && rr(si + 6) < rr(si)));
+  })();
+  // ★ (ر6-هـ) خلية مفاتيح بلا حروف («], [»): LTR فيُرسم «]» يسار «[» كما في المصدر (كان RTL موروثًا يعكس الترتيب ويقلب شكل القوسين)؛ والخلية
+  // العربية RTL، والخلية التي فيها رقمٌ («[1]») على حالها بلا اتجاهٍ منّا
+  (function () {
+    var kn = $("pK2").firstChild, kx = function (a) { var r = document.createRange(); r.setStart(kn, a); r.setEnd(kn, a + 1); return r.getBoundingClientRect().left; };
+    check("★ (ر6-هـ) خلية مفاتيح من رموزٍ وترقيمٍ لاتيني بلا حروف («], [»): dir=ltr فيُرسم «]» يسار «[»، والخلية العربية RTL، و«[1]» بلا dir",
+          "ltr/ltr/true/rtl/null", [$("pK2").getAttribute("dir"), getComputedStyle($("pK2")).direction, kx(0) < kx(3),
+          getComputedStyle($("pK1")).direction, String($("pK3").getAttribute("dir"))].join("/"));
+    // ★ (ر6-هـ، المراجعة F2 — الطفرة M2b) وحدُّ القاعدة: نصٌّ من رموزٍ بلا قوسٍ ولا شرطة («->» سهمٌ يُعكس مع الصفحة) لا يأخذ dir منّا، فيرث RTL
+    check("★ (ر6-هـ) خلية سهمٍ بلا حروف («->»): لا dir منّا فترث اتجاه الجدول RTL (قاعدة المفاتيح لما فيه قوسٌ أو شرطةٌ مائلة وحده)", "null/rtl/->",
+          [String($("pK4").getAttribute("dir")), getComputedStyle($("pK4")).direction, $("pK4").textContent].join("/"));
+  })();
+  // ★ (ر6-هـ) المخطط: حاويةٌ نصُّها كلُّه تسمياتُ SVG تأخذ اتجاه الرسم الأصلي LTR (كانت RTL بتسمياتها العربية فتمتدّ تسميات «start» يسارًا وتُقصّ)،
+  // والتسمية العربية الخالصة بترقيمٍ أو رقم معزولةٌ بـRLI…PDI: «:» عند آخر القراءة (يسار آخر حرف)، و«80%» متجاوران؛ والحروف وحدها لا تُعزل
+  (function () {
+    function ext(el) {
+      var t = el.textContent, out = [];
+      for (var i = 0; i < t.length; i++) { try { var b = el.getExtentOfChar(i); if (b.width > 0) out.push({ ch: t[i], x: b.x + b.width / 2 }); } catch (e) {} }
+      return out;
+    }
+    var fl1 = $("fl1").textContent, fl2 = $("fl2").textContent;
+    var e1 = ext($("fl1")), colon = e1.filter(function (p) { return p.ch === ":"; })[0], lastAr = e1.filter(function (p) { return p.ch === String.fromCharCode(0x0629); }).pop();
+    var e2 = ext($("fl2")).sort(function (a, b) { return a.x - b.x; }).map(function (p) { return p.ch; }).join("").replace(/\s+/g, "");
+    check("★ (ر6-هـ) حاوية المخطط (figure) التي نصُّها كلُّه تسمياتٌ عربية في SVG: dir=ltr ونصّ الرسم LTR (اتجاه الرسم الأصلي)، لا RTL بتسمياتها",
+          "ltr/ltr/ltr", [$("fig").getAttribute("dir"), getComputedStyle($("fsv")).direction, getComputedStyle($("fl1")).direction].join("/"));
+    check("★ (ر6-هـ) التسمية العربية الخالصة بترقيمٍ أو رقم معزولةٌ بـRLI…PDI: «:» يسار آخر حرف (آخر القراءة)، و«%» ملاصقٌ لـ«80»؛ و«الأصل» حروفًا بلا عزل",
+          "true/true/true/true/الأصل",
+          [fl1.charAt(0) === RLIc && fl1.slice(-1) === PDIc, fl2.charAt(0) === RLIc && fl2.slice(-1) === PDIc,
+           !!(colon && lastAr && colon.x < lastAr.x), /%80|80%/.test(e2), $("fl3").textContent].join("/"));
+    // ★ (ر6-هـ، المراجعة F2 — الطفرة M3b) وحدُّ قاعدة المخطط: حاويةٌ فيها مع تسميات SVG نصُّ HTML عربي (figcaption) لا تأخذ dir=ltr، وتُحكم بنصّها RTL
+    check("★ (ر6-هـ) حاوية مخططٍ فيها تعليقٌ عربي في HTML (figcaption) مع تسميات SVG: لا تأخذ dir=ltr بقاعدة المخطط، وتُحكم بنصّها (RTL)", "rtl/rtl",
+          [String($("figCap").getAttribute("dir")), getComputedStyle($("fcap")).direction].join("/"));
+  })();
+  // ٧) الثبات: لا طفرة بعد الاستقرار
+  var muts = 0, mo = new MutationObserver(function (l) { muts += l.length; });
+  mo.observe($("art"), { subtree: true, childList: true, characterData: true, attributes: true });
+  mo.observe($("sdk"), { subtree: true, childList: true, characterData: true, attributes: true });
+  await wait(700);
+  mo.disconnect();
+  check("★ لا تقاذف بعد الاستقرار (رابطٌ أفرغته العربية لا يغيّر القالب)", "0", muts);
+  // الكتلة إن عادت إنجليزية (غيّر الموقع نصّها) عادت فاصلتها اللاتينية، ثم تعود عربيةً بعودة ترجمتها
+  $("pPunctB").firstChild.nodeValue = "Options";
+  await wait(700);
+  var punctEn = txt("pPunct") + "/" + $("cm").textContent;
+  $("pPunctB").firstChild.nodeValue = "Settings";
+  await wait(700);
+  check("★ كتلةٌ عادت إنجليزية تعود فاصلتها «,»، وبعودة ترجمتها «،»", "In Options,click the tab./,/" + String.fromCharCode(0x060C),
+        punctEn + "/" + $("cm").textContent);
+  $("sp").firstChild.nodeValue = "updates";
+  await wait(700);
+  check("★ الموقع غيّر نصًّا داخل كتلةٍ معرَّبة: تعود الكتلة إنجليزيةً كلّها بالنص الجديد", "Site updates this.", txt("pSite"));
+  $("sp").firstChild.nodeValue = "changes";
+  await wait(700);
+  check("ثم يرجع النص فتُعرَّب من جديد", "الموقع يغيّر هذا.", txt("pSite"));
+  // ★ الفقرة إن عادت إنجليزية (غيّر الموقع نصّها) يسقط عنها اتجاه اللغة فورًا ويعود حكم النص، ثم يعود بعودة ترجمتها
+  var latT = $("pLat").firstChild;
+  latT.nodeValue = "Claude Code CLI with SSO in Claude Enterprise.";
+  await wait(700);
+  var latEn = getComputedStyle($("pLat")).direction + "/" + txt("pLat");
+  latT.nodeValue = "Claude Code CLI with OAuth in Claude Enterprise.";
+  await wait(700);
+  check("★ فقرةٌ عادت إنجليزية: اتجاهها بحكم النص (LTR)، وبعودة ترجمتها RTL", "ltr/Claude Code CLI with SSO in Claude Enterprise./rtl",
+        latEn + "/" + getComputedStyle($("pLat")).direction);
+  var remNext = $("remB").nextSibling, remEl = $("remB");
+  check("فقرة الإزالة معرَّبة قبلها", "احذف هذا الجزء.", txt("pRem"));
+  $("pRem").removeChild(remEl);
+  await wait(700);
+  check("★ إزالة عنصرٍ من فقرةٍ معرَّبة تُعيد تقديرها: قالبٌ جديد بلا ترجمة ⇒ إنجليزيةٌ كلّها", "Remove part.", txt("pRem"));
+  $("pRem").insertBefore(remEl, remNext);
+  await wait(700);
+  check("وإعادته تُعرّبها من جديد", "احذف هذا الجزء.", txt("pRem"));
+  $("insB").appendChild(document.createTextNode(" extra"));
+  await wait(700);
+  check("★ نصٌّ أُدرج في كتلةٍ معرَّبة: تُعاد تقديرها فتعود إنجليزيةً كلّها (لا خلط)", "Stable text extra here.", txt("pIns"));
+  $("insB").removeChild($("insB").lastChild);   // الصفحة إلى أصلها (تحقّق الإطفاء أدناه يقارن بالأصل حرفًا)
+  await wait(500);
+  check("طلبٌ واحد للقطعة، بمسار الصفحة ولغتها", "1/ar", bodyReqs.filter(function (m) { return m.type === "bodies"; }).length + "/" + bodyReqs[0].lang);
+  // ★ (ر6، ٢٩ ربيع الآخر ١٤٤٨هـ) غلاف الجدول في وثائق Claude Code أغلفةٌ متداخلة لا نصَّ فيها غيرُ الجدول (وعلى الجوال شريط تمريرٍ بلا نص): الجدول
+  // المعرَّب الرؤوس لاتينيُّ أغلب النص يأخذ غلافُه اتجاه الصفحة في صفحةٍ وصلت قطعتها (كان dir="auto" يتخطّى الخلايا العربية إلى أول لاتيني فيصير LTR)
+  function dirOf(id) { return getComputedStyle($(id)).direction; }
+  function firstRight(a, b) { return $(a).getBoundingClientRect().left > $(b).getBoundingClientRect().left; }
+  check("★ (ر6) جدولٌ في أغلفةٍ متداخلة لا نصَّ فيها غيرُه (وشريط تمريرٍ بلا نص)، معرَّب الرؤوس لاتينيُّ أغلب النص: غلافه RTL وعموده الأول يمين الثاني، والخلية الإنجليزية LTR",
+        "مفتاح الإعداد/rtl/true/ltr", txt("thN1") + "/" + dirOf("twN") + "/" + firstRight("thN1", "thN2") + "/" + dirOf("tdN"));
+  // ★ (ر6-ب — مراجعة ر6، F4) وغلافٌ أبعد داخل أكورديون أو لوحة تبويب (لا ابنٌ مباشر ولا مالك كتلة): يُحكم بقاعدة الغلاف فيأخذ اتجاه الصفحة
+  check("★ (ر6-ب) جدولٌ معرَّب الرؤوس في أغلفةٍ داخل أكورديون حاويته LTR: غلافه الأبعد RTL وعموده الأول يمين الثاني، والحاوية على حكم نصّها",
+        "مفتاح الإعداد/rtl/true/ltr", txt("thA1") + "/" + dirOf("twA") + "/" + firstRight("thA1", "thA2") + "/" + dirOf("acc"));
+  // ★ (ر6، المراجعة) وشرط «لا نصَّ غيرُ الجدول» محروس: غلافٌ فيه جدولٌ معرَّب الرأس وجملةٌ إنجليزية خارج الجدول يبقى على حكم نصّه
+  check("★ (ر6، المراجعة) غلافٌ فيه جدولٌ معرَّب ونصٌّ غيرُه: لا يأخذ اتجاه الصفحة بقاعدة الغلاف، ويبقى على حكم نصّه الإنجليزي (LTR)",
+        "مفتاح الإعداد/Keep this whole sentence in English for the reader./ltr", txt("thT1") + "/" + noBidi($("twT").firstChild.nodeValue).trim() + "/" + dirOf("twT"));
+  // ★ (ر6) والقاعدة في صفحةٍ وصلت قطعتها وحدها: صفحةٌ حُجب متنها (لا قطعة لها) متنُها إنجليزي، وجدولها في الأغلفة المتداخلة يبقى LTR ولو
+  // عرّب قاموس الواجهة فيه كلمةً («الوكلاء» هنا، و«نعم»/«لا» في hooks)
+  var HOME6 = location.pathname + location.search, wake6 = document.createElement("i");
+  history.pushState({}, "", "/zq-withheld/page");
+  document.body.appendChild(wake6);   // رسمٌ يوقظ المراقب
+  await wait(BODY_DELAY + 1000);
+  // (وتصحيح القارئ لفقرة pOv يسري في كل صفحة، فيبقى data-cml-body هنا «tr»: البوابة وصولُ قطعة الصفحة لا تلك السمة)
+  check("★ (ر6) صفحةٌ بلا قطعة: المتن إنجليزي، وجدولُ الأغلفة المتداخلة الذي عرّب قاموس الواجهة فيه كلمةً يبقى LTR وعموده الأول يسار الثاني",
+        "Setting key/الوكلاء/ltr/false", txt("thN1") + "/" + txt("tdG") + "/" + dirOf("twG") + "/" + firstRight("thG1", "thG2"));
+  history.pushState({}, "", HOME6);
+  document.body.removeChild(wake6);
+  await wait(BODY_DELAY + 1000);
+  check("(ر6) والعودة إلى الصفحة المعرَّبة تعيد المتن واتجاه الجدول", "مفتاح الإعداد/rtl/true",
+        txt("thN1") + "/" + dirOf("twN") + "/" + firstRight("thN1", "thN2"));
+  // ٨) الإطفاء يعيد المتن حرفًا بحرف
+  var ch = {}; ch["cml_site.privacy"] = { newValue: false }; MOCK.localStore["cml_site.privacy"] = false;
+  MOCK.fireChanged(ch, "local");
+  await wait(500);
+  check("★ الإطفاء يعيد المتن كما كان حرفًا بحرف (innerHTML)", "true", document.querySelector(".article_body").innerHTML === ORIG);
+  check("★ والإطفاء يرفع عزل اللافتات (C# وC++ كما كانتا)", "C#/C++", $("cs").textContent + "/" + $("cpp").textContent);
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "block " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "BLOCK: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<script>
+  // أصل الملفات قبل نقل العنوان إلى مسار المرجع: الروابط النسبية أدناه تُحسم به لا بالمسار الجديد
+  document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');
+</script>
+<title>Batches - Claude API Reference</title>
+<!--
+  اختبار مرجع الواجهة البرمجية في وثائق المطوّرين (S7-B، ٢١ ربيع الآخر ١٤٤٨هـ) — بجدول النطاقات الحقيقي (meta النطاق docs):
+   ١) المسار ‎/docs/en/api/‎ كامل: يُعرَّب فيه ما تعرّبه الشركة وحده — العنوان (h1)، وبنود مسار التنقّل، وعناوين الطرق (h5 برابط)،
+      وعنوان المورد الفرعي (h4)، والوصف والملخص (‎.stldocs-content‎ خارج الخصائص والنماذج) بوضع الكتلة، وعنوان بطاقة المثال.
+   ٢) العقد البرمجي على أصله ولو كان نصُّه في القاموس أو في قطعة الصفحة (meta.skipSel): شجرة الخصائص والنماذج، ولافتات الأقسام،
+      والشارات، والأزرار، والملاحظات، ورأس بطاقة الشيفرة إلا عنوانها، وأول بندٍ في المسار، وشريط الامتثال — نصًّا وسمة،
+      وما يضيفه الترطيب داخلها.
+   ٣) الحاصد يقرأ ما يقرؤه المحرّك: قوالب الترجمات كلها، ولا شيء من العقد البرمجي.
+   ٤) الاتجاه: تخطيط المرجع يتبع الصفحة RTL والعقد البرمجي LTR كتلًا كاملة، والجزر المعرَّبة RTL والإنجليزية LTR، والشيفرة داخل الوصف معزولة LTR،
+      ومسار التنقّل RTL بسهمٍ مقلوب، وسهم h4 مقلوبٌ متى صار RTL وحده.
+   ٥) صفحات SDK (‎/api/python/…‎ و‎/api/http/…‎) مفتاحها مفتاح الصفحة القانونية (meta.pageAlias): التبديل تنقّلٌ من جهة العميل
+      يُعرَّب فيه المرسوم من جديد بالقطعة نفسها بلا طلبٍ آخر؛ ولغةٌ أخرى في المسار تُخمد المحرّك.
+   ٦) عنوان التبويب «<العملية> - Claude API Reference».
+  العقد: document.title = "apireftest N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1100px;margin:auto}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}
+#tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+.inline-flex{display:inline-flex;align-items:center;gap:4px}.flex{display:flex;gap:4px}
+#mdTbl,#mdOut table{width:480px;border-collapse:collapse;margin-top:12px}#mdTbl td,#mdTbl th,#mdOut td{border:1px solid #ccc;padding:4px 8px;font-size:14px}</style>
+<link rel="stylesheet" href="../extension/docs-point.css">
+<div id="__next">
+  <aside id="sidebar"><a href="#" id="side1">Create a Message Batch</a></aside>
+  <div class="stldocs-root text-body" id="root">
+    <div class="w-full border-b" data-testid="docs-page-banner" role="note"><div><p id="banner">Zq sample banner sentence.</p><a href="#"><span id="bannerA">Zq banner link</span></a></div></div>
+    <div class="refkit-content">
+      <div class="mb-6 flex"><div class="contents"><div data-cds="SplitDropdownButton" role="group" aria-label="Copy page" id="copyGrp"><button id="copy" aria-label="Copy page"><span id="copyT">Copy page</span></button></div></div><button id="sdkBtn">cURL</button></div>
+      <div class="mb-6"><aside id="aside"><span><span>&#xE0B3;</span></span><div>Zq sample note. <a href="#" id="asideA">Zq note link</a></div></aside></div>
+      <nav aria-label="Breadcrumb" class="mb-2"><ol id="crumbs" class="flex" role="list"><li id="cr0" class="inline-flex"><a href="#">API reference</a></li><li id="cr1" class="inline-flex"><span aria-hidden="true" data-cds="Icon" id="crIc1">&#xE02A;</span><a href="#" id="cr1a">Messages</a></li><li id="cr2" class="inline-flex"><span aria-hidden="true" data-cds="Icon">&#xE02A;</span><a href="#" id="cr2a">Zq Untranslated</a></li></ol></nav>
+      <div class="mb-lg"><div class="prose"><h1 id="h1">Batches</h1></div></div>
+      <div class="py-4"><div class="flex-col">
+        <h5 id="m1"><a href="#" id="m1a">Create a Message Batch</a></h5>
+        <div class="flex"><span data-cds="Badge" id="badge"><span data-cds="Icon" aria-hidden="true">&#xE015;</span><span id="badgeT">POST</span></span><span class="text-code truncate" id="path">/v1/messages/batches</span></div>
+        <div class="stldocs-property-description"><div class="prose stldocs-content" id="sum1"><p id="sum1p">Zq sample summary of the method.</p></div></div>
+      </div></div>
+      <div class="py-4"><div class="flex-col stldocs-method-header-deprecated">
+        <h5 class="stldocs-method-title" id="m2"><a href="#">List Tunnels</a></h5>
+        <div><span data-cds="Badge" id="dep"><span id="depT">Deprecated</span></span></div>
+        <div class="stldocs-property-description"><div class="prose stldocs-content"><p id="depP"><strong>Deprecated.</strong> Zq replaced by <code id="depC">/v1/tunnels</code> on the Claude API.</p></div></div>
+      </div></div>
+      <h4 id="h4"><span class="inline-flex">Messages<span aria-hidden="true" data-cds="Icon" id="h4Ic">&#xE02A;</span></span><span class="inline-flex"><a href="#">Batches</a></span></h4>
+      <h4 id="h4en"><span class="inline-flex">Zq Group<span aria-hidden="true" data-cds="Icon" id="h4enIc">&#xE02A;</span></span><span class="inline-flex"><a href="#">Zq Plugins</a></span></h4>
+      <div class="grid">
+        <div class="contents">
+          <div class="pb-4" id="descBox"><div class="prose stldocs-content" id="desc"><p id="d1">Zq sample description of the method with text and image parts.</p><p id="d2">Zq read more in our <a id="d2a" href="#">user guide</a> and <code id="d2c">user_ids[]</code>.</p><p id="d3">Zq untranslated description paragraph stays in English here.</p></div></div>
+          <div class="order-2"><div class="flex-col">
+            <h5 id="lblBody">Body</h5>
+            <div class="-ml-(--stldocs-expander-margin-shift)" id="shiftW"><div class="stldocs-properties" id="props"><div class="stldocs-property" id="prop">
+              <button aria-label="Expand" id="exp"><span data-cds="Icon" id="propIc">&#xE02A;</span></button><span class="stldocs-type-propertyname" id="pname">max_tokens</span><span class="stldocs-text-punctuation">: </span><span class="stldocs-type" id="ptype">number</span>
+              <div class="stldocs-property-description"><div class="prose stldocs-content" id="pdesc"><p id="pdescP">Zq sample summary of the method.</p></div></div>
+            </div></div></div>
+          </div>
+          <div class="flex-col"><h5 id="lblModels">Models</h5><div class="stldocs-model" id="model"><span id="modelName">Message</span><p id="modelDesc">List Models</p></div></div>
+        </div>
+        <div class="order-1">
+          <div class="rounded-card border"><div class="flex border-b" id="cardHead"><div class="flex text-caption"><span data-cds="Badge" aria-label="POST" role="img" id="cardBadge"><span data-cds="Icon">&#xE015;</span></span><span class="truncate" id="t6">Create a Message Batch</span></div><div class="flex shrink-0"><span class="px-md" id="lang">cURL</span><button aria-label="Copy code" id="copyCode"><span>&#xE056;</span></button></div></div>
+            <div class="text-code"><pre class="shiki" id="code"><code><span>curl https://api.anthropic.com/v1/messages</span></code></pre></div></div>
+          <div class="rounded-card border"><div class="flex border-b"><div class="text-caption" id="resp">Response 200</div><div class="shrink-0"><button aria-label="Copy code" id="copyCode2">&#xE056;</button></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- (ر5-د، ٢٩ ربيع الآخر ١٤٤٨هـ) جدول Markdown في نثر الوثائق بمحاذاة أعمدةٍ سطرية (style="text-align:left") كجداول صفحة الأسعار،
+     وخليةٌ حسمها المحرّك LTR (dir)، ورأسٌ center، وجدولٌ خارج النثر — قاعدة المحاذاة في docs-point.css -->
+<div class="prose" id="mdWrap"><table id="mdTbl"><thead><tr><th style="text-align:left" id="mdTh">المفهوم</th><th style="text-align:center" id="mdThC">النموذج</th></tr></thead>
+  <tbody><tr><td style="text-align:left" id="mdTd">وحدة الفوترة</td><td style="text-align:left" dir="ltr" id="mdTdL">Claude Opus 5.5</td></tr></tbody></table></div>
+<div id="mdOut"><table><tbody><tr><td style="text-align:left" id="mdTdOut">خلية خارج النثر</td></tr></tbody></table></div>
+<!-- ★ (ر7-ب، ٣٠ ربيع الآخر ١٤٤٨هـ — M2) نثرُ صفحةٍ بعنوانٍ فيه زرّ «نسخ الرابط» بأيقونته (ذرّةٌ في بصمته)، وشريط «القسم الحالي» اللاصق خارج المتن
+     كما يرسمه الموقع دون عرض xl: اسم الصفحة ثم «/» ثم اللافتة (meta.echoSel في الجدول الحقيقي) -->
+<div class="prose docs-prose" id="prose"><h2 id="secH">Zq model pricing<span class="relative hidden"><button type="button" aria-label="Copy link to clipboard"><span aria-hidden="true" class="absolute"><span data-cds-part="paint"></span></span><span><span data-cds="Icon" aria-hidden="true">&#xE0B4;</span></span></button></span></h2>
+  <h3 id="secCode">Zq migrate from <code>zq-files-2025</code></h3></div>
+<!-- ★ (ر7-ب، المراجعة المستقلة) وعنوانٌ فيه شيفرةٌ سطرية (#secCode، كـ«Migrate from files-api-2025-04-14» في صفحة Files)، وشريطُ صفحةٍ سابقة
+     يُبقيه الموقع في مُغلِّفها المخبوء بنمطٍ مضمَّن (#echoCached): لا يُكتب فيه ولا يُرجع منه شيء -->
+<div style="display: none !important"><div class="fixed inset-x-0 top-[calc(3.5rem+var(--docs-preview-bar-offset,0px))] flex xl:hidden"><div class="flex min-w-0"><button type="button" aria-label="On this page: Zq model pricing"><span class="inline-flex min-w-0 items-center gap-1"><span class="truncate" id="echoCached">Zq model pricing</span></span></button></div></div></div>
+<div data-visible="true" class="fixed inset-x-0 top-[calc(3.5rem+var(--docs-preview-bar-offset,0px))] flex items-center h-10 xl:hidden" id="stickyBar"><button type="button" aria-label="Batches (scroll to top)"><span class="inline-flex min-w-0 items-center gap-1"><span class="truncate" id="echoPage">Batches</span></span></button><span aria-hidden="true" class="shrink-0">/</span><div class="flex min-w-0"><button type="button" aria-label="On this page: Zq model pricing"><span aria-hidden="true" class="absolute"><span data-cds-part="paint"></span></span><span class="inline-flex min-w-0 items-center gap-1"><span class="truncate" id="echoSec">Zq model pricing</span></span></button></div></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var HOME = location.pathname + location.search;
+var DM = CMLConst.domain("docs").meta;
+// جدول النطاقات الحقيقي، والاختبار محلّيٌّ هرمسيّ: لا ترطيب ينتظره، ولا ورقة حيّة، ولا فحص.
+// ★ (ر6-د) وعتبة حارس المتن هنا 0.3 لا 0.05 (القرار 83 في الجدول، ويمتحنها _codetest): الصفحة تُبقي عمدًا ثلاث كتلٍ بلا ترجمة (بندُ مسارٍ
+// وh4 إنجليزي وفقرة وصف) من نحو ثلاث عشرة لتمتحن أنها تبقى إنجليزية — وبالعتبة الحقيقية تُحجب الصفحة كلُّها فلا يبقى ما يُمتحن هنا.
+// والحارس عاملٌ بها (حكمٌ قبل الكتابة) فمسار الكتابة هو مسار الموقع نفسه
+var META = Object.assign({}, DM, { hydrate: "none", live: false, scan: "none", bodyGuard: 0.3 });
+// الترجمات بقوالبها الإنجليزية — والقطعة تُبنى من بصمات الحاصد على الصفحة الخام (الهوية مع المحرّك)
+var TR = {
+  "Zq sample description of the method with text and image parts.": "أرسل قائمةً منظَّمة من رسائل الإدخال بنصٍّ أو صور.",
+  "Zq read more in our <a1>user guide</a1> and <c2>user_ids[]</c2>.": "اعرف المزيد في <a1>دليل المستخدم</a1> وعن <c2/>.",
+  "<b1>Deprecated.</b1> Zq replaced by <c2>/v1/tunnels</c2> on the Claude API.": "<b1>مهملة.</b1> تحلّ محلّها <c2/> في Claude API.",
+};
+// العقد البرمجي: نصوصٌ في القاموس عمدًا (وبعضها في القطعة) لتثبت أن المحدِّد لا المصادفة هو ما يُبقيها
+var STR = {
+  "Batches": "الدفعات", "Messages": "الرسائل", "Create a Message Batch": "إنشاء دفعة رسائل", "List Tunnels": "عرض الأنفاق",
+  "Zq sample summary of the method.": "أرسل دفعةً من طلبات إنشاء الرسائل.", "Claude API Reference": "مرجع Claude API",
+  "API reference": "مرجع API", "Copy page": "نسخ الصفحة", "cURL": "لغة الأمر", "Zq note link": "عرض النسخة التجريبية",
+  "Zq sample banner sentence.": "لتفعيل واجهة الامتثال راجع دليل الإعداد.", "Zq banner link": "إعداد واجهة الامتثال",
+  "POST": "إرسال", "Deprecated": "مهملة", "Body": "المتن", "Models": "النماذج", "Message": "رسالة", "List Models": "عرض النماذج",
+  "Response 200": "الاستجابة 200", "Expand": "توسيع", "Copy code": "نسخ الشيفرة", "number": "رقم", "max_tokens": "أقصى الرموز",
+  "Breadcrumb": "مسار التنقّل",
+};
+var HV = CMLShared.harvestBlocks(document, { body: DM.bodySel, skip: CMLShared.harvestSkip(DM, "full") });
+var HK = CMLShared.harvestDom(document.documentElement, { chat: false, max: Infinity /* بلا سقف طولٍ كالمحرّك وharvest-dom.mjs منذ S8-A */, skip: CMLShared.harvestSkip(DM, "full") })
+  .map(function (h) { return h.key; });
+// ★ (ر8-ج) حصادُ الشريط اللاصق وحده بمستثنى الجدول، قبل المحرّك: لافتة «القسم الحالي» (meta.echoSel) يكتبها المحرّك من عنوانها فلا تُحصد
+var HKE = CMLShared.harvestDom(document.getElementById("stickyBar"), { chat: false, max: Infinity, skip: CMLShared.harvestSkip(DM, "full") })
+  .map(function (h) { return h.key; });
+var BLOCKS = {}, hvTpl = {};
+HV.forEach(function (h) { hvTpl[h.tpl] = h; if (Object.prototype.hasOwnProperty.call(TR, h.tpl)) BLOCKS[h.fp] = TR[h.tpl]; });
+// والقطعة تحمل بصمة الملخص، وهي بصمة وصف الخاصية أيضًا (النصّ نفسه): الملخص يأخذها (المدخل الصريح يسبق قاموس الواجهة)
+// والخاصية تبقى بالمحدِّد ولو وُجدت ترجمتها في القطعة وفي القاموس
+BLOCKS[CMLShared.blockFp("Zq sample summary of the method.")] = "أرسل دفعةً من طلبات إنشاء الرسائل (من القطعة).";
+// ★ (ر7-ب) وعنوان النثر بقالبه كما يحصده الحاصد (ذرّة الأيقونة فيه)، فبصمتُه غير بصمة نصّ اللافتة وحده
+var SEC_TPL = (HV.filter(function (h) { return h.tpl.indexOf("Zq model pricing") === 0; })[0] || {}).tpl || "";
+if (SEC_TPL) BLOCKS[CMLShared.blockFp(SEC_TPL)] = SEC_TPL.replace("Zq model pricing", "أسعار النماذج");
+// ★ (ر7-ب، المراجعة المستقلة) والعنوان ذو الشيفرة السطرية بقالبه (الشيفرة رمزٌ فيه)
+var CODE_TPL = (HV.filter(function (h) { return h.tpl.indexOf("Zq migrate from") === 0; })[0] || {}).tpl || "", CODE_M = /<c(\d+)>/.exec(CODE_TPL);
+if (CODE_M) BLOCKS[CMLShared.blockFp(CODE_TPL)] = "الترحيل من <c" + CODE_M[1] + "/>";
+var bodyReqs = [], LOSE_BODIES = 1;
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) {
+  bodyReqs.push(msg);
+  if (!msg || msg.type !== "bodies") { if (cb) cb(null); return; }
+  var pk = CMLShared.pageKey(META, msg.path);
+  // (المراجعة العدائية) أول طلبٍ يضيع ردّه كما يضيع في كروم والعامل لم يُجب: lastError منصوبٌ أثناء النداء وحده، ولا ردّ
+  if (LOSE_BODIES > 0) {
+    LOSE_BODIES--;
+    setTimeout(function () {
+      MOCK.chrome.runtime.lastError = { message: "The message port closed before a response was received." };
+      try { if (cb) cb(); } finally { MOCK.chrome.runtime.lastError = undefined; }
+    }, 60);
+    return;
+  }
+  setTimeout(function () { if (cb) cb(pk === "/docs/en/api/messages/batches" ? { page: pk, blocks: BLOCKS, keep: [] } : null); }, 60);
+} });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "docs", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: STR, patterns: [], plurals: {} } } };
+// المسار الحقيقي للمرجع قبل المحرّك (حارس المسار وmeta.pageAlias على location.pathname)
+history.replaceState({}, "", "/docs/en/api/messages/batches");
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+var MARKS = new RegExp("[" + String.fromCharCode(0x200E) + String.fromCharCode(0x200F) + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g");
+var ICONS = new RegExp("[" + String.fromCharCode(0xE000) + "-" + String.fromCharCode(0xF8FF) + "]", "g");
+function $(id) { return document.getElementById(id); }
+function txt(id) { return $(id).textContent.replace(MARKS, "").replace(ICONS, "").replace(/\s+/g, " ").trim(); }
+function cs(id) { return getComputedStyle($(id)); }
+function flipped(id) { var t = cs(id).transform; return t !== "none" && /^matrix\(-1,/.test(t.replace(/\s+/g, "")); }
+var H = document.documentElement;
+
+(async function () {
+  // ٣) الحاصد: قوالب الترجمات كلها، ولا شيء من العقد البرمجي (نصًّا ولا كتلة)
+  check("★ الحاصد يستخرج قوالب الترجمات كلها من مرجعٍ خام بمحدِّدات الجدول", "0",
+        Object.keys(TR).filter(function (t) { return !hvTpl[t]; }).length);
+  var KEEP_TXT = ["max_tokens", "number", "Body", "Models", "Message", "List Models", "POST", "Deprecated", "Copy page", "cURL",
+                  "API reference", "Response 200", "Zq note link", "Zq sample banner sentence.",
+                  "Zq banner link", "Expand", "Copy code", "/v1/messages/batches"];
+  check("★ ولا يقرأ من العقد البرمجي شيئًا: لا كتلة ولا مفتاح ولا سمة", "/",
+        KEEP_TXT.filter(function (k) { return HV.some(function (h) { return h.tpl === k || h.single === k; }); }).join(",") + "/" +
+        KEEP_TXT.filter(function (k) { return HK.indexOf(k) >= 0; }).join(","));
+  check("والأسماء في المرجع يقرؤها الحاصد كتلًا من عقدةٍ واحدة (لقاموس الواجهة)", "true/true/true/true",
+        ["Batches", "Create a Message Batch", "List Tunnels"].every(function (k) { return HV.some(function (h) { return h.single === k; }); }) + "/" +
+        HV.some(function (h) { return h.single === "Messages" && /^<c1><\/c1><a2>/.test(h.tpl.replace(ICONS, "")); }) + "/" +
+        HV.some(function (h) { return h.group && h.group.indexOf("Messages") >= 0 && h.group.indexOf("Batches") >= 0; }) + "/" +
+        HV.some(function (h) { return h.single === "Create a Message Batch" && /<s\d>/.test(h.tpl); }));
+  // ★ (ر8-ج — مراجعة ر7-ب) واللافتة خارج ما يحصده (harvestSkip يضمّ meta.echoSel كما يضمّ المستثنى): لا تُعدّ نصَّ واجهةٍ ناقصًا؛ واسم الصفحة
+  // قبلها وسمات أزرار الشريط تُحصد كما كانت
+  check("★ (ر8-ج) الحاصد لا يحصد لافتة صدى العنوان (meta.echoSel)، ويحصد اسم الصفحة قبلها وسمة زرّها", "0/true/true",
+        HKE.filter(function (k) { return k === "Zq model pricing"; }).length + "/" + (HKE.indexOf("Batches") >= 0) + "/" +
+        (HKE.indexOf("On this page: Zq model pricing") >= 0));
+  // ٥) مفتاح الصفحة وحارس المسار (دوالّ خالصة على الجدول)
+  var PK = function (p) { return CMLShared.pageKey(DM, p); };
+  check("★ صفحات SDK مفتاحها مفتاح الصفحة القانونية (http والبادئات الثماني)",
+        "/docs/en/api/messages/batches|/docs/en/api/messages/batches|/docs/en/api/beta/agents|/docs/en/api/messages/create|/docs/en/api/files/upload",
+        [PK("/docs/en/api/python/messages/batches"), PK("/docs/en/api/http/messages/batches/"), PK("/docs/en/api/cli/beta/agents"),
+         PK("/docs/en/api/typescript/messages/create"), PK("/docs/en/api/csharp/files/upload")].join("|"));
+  check("وما ليس بادئة SDK يبقى مفتاحه: فهرس SDK بعينه، وkotlin، وgo-live، وخارج المرجع",
+        "/docs/en/api/python|/docs/en/api/kotlin/messages|/docs/en/api/go-live/x|/docs/en/build-with-claude/python/x|/docs/en/api/messages",
+        [PK("/docs/en/api/python"), PK("/docs/en/api/kotlin/messages"), PK("/docs/en/api/go-live/x"), PK("/docs/en/build-with-claude/python/x"),
+         PK("/docs/en/api/messages/")].join("|"));
+  check("★ حارس المسار: المرجع كاملٌ، والمرجع بلغةٍ أخرى خامل", "full/full/inactive",
+        [CMLShared.routeMode(DM.routes, "/docs/en/api/messages"), CMLShared.routeMode(DM.routes, "/docs/en/api/python/messages/create"),
+         CMLShared.routeMode(DM.routes, "/docs/xx/api/messages")].join("/"));
+  await wait(1500);
+  // ١) ما تعرّبه الشركة
+  var breq = bodyReqs.filter(function (m) { return m && m.type === "bodies"; });
+  check("المسار الكامل والقطعة طُلبت بمفتاح الصفحة", "on/full/rtl/" + "/docs/en/api/messages/batches",
+        H.getAttribute("data-cml") + "/" + H.getAttribute("data-cml-route") + "/" + H.getAttribute("dir") + "/" +
+        (breq[0] ? CMLShared.pageKey(META, breq[0].path) : "-"));
+  check("★ الردّ الضائع (lastError) يُعاد طلبه مرّةً بالمفتاح نفسه، فتصل القطعة ويُعرَّب الوصف", "2/true/true",
+        breq.length + "/" + (breq[1] ? breq[1].path === breq[0].path : false) + "/" + /[؀-ۿ]/.test(txt("d1")));
+  check("★ العنوان وبنود المسار وعناوين الطرق تُعرَّب بقاموس الواجهة", "الدفعات/الرسائل/إنشاء دفعة رسائل/عرض الأنفاق",
+        txt("h1") + "/" + txt("cr1a") + "/" + txt("m1a") + "/" + txt("m2"));
+  check("★ عنوان المورد الفرعي (h4): كل جزءٍ بقاموس الواجهة، والسهم بينهما كما هو", "الرسائل|الدفعات/true",
+        Array.prototype.map.call($("h4").children, function (c) { return c.textContent.replace(MARKS, "").replace(ICONS, "").trim(); }).join("|") + "/" +
+        ($("h4Ic").textContent === String.fromCharCode(0xE02A)));
+  check("★ الوصف بوضع الكتلة: الفقرة برابطها وشيفرتها، والشيفرة كما هي", "أرسل قائمةً منظَّمة من رسائل الإدخال بنصٍّ أو صور./اعرف المزيد في دليل المستخدم وعن user_ids[]./user_ids[]",
+        txt("d1") + "/" + txt("d2") + "/" + $("d2c").textContent);
+  check("★ الملخص في صفحة المورد (عقدةٌ وحيدة: مدخلُ القطعة الصريح يسبق القاموس)، ووصف الطريقة المهملة بوضع الكتلة",
+        "أرسل دفعةً من طلبات إنشاء الرسائل (من القطعة)./مهملة. تحلّ محلّها /v1/tunnels في Claude API.",
+        txt("sum1p") + "/" + txt("depP"));
+  check("فقرةٌ ليست في القطعة تبقى إنجليزيةً كلّها", "Zq untranslated description paragraph stays in English here.", txt("d3"));
+  check("★ عنوان بطاقة المثال يُعرَّب، والشريط الجانبي (الإطار) كذلك", "إنشاء دفعة رسائل/إنشاء دفعة رسائل", txt("t6") + "/" + txt("side1"));
+  // ★ (ر7-ب، M2) لافتة «القسم الحالي» في الشريط اللاصق (خارج المتن) بقيت إنجليزيةً والعنوانُ الذي تحكيه عربيٌّ: تأخذ نصَّه المعروض
+  check("★ (ر7-ب) لافتة القسم الحالي تأخذ نصَّ عنوانها المعرَّب من القطعة (وبصمتُه غير بصمتها)، واسم الصفحة قبلها من قاموس الواجهة كما كان",
+        "true/أسعار النماذج/أسعار النماذج/الدفعات", (SEC_TPL !== "Zq model pricing" && SEC_TPL.indexOf("Zq model pricing") === 0) + "/" + txt("secH") + "/" + txt("echoSec") + "/" + txt("echoPage"));
+  // والموقع يكتب فيها نصَّ القسم التالي عند التمرير: «Body» عنوانُ قسمٍ يبقى على أصله في المرجع (العقد البرمجي) ونصُّه في قاموس الواجهة
+  // («المتن») — فتبقى مثله؛ و«Batches» عنوان الصفحة المعرَّب
+  $("echoSec").firstChild.nodeValue = "Body";
+  await wait(700);
+  var echoBody = txt("echoSec");
+  $("echoSec").firstChild.nodeValue = "Batches";
+  await wait(700);
+  check("★ (ر7-ب) ويتبع ما يكتبه الموقع فيها: عنوانٌ باقٍ على أصله يبقى كما هو (لا قاموس الواجهة)، والعنوان المعرَّب بنصّه", "Body/Body/الدفعات",
+        echoBody + "/" + txt("lblBody") + "/" + txt("echoSec"));
+  // ولافتةٌ لاتينية تبقى على أصلها وفي طرفها محايد تُعزل كما تُعزل في المسار العام (meta.isoLabels): لا تُرسم «(Zq rate limits (beta» في سطرٍ RTL
+  $("echoSec").firstChild.nodeValue = "Zq rate limits (beta)";
+  await wait(700);
+  check("(ر7-ب) لافتةٌ لاتينية على أصلها في طرفها محايد: معزولةٌ (LRI…PDI) كالمسار العام", "true/Zq rate limits (beta)",
+        ($("echoSec").firstChild.nodeValue === String.fromCharCode(0x2066) + "Zq rate limits (beta)" + String.fromCharCode(0x2069)) + "/" + txt("echoSec"));
+  // وعنوانٌ يُعرَّب في دفعة طفراتٍ لاحقة واللافتة على حالها (قسمٌ يُرسم بعد التحميل): تتبعه في آخر الدفعة — «Messages» لا عنوانَ له قبلها
+  $("echoSec").firstChild.nodeValue = "Messages";
+  await wait(700);
+  var echoPre = txt("echoSec"), late = document.createElement("h2");
+  late.id = "secLate"; late.textContent = "Messages";
+  $("prose").appendChild(late);
+  await wait(700);
+  check("★ (ر7-ب) وعنوانٌ يُعرَّب في دفعةٍ لاحقة واللافتة على حالها: تتبعه في آخر الدفعة", "Messages/الرسائل/الرسائل",
+        echoPre + "/" + txt("secLate") + "/" + txt("echoSec"));
+  // ★ (ر7-ب، المراجعة المستقلة) وعنوانٌ فيه شيفرةٌ سطرية: نصُّ اللافتة يحمل الشيفرة كما يحملها العنوان، فتطابق أصلَه وتأخذ نصَّه المعرَّب
+  $("echoSec").firstChild.nodeValue = "Zq migrate from zq-files-2025";
+  await wait(700);
+  check("★ (ر7-ب، المراجعة) وعنوانٌ فيه شيفرةٌ سطرية: اللافتة تأخذ نصَّه المعرَّب والشيفرةُ فيه على حرفها", "true/الترحيل من zq-files-2025/الترحيل من zq-files-2025",
+        !!CODE_M + "/" + txt("secCode") + "/" + txt("echoSec"));
+  // ★ (ر7-ب، المراجعة المستقلة) ولافتةُ صفحةٍ سابقة في مُغلِّفها المخبوء (display:none مضمَّن) على حالها: لا تُكتب بعنوانٍ من الحاضرة يطابقها
+  check("★ (ر7-ب، المراجعة) لافتة صفحةٍ سابقة مخبوءة لا تُكتب ولا تُعزل بحال الصفحة الحاضرة وعناوينها", "Zq model pricing",
+        $("echoCached").firstChild.nodeValue);
+  // ★ (ر8-ج — مراجعة ر7-ب F4) وعنوانٌ يعود إلى أصله بإرجاع وضع الكتلة وحده (dropBlk، ولا كتابةَ غيرُه في الدفعة): الموقع يضيف إلى العنوان نصًّا
+  // فتخرج كتلته عن القطعة — لافتته تعود إلى أصلها في آخر الدفعة نفسها، وكانت تبقى عربيةً فوق عنوانٍ إنجليزي حتى كتابةٍ تالية
+  $("echoSec").firstChild.nodeValue = "Zq model pricing";
+  await wait(700);
+  var echoAr = txt("echoSec"), extra = document.createTextNode(" Zq extra");
+  $("secH").appendChild(extra);
+  await wait(700);
+  check("★ (ر8-ج) عنوانٌ يعود إلى أصله بإرجاع وضع الكتلة وحده: لافتة صداه تعود إلى أصلها في الدفعة نفسها",
+        "أسعار النماذج/Zq model pricing Zq extra/Zq model pricing", echoAr + "/" + txt("secH") + "/" + txt("echoSec"));
+  $("secH").removeChild(extra);
+  await wait(700);
+  // ٢) العقد البرمجي على أصله
+  check("★ شجرة الخصائص على أصلها ولو كان نصّها في القاموس وفي القطعة (الاسم والنوع والوصف والسمة)",
+        "max_tokens/number/Zq sample summary of the method./Expand",
+        txt("pname") + "/" + txt("ptype") + "/" + txt("pdescP") + "/" + $("exp").getAttribute("aria-label"));
+  check("★ النماذج ولافتات الأقسام على أصلها", "Message/List Models/Body/Models", txt("modelName") + "/" + txt("modelDesc") + "/" + txt("lblBody") + "/" + txt("lblModels"));
+  check("★ الشارات وسطر الطريقة على أصلها (الطريقة والمسار و«Deprecated»، وسمة الشارة)", "POST//v1/messages/batches/Deprecated/POST",
+        txt("badgeT") + "/" + txt("path") + "/" + txt("depT") + "/" + $("cardBadge").getAttribute("aria-label"));
+  check("★ الأزرار والملاحظة ورأس البطاقة إلا عنوانها على أصلها", "Copy page/Copy page/Copy page/cURL/Zq note link/cURL/Copy code/Response 200",
+        txt("copyT") + "/" + $("copy").getAttribute("aria-label") + "/" + $("copyGrp").getAttribute("aria-label") + "/" + txt("sdkBtn") + "/" + txt("asideA") + "/" + txt("lang") + "/" +
+        $("copyCode").getAttribute("aria-label") + "/" + txt("resp"));
+  check("★ أول بندٍ في المسار وشريط الامتثال على أصلهما", "API reference/Zq sample banner sentence./Zq banner link",
+        txt("cr0") + "/" + txt("banner") + "/" + txt("bannerA"));
+  check("والشيفرة كما هي", "curl https://api.anthropic.com/v1/messages", txt("code"));
+  // ٤) الاتجاه
+  check("★ تخطيط المرجع يتبع الصفحة RTL، والعقد البرمجي LTR كتلًا كاملة (مُغلِّف الإزاحة والخصائص والشيفرة واللافتة والمسار والشارة والملاحظة والشريط ورأس البطاقة)",
+        "rtl/rtl/ltr/ltr/ltr/ltr/ltr/ltr/ltr/ltr/ltr",
+        [H.getAttribute("dir"), cs("root").direction, cs("shiftW").direction, cs("prop").direction, cs("code").direction, cs("lblBody").direction,
+         cs("path").direction, cs("badge").direction, cs("aside").direction, cs("banner").direction, getComputedStyle($("lang").parentNode).direction].join("/"));
+  check("★ الجزر المعرَّبة RTL والإنجليزية LTR (العنوان، الوصف، الفقرة غير المترجمة، h4، عنوان البطاقة، عنوان الطريقة)",
+        "rtl/rtl/rtl/ltr/rtl/ltr/rtl/rtl",
+        [cs("h1").direction, cs("desc").direction, cs("d1").direction, cs("d3").direction, cs("h4").direction, cs("h4en").direction,
+         cs("t6").direction, cs("m1").direction].join("/"));
+  check("★ الشيفرة داخل الوصف المعرَّب LTR معزولة", "ltr/isolate", cs("d2c").direction + "/" + cs("d2c").unicodeBidi);
+  check("★ مسار التنقّل RTL وسهمه مقلوب، وسهم h4 المعرَّب مقلوب، ولا يُقلب سهم h4 الإنجليزي ولا مُوسِّع الخاصية",
+        "rtl/true/true/false/false",
+        cs("crumbs").direction + "/" + flipped("crIc1") + "/" + flipped("h4Ic") + "/" + flipped("h4enIc") + "/" + flipped("propIc"));
+  // ★ (ر8-ج) الشاشة الضيقة (390، دون md) في إطارٍ بعرضها وبورقة docs-point.css نفسها: سحبُ مُغلِّف الإزاحة إلى هامش اليسار يُلغى تحت حشوةٍ
+  // يمنى (‎pr-2‎ ⇒ حشوة اليسار 8px بعد القلب) فلا تمرير أفقي، ويبقى كالأصل تحت الحشوة المتناظرة (‎p-8‎، الموقع اليوم) فتبقى الشجرة على هندسة
+  // الموقع — كان يُلغى فيها أيضًا فتنزاح الشجرة 24px يمينًا (صنف فحص الاتجاه 7d57ba911b95). والحشوة المقلوبة مكتوبةٌ كما يكتبها القلب (منطقية)
+  var fr = document.createElement("iframe");
+  fr.style.cssText = "width:390px;height:320px;border:0";
+  fr.srcdoc = '<!doctype html><html data-cml="on" dir="rtl"><head><link rel="stylesheet" href="' +
+    new URL("../extension/docs-point.css", document.baseURI).href + '"><style>:root{--stldocs-expander-margin-shift:24px}body{margin:0}' +
+    '.p-8{padding:32px}.pr-2{padding-inline-end:8px}.-mx-\\(--stldocs-expander-margin-shift\\){margin-inline:calc(var(--stldocs-expander-margin-shift) * -1)}' +
+    '.-ml-\\(--stldocs-expander-margin-shift\\){margin-left:calc(var(--stldocs-expander-margin-shift) * -1)}</style></head><body><div class="stldocs-root">' +
+    '<div class="refkit-content p-8"><div class="-mx-(--stldocs-expander-margin-shift)" id="wNow"><div class="stldocs-properties">x</div></div></div>' +
+    '<div class="refkit-content p-8 pr-2"><div class="-ml-(--stldocs-expander-margin-shift)" id="wOld"><div class="stldocs-properties">x</div></div></div>' +
+    '</div></body></html>';
+  await new Promise(function (r) { fr.onload = r; setTimeout(r, 4000); document.body.appendChild(fr); });
+  var fd = fr.contentDocument, fw = function (id) { var e = fd && fd.getElementById(id); return e ? getComputedStyle(e).marginLeft + ":" + Math.round(e.getBoundingClientRect().left) : "-"; };
+  check("★ (ر8-ج) الشاشة الضيقة: الحشوة المتناظرة (p-8) تُبقي سحب مُغلِّف الإزاحة كالأصل، وتحت pr-2 يُلغى فلا تمرير أفقي", "-24px:8/0px:8/false",
+        fw("wNow") + "/" + fw("wOld") + "/" + (fd ? fd.documentElement.scrollWidth > fd.documentElement.clientWidth : "-"));
+  fr.remove();
+  // ★ (ر9-هـ، ٥ جمادى الأولى ١٤٤٨هـ) شارة الموقع (شعار Spark ثم الاسم المعرَّب، معزولًا RLI…PDI كما يكتبه المحرّك) يلفّها الموقع في ‎<div dir="ltr">‎
+  // في الرأس والتذييل: تنعكس في الصفحة المقلوبة بورقة docs-point.css (الشعار يمين الاسم) كما كانت قبل أن يضيف الموقع السمة (صنف فحص
+  // الاتجاه 62f9cf545cee)؛ وشارةٌ خارجهما على أصلها، وبلا الإضافة (لا data-cml) تبقى الشارة كأصلها
+  var ISO = function (s) { return String.fromCharCode(0x2067) + s + String.fromCharCode(0x2069); };
+  var LOCK = function (id) {
+    return '<div class="inline-flex"><div class="flex" dir="ltr" id="' + id + '" style="font-size:20px;gap:0.3em">' +
+      '<svg data-cds="Spark" viewBox="0 0 100 100" width="20" height="20"><circle cx="50" cy="50" r="40"></circle></svg>' +
+      '<div class="flex"><span>' + ISO("وثائق منصة Claude") + "</span></div></div></div>";
+  };
+  var fl = document.createElement("iframe");
+  fl.style.cssText = "width:600px;height:240px;border:0";
+  fl.srcdoc = '<!doctype html><html data-cml="on" dir="rtl"><head><link rel="stylesheet" href="' +
+    new URL("../extension/docs-point.css", document.baseURI).href + '"><style>body{margin:0}.flex{display:flex;align-items:flex-start}' +
+    '.inline-flex{display:inline-flex}</style></head><body><header><a href="#">' + LOCK("lkH") + "</a></header><main>" + LOCK("lkM") +
+    "<footer>" + LOCK("lkF") + "</footer></main></body></html>";
+  await new Promise(function (r) { fl.onload = r; setTimeout(r, 4000); document.body.appendChild(fl); });
+  var ld = fl.contentDocument, lk = function (id) {
+    var e = ld && ld.getElementById(id);
+    if (!e) return "-";
+    var sv = e.querySelector("svg").getBoundingClientRect(), sp = e.querySelector("span").getBoundingClientRect();
+    return getComputedStyle(e).direction + ":" + (sv.left >= sp.right ? "R" : sv.right <= sp.left ? "L" : "?");
+  };
+  var lockOn = [lk("lkH"), lk("lkF"), lk("lkM")];
+  if (ld) ld.documentElement.removeAttribute("data-cml");
+  check("★ (ر9-هـ) شارة الموقع ‎dir=ltr‎ في الرأس والتذييل تنعكس في الصفحة المقلوبة (الشعار يمين الاسم)، وخارجهما وبلا الإضافة على أصلها",
+        "rtl:R/rtl:R/ltr:L/ltr:L", lockOn.concat([lk("lkH")]).join("/"));
+  // ★ (ر9، المراجعة الموحّدة، ٥ جمادى الأولى ١٤٤٨هـ) والإضافة عاملةٌ والقلب مطفأ: المحرّك يعيد dir على html إلى أصلها (بلا سمة، أو ltr)،
+  // فتبقى الشارة على أصلها. كانت طفرةٌ تحذف ‎[dir="rtl"]‎ من قاعدة docs-point.css تنجو من التحقق أعلاه
+  var lockRtlOff = [];
+  if (ld) {
+    ld.documentElement.setAttribute("data-cml", "on");
+    ld.documentElement.removeAttribute("dir");
+    lockRtlOff.push(lk("lkH"));
+    ld.documentElement.setAttribute("dir", "ltr");
+    lockRtlOff.push(lk("lkF"));
+  }
+  check("★ (ر9، المراجعة الموحّدة) والإضافة عاملةٌ والقلب مطفأ (html بلا dir أو dir=ltr): شارة الموقع على أصلها",
+        "ltr:L/ltr:L", lockRtlOff.join("/") || "-");
+  fl.remove();
+  // (ر5-د) محاذاة أعمدة Markdown السطرية في النثر: القيمة المحسوبة وموضع المحتوى من صندوق الخلية (R يمينًا، L يسارًا، C بينهما)
+  var side = function (id) {
+    var c = $(id), s = getComputedStyle(c), b = c.getBoundingClientRect(), g = document.createRange(); g.selectNodeContents(c);
+    var q = g.getBoundingClientRect(), cl = b.left + parseFloat(s.borderLeftWidth) + parseFloat(s.paddingLeft), cr = b.right - parseFloat(s.borderRightWidth) - parseFloat(s.paddingRight);
+    return Math.abs(cr - q.right) <= 1 ? "R" : Math.abs(q.left - cl) <= 1 ? "L" : "C";
+  };
+  check("★ جدول Markdown في النثر: محاذاة left السطرية تصير start — الرأس والخلية العربيتان يمينًا والخلية LTR يسارًا، وcenter وما خارج النثر على حالهما",
+        "start:R/start:R/start:L/center:C/left:L",
+        ["mdTh", "mdTd", "mdTdL", "mdThC", "mdTdOut"].map(function (id) { return cs(id).textAlign + ":" + side(id); }).join("/"));
+  // ٦) عنوان التبويب
+  check("★ عنوان التبويب: الاسم من قاموس الواجهة والذيل «Claude API Reference»", "الدفعات - مرجع Claude API",
+        document.title.replace(MARKS, ""));
+  // ٢) ما يضيفه الترطيب داخل العقد البرمجي (خاصيةٌ تتوسّع) لا يُعرَّب
+  var more = document.createElement("div");
+  more.className = "stldocs-property";
+  more.innerHTML = '<button aria-label="Expand" id="exp2"><span>&#xE02A;</span></button><span class="stldocs-type-propertyname">messages</span>' +
+    '<div class="stldocs-property-description"><div class="prose stldocs-content"><p id="pdesc2">Zq sample summary of the method.</p></div></div>';
+  $("props").appendChild(more);
+  var lbl = document.createElement("h5"); lbl.id = "lblModels2"; lbl.textContent = "Models"; $("props").parentNode.parentNode.appendChild(lbl);
+  await wait(700);
+  check("★ ما يضيفه الترطيب في شجرة الخصائص يبقى على أصله، ولافتة قسمٍ جديدة كذلك", "Zq sample summary of the method./Expand/Models",
+        txt("pdesc2") + "/" + $("exp2").getAttribute("aria-label") + "/" + txt("lblModels2"));
+  // ٥) تبديل SDK: تنقّلٌ من جهة العميل إلى مسارٍ آخر نصّه المترجَم نفسه — يُرسم من جديد ويُعرَّب بالقطعة نفسها بلا طلبٍ آخر
+  var nReq = bodyReqs.filter(function (m) { return m && m.type === "bodies"; }).length;
+  history.pushState({}, "", "/docs/en/api/python/messages/batches");
+  $("desc").innerHTML = '<p id="e1">Zq sample description of the method with text and image parts.</p>' +
+    '<p id="e2">Zq read more in our <a href="#">user guide</a> and <code>user_ids[]</code>.</p>';
+  $("h1").textContent = "Batches";
+  await wait(800);
+  check("★ تبديل SDK: المرسوم من جديد مُعرَّب بالقطعة نفسها، ولا طلب قطعةٍ آخر (المفتاح واحد)", "أرسل قائمةً منظَّمة من رسائل الإدخال بنصٍّ أو صور./اعرف المزيد في دليل المستخدم وعن user_ids[]./الدفعات/0/full",
+        txt("e1") + "/" + txt("e2") + "/" + txt("h1") + "/" + (bodyReqs.filter(function (m) { return m && m.type === "bodies"; }).length - nReq) + "/" +
+        H.getAttribute("data-cml-route"));
+  check("واتجاه المرسوم من جديد RTL", "rtl/rtl", cs("e1").direction + "/" + cs("e2").direction);
+  // مرجعٌ بلغةٍ أخرى: خامل — يعود الأصل وتُرفع السمات؛ والعودة تعيد التعريب
+  history.pushState({}, "", "/docs/xx/api/messages/batches");
+  $("cr2a").textContent = "Zq Untranslated";   // رسمٌ يوقظ المراقب
+  await wait(800);
+  check("★ المرجع بلغةٍ أخرى: المحرّك خامل والأصل يعود", "Batches/Messages/Zq sample description of the method with text and image parts./null/null",
+        txt("h1") + "/" + txt("cr1a") + "/" + txt("e1") + "/" + H.getAttribute("data-cml") + "/" + H.getAttribute("dir"));
+  history.pushState({}, "", "/docs/en/api/http/messages/batches");
+  $("cr2a").textContent = "Zq Untranslated";
+  await wait(900);
+  check("والعودة إلى المرجع الإنجليزي (بادئة http) تعيد التعريب", "الدفعات/الرسائل/أرسل قائمةً منظَّمة من رسائل الإدخال بنصٍّ أو صور./on",
+        txt("h1") + "/" + txt("cr1a") + "/" + txt("e1") + "/" + H.getAttribute("data-cml"));
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  history.replaceState({}, "", HOME);
+  document.title = "apireftest " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "APIREFTEST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

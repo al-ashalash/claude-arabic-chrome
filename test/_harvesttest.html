@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>harvest test</title>
+<!--
+  اختبار هوية الحاصد (١-٠د): ما يحصده harvestDom من الصفحة هو بعينه ما يترجمه المحرّك.
+  الطريقة: كل نصٍّ وسمةٍ في العيّنة — مقروءًا أو مستثنى — يدخل القاموس، ثم يعمل المحرّك الحقيقي
+  على الصفحة. فمجموعة ما تغيّر فعلًا يجب أن تساوي مجموعة الحصاد في الاتجاهين: لا مفتاحَ
+  يحصده الحاصد ولا يترجمه المحرّك، ولا ترجمةَ يوقعها المحرّك في نصٍّ لم يحصده الحاصد.
+  العيّنة تجمع الحالات الصعبة: شيفرة ملفوفة، قابلٌ للتحرير، متن محادثة، سمات داخل المستثنى،
+  قصّ الأطراف، سقف الطول، ونصٌّ مقسوم بين عناصر.
+  العقد: document.title = "harvest N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<h1>اختبار هوية الحاصد</h1>
+<div id="fx">
+  <p>  Plain padded text  </p>
+  <p>Mixed <b>bold part</b> tail</p>
+  <span>A</span>
+  <pre><code><span>Code span text</span></code></pre>
+  <code>Inline code text</code> <kbd>Ctrl K shortcut</kbd> <samp>Sample output text</samp>
+  <pre title="Pre title attr">Pre body text</pre>
+  <div contenteditable="true"><p>Editable text</p><b title="Editable title attr">Editable bold</b></div>
+  <div class="prose"><p>Chat prose text</p><button aria-label="Chat attr label">Chat button</button></div>
+  <div data-testid="user-message-1"><p>User message text</p></div>
+  <button aria-label="Button label attr" title="Button title attr">Button text</button>
+  <input placeholder="Placeholder attr">
+  <img alt="Alt attr text" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=">
+  <textarea placeholder="Textarea placeholder">Textarea body text</textarea>
+  <p id="long"></p>
+  <p id="edge"></p>
+  <p id="mid"></p>
+  <svg width="1" height="1"><title>Svg title text</title></svg>
+  <p>   </p>
+</div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+// بلا سقف طول كالمحرّك (٢١ ربيع الآخر ١٤٤٨هـ، توجيه المالك: لا يمنع حدٌّ تقني تعريب نصّ موقعٍ مهما طال) — فالحاصد بلا سقف
+var HMAX = Infinity;
+// ثلاثة أطوال كان أطولها خارج الحاصد والمحرّك قبلُ (300 داخل، و501 و5000 فوق السقف القديم) — تُملأ قبل الحصاد والمحرّك
+document.getElementById("long").textContent = "L" + "x".repeat(4999);
+document.getElementById("edge").textContent = "E" + "y".repeat(299);
+document.getElementById("mid").textContent = "M" + "z".repeat(500);
+// ١) الحصاد قبل أن يعمل المحرّك — ونطاق التطبيق (استثناء المحادثة قائم)
+var FX = document.getElementById("fx");
+var HARVEST = CMLShared.harvestDom(FX, { chat: true, max: HMAX });
+// ٢) لقطةٌ ساذجة لكل نصٍّ وسمةٍ في العيّنة بلا أي قاعدة — تصير القاموس كله
+var ATTRS = ["placeholder", "aria-label", "title", "alt"];
+var SNAP = [];
+(function () {
+  var tw = document.createTreeWalker(FX, NodeFilter.SHOW_TEXT, null), n;
+  while ((n = tw.nextNode())) if (n.nodeValue.trim()) SNAP.push({ node: n, orig: n.nodeValue });
+  FX.querySelectorAll("*").forEach(function (el) {
+    ATTRS.forEach(function (a) { var v = el.getAttribute(a); if (v && v.trim()) SNAP.push({ el: el, attr: a, orig: v }); });
+  });
+})();
+var STR = {};
+SNAP.forEach(function (x, i) { STR[x.orig.trim()] = "ع" + i; });
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "app", meta: { scan: "none", live: false, chat: true, hydrate: "none" },
+  default: "ar", langs: [{ code: "ar" }], dicts: { ar: { dir: "rtl", strings: STR, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function sig(key, kind) { return (kind === "text" ? "text" : kind) + "|" + key; }
+
+(async function () {
+  await wait(700);
+  var changed = [];
+  SNAP.forEach(function (x) {
+    var now = x.node ? x.node.nodeValue : x.el.getAttribute(x.attr);
+    if (now !== x.orig) changed.push(sig(x.orig.trim(), x.node ? "text" : "attr:" + x.attr));
+  });
+  var harvested = HARVEST.map(function (h) { return sig(h.key, h.kind); });
+  var hs = {}, cs = {};
+  harvested.forEach(function (k) { hs[k] = 1; });
+  changed.forEach(function (k) { cs[k] = 1; });
+  var onlyH = Object.keys(hs).filter(function (k) { return !cs[k]; });
+  var onlyC = Object.keys(cs).filter(function (k) { return !hs[k]; });
+  check("★ لا مفتاحَ يحصده الحاصد ولا يترجمه المحرّك", "", onlyH.join(" ، "));
+  check("★ ولا ترجمةَ يوقعها المحرّك في نصٍّ لم يحصده الحاصد", "", onlyC.join(" ، "));
+  // حدٌّ أدنى معروف — حاصدٌ ومحرّكٌ معطّلان معًا (مجموعتان فارغتان) لا يمرّان
+  check("العيّنة امتُحنت فعلًا: ما قُرئ وما استُثني", "17/" + SNAP.length,
+        Object.keys(hs).length + "/" + SNAP.length);
+  var keys = HARVEST.map(function (h) { return h.key; });
+  check("القصّ: المفتاح بلا بياض الأطراف", "true", keys.indexOf("Plain padded text") >= 0);
+  check("المستثنى لا يُحصد: شيفرة ملفوفة، قابلٌ للتحرير، متن محادثة، رسالة مستخدم",
+        "false/false/false/false/false",
+        [keys.indexOf("Code span text") >= 0, keys.indexOf("Editable text") >= 0, keys.indexOf("Chat prose text") >= 0,
+         keys.indexOf("Chat attr label") >= 0, keys.indexOf("User message text") >= 0].join("/"));
+  check("السمات تُقرأ ولو داخل المستثنى من النص (كالمحرّك): pre/textarea/القابل للتحرير",
+        "true/true/true",
+        [keys.indexOf("Pre title attr") >= 0, keys.indexOf("Textarea placeholder") >= 0, keys.indexOf("Editable title attr") >= 0].join("/"));
+  check("★ لا سقف: 300 و501 و5000 حرفٍ كلها تُحصد", "true/true/true",
+        (keys.indexOf("E" + "y".repeat(299)) >= 0) + "/" + (keys.indexOf("M" + "z".repeat(500)) >= 0) + "/" +
+        (keys.indexOf("L" + "x".repeat(4999)) >= 0));
+  check("المحرّك لا يستدعي الحاصد (القراءة للمطابقة عابرة لا تُجمع)", "false",
+        /harvestDom/.test(await fetch("../extension/engine.js").then(function (r) { return r.text(); }).catch(function () { return ""; })));
+  // الاستثناء بمحدِّد (مسار shell في مرجع الوثائق): ما تحته لا يُحصد نصًّا ولا سمة
+  var box = document.createElement("div");
+  box.innerHTML = '<div class="ref"><p>Ref body text</p><b title="Ref attr text">x</b></div><p>Outside ref text</p>';
+  document.body.appendChild(box);
+  var sk = CMLShared.harvestDom(box, { chat: false, max: CMLConst.TEXT_MAX, skip: ".ref" }).map(function (h) { return h.key; });
+  check("skip: المستثنى لا يُحصد نصًّا ولا سمة، وما حوله يُحصد", "false/false/true",
+        (sk.indexOf("Ref body text") >= 0) + "/" + (sk.indexOf("Ref attr text") >= 0) + "/" + (sk.indexOf("Outside ref text") >= 0));
+  // (وثائق Claude Code) ما يستثنيه حاصد النطاق بحال حارسه — من الجدول نفسه: meta.skipSel (أجوبة المساعد المولَّدة) في كل
+  // مسار، وshellSel في shell وحده؛ وهو المحدِّد الذي يمرّره harvest-dom.mjs إلى harvestDom وharvestBlocks.
+  // (S7-B) ومرجع الوثائق صار مسارًا كاملًا بلا shellSel: مستثناه العقد البرمجي (skipSel) في كل مسار — _apireftest يفحصه على مرجعٍ خام
+  var CM = CMLConst.domain("code").meta, DM = CMLConst.domain("docs").meta;
+  // ★ (ر8-ج، ٣٠ ربيع الآخر ١٤٤٨هـ) ولافتات صدى العناوين (meta.echoSel، للوثائق وحدها اليوم) في كل مسار بعد المستثنى: يكتبها المحرّك من العنوان
+  // فلا تُحصد — فمستثنى الوثائق skipSel ثم echoSel بالضبط (و_apireftest يفحص أثره على الشريط اللاصق)
+  check("★ حاصد النطاق يستثني skipSel في كل مسار وshellSel في shell وحده (من الجدول)",
+        "#chat-content/#content, #chat-content/true/true/false",
+        [CMLShared.harvestSkip(CM, "full"), CMLShared.harvestSkip(CM, "shell"), CMLShared.harvestSkip(DM, "full") === DM.skipSel + ", " + DM.echoSel,
+         CMLShared.harvestSkip(DM, "shell") === DM.skipSel + ", " + DM.echoSel, !!DM.shellSel].map(String).join("/"));
+  var box3 = document.createElement("div");
+  box3.innerHTML = '<div id="chat-content"><p>Generated answer text</p><b title="Generated answer attr">x</b></div><p>Assistant frame text</p>';
+  document.body.appendChild(box3);
+  var sk3 = CMLShared.harvestDom(box3, { chat: false, max: CMLConst.TEXT_MAX, skip: CMLShared.harvestSkip(CM, "full") }).map(function (h) { return h.key; });
+  var bl3 = CMLShared.harvestBlocks(document, { body: "#zq-none, div:has(> #chat-content)", skip: CMLShared.harvestSkip(CM, "full") }).map(function (b) { return b.tpl; });
+  check("★ وحصادا النص والكتل لا يقرآن من الأجوبة شيئًا، ويقرآن ما حولها", "false/false/true/false/true",
+        (sk3.indexOf("Generated answer text") >= 0) + "/" + (sk3.indexOf("Generated answer attr") >= 0) + "/" + (sk3.indexOf("Assistant frame text") >= 0) + "/" +
+        bl3.some(function (t) { return t.indexOf("Generated answer") >= 0; }) + "/" + bl3.some(function (t) { return t.indexOf("Assistant frame text") >= 0; }));
+  // والمسار بعينه (routes.exact) يعمل في حارس الحاصد كما في المحرّك (eligible في harvest-dom يستدعي routeMode نفسه)
+  var CR = CMLConst.domain("code").meta.routes;
+  check("حارس الحاصد لنطاق الكود: ‎/docs‎ كامل، و‎/docs/<locale>/‎ الأخرى خاملة، وسجلّ الإصدارات هيكل (وحده لا ما يبدأ اسمه به)", "full/inactive/full/shell/full",
+        [CMLShared.routeMode(CR, "/docs"), CMLShared.routeMode(CR, "/docs/xx/overview"), CMLShared.routeMode(CR, "/docs/en/hooks"), CMLShared.routeMode(CR, "/docs/en/changelog"),
+         CMLShared.routeMode(CR, "/docs/en/changelogs")].join("/"));
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "harvest " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "HARVEST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

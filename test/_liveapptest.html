@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>live app test</title>
+<!--
+  الورقة الحيّة في التطبيق (claude.ai) — مراجعتا القيود والمحرّك لوثائق Claude Code (١٦ ربيع الآخر ١٤٤٨هـ):
+  أوراق <style> المضمَّنة اختياريةٌ لكل نطاق (meta.liveInline)، والتطبيق لا يختارها. فـ:
+   ١) ورقةٌ يولّدها الموقع داخل المحادثة (.prose — SVG مضمَّن في جوابٍ مثلًا) لا تُرسل إلى العامل أبدًا، ولا ورقةُ الرأس المضمَّنة؛
+   ٢) ورقةٌ مضمَّنة عابرة تُضاف إلى الرأس (قفل التمرير عند فتح قائمة) لا توقظ إعادة البناء، ولا ورقةٌ تُبثّ في المحادثة؛
+   ٣) والروابط كما كانت: رابطٌ يُضاف يطلب بناءً جديدًا.
+  meta من جدول النطاقات نفسه (CMLConst.domain("app").meta) لا نسخةٌ مكتوبة هنا.
+  العقد: document.title = "liveapp N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<link rel="stylesheet" href="/nonexistent/app-a.css">
+<style>.zq-head{margin-left:2px}</style>
+<h1>الورقة الحيّة في التطبيق</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<div class="prose"><p>Hello</p><svg width="1" height="1"><style>.zq-chat{margin-left:3px}</style></svg></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script>
+var REQS = [];
+var MOCK = makeChromeMock({
+  session: false,
+  sendMessage: function (msg, cb) { if (msg && msg.type === "rtlcss") REQS.push({ msg: msg, cb: cb }); else if (cb) cb(null); },
+});
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "app", meta: CMLConst.domain("app").meta, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Hello": "مرحبا" }, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function sent(re) { return REQS.some(function (q) { return re.test(JSON.stringify(q.msg.sheets)); }); }
+function kinds(req) { return req.msg.sheets.map(function (x) { return x.url ? "L" : "S"; }).join(""); }
+
+async function main() {
+  await wait(400);
+  check("التطبيق لا يختار المضمَّنة (الجدول)", "false", !!CMLConst.domain("app").meta.liveInline);
+  check("الإقلاع طلب بناءً حيًّا واحدًا بالروابط وحدها", "1/L", REQS.length + "/" + (REQS[0] ? kinds(REQS[0]) : ""));
+  check("★ ورقةُ المحادثة (.prose) وورقةُ الرأس المضمَّنة لا تُرسلان إلى العامل", "false/false", sent(/zq-chat/) + "/" + sent(/zq-head/));
+  // ورقةٌ عابرة في الرأس (كقفل التمرير الذي يُحقن عند فتح قائمة) ثم تُزال: لا إعادة بناء
+  var n0 = REQS.length, lock = document.createElement("style");
+  lock.textContent = "body{margin-right:15px !important} .zq-lock{right:15px}";
+  document.head.appendChild(lock);
+  await wait(700);
+  document.head.removeChild(lock);
+  await wait(700);
+  check("★ ورقةٌ مضمَّنة عابرة في الرأس (تُضاف ثم تُزال) لا تعيد بناء الورقة الحيّة", n0 + "/false", REQS.length + "/" + sent(/zq-lock/));
+  // ورقةٌ تُبثّ في المحادثة لاحقًا: لا طلب ولا نصّ
+  var p = document.createElement("div"); p.innerHTML = '<svg width="1" height="1"><style>.zq-late-chat{margin-left:5px}</style></svg>';
+  document.querySelector(".prose").appendChild(p);
+  await wait(900);
+  check("★ ورقةٌ تُبثّ في المحادثة لاحقًا لا تُرسل", n0 + "/false", REQS.length + "/" + sent(/zq-late-chat/));
+  // والروابط كما كانت: رابطٌ يُضاف يطلب بناءً جديدًا بلا مضمَّنة
+  var ln = document.createElement("link"); ln.rel = "stylesheet"; ln.href = "/nonexistent/app-b.css";
+  document.head.appendChild(ln);
+  await wait(700);
+  check("رابطٌ يُضاف إلى الرأس يطلب بناءً جديدًا بالروابط وحدها", (n0 + 1) + "/LL", REQS.length + "/" + (REQS[REQS.length - 1] ? kinds(REQS[REQS.length - 1]) : ""));
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+}
+main().then(finish, function (e) { check("استثناء غير متوقع", "(لا شيء)", String(e && e.message || e)); finish(); });
+function finish() {
+  document.title = "liveapp " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "LIVEAPP: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+}
+</script>

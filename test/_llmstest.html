@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>llms test</title>
+<!--
+  ★ (ر8-د، ١ جمادى الأولى ١٤٤٨هـ — N6) ماسح فهرس الصفحات (scan:"llms") بالمحرّك الحقيقي وقاموس الوثائق المشحون (dict-docs.js بقائمة
+  إبقائه payload.keep)، على فهرسٍ مصغَّر يُبنى هنا من القاموس نفسه (فلا نصَّ من الموقع في المستودع، ولا يتقادم الاختبار مع القاموس):
+   ١) شارةٌ في آخر العنوان (« (Beta)»، CMLConst.LLMS_BADGES، بحروفها كما في القائمة) ⇒ يُبحث العنوان بأصله بلا الشارة؛ و★ (ر8-د، المراجعة)
+      « (beta)» و« (BETA)» نصٌّ من العنوان لا شارة (في الوثائق وClaude Code يظهر بلاحقته في الشريط الجانبي) ⇒ يُبحث كاملًا؛
+   ٢) ما يبقى بالإنجليزية بقاعدة النطاق (keep) ⇒ مغطًّى، بنفسه أو أصلًا لعنوانٍ بشارة، وعددُه في النتيجة (kept)؛
+   ٣) ولا يُمسّ غيرهما: شارةٌ أصلُها غير مترجَم تبقى بنصّها، وقوسٌ ليس شارة يُبحث كاملًا، ومسارٌ خارج حارس المسار لا يُعدّ، وfound كما كان.
+  وقائمة الإبقاء المشحونة في كل قاموسٍ له فحص هي نصوص keep-en.json المتتبَّعة وحدها، ولا قائمة لموقعٍ بلا فحص.
+  العقد: document.title = "llms N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1000px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vertical-align:top}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+</head>
+<body>
+<h1>اختبار ماسح فهرس الصفحات: الشارات وما يبقى بالإنجليزية</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<pre id="log"></pre>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+  // القشرة الموحّدة بلا session (يسقط المحرّك إلى الحجز القديم في local كما في _scantest)
+  var MOCK = makeChromeMock({ session: false });
+  window.__store = MOCK.localStore;
+  window.chrome = MOCK.chrome;
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dict-docs.js"></script>
+<script>
+  // القاموس المشحون كما هو (النصوص والقواعد وقائمة الإبقاء)، والسمات وحدها لهذه الصفحة: الفهرس من مسارٍ يجيبه الاختبار، وحارس المسار
+  // يعمل في مجلد الصفحة وفي ‎/docs/en/‎ (وما سواه خامل)، بلا ترطيبٍ مؤجَّل ولا متون
+  var L = globalThis.CLAUDE_L10N, D = L.dicts.ar;
+  var HERE = location.pathname.replace(/[^\/]*$/, "");
+  L.meta = { scan: "llms", llms: "/__cml-llms-fixture.txt", live: false, chat: false, hydrate: "none", routes: { full: [HERE, "/docs/en/"] } };
+  var STR = D.strings, KEEP = L.keep || [];
+  function plainKey(k) {
+    return /^[A-Za-z][A-Za-z ]{3,40}[A-Za-z]$/.test(k) && STR[k] !== k && KEEP.indexOf(k) < 0 &&
+      STR[k + " (Beta)"] === undefined && STR[k + " (BETA)"] === undefined && STR[k + " (beta)"] === undefined;
+  }
+  var keys = Object.keys(STR).filter(plainKey);
+  // أصلٌ مترجَم لعنوانٍ بشارة، وآخرُ لشارةٍ بحروفٍ كبيرة، واسمٌ يبقى بالإنجليزية (ليس في القاموس)، واسمٌ يبقى أصلًا لعنوانٍ بشارة
+  var BASE = keys[0], BASE2 = keys[1];
+  var KEPT = KEEP.filter(function (k) { return /^[A-Za-z][\w .]{2,30}$/.test(k) && STR[k] === undefined; });
+  var K1 = KEPT[0], K2 = KEPT[1];
+  var T = {
+    plainMiss: "Zzq untranslated page",
+    badgeHit: BASE + " (Beta)",
+    badgeUpper: BASE2 + " (BETA)",
+    badgeLower: BASE2 + " (beta)",
+    badgeKeep: K2 + " (Beta)",
+    badgeMiss: "Zzq untranslated thing (Beta)",
+    notBadge: BASE + " (Zzq and later)",
+    kept: K1,
+    translated: keys[2],
+    outside: "Zzq outside the route",
+  };
+  var FIXTURE = [
+    "# Test index", "", "## English", "",
+    "### Zzq Group", "",
+    "- [" + T.plainMiss + "](/docs/en/zzq-a.md)",
+    "- [" + T.badgeHit + "](/docs/en/api/beta/zzq-b.md)",
+    "- [" + T.badgeUpper + "](/docs/en/api/beta/zzq-c.md)",
+    "- [" + T.badgeLower + "](/docs/en/zzq-c2.md)",
+    "- [" + T.badgeKeep + "](/docs/en/zzq-d.md)",
+    "- [" + T.badgeMiss + "](/docs/en/api/beta/zzq-e.md)",
+    "- [" + T.notBadge + "](/docs/en/zzq-f.md)",
+    "- [" + T.kept + "](/docs/en/zzq-g.md)",
+    "- [" + T.translated + "](/docs/en/zzq-h.md)",
+    "", "### Zzq Outside Group", "",
+    "- [" + T.outside + "](/docs/xx/zzq-i.md)",
+    "",
+  ].join("\n");
+  var realFetch = window.fetch;
+  window.fetch = function (u, o) {
+    if (String(u && u.url || u).indexOf("/__cml-llms-fixture.txt") >= 0)
+      return Promise.resolve(new Response(FIXTURE, { status: 200, headers: { "content-type": "text/plain" } }));
+    return realFetch.apply(window, arguments);
+  };
+</script>
+<script src="../extension/engine.js"></script>
+<script>
+(function () {
+  var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+  function check(name, expect, got) {
+    total++; var ok = String(expect) === String(got); if (ok) pass++;
+    var tr = document.createElement("tr");
+    [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+    var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+    tb.appendChild(tr);
+    document.title = "llms " + pass + "/" + total + " …";
+  }
+  function done() { document.title = "llms " + pass + "/" + total; }
+  var C = CMLConst;
+  var K = C.key("cml_scan_result", "docs");
+  setTimeout(function () { chrome.storage.local.set({ cml_scan_request: { d: "docs", kind: "scan", at: Date.now(), id: "l1" } }); }, 300);
+  var t0 = Date.now();
+  var poll = setInterval(function () {
+    var r = window.__store[K];
+    document.getElementById("log").textContent = JSON.stringify(r, null, 1);
+    if ((!r || r.status !== "done") && Date.now() - t0 < 15000) return;
+    clearInterval(poll);
+    run(r || {}).then(done, function (e) { check("استثناء في الاختبار", "", String(e && (e.stack || e.message) || e).slice(0, 400)); done(); });
+  }, 200);
+
+  async function run(r) {
+    var list = (r.list || []).concat(r.varList || []);
+    check("تمهيد: الفحص انتهى من فهرس الصفحات، والقاموس المشحون فيه قائمة إبقاءٍ وأصولٌ للعناوين", "done/llms/true",
+      r.status + "/" + r.source + "/" + !!(BASE && BASE2 && K1 && K2 && T.translated));
+    // ١) الشارة: الأصل مترجَم ⇒ مغطًّى؛ والأصل غير مترجَم ⇒ يبقى العنوان بنصّه كما في الفهرس
+    // ★ (ر8-د، المراجعة) والشارة بحروفها: « (BETA)» و« (beta)» نصٌّ من العنوان يُبحث كاملًا فيبقى في القائمة وأصلُه مترجَم
+    check("★ (ر8-د) عنوانٌ بشارة « (Beta)» أصلُه مترجَم يُعدّ مغطًّى وعددُها في النتيجة (badge)، وبغير حروفها (« (BETA)» و« (beta)») نصٌّ من العنوان يُبحث كاملًا", "false/true/true/2",
+      (list.indexOf(T.badgeHit) >= 0) + "/" + (list.indexOf(T.badgeUpper) >= 0) + "/" + (list.indexOf(T.badgeLower) >= 0) + "/" + r.badge);
+    check("★ (ر8-د) شارةٌ أصلُها غير مترجَم تبقى في القائمة بنصّها كما في الفهرس، وقوسٌ ليس شارة يُبحث كاملًا", "true/false/true",
+      (list.indexOf(T.badgeMiss) >= 0) + "/" + (list.indexOf("Zzq untranslated thing") >= 0) + "/" + (list.indexOf(T.notBadge) >= 0));
+    // ٢) الإبقاء: الاسم نفسه، والاسم أصلًا لعنوانٍ بشارة — مغطًّى، وعددُه kept
+    check("★ (ر8-د) ما يبقى بالإنجليزية بقاعدة النطاق (keep) مغطًّى لا «غير مترجَم» — بنفسه وأصلًا لعنوانٍ بشارة — وعددُه في النتيجة (kept)", "false/false/2",
+      (list.indexOf(T.kept) >= 0) + "/" + (list.indexOf(T.badgeKeep) >= 0) + "/" + r.kept);
+    // ٣) ولا يُمسّ غيرهما: غير المترجَم يبقى، والمترجَم مغطًّى، والمسار الخامل ومجموعته لا يُعدّان، وfound عددُ العناوين كما في الفهرس
+    // found: عنوان المجموعة وعناوينها التسعة؛ وmissing: المجموعة وغير المترجَم والشارة غير المترجَم أصلُها والقوس الذي ليس شارة
+    // و★ (المراجعة) العنوانان بغير حروف الشارة
+    check("★ (ر8-د) لا يُمسّ غير الشارات والإبقاء: غير المترجَم باقٍ، والمسار الخامل ومجموعته لا يُعدّان، وfound عدد العناوين كلها، وmissing طول القائمة",
+      "true/false/false/false/10/6/6",
+      (list.indexOf(T.plainMiss) >= 0) + "/" + (list.indexOf(T.translated) >= 0) + "/" + (list.indexOf(T.outside) >= 0) + "/" +
+      (list.indexOf("Zzq Outside Group") >= 0) + "/" + r.found + "/" + r.missing + "/" + list.length);
+    // ٤) البناء: قائمة الإبقاء المشحونة نصوصُ keep-en.json المتتبَّعة وحدها (بلا أسبابها)، لكل موقعٍ له فحص، ولا قائمة لغيره
+    var KEEPSRC = { app: "keep-en.json", docs: "docs/keep-en.json", code: "code/keep-en.json" };
+    var rows = [];
+    for (var i = 0; i < C.DOMAINS.length; i++) {
+      var dom = C.DOMAINS[i];
+      var src = await fetch("../extension/" + dom.dict).then(function (x) { return x.text(); });
+      var gx = {}; new Function("globalThis", src)(gx);
+      var shipped = gx.CLAUDE_L10N.keep;
+      if (!C.caps(dom.id).scan.on) { rows.push(dom.id + ":" + (shipped === undefined ? "none" : "SHIPPED")); continue; }
+      var kj = await fetch("../glossary/" + KEEPSRC[dom.id]).then(function (x) { return x.ok ? x.json() : null; }, function () { return null; });
+      // (وفي التطبيق لا يُشحن ما فيه «@»: ماسح حزمه لا يجمعه أصلًا، ولا بريد في الحزمة)
+      var appScan = C.caps(dom.id).scan.kind === "app";
+      var want = kj ? Array.from(new Set(kj.keep.map(function (e) { return String(e.en).replace(/\s+/g, " ").trim(); })
+        .filter(function (x) { return x && !(appScan && x.indexOf("@") >= 0); }))).sort() : null;
+      var strs = Array.isArray(shipped) && shipped.length > 0 && shipped.every(function (x) { return typeof x === "string"; });
+      // وفي بنية المستودع العام لا مسرد (لا يُنشر): يُمتحن أن القائمة نصوصٌ وحدها، والبناء هناك يأخذها من القاموس المودَع
+      rows.push(dom.id + ":" + (strs && (want ? JSON.stringify(shipped) === JSON.stringify(want) : true) ? "ok" : "DIFF"));
+    }
+    check("★ (ر8-د) قائمة الإبقاء المشحونة: نصوص keep-en.json المتتبَّعة وحدها (بلا أسبابها، وبلا عناوين البريد في التطبيق) في قاموس كل موقعٍ له فحص، ولا قائمة لموقعٍ بلا فحص",
+      C.DOMAINS.map(function (d) { return d.id + ":" + (C.caps(d.id).scan.on ? "ok" : "none"); }).join(","), rows.join(","));
+    check("لا أخطاء جافاسكربت في الصفحة", 0, jsErrors);
+  }
+})();
+</script>
+</body>
+</html>

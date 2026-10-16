@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<script>
+  // أصل الملفات قبل نقل العنوان إلى مسار الدرس: الروابط النسبية أدناه تُحسم به لا بالمسار الجديد
+  document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');
+</script>
+<title>Zq Lesson Title · Zq Course Title · Claude Academy</title>
+<!--
+  اختبار الأكاديمية (ر4، ٢٨ ربيع الآخر ١٤٤٨هـ) — بجدول النطاقات الحقيقي (meta النطاق academy) وقاموسه المبنيّ، وصفحةٍ ببنية الموقع
+  (الترويسة، ولافتة الإعلانات، ورأس الدرس بمسار التنقّل والعنوان والملخص والأهداف، والمتن، ومخطط الدورة بقسمٍ ودرسٍ وقائمة «في هذه
+  الصفحة»، والتذييل بمنتقي اللغة، وقائمة المنتقي المنبثقة بأسماء لغات، ومحادثة «اسأل Claude»):
+   ١) الجدول: النطاق من العنوان (المضيف كلّه)، وحارس المسار (الرئيسة بعينها وأقسام الموقع الإنجليزية كاملة، والمساعدة هيكل، و‎/<لغة>/…‎
+      والإدارة والداخلي خامل)، وعنوان الموقع المختصر (meta.siteLabel)، والقاموس المبنيّ.
+   ٢) الواجهة والعناوين تُعرَّب؛ والمتن وقائمة «في هذه الصفحة» واللافتة والمنتقي وأسماء اللغات ومحادثة «اسأل Claude» لا تُمسّ ولو طابق
+      نصُّها القاموس (meta.skipSel)، ولا يحصدها الحاصد؛ واتجاهها LTR (academy-point.css)، والفقرات والبنود بحسب نصّها (meta.dirSel).
+   ٣) عنوان التبويب: بالذيل « · Claude Academy»، والدرس بحرفيٍّ كامل، والرئيسة حرفيٌّ، والمختلط يبقى إنجليزيًّا.
+   ٤) حارس <html lang>: الموقع يكتب لغةً أخرى ⇒ خمولٌ تام، والعودة إلى en تعيدها. ٥) مسار المساعدة هيكل. ٦) التنقّل إلى ‎/<لغة>/…‎ وعودته.
+  النصوص العربية هنا تجريبيةٌ للاختبار لا ترجمات. العقد: document.title الختامي = "academy N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1100px;margin:auto}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}
+#tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<link rel="stylesheet" href="../extension/base.css">
+<link rel="stylesheet" href="../extension/academy-point.css">
+<header class="fixed" id="hdr">
+  <div data-cds="ProductLogo"><span id="logo">Claude Academy</span></div>
+  <nav><button id="menu1">Courses</button> <button id="menu2">Resources</button></nav>
+  <div><span id="iso">(opens in new tab)</span></div>
+  <a data-cds="Button" href="#"><span id="signin">Sign in</span></a>
+</header>
+<div role="status"><div data-cds="Banner" data-testid="notification-banner-zq" id="banner"><p id="bannerP">Courses</p><a id="bannerA" href="#">Settings</a></div></div>
+<main id="main">
+  <header>
+    <nav aria-label="Breadcrumb"><ol><li><a href="#"><span id="bc0">Academy</span></a></li><li><a href="#"><span id="bc1">Courses</span></a></li><li><a href="#"><span id="bc2">Zq Course Title</span></a></li></ol></nav>
+    <h1 id="h1">Zq Lesson Title</h1>
+    <p class="text-lede" id="lede">Zq untranslated summary of the lesson stays in English.</p>
+    <p id="pAr">Resources</p>
+    <ul><li id="obj1">Zq learning objective stays in English.</li></ul>
+  </header>
+  <article class="mdx-article" id="art"><h2 id="art1">Settings</h2><p id="art2">Zq body paragraph with a <a href="#" id="art2a">Courses</a> link inside.</p></article>
+  <nav aria-label="Course outline" id="outline">
+    <span class="text-caption" id="sec1">Zq Section Title</span>
+    <a href="#" id="ol1">Zq Lesson Title</a>
+    <ul id="toc"><li><a href="#intro" id="toc1">Settings</a></li></ul>
+  </nav>
+  <ul id="rows"><li class="border-b" id="row1"><a href="/courses/zq-course" id="rowA"><span id="rowT">Zq English Product Title Kept In English Here</span><span id="rowK">Resources</span></a></li></ul>
+</main>
+<footer id="ftr">
+  <div data-cds="Combobox"><button role="combobox" id="picker"><span id="pickerVal">English</span><span id="pickerIcon">v</span></button></div>
+  <a href="#" id="ftrPriv">Privacy policy</a>
+  <!-- منتقي اللغة بعد نشر الموقع في ٢٨ ربيع الآخر ١٤٤٨هـ (المراجعة المستقلة): زرٌّ يفتح حوارًا، وقيمته ‎span[lang=en]‎ -->
+  <span><button type="button" data-cds="Button" aria-haspopup="dialog" id="picker2"><span><span data-cds="Icon" aria-hidden="true"></span><span class="sr-only" id="pk2Sr">Resources</span><span lang="en" id="pk2Val">English</span></span></button></span>
+</footer>
+<div data-base-ui-portal><div role="dialog" data-cds="Combobox"><div role="listbox" id="lb">
+  <div role="option"><span lang="en" id="optEn">English</span></div><div role="option"><span lang="xx" id="optXx">Zq Endonym</span></div></div></div></div>
+<div data-base-ui-portal><div role="dialog" data-cds="Dialog" id="dlg2"><h2 id="dlg2T">Sign in</h2><div data-cds="LanguagePicker"><div data-testid="language-picker-results"><div role="radiogroup" id="rg2">
+  <button type="button" role="radio" lang="en" id="rad1"><span id="rad1a">English</span></button><button type="button" role="radio" lang="xx" id="rad2"><span id="rad2a">Zq Endonym</span><span id="rad2b">Zq Other Name</span></button></div></div></div></div></div>
+<aside data-testid="corner-ask-panel"><div data-ask-view id="ask"><p id="askQ">Settings</p><p id="askAr">سؤالٌ تجريبي من القارئ؟</p><p id="askA">Zq answer from Claude.</p></div></aside>
+<p id="wake">-</p>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<!-- القاموس المبنيّ (build.mjs): meta النطاق من الجدول، وفيه ترجمة ت3 (٢٨ ربيع الآخر ١٤٤٨هـ) -->
+<script src="../extension/dict-academy.js"></script>
+<script>
+var HOME = location.pathname + location.search;
+var BUILT = globalThis.CLAUDE_L10N;
+var LM = CMLConst.domain("academy").meta;
+// جدول النطاقات الحقيقي، والاختبار محلّيٌّ هرمسيّ: لا ترطيب ينتظره، ولا ورقة حيّة
+var META = Object.assign({}, LM, { hydrate: "none", live: false });
+// قاموس الواجهة التجريبي: «Settings» و«Courses» و«English» و«Zq Endonym» وجواب Claude فيه عمدًا لتثبت أن المحدِّد (skipSel) لا
+// المصادفة هو ما يُبقي المتن والقائمة واللافتة والمنتقي والمحادثة على أصلها
+var STR = {
+  "Courses": "الدورات", "Resources": "الموارد", "Settings": "الإعدادات", "Sign in": "تسجيل الدخول",
+  "Zq Course Title": "دورةٌ تجريبية", "Zq Lesson Title": "درسٌ تجريبي", "Zq Section Title": "قسمٌ تجريبي",
+  "English": "الإنجليزية", "Zq Endonym": "اسم لغةٍ تجريبي", "Zq Other Name": "اسمٌ تجريبي آخر", "Zq answer from Claude.": "جوابٌ تجريبي",
+  // عنوان الدرس الثلاثي حرفيٌّ مشتقٌّ وقت الدمج (دراسة ر4 §4.4)، والرئيسة حرفيٌّ كامل
+  "Zq Lesson Title · Zq Course Title · Claude Academy": "درسٌ تجريبي · دورةٌ تجريبية · Claude Academy",
+  "Claude Academy · Zq home tagline": "Claude Academy · شعارٌ تجريبي",
+};
+var SKIP_FULL = CMLShared.harvestSkip(LM, "full");
+var MAIN_HTML = document.getElementById("main").innerHTML; // الدرس كما يرسمه الموقع (قبل المحرّك)، ليُرسم من جديد بعد التنقّل
+var HK = CMLShared.harvestDom(document.documentElement, { chat: false, max: Infinity, skip: SKIP_FULL }).map(function (h) { return h.key; });
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) { if (cb) cb(null); } });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+// مستمع رسائل النافذة (القشرة بلا onMessage): نلتقطه لنسأله كما تسأله النافذة
+var HELLO = null;
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { HELLO = fn; } };
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "academy", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: STR, patterns: [], plurals: {} } } };
+// المسار الحقيقي للدرس قبل المحرّك (حارس المسار على location.pathname)
+history.replaceState({}, "", "/courses/zq-course/zq-lesson");
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+var MARKS = new RegExp("[" + String.fromCharCode(0x200E) + String.fromCharCode(0x200F) + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g");
+function $(id) { return document.getElementById(id); }
+function txt(id) { return $(id).textContent.replace(MARKS, "").replace(/\s+/g, " ").trim(); }
+function cs(id) { return getComputedStyle($(id)); }
+function T() { return document.title.replace(MARKS, ""); }
+var H = document.documentElement;
+function attrs() { return ["dir", "lang", "data-cml", "data-cml-route"].map(function (a) { return H.getAttribute(a) || "-"; }).join("|"); }
+function hello() { var r = null; if (HELLO) HELLO({ type: "cml-hello" }, {}, function (x) { r = x; }); return r; }
+// تنقّلٌ من جهة العميل: عنوانٌ جديد ثم رسمٌ يوقظ مراقب الطفرات (كما يرسم React الصفحة الجديدة)
+function go(p) { history.pushState({}, "", p); $("wake").textContent = p; return wait(400); }
+async function setTitle(t) { document.title = t; await wait(150); return T(); }
+var UI_IDS = ["menu1", "menu2", "signin", "bc1", "bc2", "h1", "sec1", "ol1", "pk2Sr", "dlg2T"];
+var KEEP_IDS = ["art1", "art2a", "toc1", "bannerP", "bannerA", "pickerVal", "optEn", "optXx", "pk2Val", "rad1a", "rad2a", "rad2b", "askQ", "askA"];
+var KEEP_EN = "Settings/Courses/Settings/Courses/Settings/English/English/Zq Endonym/English/English/Zq Endonym/Zq Other Name/Settings/Zq answer from Claude.";
+
+(async function () {
+  // ١) الجدول (دوالّ خالصة) والحاصد
+  var dom = function (u) { var d = CMLConst.domainOfUrl(u); return d ? d.id : "null"; };
+  check("★ الجدول: النطاق من العنوان (المضيف كلّه بمساراته، ولا غيره)", "academy/academy/academy/null/null/null",
+        [dom("https://academy.claude.com/"), dom("https://academy.claude.com/courses/x/y?z=1"), dom("https://academy.claude.com/xx/courses"),
+         dom("http://academy.claude.com/courses"), dom("https://claude.com/academy"), dom("https://academy.claude.com.zq.example/")].join("/"));
+  var RM = function (p) { return CMLShared.routeMode(LM.routes, p); };
+  check("★ حارس المسار: الرئيسة بعينها وأقسام الموقع الإنجليزية كاملة (والشرطة الختامية سواء)",
+        "full,full,full,full,full,full,full,full,full,full,full,full",
+        ["/", "/all", "/all/", "/courses", "/courses/x/y", "/tutorials/x", "/use-cases/x", "/collections/x", "/products/claude/setup",
+         "/webinars", "/login", "/dashboard"].map(RM).join(","));
+  check("★ حارس المسار: المساعدة هيكلٌ فقط، و‎/<لغة>/…‎ والإدارة والداخلي وما لا نعرفه خامل",
+        "shell,shell|inactive,inactive,inactive,inactive,inactive,inactive,inactive,inactive,inactive,inactive,inactive",
+        ["/help/faq", "/help/mcp"].map(RM).join(",") + "|" +
+        ["/xx/courses", "/xx", "/xx-YY/courses/a/b", "/admin/reports", "/garden", "/_dev/thumb", "/embed/x", "/oauth/callback", "/mcp",
+         "/coursesx", "/zq-new-section"].map(RM).join(","));
+  var caps = CMLConst.caps("academy");
+  check("★ عنوان الموقع المختصر من الجدول (meta.siteLabel، لا «‎/all‎»)، والقدرات (بلا محادثة ولا فحص ولا متون، وبورقةٍ حيّة)",
+        "academy.claude.com/false/false/false/true", CMLConst.siteLabel("academy") + "/" + caps.chat.on + "/" + caps.scan.on + "/" + caps.bodies.on + "/" + caps.live.on);
+  check("★ القاموس المبنيّ يعلن نطاقه وجدولَه (build.mjs يحقن meta)، وفيه ترجمة ت3: نصوصٌ وأنماطٌ وجموع", "academy/true/true/true/true",
+        BUILT.domain + "/" + (JSON.stringify(BUILT.meta) === JSON.stringify(LM)) + "/" + (Object.keys(BUILT.dicts.ar.strings).length > 0) + "/" +
+        (BUILT.dicts.ar.patterns.length > 0) + "/" + (Object.keys(BUILT.dicts.ar.plurals || {}).length > 0));
+  var NOT_HV = ["Zq body paragraph with a", "Zq Endonym", "Zq Other Name", "Zq answer from Claude.", "English"];
+  check("★ الحاصد: الواجهة والعناوين، ولا شيء من المتن ولا القائمة ولا اللافتة ولا المنتقي وأسماء اللغات ولا المحادثة",
+        "true/true/true/true//2/2",
+        (HK.indexOf("Zq Lesson Title") >= 0) + "/" + (HK.indexOf("Zq Section Title") >= 0) + "/" + (HK.indexOf("Resources") >= 0) + "/" +
+        (HK.indexOf("Course outline") >= 0) + "/" + NOT_HV.filter(function (k) { return HK.indexOf(k) >= 0; }).join(",") + "/" +
+        // «Courses» تُحصد من قائمة الترويسة ومسار التنقّل وحدهما (مرّتين، لا من اللافتة ولا من رابط المتن)، و«Settings» لا تُحصد أصلًا:
+        // هي في المتن وقائمة «في هذه الصفحة» واللافتة والمحادثة وحدها
+        HK.filter(function (k) { return k === "Courses"; }).length + "/" + HK.filter(function (k) { return k === "Courses" || k === "Settings"; }).length);
+
+  await wait(700);
+  // ٢) التعريب والاتجاه
+  check("★ المسار الكامل: الاتجاه واللغة والتشغيل والمسار", "rtl|ar|on|full", attrs());
+  check("★ الواجهة والعناوين تُعرَّب: القائمة والدخول ومسار التنقّل وعنوان الدرس وقسم الدورة ودرس المخطط",
+        "الدورات/الموارد/تسجيل الدخول/الدورات/دورةٌ تجريبية/درسٌ تجريبي/قسمٌ تجريبي/درسٌ تجريبي/الموارد/تسجيل الدخول", UI_IDS.map(txt).join("/"));
+  check("★ ما لا يُمسّ ولو طابق القاموس (skipSel): المتن، وقائمة «في هذه الصفحة»، واللافتة، وقيمة المنتقي، وأسماء اللغات، ومحادثة «اسأل Claude»",
+        KEEP_EN, KEEP_IDS.map(txt).join("/"));
+  check("وما ليس في القاموس على أصله: جذر المسار والشعار ورابط التذييل (keep-en)", "Academy/Claude Academy/Privacy policy",
+        txt("bc0") + "/" + txt("logo") + "/" + txt("ftrPriv"));
+  check("★ الجزر LTR في صفحةٍ RTL (academy-point.css): المتن، واللافتة، وقائمة «في هذه الصفحة»، وقيمة المنتقي، وقائمته المنبثقة؛ والمخطط والرأس RTL",
+        "ltr/ltr/ltr/ltr/ltr/ltr/ltr/rtl/rtl", ["art", "banner", "toc", "pickerVal", "lb", "pk2Val", "rg2", "outline", "hdr"].map(function (i) { return cs(i).direction; }).join("/"));
+  // (المراجعة المستقلة) وجزيرة المتن بالقاعدة نفسها لا بسمة dir=auto التي يضعها dirSel على المتن وحدها (حذفُ المتن من القاعدة كان لا يُرى)
+  var artDir = $("art").getAttribute("dir"); $("art").removeAttribute("dir");
+  var artCss = cs("art").direction; if (artDir !== null) $("art").setAttribute("dir", artDir);
+  check("جزيرة المتن LTR بقاعدة academy-point.css ولو بلا سمة dir", "ltr", artCss);
+  // (الإنجليزي يأخذ dir=auto فيحسمه المتصفح LTR بأول حرفٍ قوي — resolveDir لا يجزم بما لا يخالف المنصة — والعربي rtl صريحًا)
+  check("★ اتجاه الفقرات والبنود بنصّها (dirSel): الملخص والهدف الإنجليزيان LTR والفقرة المعرَّبة RTL، ومحادثة «اسأل Claude» كل فقرةٍ بنصّها",
+        "auto:ltr/auto:ltr/rtl:rtl/auto:ltr/rtl:rtl/auto:ltr",
+        ["lede", "obj1", "pAr", "askQ", "askAr", "askA"].map(function (i) { return $(i).getAttribute("dir") + ":" + cs(i).direction; }).join("/"));
+  // (المراجعة المستقلة) صفُّ تخطيطٍ كصفوف مراكز المنتجات (‎li > a > span‎): عنوانه الإنجليزي الباقي لا يقلب الصف، فوسمُه المعرَّب RTL
+  check("★ صفُّ تخطيطٍ بعنوانٍ إنجليزيٍّ باقٍ ووسمٍ معرَّب: الصف لا يُحسم LTR، والوسم RTL، والعنوان LTR بنصّه", "-:rtl/rtl:rtl/auto:ltr",
+        ["row1", "rowK", "rowT"].map(function (i) { return ($(i).getAttribute("dir") || "-") + ":" + cs(i).direction; }).join("/"));
+  check("لافتةٌ لاتينية بطرفٍ رمزي وحدها في صندوقها تُعزل (isoLabels)", String.fromCharCode(0x2066) + "(opens in new tab)" + String.fromCharCode(0x2069),
+        $("iso").textContent);
+
+  // ٣) عنوان التبويب
+  check("★ عنوان الدرس الثلاثي بحرفيٍّ كامل (مشتقٌّ وقت الدمج)", "درسٌ تجريبي · دورةٌ تجريبية · Claude Academy", T());
+  var t2 = await setTitle("Zq Course Title · Claude Academy");
+  var t3 = await setTitle("Claude Academy · Zq home tagline");
+  var t4 = await setTitle("Zq Unknown Page · Claude Academy");
+  var t5 = await setTitle("Claude Academy");
+  check("★ العنوان الثنائي بالذيل (« · Claude Academy» يبقى: titleKeep)، والرئيسة حرفيٌّ، والمختلط والاسم وحده على أصلهما",
+        "دورةٌ تجريبية · Claude Academy|Claude Academy · شعارٌ تجريبي|Zq Unknown Page · Claude Academy|Claude Academy", [t2, t3, t4, t5].join("|"));
+  await setTitle("Zq Lesson Title · Zq Course Title · Claude Academy");
+
+  // ٤) حارس <html lang>: IntlProvider يكتب لغة الواجهة (اختيارٌ محفوظ أو لغة المتصفح) بعد التركيب
+  H.lang = "xx";
+  await wait(500);
+  var hl = hello() || {};
+  check("★ الموقع يكتب لغةً أخرى في <html lang>: خمولٌ تام (لا اتجاه ولا سمات ولا تعريب، والعنوان الأصلي)، وجواب النافذة يحمل السبب",
+        "-|xx|-|-|Zq Lesson Title|Settings|Zq Lesson Title · Zq Course Title · Claude Academy|xx/html/false",
+        attrs() + "|" + txt("h1") + "|" + txt("toc1") + "|" + T() + "|" + hl.siteLang + "/" + hl.siteLangBy + "/" + hl.enabled);
+  H.lang = "en";
+  await wait(500);
+  check("★ ثم English: تعود الإضافة كاملة", "rtl|ar|on|full|درسٌ تجريبي|درسٌ تجريبي · دورةٌ تجريبية · Claude Academy", attrs() + "|" + txt("h1") + "|" + T());
+
+  // ٥) مسار المساعدة (هيكل): الموقع يتنقّل ثم يرسم main الجديد (كما يرسم React الصفحة)، فالترويسة تُعرَّب ومحتوى main على أصله LTR
+  history.pushState({}, "", "/help/faq");
+  $("main").innerHTML = '<h1 id="hh1">Zq Lesson Title</h1><p id="hp">Courses</p>';
+  await wait(400);
+  check("★ مسار المساعدة هيكلٌ: الترويسة تُعرَّب ومحتوى main على أصله وLTR (academy-point.css)", "shell|الدورات|Zq Lesson Title|Courses|ltr",
+        H.getAttribute("data-cml-route") + "|" + txt("menu1") + "|" + txt("hh1") + "|" + txt("hp") + "|" + cs("main").direction);
+
+  // ٦) التنقّل إلى صفحة لغةٍ أخرى (منتقي اللغة يحوّل إلى ‎/<لغة>/…‎) ثم العودة إلى الدرس الإنجليزي (يُرسم من جديد)
+  await go("/xx/courses");
+  check("★ ‎/<لغة>/…‎ خاملٌ تمامًا: كل شيءٍ يُرجع والسمات تُمحى والعنوان الأصلي", "-|en|-|-|Courses|Resources|Zq Lesson Title · Zq Course Title · Claude Academy|inactive",
+        attrs() + "|" + txt("menu1") + "|" + txt("menu2") + "|" + T() + "|" + (hello() || {}).route);
+  history.pushState({}, "", "/courses/zq-course/zq-lesson");
+  $("main").innerHTML = MAIN_HTML;
+  await wait(400);
+  check("★ والعودة إلى الدرس الإنجليزي تعيد التعريب (الترويسة والدرس المرسوم من جديد والعنوان)", "rtl|ar|on|full|الدورات|درسٌ تجريبي|قسمٌ تجريبي|درسٌ تجريبي · دورةٌ تجريبية · Claude Academy",
+        attrs() + "|" + txt("menu1") + "|" + txt("h1") + "|" + txt("sec1") + "|" + T());
+
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  history.replaceState({}, "", HOME);
+  document.title = "academy " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "ACADEMYTEST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})().catch(function (e) { jsErrors++; document.title = "academy 0/1"; var p = document.createElement("pre"); p.textContent = String(e && e.stack || e); document.body.appendChild(p); });
+</script>

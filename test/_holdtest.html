@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>hold test</title>
+<!--
+  اختبار سقف الإمساك (قرار المالك «الظهور مثل claude.ai»): في موقعٍ ذي ترطيبٍ مؤجَّل تبقى الصفحة
+  مخفيّةً حتى تُعرَّب — لكن ترطيبًا يتأخّر أكثر من السقف لا يُبقيها مخفيّة: تظهر عند السقف
+  (بنصّها الأصلي، والبوابة ما زالت تنتظر)، ثم تُعرَّب متى جاءت إشارة الترطيب.
+  العقد: document.title = "hold N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<link rel="stylesheet" href="../extension/base.css">
+<div id="__next"><div dir="ltr"><p id="t">Contact Support</p></div></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "support",
+  meta: { scan: "none", live: false, chat: false, hydrate: "defer", intercom: true },
+  default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Contact Support": "التواصل مع الدعم" }, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-const.js"></script>
+<script>CMLConst.HOLD_MAX_MS = 300; CMLConst.HYDRATE_MAX_MS = 60000;</script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g"), ""); }
+var H = document.documentElement;
+
+(async function () {
+  await wait(120);
+  check("★ في أول الأمر: ممسوكةٌ مخفيّة", "1/hidden", H.getAttribute("data-cml-hold") + "/" + getComputedStyle(H).visibility);
+  await wait(900);
+  check("★ ترطيبٌ تأخّر أكثر من السقف: تظهر الصفحة بنصّها الأصلي", "null/visible/Contact Support",
+        H.getAttribute("data-cml-hold") + "/" + getComputedStyle(H).visibility + "/" + noBidi(document.getElementById("t").textContent));
+  document.body.appendChild(document.createElement("next-route-announcer"));
+  await wait(600);
+  check("★ ثم تُعرَّب متى جاءت إشارة الترطيب", "التواصل مع الدعم", noBidi(document.getElementById("t").textContent));
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "hold " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "HOLD: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

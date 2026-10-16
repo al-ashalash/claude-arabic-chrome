@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>restore test</title>
+<!--
+  اختبار الاستعادة بسجلّ الملكية (مراجعة كودكس ١٨):
+   ١) عقدةٌ تُرجمت ثم فُصلت، ثم أُطفئت الإضافة، ثم أُعيدت العقدة ⇒ تعود إنجليزية.
+   ٢) سمةٌ على عنصرٍ مفصول بالطريقة نفسها.
+   ٣) الموقع غيّر lang/dir بعدنا ⇒ الإطفاء لا يمسّ قيمته.
+   ٤) lang يتبع لغة النص المعروض: الترجمة بلا قلبٍ اتجاهي تكتب lang=ar وتبقي dir الموقع.
+  العقد: document.title = "restoretest N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<h1>اختبار الاستعادة</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<div id="host"><p id="a">Hello</p><button id="b" aria-label="Send">x</button></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Hello": "مرحبا", "Send": "أرسل" }, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(/[\u2066-\u2069]/g, ""); }
+var H = document.documentElement;
+function fire(ch) { MOCK.fireChanged(ch, "local"); }
+
+async function main() {
+  await wait(500);
+  var a = document.getElementById("a"), b = document.getElementById("b"), host = document.getElementById("host");
+  check("الإقلاع ترجم النص والسمة", "مرحبا/أرسل", noBidi(a.textContent) + "/" + noBidi(b.getAttribute("aria-label")));
+  check("السمات: lang=ar وdir=rtl", "ar/rtl", H.getAttribute("lang") + "/" + H.getAttribute("dir"));
+
+  // ١–٢) فصلٌ ثم إطفاء ثم إعادة
+  host.removeChild(a); host.removeChild(b);
+  fire({ cml_enabled: { newValue: false } });
+  await wait(100);
+  host.appendChild(a); host.appendChild(b);
+  await wait(200);
+  check("★ عقدةٌ فُصلت ثم أُعيدت بعد الإطفاء تعود إنجليزية", "Hello", noBidi(a.textContent));
+  check("★ وسمتُها كذلك", "Send", b.getAttribute("aria-label"));
+  check("الإطفاء أعاد lang وdir الأصليين", "en/null", H.getAttribute("lang") + "/" + H.getAttribute("dir"));
+
+  // ٣) الموقع يغيّر lang/dir بعدنا ثم نُطفأ
+  fire({ cml_enabled: { newValue: true } });
+  await wait(300);
+  check("إعادة التشغيل تُرجع الترجمة", "مرحبا", noBidi(a.textContent));
+  H.setAttribute("lang", "fr");
+  H.setAttribute("dir", "ltr");
+  fire({ cml_enabled: { newValue: false } });
+  await wait(100);
+  check("★ ما غيّره الموقع بعدنا لا تمسّه الاستعادة", "fr/ltr", H.getAttribute("lang") + "/" + H.getAttribute("dir"));
+
+  // ٤) الترجمة بلا قلب: lang يتبع النص، وdir للموقع
+  H.setAttribute("lang", "en"); H.removeAttribute("dir");
+  fire({ cml_enabled: { newValue: true }, cml_rtl: { newValue: false } });
+  await wait(300);
+  check("★ ترجمةٌ بلا قلب: lang=ar وdir باقٍ للموقع", "ar/null", H.getAttribute("lang") + "/" + H.getAttribute("dir"));
+  fire({ cml_enabled: { newValue: false } });
+  await wait(100);
+  check("والإطفاء يعيد lang الموقع", "en", H.getAttribute("lang"));
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+}
+main().then(finish, function (e) { check("استثناء غير متوقع", "(لا شيء)", String(e && e.message || e)); finish(); });
+function finish() {
+  document.title = "restoretest " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "RESTORETEST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+}
+</script>

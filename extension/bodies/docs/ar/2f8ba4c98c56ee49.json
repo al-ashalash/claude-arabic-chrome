@@ -1,0 +1,1 @@
+{"page":"/docs/en/api/beta/tunnels/certificates","blocks":{"f973ffaf5cfc27b1":"API الأنفاق في مرحلة المعاينة البحثية. ويتطلب الترويسة <c1>anthropic-beta: mcp-tunnels-2026-06-22</c1>، وقد يتغير دون فترة إيقاف تدريجي. وهو يحل محل نقاط نهاية API المسؤول عند <c2>/v1/organizations/tunnels</c2>، التي تبقى متاحة خلال فترة انتقالية للترحيل."}}

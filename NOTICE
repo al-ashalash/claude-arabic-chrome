@@ -1,0 +1,10 @@
+The MIT License in LICENSE covers this project's own code and data. It does not cover the font
+files in extension/fonts/: each is licensed under the SIL Open Font License, Version 1.1, whose
+full text is in the matching <id>.OFL.txt file; extension/fonts/CREDITS.txt lists the copyright holders.
+
+Arabic terminology: some Arabic terms in the dictionaries adopt equivalents from lexicons on the Siwar
+platform (https://siwar.ksaa.gov.sa) of the King Salman Global Academy for Arabic Language, and from Saudi
+government glossaries and regulations. Equivalents from Siwar lexicons are credited to their lexicon, to the
+platform and to the Academy; the others, to their issuing authority. The 33 sources, with their publishers,
+are listed on the extension's About page (the options page, extension/options.html). No lexicon data ships
+with the project.

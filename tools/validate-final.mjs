@@ -6,10 +6,21 @@ import fs from "node:fs";
 import path from "node:path";
 import { ROOT, GLOSSARY, DICTS } from "./paths.mjs";
 
-const G = GLOSSARY;
+const { C, domainArg, domainsOf, dictFile, workDir, batchDir, label, harvestKeys } = await import(new URL("./domain-arg.mjs", import.meta.url).href);
+// ‎--domain=<نطاق>‎: صندوق الترجمة ومخرجاته في مجلد عمل النطاق (التطبيق كما كان)
+const DOMAIN = domainArg(process.argv);
+const G = workDir(DOMAIN);
 const IN = `${G}/_translate-inbox`;
-const ids = process.argv.slice(2);
-if (!ids.length) { console.error("usage: node validate-final.mjs p0 p1 v0 …"); process.exit(1); }
+const ids = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+if (!ids.length) { console.error("usage: node validate-final.mjs [--domain=<نطاق>] p0 p1 v0 …"); process.exit(1); }
+// ★ (فحص الشمول ١٤٤٨هـ) الختم بتاريخ الدورة للنطاقات كلها: كان للتطبيق ختمًا ثابتًا (20260828) فكانت كل دورةٍ
+// جديدة تكتب فوق دفعة تلك الدورة التاريخية (batch_20260828_full.json) — طريقٌ صامت لإسقاط نصوص. ‎--stamp=‎ يثبّته صراحةً.
+const stampArg = process.argv.find((a) => a.startsWith("--stamp="));
+const STAMP = stampArg ? stampArg.slice(8) : new Date().toISOString().slice(0, 10).replace(/-/g, "");
+if (fs.existsSync(`${G}/_ar_batches/batch_${STAMP}_full.json`) && !process.argv.includes("--overwrite")) {
+  console.error(`✗ batch_${STAMP}_full.json موجودٌ من قبل — لا يُكتب فوقه (‎--stamp=<ختمٌ آخر>‎ أو ‎--overwrite‎ صراحةً)`);
+  process.exit(1);
+}
 
 const VAR = /\{([A-Za-z_$][\w$]*)\}/g;
 const varsOf = (s) => { VAR.lastIndex = 0; const o = []; let m; while ((m = VAR.exec(s))) o.push(m[1]); return o.sort().join(","); };
@@ -71,8 +82,9 @@ warn.dollar.slice(0, 4).forEach((x) => console.log("    " + x));
 
 const plainOut = allClean.filter((p) => !/\{[A-Za-z_$][\w$]*\}/.test(p.en));
 const varOut = allClean.filter((p) => /\{[A-Za-z_$][\w$]*\}/.test(p.en));
-fs.writeFileSync(`${G}/_ar_batches/batch_20260828_full.json`, JSON.stringify(plainOut, null, 1), "utf8");
-fs.writeFileSync(`${G}/_vars-pairs-20260828.json`, JSON.stringify(varOut, null, 1), "utf8");
+fs.mkdirSync(`${G}/_ar_batches`, { recursive: true });
+fs.writeFileSync(`${G}/_ar_batches/batch_${STAMP}_full.json`, JSON.stringify(plainOut, null, 1), "utf8");
+fs.writeFileSync(`${G}/_vars-pairs-${STAMP}.json`, JSON.stringify(varOut, null, 1), "utf8");
 console.log(`\nالمجموع: سليم ${grandOk} | مرفوض ${grandBad} | أُبقي إنجليزياً ${grandKept}`);
-console.log(`  ثابت ← batch_20260828_full.json: ${plainOut.length}`);
-console.log(`  بمتغيّرات ← _vars-pairs-20260828.json: ${varOut.length}`);
+console.log(`  ثابت ← batch_${STAMP}_full.json: ${plainOut.length}`);
+console.log(`  بمتغيّرات ← _vars-pairs-${STAMP}.json: ${varOut.length}`);

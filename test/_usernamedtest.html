@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>usernamed test</title>
+<!--
+  أسماءٌ كتبها المستخدم في claude.ai لا تُعرَّب (S9-M، ٢٢ ربيع الآخر ١٤٤٨هـ؛ ما وجده S8-A): محادثةٌ اسمها «Settings» كانت تظهر
+  «الإعدادات» في الشريط الجانبي لأن اسمها يطابق نصًّا في القاموس. الآن meta.skipSel للتطبيق (APP_USER_NAMED في cml-const.js):
+   ١) صفوف الشريط الجانبي (‎[data-row-key] [data-row-label]‎): محادثةٌ ومشروعٌ وجلسةٌ بأسماء نصوص واجهة تبقى كما كتبها صاحبها،
+      وما حولها في الصفّ (الوقت، وأزرار الإجراءات وسماتها) واجهةٌ تُعرَّب، وبنود التنقّل خارج الصفوف تُعرَّب.
+   ٢) عنوان المحادثة في الرأس (الزرّ الأول من chat-title-split وبديله المؤقت) لا يُمسّ، وزرّ القائمة بجانبه يُعرَّب.
+   ٣) أسماء المُخرَجات والملفات في عناصرها، نصًّا وسمة، والجملة حولها تُعرَّب.
+   ٤) مسار الطفرات: صفٌّ يُضاف بعد الإقلاع، وإعادة تسمية صفٍّ، وعقدةٌ عرّبناها ثم نقلها الموقع إلى اسم صفٍّ ⇒ يعود أصلها.
+   ٥) حاصد DOM (harvestSkip) لا يقرأ هذه الأسماء.
+  القاموس هو قاموس التطبيق الحقيقي المبنيّ (dictionary.js)، وmeta.skipSel فيه يحقنه build.mjs من جدول النطاقات.
+  العقد: document.title = "usernamed N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right;word-break:break-word}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+#host{display:none}</style>
+<h1>اختبار أسماء المستخدم</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<div id="host"></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+window.chrome = MOCK.chrome;
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dictionary.js"></script>
+<script>
+var D = CLAUDE_L10N.dicts.ar;
+// «Zq interface label» نصٌّ لا في القاموس: يبقى إنجليزيًّا فيقرؤه الحاصد واجهةً مرّة، ونسخته اسمًا في صفٍّ لا يقرؤها
+// العقد تُزرع قبل المحرّك: يجدها مرورُه الأول. الأشكال من حزم claude.ai (١ أكتوبر ٢٠٢٦)
+(function () {
+  var host = document.getElementById("host");
+  host.innerHTML =
+    '<nav id="side">' +
+      '<div data-nav-item="projects"><span data-row-label="" id="navProjects">Projects</span></div>' +
+      '<div data-sidebar-group-label=""><span data-group-name="" id="grpRecents">Recents</span></div>' +
+      '<div class="dframe-recents-by-mode"><div data-kind="chat">' +
+        '<div data-row-key="chat:1" data-jump-hint-row=""><a href="/chat/1" data-row="" id="rowChatA">' +
+          '<span data-row-label="iconless"><span class="truncate" id="chatSettings">Settings</span></span>' +
+          '<span class="shrink-0 text-xs text-muted" id="rowMeta">Copy</span></a>' +
+          '<button aria-label="More options" id="rowBtn">⋯</button></div>' +
+        '<div data-row-key="chat:2" data-jump-hint-row=""><a href="/chat/2" data-row="">' +
+          '<span data-row-label="iconless"><span class="truncate" id="chatRecents">Recents</span></span></a></div>' +
+      '</div></div>' +
+      '<div data-kind="epitaxy-projects"><div data-row-key="epitaxy-project:p1"><div data-row="">' +
+        '<span data-row-label=""><span id="projRow">Projects</span></span></div></div></div>' +
+      '<div data-kind="code"><div data-row-key="code:s1"><div data-row="">' +
+        '<span data-row-label=""><span id="sessRow">New chat</span></span></div></div></div>' +
+    '</nav>' +
+    '<header>' +
+      '<div class="flex min-w-0 shrink items-center" data-testid="chat-title-split">' +
+        '<button id="hdrTitleBtn" aria-label="Settings"><span class="min-w-0 truncate" id="hdrTitle">Settings</span></button>' +
+        '<button aria-label="More options" id="hdrMenu">v</button></div>' +
+      '<button data-testid="chat-title-standin" id="standin"><span class="min-w-0 truncate">Projects</span></button>' +
+    '</header>' +
+    '<section>' +
+      '<h2 data-testid="frame-artifact-title" title="Artifacts" id="artTitle">Artifacts</h2>' +
+      '<p id="delSentence"><span id="delHead">Delete</span> <span data-testid="artifact-delete-title" id="delName">Settings</span></p>' +
+      '<p><bdi data-testid="artifact-data-title" id="dataTitle">Copy</bdi></p>' +
+      '<p data-testid="mp-filename" id="fileName">Settings</p>' +
+      '<p id="uiZq">Zq interface label</p>' +
+      '<p id="uiSettings">Settings</p>' +
+    '</section>' +
+    '<div id="userZqWrap" data-row-key="chat:zq"><span data-row-label=""><span id="userZq">Zq interface label</span></span></div>';
+})();
+</script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, "⟨" + String(expect).slice(0, 80), "⟨" + String(got).slice(0, 80)].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(/[⁦-⁩‎‏]/g, ""); }
+function txt(id) { return noBidi(document.getElementById(id).textContent); }
+function attr(id, a) { return noBidi(document.getElementById(id).getAttribute(a)); }
+
+async function main() {
+  await wait(700);
+  var AR = function (k) { return D.strings[k]; };
+  var APP = CMLConst.DOMAINS.filter(function (d) { return d.id === "app"; })[0];
+  check("شروط الاختبار: نصوص الواجهة المستعملة في القاموس", "true",
+    ["Settings", "Projects", "Recents", "Copy", "More options", "New chat", "Artifacts", "Delete"].every(function (k) { return /[؀-ۿ]/.test(AR(k) || ""); }));
+  check("★ جدول النطاقات: للتطبيق meta.skipSel، والقاموس المبنيّ يحمله كما هو (build.mjs)", "true/true",
+    (!!APP.meta.skipSel && APP.meta.skipSel.indexOf("[data-row-label]") >= 0) + "/" + (CLAUDE_L10N.meta.skipSel === APP.meta.skipSel));
+  // ١
+  check("★ محادثةٌ اسمها «Settings» في الشريط الجانبي تبقى كما كتبها صاحبها", "Settings", txt("chatSettings"));
+  check("★ ومحادثةٌ اسمها «Recents» كذلك", "Recents", txt("chatRecents"));
+  check("★ ومشروعٌ اسمه «Projects» وجلسة Claude Code اسمها «New chat» في الشريط", "Projects/New chat", txt("projRow") + "/" + txt("sessRow"));
+  check("وما حول الاسم في الصفّ واجهةٌ تُعرَّب: نصٌّ خارج التسمية وسمة زرّ الإجراءات", AR("Copy") + "/" + AR("More options"),
+    txt("rowMeta") + "/" + attr("rowBtn", "aria-label"));
+  check("وبنود التنقّل خارج الصفوف وعنوان قسم «الأحدث» تُعرَّب", AR("Projects") + "/" + AR("Recents"), txt("navProjects") + "/" + txt("grpRecents"));
+  // ٢
+  check("★ عنوان المحادثة في الرأس «Settings» لا يُمسّ (نصًّا وسمة)، وبديله المؤقت كذلك", "Settings/Settings/Projects",
+    txt("hdrTitle") + "/" + attr("hdrTitleBtn", "aria-label") + "/" + txt("standin"));
+  check("وزرّ القائمة بجانب العنوان واجهةٌ تُعرَّب", AR("More options"), attr("hdrMenu", "aria-label"));
+  // ٣
+  check("★ اسم المُخرَج في إطاره «Artifacts» لا يُمسّ (نصًّا وسمة title)", "Artifacts/Artifacts", txt("artTitle") + "/" + attr("artTitle", "title"));
+  check("★ اسمٌ داخل جملة حذف المُخرَج وفي بطاقة الإذن يبقى، والكلمة قبله تُعرَّب", AR("Delete") + "/Settings/Copy",
+    txt("delHead") + "/" + txt("delName") + "/" + txt("dataTitle"));
+  check("★ اسم الملف «Settings» لا يُمسّ", "Settings", txt("fileName"));
+  check("والنص نفسه واجهةً خارجها يُعرَّب", AR("Settings"), txt("uiSettings"));
+  // ٤ مسار الطفرات
+  var list = document.querySelector(".dframe-recents-by-mode > [data-kind='chat']");
+  var row = document.createElement("div"); row.setAttribute("data-row-key", "chat:3");
+  row.innerHTML = '<a href="/chat/3" data-row=""><span data-row-label="iconless"><span class="truncate" id="lateChat">Settings</span></span></a>';
+  list.insertBefore(row, list.firstChild);
+  await wait(250);
+  check("★ صفٌّ يُضاف بعد الإقلاع اسمه «Settings» يبقى", "Settings", txt("lateChat"));
+  document.getElementById("chatSettings").firstChild.nodeValue = "Projects";
+  await wait(250);
+  check("★ إعادة تسمية صفٍّ (تغيّر قيمة العقدة) إلى «Projects» تبقى", "Projects", txt("chatSettings"));
+  var mv = document.getElementById("uiSettings");
+  check("شرط النقل: العقدة عُرِّبت خارج الصفّ", AR("Settings"), txt("uiSettings"));
+  document.querySelector("[data-row-key='chat:2'] [data-row-label]").appendChild(mv);
+  await wait(250);
+  check("★ عقدةٌ عرّبناها ثم نقلها الموقع إلى اسم صفٍّ يُرجع أصلها", "Settings", txt("uiSettings"));
+  // ٥ الحاصد
+  var skip = CMLShared.harvestSkip(CLAUDE_L10N.meta, "full");
+  var keys = CMLShared.harvestDom(document.getElementById("host"), { chat: true, max: Infinity, skip: skip }).map(function (k) { return k.key; });
+  check("★ حاصد DOM لا يقرأ اسمًا كتبه المستخدم، ويقرأ النصَّ نفسه واجهةً", "1",
+    String(keys.filter(function (k) { return k === "Zq interface label"; }).length));
+  check("واسم المُخرَج وسمته، وأسماء الصفوف والرأس والملف («Settings» كلها هنا محتوى مستخدم بعد النقل) ليست في الحصاد", "false/false/0",
+    (keys.indexOf("Artifacts") >= 0) + "/" + (keys.indexOf("Settings") >= 0) + "/" +
+      CMLShared.harvestDom(document.getElementById("fileName"), { chat: true, skip: skip }).length);
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+}
+main().then(finish, function (e) { check("استثناء غير متوقع", "(لا شيء)", String(e && e.message || e)); finish(); });
+function finish() {
+  document.title = "usernamed " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "USERNAMED: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+}
+</script>

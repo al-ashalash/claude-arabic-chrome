@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>sysfont test</title>
+<!--
+  ★ (ر5ب، ٢٩ ربيع الآخر ١٤٤٨هـ — القرار 71) اختبار «خط النظام»: وحدة الخط cml-font.js والمحرّك engine.js الحقيقيان في أطر سيناريو
+  (_fontframe.html)، وبنى خطوط المواقع السبع (خمسٌ من تجربة ر5ب واثنتان من مسح المواقع) ببدائل لينكس (project/study/fonts/notes/system-font-spike.md):
+    أ) وجوهٌ ثابتة الوزن (المساعدة وClaude Code)            — O3
+    ب) وجهٌ متغيّر تتلوه رفيقة «Fallback» (وثائق المنصة)      — O2
+    ج) البنية «ب» لحظة تحميل خط الموقع                       — O6/O7
+    د) رصّةٌ تبلغ system-ui (claude.ai والأكاديمية)           — لا شيء
+    هـ) متغيّر Intercom باسمٍ عام وحده                        — O4
+    و) وجهٌ ثابت واحد تتلوه رفيقة «Fallback» (الوثائق القانونية) — الرفيقة كـ«ب»
+    ز) وجهٌ ثابت واحد بلا رفيقة (عناوين الخصوصية)             — O3 (عريضٌ مصطنع)
+  والبدائل: DejaVu Sans خطًّا لاتينيًّا للموقع (بمدى U+0000-00FF كوجوه العلامة التي لا عربية فيها)، وLiberation Sans وجهَ «Fallback» كما
+  تولّده next/font، وخط النظام العربي ما تبلغه قوائم local() في C.FONT_SYS على هذا الجهاز (Noto Sans Arabic على لينكس، وSegoe UI على ويندوز).
+  والمرجع: عائلة «zq-ref» بالقوائم نفسها مستقلةً، فـ«من وجه النظام» = الخط الذي يرسم المرجعَ بالوزن نفسه، أيًّا كان النظام.
+  والقياس: CSS.getPlatformFontsForNode عبر المشغّل (‎?cdp‎ و pf في run-tests-cdp.mjs)، وإلا (فتحٌ يدوي) فتساوي العرض.
+  العقد: document.title = "sysfont N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1000px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vertical-align:top}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+#frames iframe{width:420px;height:260px;border:1px solid #999;display:inline-block;margin:4px}</style>
+<h1>اختبار «خط النظام»</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<p id="notes"></p>
+<div id="frames"></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var C = CMLConst, SH = CMLShared;
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+  document.title = "sysfont " + pass + "/" + total + " …";
+}
+function note(t) { var n = document.getElementById("notes"); n.appendChild(document.createTextNode(t)); n.appendChild(document.createElement("br")); }
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function until(pred, ms) {
+  var t0 = Date.now();
+  return new Promise(function (res) {
+    (function tick() {
+      var v = false; try { v = pred(); } catch (e) {}
+      if (v || Date.now() - t0 > (ms || 5000)) { res(v); return; }
+      setTimeout(tick, 30);
+    })();
+  });
+}
+
+// ── CSS.getPlatformFontsForNode عبر المشغّل (run-tests-cdp: pf)، وإلا null فيقيس الاختبار العرض ──
+var UNDER_CDP = /[?&]cdp\b/.test(location.search), PFS = { seq: 0, wait: {} };
+window.__cmlPFq = []; window.__cmlPFn = {};
+window.__cmlPFdone = function (id, res) { var w = PFS.wait[id]; if (w) { delete PFS.wait[id]; w(res); } };
+function pfProbe(nodes) {
+  if (!UNDER_CDP || !nodes.length) return Promise.resolve(null);
+  var id = ++PFS.seq;
+  window.__cmlPFn[id] = nodes;
+  return new Promise(function (res) {
+    PFS.wait[id] = res;
+    window.__cmlPFq.push({ id: id, n: nodes.length });
+    setTimeout(function () { if (PFS.wait[id]) { delete PFS.wait[id]; res(null); } }, 10000);
+  });
+}
+// الخط الغالب في عقدة: أكثر الحروف رسمًا (والنصوص هنا كلمةٌ واحدة بلا مسافة، فخطٌّ واحد)
+function mainFont(list) {
+  var best = "", n = -1;
+  (list || []).forEach(function (s) { var i = s.lastIndexOf(":"), c = +s.slice(i + 1); if (c > n) { n = c; best = s.slice(0, i); } });
+  return best;
+}
+
+// ── البنى ببدائل لينكس ──
+var AR_WORD = "الإعدادات", EN_WORD = "Settings", WEIGHTS = [300, 400, 500, 600, 700, 800];
+var LAT = "unicode-range:U+0000-00FF;";
+var SANS = 'local("DejaVu Sans")', SANS_B = 'local("DejaVu Sans Bold"), local("DejaVuSans-Bold")';
+var FBK = 'src:local("Liberation Sans");size-adjust:106.73%;ascent-override:92.99%;descent-override:24.13%;line-gap-override:0%';
+// المرجع: عائلةٌ مستقلة بقوائم C.FONT_SYS نفسها (لكل نطاقٍ وجه) — ما يرسمه خطُّ النظام على هذا الجهاز بكل وزن
+var REF_CSS = C.FONT_SYS.bands.map(function (b) {
+  return '@font-face{font-family:"zq-ref";src:' + C.fontSysSrc(b.w[0]) + ';font-weight:' + b.w[0] + ' ' + b.w[1] + ';unicode-range:' + C.FONT_AR_RANGE + '}';
+}).join("");
+var STRUCT = {
+  // أ) المساعدة: وجوهٌ ثابتة 400/500/600/700 ومائل، بلا اسمٍ عام بعدها (متغيّرا Intercom باسمها)
+  fixed: { domain: "support", meta: { intercom: true },
+    css: [400, 500].map(function (w) { return '@font-face{font-family:"AnthropicSans-Regular-Web";src:' + SANS + ';font-weight:' + w + ';' + LAT + '}'; }).join("") +
+      [600, 700].map(function (w) { return '@font-face{font-family:"AnthropicSans-Regular-Web";src:' + SANS_B + ';font-weight:' + w + ';' + LAT + '}'; }).join("") +
+      '@font-face{font-family:"AnthropicSans-Regular-Web";src:local("DejaVu Sans Oblique"),local("DejaVuSans-Oblique"),' + SANS + ';font-style:italic;' + LAT + '}' +
+      ':root{--font-family-primary:\'AnthropicSans-Regular-Web\';--font-family-secondary:\'AnthropicSans-Regular-Web\'}.t{font-family:var(--font-family-secondary)}' },
+  // ب) وثائق المنصة: وجهٌ متغيّر 300–800 ثم رفيقته «Fallback» من next/font (local بلا مدى ولا وزن، بواصفات حجم)، ثم system-ui
+  fb: { domain: "docs", meta: { routes: null, fontFallback: "Liberation Sans" },
+    css: '@font-face{font-family:anthropicSans;src:' + SANS + ';font-weight:300 800;' + LAT + '}' +
+      '@font-face{font-family:"anthropicSans Fallback";' + FBK + '}' +
+      '.t{font-family:anthropicSans,"anthropicSans Fallback",system-ui,sans-serif}' },
+  // ج) البنية «ب» لحظة تحميل خط الموقع: الوجه الرئيس غير متاح بعد (مصدرٌ لا يوجد)، فالنص في الرفيقة
+  load: { domain: "docs", meta: { routes: null, fontFallback: "Liberation Sans" },
+    css: '@font-face{font-family:anthropicSans;src:local("Zq No Such Font");font-weight:300 800;' + LAT + '}' +
+      '@font-face{font-family:"anthropicSans Fallback";' + FBK + '}' +
+      '.t{font-family:anthropicSans,"anthropicSans Fallback",system-ui,sans-serif}' },
+  // د) claude.ai: وجهٌ متغيّر ثم system-ui (والعربية تبلغ خط النظام من نفسها)
+  sysui: { domain: "app", meta: {},
+    css: '@font-face{font-family:"anthropic-sans";src:' + SANS + ';font-weight:300 800;' + LAT + '}' +
+      '.t{font-family:"anthropic-sans",system-ui,sans-serif}' },
+  // و) الوثائق القانونية: وجهٌ ثابت واحد بلا واصف وزن (normal) ثم رفيقته «Fallback» — تُخدم العائلة من رفيقتها فيُرسم العريض عريضًا
+  single: { domain: "legal", meta: { routes: null, siteLangSel: null, fontFallback: "Liberation Sans" },
+    css: '@font-face{font-family:anthropicSans;src:' + SANS + ';' + LAT + '}' +
+      '@font-face{font-family:"anthropicSans Fallback";' + FBK + '}' +
+      '.t{font-family:anthropicSans,"anthropicSans Fallback",sans-serif}' },
+  // ز) عناوين الخصوصية: وجهٌ ثابت واحد (400) بلا رفيقة ولا اسمٍ عام بعده — مرآةٌ واحدة، فعريضه مصطنعٌ من العادي كعريض الإنجليزي فيه
+  tiempos: { domain: "privacy", meta: { intercom: true },
+    css: '@font-face{font-family:"Tiempos Text Regular";src:' + SANS + ';font-weight:400;' + LAT + '}' +
+      ':root{--font-family-primary:\'Tiempos Text Regular\';--font-family-secondary:system-ui,sans-serif}.t{font-family:var(--font-family-primary)}' },
+  // هـ) متغيّر Intercom باسمٍ عام وحده (خطُّ المتصفح القياسي لا خط الواجهة)، والآخر system-ui
+  generic: { domain: "privacy", meta: { intercom: true },
+    css: ':root{--font-family-primary:sans-serif;--font-family-secondary:system-ui,sans-serif}.t{font-family:var(--font-family-primary)}' +
+      '.u{font-family:var(--font-family-secondary)}' },
+};
+function spans() {
+  var h = '<div id="box">';
+  WEIGHTS.forEach(function (w) {
+    h += '<span class="t" id="ar-' + w + '" style="font-weight:' + w + '">' + AR_WORD + '</span> ';
+    h += '<span class="t" id="en-' + w + '" style="font-weight:' + w + '">' + EN_WORD + '</span> ';
+    h += '<span id="ref-' + w + '" style="font-family:zq-ref;font-weight:' + w + '">' + AR_WORD + '</span><br>';
+  });
+  h += '<span class="t" id="ari-400" style="font-style:italic">' + AR_WORD + '</span> <span class="t" id="eni-400" style="font-style:italic">' + EN_WORD + '</span>';
+  h += ' <span class="t" id="ari-700" style="font-style:italic;font-weight:700">' + AR_WORD + '</span> <span class="t" id="eni-700" style="font-style:italic;font-weight:700">' + EN_WORD + '</span>';
+  h += ' <span class="u" id="aru-400">' + AR_WORD + '</span> <span class="u" id="enu-400">' + EN_WORD + '</span>';
+  return h + '</div>';
+}
+
+// ── الأطر: الصفحة الأم تجهّز القشرة والتخزين والقاموس (‎__fsetup‎ كما في _fonttest)، والوحدات الحقيقية بترتيب المانيفست ──
+var CFGS = {}, ENV = {}, seq = 0, FETCHES = 0;
+window.__fsetup = function (win) {
+  var n = new URL(win.location.href).searchParams.get("n");
+  var cfg = CFGS[n], env = ENV[n];
+  var mock = makeChromeMock({ session: false });
+  Object.assign(mock.localStore, { cml_enabled: true, cml_rtl: true }, cfg.seed || {});
+  env.win = win; env.mock = mock; env.sent = []; env.fetches = 0;
+  mock.chrome.runtime.sendMessage = function (msg, cb) { env.sent.push(msg && msg.type); if (cb) setTimeout(function () { cb(undefined); }, 0); };
+  mock.chrome.runtime.onMessage = { addListener: function (fn) { env.onMsg = fn; } };
+  win.chrome = mock.chrome;
+  var meta = Object.assign({}, C.domain(cfg.domain).meta, { live: false, scan: "none", hydrate: "none", bodies: false }, cfg.meta || {});
+  win.CLAUDE_L10N = { domain: cfg.domain, meta: meta, default: "ar", langs: [{ code: "ar" }],
+    dicts: { ar: { dir: "rtl", strings: { "New chat": "محادثة جديدة" }, patterns: [], plurals: {} } } };
+  var rf = win.fetch;
+  win.fetch = function () { env.fetches++; return rf.apply(win, arguments); };
+  win.addEventListener("error", function () { jsErrors++; });
+  cfg.afterEngine = function (w) { env.F = w.CMLFont && w.CMLFont.last; };
+  return cfg;
+};
+function frame(cfg) {
+  var n = "f" + (++seq);
+  CFGS[n] = cfg; ENV[n] = { name: n };
+  var ifr = document.createElement("iframe");
+  ifr.src = "_fontframe.html?n=" + n;
+  document.getElementById("frames").appendChild(ifr);
+  var env = ENV[n];
+  env.el = ifr;
+  env.done = function () { FETCHES += env.fetches; try { ifr.remove(); } catch (e) {} };
+  return until(function () { return env.win && env.win.document.readyState === "complete" && env.F; }, 15000).then(function () { return env; });
+}
+function set(env, obj) { env.mock.chrome.storage.local.set(obj); }
+function stats(env) { return env.F.stats(); }
+// إطارٌ لبنيةٍ بخيار خطٍّ (seed)، وقد استقرّ: الأوجه مبنيّة، وأوجه الموقع والمرجع محمَّلة
+async function open(key, seed) {
+  var st = STRUCT[key];
+  var E = await frame({ domain: st.domain, meta: st.meta, seed: seed, headEarly: "<style>" + st.css + REF_CSS + "</style>", body: spans() });
+  await until(function () { return stats(E).pending === 0; }, 4000);
+  await E.win.document.fonts.ready;
+  await sleep(60);
+  return E;
+}
+// ما يرسم العُقد: أسماء الخطوط الغالبة (المشغّل)، أو null بلا المشغّل
+async function fontsOf(E, ids) {
+  var nodes = ids.map(function (id) { return E.win.document.getElementById(id); });
+  var r = await pfProbe(nodes);
+  return r ? r.map(mainFont) : null;
+}
+function widthOf(E, id) { var el = E.win.document.getElementById(id); return el ? el.getBoundingClientRect().width.toFixed(2) : "?"; }
+// «نفس الخط» بين عقدتين في إطارين (أو في إطار): بالاسم مع المشغّل، وبالعرض بدونه
+async function sameFonts(Ea, idsA, Eb, idsB) {
+  var fa = await fontsOf(Ea, idsA), fb = await fontsOf(Eb, idsB);
+  if (fa && fb) return { ok: fa.every(function (x, i) { return !!x && x === fb[i]; }), a: fa, b: fb, how: "pf" };
+  var wa = idsA.map(function (id) { return widthOf(Ea, id); }), wb = idsB.map(function (id) { return widthOf(Eb, id); });
+  return { ok: wa.every(function (x, i) { return x === wb[i]; }), a: wa, b: wb, how: "width" };
+}
+function ids(prefix, ws) { return (ws || WEIGHTS).map(function (w) { return prefix + "-" + w; }); }
+function show(r) { return r.ok ? "true" : (r.how + " " + r.a.join(",") + " ≠ " + r.b.join(",")); }
+
+(async function () {
+  try {
+    var SYS = { cml_font: C.FONT_SYSTEM }, SITE = { cml_font: C.FONT_SITE };
+    // ══ المرجع: لخط النظام على هذا الجهاز عريضٌ حقيقي (وإلا فلا معنى لما بعده) ══
+    var R = await open("sysui", SITE);
+    var refF = await fontsOf(R, ["ref-400", "ref-700"]);
+    note("خط النظام على هذا الجهاز (المرجع zq-ref): " + (refF ? refF.join(" / ") : "بلا المشغّل — يُقاس العرض"));
+    check("المرجع: لخط النظام على هذا الجهاز وجهٌ عريضٌ حقيقي غير العادي", "true",
+      refF ? (!!refF[0] && !!refF[1] && refF[0] !== refF[1]) : (widthOf(R, "ref-400") !== widthOf(R, "ref-700")));
+    R.done();
+
+    // ══ أ) وجوهٌ ثابتة الوزن (O3) ══
+    var A0 = await open("fixed", SITE), A = await open("fixed", SYS);
+    check("★ أ) وجوهٌ ثابتة: العربية من وجه النظام لوزنها 300–800 (العادي عاديٌّ والعريض عريض)", "true",
+      show(await sameFonts(A, ids("ar"), A, ids("ref", WEIGHTS.map(function (w) { return w === 300 ? 400 : w === 800 ? 700 : w; })))));
+    check("★ أ) وجوهٌ ثابتة: الإنجليزية بخط الموقع نفسه بكل وزن (300–800 والمائل) كما بلا «خط النظام»", "true",
+      show(await sameFonts(A, ids("en").concat(["eni-400", "eni-700"]), A0, ids("en").concat(["eni-400", "eni-700"]))));
+    // وجه الموقع المائل واحدٌ بوزن 400 (كما في المساعدة): فالعربي المائل قائمٌ من وجه النظام العادي، وعريضه مصطنعٌ كعريض الإنجليزي فيه
+    check("أ) والمائل العربي قائمٌ من وجه النظام لوزن وجه الموقع المائل (400)، بلا ميلٍ مصطنع", "true",
+      show(await sameFonts(A, ["ari-400", "ari-700"], A, ["ref-400", "ref-400"])));
+    var famA = []; A.win.document.fonts.forEach(function (f) { if (f.unicodeRange.indexOf("U+600") === 0) famA.push(SH.normFamily(f.family) + "/" + f.weight + "/" + f.style); });
+    check("أ) مرآةٌ لكل وجهٍ ثابت بواصفاته (خمسة أوجه تحت عائلة الموقع)، ولا إلحاق بالمتغيّرين، والسمة على <html>", "5/0/true",
+      famA.filter(function (x) { return x.indexOf("anthropicsans-regular-web/") === 0; }).length + "/" + stats(A).prepend + "/" +
+      A.win.document.documentElement.hasAttribute(C.FONT_ATTR));
+    check("★ أ) البلوغ ok والمعرّف system، ولا font-ensure ولا fetch في «خط النظام»", "ok/system/0/0",
+      stats(A).reach + "/" + stats(A).id + "/" + A.sent.filter(function (t) { return t === "font-ensure"; }).length + "/" + A.fetches);
+    A0.done(); A.done();
+
+    // ══ ب) وجهٌ متغيّر ورفيقة «Fallback» (O2) ══
+    var B0 = await open("fb", SITE), B = await open("fb", SYS);
+    check("★ ب) متغيّر ورفيقة: العربية من وجه النظام بوزنها 300–800", "true", show(await sameFonts(B, ids("ar"), B, ids("ref"))));
+    check("★ ب) متغيّر ورفيقة: الإنجليزية بخط الموقع نفسه بكل وزن كما بلا «خط النظام»", "true", show(await sameFonts(B, ids("en"), B0, ids("en"))));
+    var famB = { site: 0, fb: 0, lat: 0 };
+    B.win.document.fonts.forEach(function (f) {
+      var nf = SH.normFamily(f.family);
+      if (nf === "anthropicsans" && f.unicodeRange.indexOf("U+600") === 0) famB.site++;
+      if (nf === "anthropicsans fallback") { if (f.unicodeRange.indexOf("U+600") === 0) famB.fb++; else if (f.unicodeRange !== "U+0-10FFFF") famB.lat++; }
+    });
+    check("ب) لا وجه تحت العائلة المتغيّرة (O1/O5)، والعربي تحت الرفيقة لكل مجموعة وزن، ومراياها اللاتينية بلا المدى العربي", "0/" + (famB.lat + 1) + "/true",
+      famB.site + "/" + famB.fb + "/" + (famB.lat > 0));
+    // والمرآة اللاتينية بمقاييس الرفيقة حرفًا
+    var latM = []; B.win.document.fonts.forEach(function (f) { if (SH.normFamily(f.family) === "anthropicsans fallback" && f.unicodeRange.indexOf("U+0-5FF") === 0) latM.push(f.sizeAdjust + "/" + f.ascentOverride + "/" + f.descentOverride + "/" + f.lineGapOverride); });
+    check("ب) المرايا اللاتينية بمقاييس الرفيقة حرفًا (size-adjust وascent وdescent وline-gap)", "true",
+      latM.length > 0 && latM.every(function (x) { return x === "106.73%/92.99%/24.13%/0%"; }));
+    note("ب) الكلفة: " + stats(B).faces + " وجهًا محليًّا في " + stats(B).tasks + " مهمة، أطولها " + stats(B).maxTask + " مث (والوجه يُحمَّل عند أول حاجةٍ إليه)");
+    B0.done();
+
+    // ══ ج) لحظة تحميل خط الموقع (O6/O7) ══
+    var L0 = await open("load", SITE), L = await open("load", SYS);
+    var enL = await fontsOf(L, ids("en")), enL0 = await fontsOf(L0, ids("en"));
+    if (enL) note("ج) الإنجليزية لحظة التحميل: بلا «خط النظام» " + enL0.join(",") + " — وبه " + enL.join(","));
+    var fbReg = enL0 ? enL0[1] : null;
+    check("★ ج) لحظة التحميل: الإنجليزية تبقى في الرفيقة بكل وزن 300–800 (عاديُّها دون 600 وعريضُها من 600)، لا تخرج إلى ما بعدها", "true",
+      enL ? enL.every(function (x, i) { return WEIGHTS[i] < 600 ? x === fbReg : x === fbReg + "-Bold" || x === fbReg.replace(/MT$/, "") + "-BoldMT"; }) + (enL0.every(function (x) { return x === fbReg; }) ? "" : " (المرجع خرج: " + enL0.join(",") + ")")
+          : show(await sameFonts(L, ids("en", [300, 400, 500]), L0, ids("en", [300, 400, 500]))));
+    check("★ ج) لحظة التحميل: العربية من وجه النظام بوزنها 300–800", "true", show(await sameFonts(L, ids("ar"), L, ids("ref"))));
+    // وصندوق السطر الإنجليزي (المقاييس من الرفيقة ومراياها بالتجاوزات نفسها) لا يتغيّر بالعريض
+    var hL = WEIGHTS.map(function (w) { return L.win.document.getElementById("en-" + w).getBoundingClientRect().height.toFixed(2); });
+    var hL0 = WEIGHTS.map(function (w) { return L0.win.document.getElementById("en-" + w).getBoundingClientRect().height.toFixed(2); });
+    check("ج) ارتفاع صندوق الإنجليزي لحظة التحميل كما بلا «خط النظام» بكل وزن (تجاوزات الرفيقة منسوخة)", hL0.join(","), hL.join(","));
+    L0.done(); L.done();
+
+    // ══ د) رصّةٌ تبلغ system-ui: لا شيء (القاعدة ٤) ══
+    var D0 = await open("sysui", SITE), D = await open("sysui", SYS);
+    check("★ د) رصّة system-ui: لا وجه ولا سمة ولا إلحاق، والبلوغ ok", "0/false/0/ok",
+      stats(D).faces + "/" + D.win.document.documentElement.hasAttribute(C.FONT_ATTR) + "/" + stats(D).prepend + "/" + stats(D).reach);
+    check("★ د) رصّة system-ui: العربية والإنجليزية بكل وزن كما بلا «خط النظام» (يرسمهما النظام)", "true",
+      show(await sameFonts(D, ids("ar").concat(ids("en")), D0, ids("ar").concat(ids("en")))));
+    // (ليس تحققًا: ما يرسمه سقوط النظام نفسه — على ويندوز Segoe UI بعريضه، وعلى لينكس قد يرسم كروم العريض مصطنعًا من العادي)
+    var dF = await fontsOf(D, ["ar-400", "ar-700"]);
+    if (dF) note("د) سقوط النظام للعربية في رصّة system-ui على هذا الجهاز: " + dF.join(" / "));
+    D0.done(); D.done();
+
+    // ══ هـ) متغيّر Intercom باسمٍ عام وحده (O4) ══
+    var G0 = await open("generic", SITE), G = await open("generic", SYS);
+    var H = G.win.document.documentElement;
+    check("★ هـ) اسمٌ عام وحده: «cml-ar» أولًا في المتغيّر، وsystem-ui لا يُمسّ", 'true/',
+      (H.style.getPropertyValue("--font-family-primary").trim().indexOf('"cml-ar", sans-serif') === 0) + "/" + H.style.getPropertyValue("--font-family-secondary").trim());
+    check("★ هـ) اسمٌ عام وحده: العربية من وجه النظام بوزنها 300–800، والإنجليزية كما بلا «خط النظام»", "true/true",
+      show(await sameFonts(G, ids("ar"), G, ids("ref"))) + "/" + show(await sameFonts(G, ids("en"), G0, ids("en"))));
+    check("هـ) ومتن system-ui بجواره كما بلا «خط النظام»", "true", show(await sameFonts(G, ["aru-400", "enu-400"], G0, ["aru-400", "enu-400"])));
+    G0.done();
+
+    // ══ و) وجهٌ ثابت واحد ورفيقة «Fallback» (الوثائق القانونية) ══
+    var S0 = await open("single", SITE), S1 = await open("single", SYS);
+    check("★ و) وجهٌ ثابت واحد ورفيقة: العربية من وجه النظام بوزنها 300–800 (العريض عريضٌ حقيقي لا مصطنع)", "true",
+      show(await sameFonts(S1, ids("ar"), S1, ids("ref"))));
+    check("★ و) وجهٌ ثابت واحد ورفيقة: الإنجليزية بخط الموقع نفسه بكل وزن كما بلا «خط النظام»، ولا وجه تحت العائلة", "true/0",
+      show(await sameFonts(S1, ids("en"), S0, ids("en"))) + "/" + (function () { var n = 0; S1.win.document.fonts.forEach(function (f) { if (SH.normFamily(f.family) === "anthropicsans" && f.unicodeRange.indexOf("U+600") === 0) n++; }); return n; })());
+    S0.done(); S1.done();
+    // ══ ز) وجهٌ ثابت واحد بلا رفيقة (عناوين الخصوصية): مرآةٌ واحدة (O3)، والعريض مصطنعٌ من وجه النظام العادي كإنجليزيّه ══
+    var T0 = await open("tiempos", SITE), T1 = await open("tiempos", SYS);
+    check("ز) وجهٌ ثابت واحد بلا رفيقة: العربية من وجه النظام العادي بكل وزن (العريض مصطنعٌ منه كعريض الإنجليزي)، والإنجليزية كما بلا «خط النظام»", "true/true",
+      show(await sameFonts(T1, ids("ar"), T1, ids("ref", WEIGHTS.map(function () { return 400; })))) + "/" + show(await sameFonts(T1, ids("en"), T0, ids("en"))));
+    T0.done(); T1.done();
+
+    // ══ التبديل الحيّ: «خط الموقع» ← «خط النظام» ← خطٌّ محزوم ← «خط النظام»، بلا إعادة تحميل ولا بقايا ══
+    set(B, SITE);
+    await until(function () { return stats(B).faces === 0; }, 3000);
+    var s0 = stats(B).faces + "/" + B.win.document.documentElement.hasAttribute(C.FONT_ATTR);
+    set(B, SYS);
+    await until(function () { return stats(B).faces > 0 && stats(B).pending === 0; }, 3000);
+    var nSys = stats(B).faces;
+    var CAIRO = C.fontResolve("cairo");
+    var cbuf = await fetch("../extension/" + CAIRO.file).then(function (r) { return r.arrayBuffer(); });
+    set(B, { cml_font: "cairo", cml_font_data: { id: "cairo", v: CAIRO.sha, b64: SH.bufToB64(cbuf) } });
+    await until(function () { return stats(B).id === "cairo" && stats(B).pending === 0 && !stats(B).sys; }, 4000);
+    var under = { site: 0, fb: 0 };
+    B.win.document.fonts.forEach(function (f) {
+      if (f.unicodeRange.indexOf("U+600") !== 0) return;
+      var nf = SH.normFamily(f.family);
+      if (nf === "anthropicsans") under.site++; else if (nf === "anthropicsans fallback") under.fb++;
+    });
+    check("★ التبديل الحيّ: «خط الموقع» صفر أوجه، ثم «خط النظام» أوجهه، ثم الخط المحزوم بطريقه كما كان (تحت العائلة لا الرفيقة)", "0/false/true/cairo/1/0",
+      s0 + "/" + (nSys > 0) + "/" + stats(B).id + "/" + under.site + "/" + under.fb);
+    set(B, SYS);
+    await until(function () { return stats(B).sys && stats(B).pending === 0; }, 3000);
+    check("التبديل الحيّ: والعودة إلى «خط النظام» تعيد أوجهه بالعدد نفسه، ولا وجه محزوم باقٍ", nSys + "/system/0",
+      stats(B).faces + "/" + stats(B).id + "/" + (function () { var n = 0; B.win.document.fonts.forEach(function (f) { if (f.unicodeRange.indexOf("U+600") === 0 && SH.normFamily(f.family) === "anthropicsans") n++; }); return n; })());
+    // الإطفاء (ث٦): لا أثر، والإلحاق يُزال
+    set(G, { cml_enabled: false });
+    await sleep(40);
+    check("الإطفاء في «خط النظام»: صفر أوجه ولا سمة ولا إلحاق", "0/false/",
+      stats(G).faces + "/" + G.win.document.documentElement.hasAttribute(C.FONT_ATTR) + "/" + H.style.getPropertyValue("--font-family-primary").trim());
+    B.done(); G.done();
+
+    // ══ الثوابت ══
+    var bands = C.FONT_SYS.bands, contiguous = bands.every(function (b, i) { return i === 0 ? b.w[0] === 1 : b.w[0] === bands[i - 1].w[1] + 1; }) && bands[bands.length - 1].w[1] === 1000;
+    check("FONT_SYS: نطاقاتٌ متصلة 1–1000، ولا نطاق يجمع ما دون 600 وما فوقه، وأوجه Segoe UI أولًا في كلٍّ", "true/true/true",
+      contiguous + "/" + bands.every(function (b) { return b.w[1] < 600 || b.w[0] >= 600; }) + "/" + bands.every(function (b) { return /^Segoe UI/.test(b.names[0]); }));
+    check("FONT_SYS: لا يُحسم إلى ملف (لا نسخة يكتبها العامل)، ومرآة Arial العريضة باسميها", "null/" + 'local("Arial Bold"), local("Arial-BoldMT")',
+      C.fontResolve(C.FONT_SYSTEM) + "/" + C.fontFallbackSrc("Arial", true));
+    check("لا fetch في أيٍّ من الأطر («خط النظام» بلا ملف)", "0", FETCHES);
+    check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  } catch (e) {
+    check("استثناء في الاختبار", "", String(e && (e.stack || e.message) || e).slice(0, 500));
+  }
+  document.title = "sysfont " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "SYSFONT: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

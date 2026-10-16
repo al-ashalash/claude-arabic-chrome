@@ -1,0 +1,500 @@
+{
+ "at": "2026-10-10T07:56:55.620Z",
+ "commit": "5219e81",
+ "extVersion": "1.0.0",
+ "fps": [
+  {
+   "fp": "12ff4d0c8e1c",
+   "sev": "high",
+   "d": "code",
+   "check": "collateral",
+   "sel": "a.text-sm.max-w-36.whitespace-normal",
+   "count": 312,
+   "decision": "intended"
+  },
+  {
+   "fp": "9216333e779b",
+   "sev": "high",
+   "d": "code",
+   "check": "collateral",
+   "sel": "span.truncate.max-w-[12.5rem]",
+   "count": 13,
+   "decision": "intended"
+  },
+  {
+   "fp": "f6c249835a9a",
+   "sev": "high",
+   "d": "code",
+   "check": "collateral",
+   "sel": "button#search-bar-entry.group/search.flex.pointer-events-auto",
+   "count": 13,
+   "decision": "intended"
+  },
+  {
+   "fp": "1b2ae507016d",
+   "sev": "high",
+   "d": "code",
+   "check": "collateral",
+   "sel": "div.truncate.min-w-0",
+   "count": 13,
+   "decision": "intended"
+  },
+  {
+   "fp": "c12fcc9181b5",
+   "sev": "high",
+   "d": "code",
+   "check": "collateral",
+   "sel": "span.min-w-0.truncate",
+   "count": 33,
+   "decision": "intended"
+  },
+  {
+   "fp": "3de09e67b7b8",
+   "sev": "high",
+   "d": "code",
+   "check": "collateral",
+   "sel": "div.truncate.group-hover:text-gray-900.dark:group-hover:text-white",
+   "count": 42,
+   "decision": "intended"
+  },
+  {
+   "fp": "c7679dc4a854",
+   "sev": "high",
+   "d": "code",
+   "check": "collateral",
+   "sel": "div.font-semibold.text-gray-900.truncate",
+   "count": 13,
+   "decision": "intended"
+  },
+  {
+   "fp": "fc6b66aa891c",
+   "sev": "high",
+   "d": "support",
+   "check": "collateral",
+   "sel": "span.DocsArticle_relatedCardTitle__f4Dqj",
+   "count": 90,
+   "decision": "intended"
+  },
+  {
+   "fp": "512971812908",
+   "sev": "high",
+   "d": "support",
+   "check": "collateral",
+   "sel": "a.DocsArticle_crumbLink__S6a6m",
+   "count": 46,
+   "decision": "intended"
+  },
+  {
+   "fp": "5b77e7ff3143",
+   "sev": "high",
+   "d": "support",
+   "check": "collateral",
+   "sel": "span.DocsArticle_crumbCurrent__Jy3_j",
+   "count": 9,
+   "decision": "intended"
+  },
+  {
+   "fp": "a38e397ac3b6",
+   "sev": "high",
+   "d": "docs",
+   "check": "collateral",
+   "sel": "span.min-w-0.flex-1.truncate",
+   "count": 7,
+   "decision": "intended"
+  },
+  {
+   "fp": "b90b05780abd",
+   "sev": "high",
+   "d": "docs",
+   "check": "collateral",
+   "sel": "span.min-w-0.truncate",
+   "count": 60,
+   "decision": "intended"
+  },
+  {
+   "fp": "83f6c1af8cfb",
+   "sev": "high",
+   "d": "docs",
+   "check": "collateral",
+   "sel": "span.truncate",
+   "count": 5,
+   "decision": "intended"
+  },
+  {
+   "fp": "7a33cd70ecc7",
+   "sev": "high",
+   "d": "academy",
+   "check": "offscreen",
+   "sel": "div.absolute.-bottom-8.-top-6",
+   "count": 2,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "ab09f4cfc62e",
+   "sev": "high",
+   "d": "academy",
+   "check": "offscreen",
+   "sel": "div.absolute.inset-0",
+   "count": 2,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "2e365f400d7b",
+   "sev": "high",
+   "d": "support",
+   "check": "collateral",
+   "sel": "span.DocsHome_rowTitle__e_X7Y",
+   "count": 12,
+   "decision": "intended"
+  },
+  {
+   "fp": "05ed922a4e45",
+   "sev": "high",
+   "d": "support",
+   "check": "collateral",
+   "sel": "p.DocsHome_cardSummary__EDYmO",
+   "count": 15,
+   "decision": "intended"
+  },
+  {
+   "fp": "6999b2012e08",
+   "sev": "high",
+   "d": "support",
+   "check": "collateral",
+   "sel": "span.DocsCollection_articleTitle__nvUXK",
+   "count": 16,
+   "decision": "intended"
+  },
+  {
+   "fp": "64177d87cff6",
+   "sev": "high",
+   "d": "code",
+   "check": "collateral",
+   "sel": "span.pl-title",
+   "count": 10,
+   "decision": "intended"
+  },
+  {
+   "fp": "c355bec76d79",
+   "sev": "high",
+   "d": "docs",
+   "check": "collateral",
+   "sel": "h3.text-primary.min-w-0.truncate",
+   "count": 8,
+   "decision": "intended"
+  },
+  {
+   "fp": "f2a14852b5ca",
+   "sev": "high",
+   "d": "code",
+   "check": "collateral",
+   "sel": "span.ssc-filemark.ssc-mono",
+   "count": 6,
+   "decision": "intended"
+  },
+  {
+   "fp": "581d8c8fc4ed",
+   "sev": "high",
+   "d": "docs",
+   "check": "collateral",
+   "sel": "span.text-code.text-secondary.content-center",
+   "count": 4,
+   "decision": "intended"
+  },
+  {
+   "fp": "4e9f843a7a3e",
+   "sev": "high",
+   "d": "support",
+   "check": "collateral",
+   "sel": "a.DocsCollection_breadcrumbLink__rVrOP",
+   "count": 2,
+   "decision": "intended"
+  },
+  {
+   "fp": "b1b87f1537e8",
+   "sev": "high",
+   "d": "support",
+   "check": "collateral",
+   "sel": "span.DocsCollection_breadcrumbCurrent__LwypZ",
+   "count": 2,
+   "decision": "intended"
+  },
+  {
+   "fp": "c979f07c4a36",
+   "sev": "high",
+   "d": "academy",
+   "check": "collateral",
+   "sel": "div.flex.items-center.font-sans",
+   "count": 2,
+   "decision": "intended"
+  },
+  {
+   "fp": "4c42ca4cf8f7",
+   "sev": "high",
+   "d": "support",
+   "check": "not-mirrored",
+   "sel": "span.DocsArticle_crumb__eHOzY",
+   "count": 1,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "4f3630ef0ced",
+   "sev": "high",
+   "d": "legal",
+   "check": "not-mirrored",
+   "sel": "button#tab-1.Tabs-module-scss-module__iIvFzq__tab",
+   "count": 1,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "bb042bc80956",
+   "sev": "high",
+   "d": "academy",
+   "check": "not-mirrored",
+   "sel": "a.group.flex.items-center",
+   "count": 1,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "986456fe5fea",
+   "sev": "high",
+   "d": "academy",
+   "check": "offscreen",
+   "sel": "img.absolute.h-auto.left-1/2",
+   "count": 1,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "ff1fbf0634c9",
+   "sev": "high",
+   "d": "academy",
+   "check": "offscreen",
+   "sel": "img.absolute.h-auto.bottom-0",
+   "count": 1,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "bf7e1a7006ce",
+   "sev": "high",
+   "d": "academy",
+   "check": "collateral",
+   "sel": "div.rbd",
+   "count": 1,
+   "decision": "timing"
+  },
+  {
+   "fp": "0edee36413a3",
+   "sev": "high",
+   "d": "academy",
+   "check": "collateral",
+   "sel": "span",
+   "count": 1,
+   "decision": "timing"
+  },
+  {
+   "fp": "d66cfd12bcdd",
+   "sev": "medium",
+   "d": "docs",
+   "check": "align",
+   "sel": "li",
+   "count": 15,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "33e82f1ac455",
+   "sev": "medium",
+   "d": "privacy",
+   "check": "not-mirrored",
+   "sel": "div.pr-2",
+   "count": 2,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "c1989189be43",
+   "sev": "medium",
+   "d": "academy",
+   "check": "not-mirrored",
+   "sel": "span.flex.items-center.gap-1.5",
+   "count": 22,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "3a9b9450045c",
+   "sev": "medium",
+   "d": "support",
+   "check": "align",
+   "sel": "p",
+   "count": 7,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "aa57fba0d26a",
+   "sev": "medium",
+   "d": "docs",
+   "check": "not-mirrored",
+   "sel": "span.inline-flex.items-center.gap-1",
+   "count": 2,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "c2022e33c66c",
+   "sev": "medium",
+   "d": "docs",
+   "check": "not-mirrored",
+   "sel": "td",
+   "count": 2,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "046f4453bcc7",
+   "sev": "medium",
+   "d": "docs",
+   "check": "arrow-glyph",
+   "sel": "li",
+   "count": 2,
+   "decision": "keep"
+  },
+  {
+   "fp": "973990c2412b",
+   "sev": "medium",
+   "d": "docs",
+   "check": "align",
+   "sel": "p",
+   "count": 2,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "37a486499996",
+   "sev": "medium",
+   "d": "academy",
+   "check": "collateral",
+   "sel": "div.mt-auto.flex.items-end",
+   "count": 2,
+   "decision": "layout"
+  },
+  {
+   "fp": "d744e682971a",
+   "sev": "medium",
+   "d": "academy",
+   "check": "align",
+   "sel": "span.text-caption.text-muted",
+   "count": 2,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "b6890b53c883",
+   "sev": "medium",
+   "d": "privacy",
+   "check": "not-mirrored",
+   "sel": "li.text-body-secondary-color",
+   "count": 1,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "0c88d5939005",
+   "sev": "medium",
+   "d": "privacy",
+   "check": "not-mirrored",
+   "sel": "a.pr-2.text-body-primary-color.no-underline",
+   "count": 1,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "8872a022bea3",
+   "sev": "medium",
+   "d": "docs",
+   "check": "not-mirrored",
+   "sel": "th",
+   "count": 1,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "33f90dc93972",
+   "sev": "medium",
+   "d": "docs",
+   "check": "not-mirrored",
+   "sel": "a.cds-reset.group/btn.relative",
+   "count": 1,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "085c27f9c292",
+   "sev": "medium",
+   "d": "docs",
+   "check": "not-mirrored",
+   "sel": "span.absolute.-z-[1].rounded-[inherit]",
+   "count": 1,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "346a27782498",
+   "sev": "medium",
+   "d": "docs",
+   "check": "not-mirrored",
+   "sel": "span.absolute.-z-[1].rounded-[inherit]",
+   "count": 1,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "45a30298bd96",
+   "sev": "medium",
+   "d": "docs",
+   "check": "not-mirrored",
+   "sel": "span.absolute.inset-0.rounded-[inherit]",
+   "count": 1,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "55a8ea3bd1c7",
+   "sev": "medium",
+   "d": "docs",
+   "check": "align",
+   "sel": "td",
+   "count": 1,
+   "decision": "false-positive"
+  },
+  {
+   "fp": "f6e1b3735d4b",
+   "sev": "medium",
+   "d": "academy",
+   "check": "not-mirrored",
+   "sel": "button#base-ui-_r_g_.cds-reset.group/btn.relative",
+   "count": 1,
+   "decision": "timing"
+  },
+  {
+   "fp": "2b5b90f87828",
+   "sev": "medium",
+   "d": "academy",
+   "check": "not-mirrored",
+   "sel": "span.absolute.-z-[1].rounded-[inherit]",
+   "count": 1,
+   "decision": "timing"
+  },
+  {
+   "fp": "f4b8761ae5df",
+   "sev": "medium",
+   "d": "academy",
+   "check": "not-mirrored",
+   "sel": "span.absolute.inset-0.rounded-[inherit]",
+   "count": 1,
+   "decision": "timing"
+  },
+  {
+   "fp": "44864677886e",
+   "sev": "low",
+   "d": "code",
+   "check": "box-not-mirrored",
+   "sel": "span.ssc-machine-label",
+   "count": 6
+  },
+  {
+   "fp": "e58db400aef4",
+   "sev": "low",
+   "d": "code",
+   "check": "text-ltr",
+   "sel": "button.pl-tag",
+   "count": 2
+  }
+ ]
+}

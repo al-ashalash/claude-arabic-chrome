@@ -17,7 +17,7 @@ const reg = JSON.parse(fs.readFileSync(LANGUAGES_JSON, "utf8"));
 if (reg.languages.some((l) => l.code === code)) {
   console.log(`Language '${code}' already exists in languages.json — leaving it as is.`);
 } else {
-  reg.languages.push({ code, endonym, englishName, direction: dir, isBase: false, font: "", dictionary: `${code}.json`, enabled: true, note_ar: endonym, note_en: englishName + " — " + dir.toUpperCase() });
+  reg.languages.push({ code, endonym, englishName, direction: dir, isBase: false, dictionary: `${code}.json`, enabled: true, note_ar: endonym, note_en: englishName + " — " + dir.toUpperCase() });
   fs.writeFileSync(LANGUAGES_JSON, JSON.stringify(reg, null, 2) + "\n", "utf8");
   console.log(`+ registered ${code} (${dir}) in languages.json`);
 }

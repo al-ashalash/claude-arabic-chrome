@@ -1,6 +1,7 @@
 # release — تسليم آلي عند وسم v* (المرحلة ٥): البوابات السريعة ثم حزمة zip
 # تُرفق بإصدار GitHub. الوسم قرار المالك وحده — وقاعدة البيت: لا وسم قبل اختبار
 # قبولٍ على الحزمة النهائية مثبَّتةً في المتصفح.
+# والبوابة هنا بـ --release كما في make-store-zip: فحوص الخطوط المعلَّقة أخطاء، والقيم المبدئية مرفوضة.
 #
 # النشر إلى متجر كروم يبقى يدويًّا عمدًا (رفع الـzip من لوحة المطور): أتمتته تحتاج
 # أسرار OAuth للمتجر (CWS_CLIENT_ID/SECRET/REFRESH_TOKEN + EXTENSION_ID) في أسرار
@@ -16,20 +17,21 @@ permissions:
 
 jobs:
   package:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
 
-      - name: "بوابات ما قبل الحزم — الخمس كاملة (وسمٌ على التزامٍ لم يمرّ بدفعة CI يُشحن بلا فحص لولاها)"
+      - name: "بوابات ما قبل الحزم — الست كاملة (وسمٌ على التزامٍ لم يمرّ بدفعة CI يُشحن بلا فحص لولاها)"
         run: |
           node tools/check-syntax.mjs
           node tools/lint-dict.mjs
           node tools/cross-check-patterns.mjs
           node tools/run-tests-cdp.mjs
-          node tools/verify-package.mjs
+          node tools/verify-package.mjs --release
+          node tools/check-fresh.mjs
         env:
           CI: "true"
 
@@ -41,10 +43,10 @@ jobs:
             echo "::error::الوسم $GITHUB_REF_NAME لا يطابق إصدار المانيفست $MANIFEST_VERSION"
             exit 1
           fi
-          cd extension && zip -r "../claude-ai-arabic-chrome-$GITHUB_REF_NAME.zip" . -x "*.pem" -x "*.crx"
+          cd extension && zip -r "../claude-arabic-chrome-$GITHUB_REF_NAME.zip" . -x "*.pem" -x "*.crx"
 
       - name: "إصدار GitHub مع الحزمة"
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
-          files: claude-ai-arabic-chrome-*.zip
+          files: claude-arabic-chrome-*.zip
           generate_release_notes: true

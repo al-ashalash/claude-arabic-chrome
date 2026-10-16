@@ -1,14 +1,9 @@
 /* base.css — claude-mutarjim. Minimal, safe styling applied only when active.
-   Direction itself is set via the <html dir> attribute by engine.js. */
-
-/* Safe default so the var is always defined even before engine.js sets it. */
-:root { --cml-font: inherit; }
-
-/* Apply the language's font stack to body text when translation is ON.
-   Kept conservative so icon fonts (which set their own font-family) are unaffected. */
-html[data-cml="on"] body {
-  font-family: var(--cml-font);
-}
+   Direction itself is set via the <html dir> attribute by engine.js.
+   مشتركٌ بين النطاقات كلها، وهو **أول** ملف CSS في كل مدخلٍ من المانيفست: فإعلان
+   الطبقات هنا يسبق أي استعمالٍ لها في اللقطات وإصلاحات التطبيق (مراجعة كودكس ٢١).
+   وإصلاحات التطبيق النقطية انتقلت إلى app-point.css (للتطبيق وحده). */
+@layer cml-point, cml-imp;
 
 /* تباعُد أسطرٍ أرحب يحسّن مقروئية نصوص اللغات ذات الاتجاه من اليمين إلى اليسار. */
 html[data-cml="on"][dir="rtl"] body {
@@ -24,6 +19,9 @@ html[data-cml="on"][dir="rtl"] body {
    جافاسكربت نفسُه**: فإن لم يعمل المحرّك أصلًا لم تُكتب السمة ولم يُخفَ شيء، ومع ذلك
    يرفعها مؤقّتٌ احتياطي بعد 400 مث مهما جرى. */
 html[data-cml-boot] { visibility: hidden !important; }
+/* والإمساك حتى الترطيب في المواقع ذات meta.hydrate="defer" (مركز المساعدة والخصوصية والوثائق):
+   تظهر الصفحة عربيةً من أول مرة كما في claude.ai — والمحرّك يرفعه بعد التعريب أو عند سقفه. */
+html[data-cml-hold] { visibility: hidden !important; }
 
 /* ★ قفلُ الشيفرة — غيرُ مشروطٍ بمحرّك الاتجاه (ثبت بمِسبارٍ مستقل):
    «تركُ pre وشأنه» لا يكفي، فالعنصرُ **يرث** الاتجاه من حاويةٍ صار اتجاهها rtl —
@@ -40,6 +38,17 @@ html[data-cml="on"] samp {
   text-align: left;
 }
 
+/* ★ (ر7-ب، ٣٠ ربيع الآخر ١٤٤٨هـ — الفحص الحيّ ر7، M1) تركيبةُ المفاتيح: مكوّن الاختصار في نظام تصميم الموقع ([data-cds="Shortcut"]: حاويةٌ
+   مرنة أبناؤها مفاتيحُ kbd متجاورة لا غير) كان يأخذ اتجاه الصفحة RTL فيرتّب المفاتيح من اليمين: زرّ البحث في وثائق المطوّرين يُقرأ
+   «K Ctrl» على العرض المكتبي في كل صفحة. والمفاتيح تبقى على حرفها (RULES §4: مفاتيح لوحة المفاتيح حرفيةٌ لا تُعكس)، فالحاوية LTR
+   وموضعها بين إخوتها كما هو (يحكمه اتجاه أبيها). وهي عامّةٌ لكل موقعٍ يرسم هذا المكوّن، لا قاعدةٌ بنيوية على «حاويةٍ أبناؤها kbd»:
+   المحدِّد لا يرى عقد النص، فكانت فقرةٌ أو خليةٌ أو جملةٌ في span نصُّها عربيٌّ بين مفتاحين (‎«اضغط <kbd>Ctrl</kbd>+<kbd>K</kbd> للبحث»‎)
+   ستُقلب LTR كلُّها. */
+html[data-cml="on"] [data-cds="Shortcut"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
 /* والرياضياتُ مثلُها: تُقرأ من اليسار مهما كان اتجاه الفقرة الحاضنة. */
 html[data-cml="on"] .katex,
 html[data-cml="on"] .katex-display,
@@ -50,44 +59,3 @@ html[data-cml="on"] [role="math"] {
   unicode-bidi: isolate;
   text-align: left;
 }
-
-/* --- Full RTL layout (only when the RTL toggle is ON: html dir="rtl") --- */
-/* الإصلاحات النقطية كلها !important، وقانون الطبقات في المهمّات منقلب (المبكر
-   يغلب) — فتُلفّ في @layer cml-point التي يعلنها rtl-overrides.css **قبل** طبقة
-   مهمّات المحرّك cml-imp: فتبقى للنقطيات الكلمة الأخيرة فوق المحرّك وفوق مهمّات
-   الموقع المطبَّقة جميعًا (التي كانت قبل هذا اللفّ تغلب مهمّاتنا غير المطبَّقة). */
-@layer cml-point {
-/* claude.ai pins its sidebar to the physical left; mirror it to the right and
-   move the content offset, tracking the live --df-sidebar-width variable. */
-html[data-cml="on"][dir="rtl"] .dframe-sidebar { left: auto !important; right: 0 !important; }
-html[data-cml="on"][dir="rtl"] .dframe-content-inner { padding-left: 0 !important; padding-right: calc(var(--df-sidebar-width, 288px) + 16px) !important; }
-/* Sidebar chat/recents titles use Tailwind's text-left; realign right so RTL
-   titles truncate on the correct (left) side instead of clipping their start. */
-html[data-cml="on"][dir="rtl"] .dframe-sidebar .text-left { text-align: right !important; }
-/* Settings/other dialogs: claude.ai uses Tailwind `text-left` (physical left) on nav
-   items and labels, leaving a gap before the RTL icon; realign to the right. */
-html[data-cml="on"][dir="rtl"] [role="dialog"] .text-left { text-align: right !important; }
-/* The hover "⋮ more options" button is pinned to the PHYSICAL right (right-[calc…]),
-   which overlaps the RTL title's start; move it to the trailing (left) edge in RTL. */
-html[data-cml="on"][dir="rtl"] .dframe-sidebar [class*="right-[calc"] {
-  right: auto !important;
-  left: calc((var(--df-row-h) - var(--df-row-ctl)) / 2) !important;
-}
-
-/* --- صندوق الإدخال (composer): عناصر مثبتة فيزيائيًا فلا تنقلب مع RTL ---
-   شريطه السفلي عنقودان بتثبيت مطلق: رقاقات الوضع (محادثة/العمل المشترك) على left-0،
-   والمايك ومنتقي النموذج على right-0 — فيبقيان في الجهة الخطأ. نبدّلهما.
-   (فُحصت الصفحة الحية 2026-08-16: هذه والنص الدالّ أدناه كل المثبَّت فيزيائيًا في
-   الصندوق؛ إبهام التبديل المتحرك يُحسب بالإحداثيات الفعلية فهو محايد ولا يُمسّ.) */
-html[data-cml="on"][dir="rtl"] fieldset div.absolute.bottom-0.left-0 {
-  left: auto !important; right: 0 !important;
-}
-html[data-cml="on"][dir="rtl"] fieldset div.absolute.bottom-0.right-0 {
-  right: auto !important; left: 0 !important;
-}
-/* النص الدالّ (placeholder) مثبت left-0 بينما مؤشر الكتابة في RTL على اليمين —
-   فيظهر الدالّ في طرفٍ والمؤشر في طرف. ننقله إلى جهة المؤشر. */
-html[data-cml="on"][dir="rtl"] fieldset span.pointer-events-none.absolute.left-0.top-0 {
-  left: auto !important; right: 0 !important;
-}
-} /* نهاية @layer cml-point */

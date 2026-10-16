@@ -95,6 +95,7 @@ function makeEnv(devMock, cloudMock) {
   return {
     getLocal: function (keys, cb) { devMock.chrome.storage.local.get(keys, cb); },
     setLocal: function (obj, cb) { devMock.chrome.storage.local.set(obj, function () { cb(null); }); },
+    removeLocal: function (keys, cb) { devMock.chrome.storage.local.remove(keys, function () { cb(null); }); },
     getSyncAll: function (cb) { cloudMock.chrome.storage.sync.get(null, cb); },
     setSync: function (obj, cb) {
       cloudMock.chrome.storage.sync.set(obj, function () {
@@ -189,9 +190,13 @@ async function main() {
   var m3 = SHARED.syncStore[K.SYNC_META] || {};
   check("ميتا اللقطة: الجهاز/الدفعة/الشرائح", "devA/1/1", m3.device + "/" + m3.rev + "/" + m3.chunks);
   var st3 = MA.localStore[K.SYNC_STATE] || {};
-  var repack3 = CMLSync.pack({ overrides: ovA, patterns: patA }, { rev: 1, device: "devA", now: CLOCK.t });
+  // دفعات 2.0.0 تحمل السلالة دائمًا (فارغةً في أول دفعة)
+  var repack3 = CMLSync.pack({ overrides: ovA, patterns: patA }, { rev: 1, device: "devA", now: CLOCK.t, anc: [] });
   check("cml_sync_state صادقة: الحال/العدّ/الدفعة", "ok/4/1", st3.status + "/" + st3.count + "/" + st3.rev);
-  check("بايتات الحال تطابق الحزم الفعلي", "true", st3.bytes === repack3.bytes && st3.bytes > 0);
+  // الحال تصدق ما في السحابة فعلًا (الشرائح تحمل نقاط العناصر ومتّجه الإصدارات مع الحمولة)
+  var real3 = 0;
+  for (var rk3 in SHARED.syncStore) { if (has(SHARED.syncStore, rk3)) real3 += CMLSync.byteLen(rk3) + CMLSync.jsonBytes(SHARED.syncStore[rk3]); }
+  check("بايتات الحال تطابق ما في السحابة فعلًا", "true", st3.bytes === real3 && st3.bytes >= repack3.bytes);
   check("lasthash = بصمة المدفوع", "true",
         MA.localStore[K.SYNC_LASTHASH] === CMLSync.hashPayload({ overrides: ovA, patterns: patA }));
   check("pending صُفِّر بعد النجاح", "0", MA.localStore[K.SYNC_PENDING]);
@@ -349,14 +354,14 @@ async function main() {
   var p8, r8;
   try {
     C.SYNC_TOTAL_BYTES = 3000;
-    p8 = CMLSync.pack({ overrides: ovC, patterns: [] }, { rev: 1, device: "devC", now: CLOCK.t });
+    p8 = CMLSync.pack({ overrides: ovC, patterns: [] }, { rev: 1, device: "devC", now: CLOCK.t, anc: [] });
     r8 = await CMLSync.handleLocalChange(envC, null);
   } finally { C.SYNC_TOTAL_BYTES = OLD_TOTAL; }
   check("الحزم فوق السقف: fits=false والحاجة فوقه", "true", !!p8 && p8.fits === false && p8.need > 3000);
   check("handleLocalChange ينتهي فيضًا", "overflow", r8 && r8.done);
   var st8 = MC.localStore[K.SYNC_STATE] || {};
   check("الحال overflow بحاجة صادقة need>0", "true",
-        st8.status === "overflow" && st8.need === p8.need && st8.need > 0);
+        st8.status === "overflow" && st8.need >= p8.need && st8.need > 3000);
   check("لا شرائح جزئية عند الفيض", "0/0",
         SHARED2.syncWrites.length + "/" + Object.keys(SHARED2.syncStore).length);
   check("pending صُفِّر (الإعادة لن تصلح فيضًا)", "0", MC.localStore[K.SYNC_PENDING]);
@@ -508,7 +513,9 @@ async function main() {
   check("محليات الجهازين لم تُمسّ (لا دمج هدّام للفراغ)", "true",
         beforeA === JSON.stringify({ o: MA.localStore[K.OVERRIDES], p: MA.localStore[K.USER_PATTERNS] }) &&
         beforeB === JSON.stringify({ o: MB.localStore[K.OVERRIDES], p: MB.localStore[K.USER_PATTERNS] }));
-  CLOCK.t = T0 + 11000;
+  // الساعة لا ترجع: كان الاختبار يعيدها إلى ما قبل شاهد التمزّق المسجَّل (T0+11000)،
+  // والدفعُ فوق لقطةٍ ممزّقة صار ينتظر مهلة التثبّت من أول رؤيةٍ لها (مراجعة كودكس ٨)
+  CLOCK.t += 1000;
   var ovB9old = cp(MB.localStore[K.OVERRIDES]);
   var ovB9 = cp(ovB9old); ovB9.ar["After wipe"] = "بعد المحو";
   MB.localStore[K.OVERRIDES] = ovB9;
@@ -517,6 +524,346 @@ async function main() {
   var cloud9 = CMLSync.unpack(cp(SHARED.syncStore));
   check("ب بعد المحو قادر: دفعة جديدة تعيد بناء السحابة", "pushed/بعد المحو",
         (r9c && r9c.done) + "/" + (cloud9 && cloud9.payload.overrides.ar["After wipe"]));
+
+  await codexCases();
+  await domainSpaceCases();
+}
+
+// ================= ١١) مساحات النطاقات (١-٠ب) =================
+async function domainSpaceCases() {
+  var SP = CMLSync.domainSpaces && CMLSync.domainSpaces.support;
+  // من الجدول نفسه لا قائمةٌ مكتوبة (وثائق Claude Code أُضيفت صفًّا): كل نطاقٍ غير التطبيق له مساحته، بترتيب الجدول
+  check("مساحات النطاقات مسجّلة (كل نطاقٍ غير التطبيق، من الجدول)", CMLConst.DOMAINS.filter(function (d) { return d.id !== "app"; }).map(function (d) { return d.id; }).join(","),
+        Object.keys(CMLSync.domainSpaces || {}).join(","));
+  var a = freshPair();
+  seedCloud(a.cloud, { ar: { AppKey: "للتطبيق" } }, "devB", CLOCK.t, 2);
+  var appBefore = JSON.stringify(a.cloud.syncStore);
+  a.dev.localStore[K.SYNC_ENABLED] = true;
+  a.dev.localStore[K.SYNC_DEVICE] = "devA";
+  a.dev.localStore["cml_overrides.support"] = { ar: { Help: "مساعدة" } };
+  a.dev.localStore["cml_sync_pending.support"] = CLOCK.t;
+  var env = hookedEnv(a.dev, a.cloud, {});
+  var r = await SP.handleLocalChange(env, null);
+  var keys = Object.keys(a.cloud.syncStore).sort();
+  check("★ مساحة الدعم تدفع إلى مفاتيحها (cmlm_/cmlc_) لا إلى مفاتيح 1.0.0", "pushed/true/true",
+        (r && r.done) + "/" + (keys.indexOf("cmlm_support") >= 0) +
+        "/" + keys.every(function (k) { return k.indexOf("cml_syncd_") !== 0 || !!JSON.parse(appBefore)[k]; }));
+  var appNow = {}; keys.forEach(function (k) { if (k === K.SYNC_META || k.indexOf(K.SYNC_CHUNK_PREFIX) === 0) appNow[k] = a.cloud.syncStore[k]; });
+  check("★ ولقطة التطبيق كما هي (1.0.0 يقرؤها بلا تغيير)", "true", JSON.stringify(appNow) === appBefore);
+  var ins = CMLSync.inspect(cp(a.cloud.syncStore));
+  check("وقارئ مساحة التطبيق لا يرى شرائح النطاقات", "valid/1", ins.kind + "/" + (ins.meta && ins.meta.chunks));
+  check("وتصحيحات التطبيق المحلية لم تُمسّ", "undefined", String(a.dev.localStore[K.OVERRIDES]));
+
+  // سعةٌ بأفضل جهد: تطبيقٌ يملأ ما يقارب سقفه ⇒ مساحة الدعم «overflow» صريحة ولا تمسّ التطبيق
+  var b = freshPair();
+  // لقطة تطبيقٍ تقارب سقفها (بين 85 و92 ألف بايت) تُبنى بالقياس لا بعددٍ مخمَّن
+  var big = { ar: {} }, bi = 0;
+  while (CMLSync.pack({ overrides: big, patterns: [] }, {}).bytes < 85000) {
+    big.ar["App phrase " + bi + " padding padding"] = "ترجمة التطبيق رقم " + bi + " مع حشو"; bi++;
+  }
+  var pk = seedCloud(b.cloud, big, "devB", CLOCK.t, 3);
+  var sup = { ar: {} };
+  for (var j = 0; j < 400; j++) sup.ar["Support phrase " + j + " padding"] = "ترجمة الدعم رقم " + j + " مع حشو";
+  b.dev.localStore[K.SYNC_ENABLED] = true;
+  b.dev.localStore[K.SYNC_DEVICE] = "devA";
+  b.dev.localStore["cml_overrides.support"] = sup;
+  b.dev.localStore["cml_sync_pending.support"] = CLOCK.t;
+  var rb = await SP.handleLocalChange(hookedEnv(b.dev, b.cloud, {}), null);
+  var stb = b.dev.localStore["cml_sync_state.support"] || {};
+  check("★ لا سعة باقية: مساحة الدعم overflow بحاجتها وسقفها، والتطبيق سليم ولا شيء جزئي", "overflow/true/true/0",
+        (rb && rb.done) + "/" + (stb.need > stb.cap) + "/" + (CMLSync.inspect(cp(b.cloud.syncStore)).kind === "valid" && pk.fits) +
+        "/" + Object.keys(b.cloud.syncStore).filter(function (k) { return k.indexOf("cmlc_") === 0 || k.indexOf("cmlm_") === 0; }).length);
+  check("وتصحيحات الدعم المحلية كلها باقية", "400", Object.keys(b.dev.localStore["cml_overrides.support"].ar).length);
+}
+
+// ================= ١٠) حالات مراجعة كودكس (١٢ ربيع الآخر ١٤٤٨هـ) =================
+// كلٌّ منها يفشل على نواة 1.0.0 وينجح بعد الإصلاح. سقالةٌ مستقلة لكل حالة: جهازٌ محلي
+// وسحابةٌ خاصة، وبيئةٌ بخطافاتٍ تُحقن قبل ردّ القراءة (خطأ، أو فعلٌ يقع أثناء الجولة).
+function hookedEnv(dev, cloud, hooks) {
+  hooks = hooks || {};
+  var e = makeEnv(dev, cloud);
+  var baseGetLocal = e.getLocal, baseGetSync = e.getSyncAll;
+  e.getLocal = function (keys, cb) {
+    if (hooks.localError && hooks.localError(keys)) { cb(null, hooks.localErrorMsg || "IO error: local"); return; }
+    if (hooks.beforeLocal) hooks.beforeLocal(keys);
+    baseGetLocal(keys, cb);
+  };
+  e.getSyncAll = function (cb) {
+    if (hooks.syncError) { cb(null, "IO error: sync"); return; }
+    var go = function () {
+      if (hooks.beforeSyncRead) hooks.beforeSyncRead();
+      baseGetSync(cb);
+    };
+    if (hooks.syncGate) hooks.syncGate.then(go); else go();
+  };
+  return e;
+}
+function freshPair(cloudTotal) {
+  return {
+    dev: makeChromeMock({ session: false }),
+    cloud: makeChromeMock({ session: false, sync: { itemBytes: 8192, totalBytes: cloudTotal || 102400 } }),
+  };
+}
+function seedCloud(cloud, ov, dev, at, rev) {
+  var pk = CMLSync.pack({ overrides: ov, patterns: [] }, { rev: rev || 3, device: dev || "devB", now: at || T0 });
+  for (var k in pk.sets) { if (has(pk.sets, k)) cloud.syncStore[k] = cp(pk.sets[k]); }
+  return pk;
+}
+function seedDev(dev, ov, extra) {
+  dev.localStore[K.SYNC_ENABLED] = true;
+  dev.localStore[K.SYNC_DEVICE] = "devA";
+  dev.localStore[K.OVERRIDES] = ov;
+  for (var k in extra || {}) { if (has(extra, k)) dev.localStore[k] = extra[k]; }
+}
+function cloudOv(cloud) {
+  var u = CMLSync.unpack(cp(cloud.syncStore));
+  return u ? (u.payload.overrides.ar || {}) : null;
+}
+
+async function codexCases() {
+  var tNow = CLOCK.t + 100000;
+  CLOCK.t = tNow;
+
+  // --- ٥) قراءة السحابة فشلت: لا كتابة فوق ما لم يُقرأ ---
+  var a = freshPair();
+  seedCloud(a.cloud, { ar: { Remote: "بعيد" } });
+  seedDev(a.dev, { ar: { Local: "محلي" } }, {});
+  a.dev.localStore[K.SYNC_PENDING] = tNow - 5000;
+  var ra = await CMLSync.handleLocalChange(hookedEnv(a.dev, a.cloud, { syncError: true }), null);
+  check("★ كودكس٥: فشلُ قراءة السحابة ⇒ read-error بلا أي كتابة سحابة", "read-error/0",
+        (ra && ra.done) + "/" + a.cloud.syncWrites.length);
+  check("★ كودكس٥: السحابة كما هي والطابع المعلّق باقٍ للإعادة", "بعيد/true",
+        (cloudOv(a.cloud) || {}).Remote + "/" + (a.dev.localStore[K.SYNC_PENDING] === tNow - 5000));
+  check("★ كودكس٥: الحال تقول الخطأ وموعد الإعادة معلوم", "error/true/local",
+        (a.dev.localStore[K.SYNC_STATE] || {}).status + "/" + (!!ra && ra.retryAt > tNow) + "/" + (ra && ra.retry));
+
+  // وفشلُ القراءة المحلية: لا بيانات تُكتب ولا سحابة
+  var b = freshPair();
+  seedCloud(b.cloud, { ar: { Remote: "بعيد" } });
+  seedDev(b.dev, { ar: { Local: "محلي" } }, {});
+  var envB2 = hookedEnv(b.dev, b.cloud, { localError: function () { return true; } });
+  var rb = await CMLSync.handleLocalChange(envB2, null);
+  check("★ كودكس٥: فشلُ القراءة المحلية ⇒ read-error، لا سحابة ولا مساس بالتصحيحات", "read-error/0/محلي",
+        (rb && rb.done) + "/" + b.cloud.syncWrites.length + "/" + b.dev.localStore[K.OVERRIDES].ar.Local);
+  var rb2 = await CMLSync.handleSyncChange(envB2, kv(K.SYNC_META, {}));
+  check("★ كودكس٥: وحدثُ سحابةٍ لم يُقرأ محليًّا: read-error وإعادةٌ على مسار sync", "read-error/sync/0",
+        (rb2 && rb2.done) + "/" + (rb2 && rb2.retry) + "/" + b.cloud.syncWrites.length);
+
+  // --- ٧) التعقيم بعد إعادة الإسناد: المرفوض لا يعود من الباب الخلفي، ولا يُحذف محليًّا ---
+  var c = freshPair();
+  var LONG = new Array(302).join("X"); // 301 حرفًا > TEXT_MAX
+  seedCloud(c.cloud, { ar: { Remote: "بعيد" } });
+  var ovc = { ar: { Local: "محلي" } }; ovc.ar[LONG] = "طويل";
+  seedDev(c.dev, ovc, {});
+  c.dev.localStore[K.SYNC_PENDING] = tNow - 5000;
+  var rc = await CMLSync.handleLocalChange(hookedEnv(c.dev, c.cloud, {}), null);
+  var coc = cloudOv(c.cloud) || {};
+  check("★ كودكس٧: المفتاح فوق السقف لا يصل السحابة بعد الدمج", "pushed/false/محلي/بعيد",
+        (rc && rc.done) + "/" + has(coc, LONG) + "/" + coc.Local + "/" + coc.Remote);
+  var loc = (c.dev.localStore[K.OVERRIDES] || {}).ar || {};
+  check("★ كودكس٧: ويبقى محليًّا كما هو، والمحلي نال البعيد", "طويل/بعيد", loc[LONG] + "/" + loc.Remote);
+  check("★ كودكس٧: البصمة المحفوظة بصمةُ المرفوع المعقَّم", "true",
+        c.dev.localStore[K.SYNC_LASTHASH] === CMLSync.hashPayload(CMLSync.unpack(cp(c.cloud.syncStore)).payload));
+
+  // --- ٦) محوٌ محلي مباشر أثناء قراءة السحابة: الجولة تُلغى ولا تكتب ---
+  var d = freshPair();
+  var baseP = { overrides: { ar: { Base: "أساس" } }, patterns: [] };
+  seedCloud(d.cloud, { ar: { Base: "أساس", Remote: "بعيد" } }, "devB", tNow - 1000);
+  seedDev(d.dev, { ar: { Base: "أساس", Local: "محلي" } }, {});
+  d.dev.localStore[K.SYNC_LASTHASH] = CMLSync.hashPayload(baseP);
+  d.dev.localStore[K.SYNC_PENDING] = tNow - 5000;
+  var rd = await CMLSync.handleLocalChange(hookedEnv(d.dev, d.cloud, {
+    beforeSyncRead: function () { for (var k in d.dev.localStore) delete d.dev.localStore[k]; },
+  }), null);
+  var cod = cloudOv(d.cloud) || {};
+  check("★ كودكس٦: إطفاءٌ/محوٌ أثناء الجولة ⇒ superseded بلا كتابة سحابة", "superseded/0",
+        (rd && rd.done) + "/" + d.cloud.syncWrites.length);
+  check("★ كودكس٦: «Base» باقٍ في السحابة، ولا تعود «Remote» إلى الجهاز الممسوح", "أساس/undefined",
+        cod.Base + "/" + String(d.dev.localStore[K.OVERRIDES]));
+
+  // وإعادة الضبط عبر العامل: تنتظر الجولة الجارية ثم تمسح — ولا كتابة بعد تمامها
+  var e = freshPair();
+  seedCloud(e.cloud, { ar: { Remote: "بعيد" } }, "devB", tNow - 1000);
+  seedDev(e.dev, { ar: { Local: "محلي" } }, {});
+  e.dev.localStore[K.SYNC_PENDING] = tNow - 5000;
+  var release;
+  var gate = new Promise(function (r) { release = r; });
+  var envE = hookedEnv(e.dev, e.cloud, { syncGate: gate });
+  var order = [];
+  var roundP = CMLSync.handleLocalChange(envE, null).then(function (r) { order.push("round:" + (r && r.done)); return r; });
+  await tick();
+  var resetP = CMLSync.admin(envE, "reset", {}).then(function (r) { order.push("reset:" + (r && r.reset)); return r; });
+  await tick();
+  check("★ كودكس٦: أمرُ الضبط ينتظر الجولة الجارية (لم يتمّ بعد)", "0/true",
+        order.length + "/" + (e.dev.localStore[K.SYNC_ENABLED] === true));
+  release();
+  await roundP; await resetP;
+  var writesAfter = e.cloud.syncWrites.length;
+  await tick(); await tick();
+  check("★ كودكس٦: الجولة أتمّت أولًا ثم الضبط", "round:pushed,reset:true", order.join(","));
+  check("★ كودكس٦: بعد الضبط لا تصحيحات ولا علم، والجيل صعد", "undefined/undefined/1",
+        String(e.dev.localStore[K.OVERRIDES]) + "/" + String(e.dev.localStore[K.SYNC_ENABLED]) + "/" +
+        e.dev.localStore[K.SYNC_GEN]);
+  check("★ كودكس٦: لا كتابة سحابة بعد تمام الضبط", "0", e.cloud.syncWrites.length - writesAfter);
+  var afterReset = await CMLSync.handleLocalChange(envE, null);
+  check("★ كودكس٦: جولةٌ لاحقة ترى المزامنة مطفأة", "disabled", afterReset && afterReset.done);
+
+  // الإيقاف عبر العامل والمسح معه: الجيل يصعد، والمسح لا يعيد رفع ما مُحي
+  var f = freshPair();
+  seedCloud(f.cloud, { ar: { Remote: "بعيد" } });
+  seedDev(f.dev, { ar: { Local: "محلي" } }, { cml_sync_lasthash: "abc" });
+  var envF = hookedEnv(f.dev, f.cloud, {});
+  var wr = await CMLSync.admin(envF, "wipe", {});
+  check("★ كودكس٦: المسح عبر العامل يمحو الميتا والشرائح ويكتب حالًا صادقة", "true/0/wiped/undefined",
+        (!!wr && wr.ok) + "/" + Object.keys(f.cloud.syncStore).length + "/" +
+        (f.dev.localStore[K.SYNC_STATE] || {}).status + "/" + String(f.dev.localStore[K.SYNC_LASTHASH]));
+  var dr = await CMLSync.admin(envF, "disable", {});
+  check("★ كودكس٦: الإيقاف عبر العامل: العلم مطفأ والجيل صعد مرتين", "true/false/2",
+        (!!dr && dr.ok) + "/" + f.dev.localStore[K.SYNC_ENABLED] + "/" + f.dev.localStore[K.SYNC_GEN]);
+  var er = await CMLSync.admin(envF, "enable", {});
+  check("★ كودكس٦: والتفعيل عبر العامل", "true/true/3",
+        (!!er && er.ok) + "/" + f.dev.localStore[K.SYNC_ENABLED] + "/" + f.dev.localStore[K.SYNC_GEN]);
+  var ur = await CMLSync.admin(envF, "bogus", {});
+  check("أمرٌ مجهول يُرفض صراحةً", "true", !!(ur && ur.error));
+  // الضبط مع المسح حين تتعذّر قراءة السحابة: لا يُحذف من الجهاز شيء
+  var g2 = freshPair();
+  seedCloud(g2.cloud, { ar: { Remote: "بعيد" } });
+  seedDev(g2.dev, { ar: { Local: "محلي" } }, {});
+  var gr = await CMLSync.admin(hookedEnv(g2.dev, g2.cloud, { syncError: true }), "reset", { wipe: true });
+  check("★ الضبط مع المسح وتعذّرت السحابة ⇒ خطأ ولا حذف محلي", "true/محلي",
+        !!(gr && gr.error) + "/" + ((g2.dev.localStore[K.OVERRIDES] || {}).ar || {}).Local);
+
+  // --- ٨) التمزّق يُجدول إعادة فحصه، ولا دفع فوق لقطةٍ غير متّسقة قبل المهلة ---
+  var h = freshPair();
+  var pkh = seedCloud(h.cloud, { ar: { Remote: "بعيد" } }, "devB", tNow - 1000, 5);
+  h.cloud.syncStore[K.SYNC_META] = cp(pkh.meta); h.cloud.syncStore[K.SYNC_META].hash = "wrong";
+  var ph = { overrides: { ar: { Local: "محلي" } }, patterns: [] };
+  seedDev(h.dev, ph.overrides, {});
+  h.dev.localStore[K.SYNC_LASTHASH] = CMLSync.hashPayload(ph);
+  var envH = hookedEnv(h.dev, h.cloud, {});
+  var rh = await CMLSync.handleSyncChange(envH, kv(K.SYNC_META, { newValue: h.cloud.syncStore[K.SYNC_META] }));
+  check("★ كودكس٨: أولُ رؤيةٍ للتمزّق تكتب موعد إعادة الفحص وتعيده", "torn/sync/true",
+        (rh && rh.done) + "/" + (rh && rh.retry) + "/" +
+        (h.dev.localStore[K.SYNC_RECHECK] === rh.retryAt && rh.retryAt > tNow));
+  CLOCK.t = rh.retryAt + 10;
+  var rh2 = await CMLSync.handleSyncChange(envH, kv(K.SYNC_META, {}));
+  check("★ كودكس٨: عند الموعد (بلا حدثٍ ثانٍ من السحابة) يقع الإصلاح ويُمحى الموعد", "repair/0/true",
+        (rh2 && rh2.done) + "/" + h.dev.localStore[K.SYNC_RECHECK] + "/" + !!h.dev.localStore[K.SYNC_PENDING]);
+  var rh3 = await CMLSync.handleLocalChange(envH, null);
+  var uh = CMLSync.unpack(cp(h.cloud.syncStore));
+  check("★ كودكس٨: الدفعة المُصلِحة تدفع فورًا (التمزّق مثبَّت) برقمٍ يعلو الميتا", "pushed/true",
+        (rh3 && rh3.done) + "/" + (!!uh && uh.meta.rev > 5));
+
+  // الدفع المحلي فوق لقطةٍ غير متّسقة ينتظر أول مرة
+  CLOCK.t += 1000;
+  var i2 = freshPair();
+  var pki = seedCloud(i2.cloud, { ar: { Remote: "بعيد" } }, "devB", CLOCK.t - 1000, 7);
+  delete i2.cloud.syncStore[K.SYNC_CHUNK_PREFIX + "0"];
+  seedDev(i2.dev, { ar: { Local: "محلي" } }, {});
+  i2.dev.localStore[K.SYNC_PENDING] = CLOCK.t - 5000;
+  var envI = hookedEnv(i2.dev, i2.cloud, {});
+  var ri = await CMLSync.handleLocalChange(envI, null);
+  check("★ لقطةٌ غير متّسقة: الدفع المحلي ينتظر (لا كتابة) والطابع باقٍ", "torn-wait/0/true",
+        (ri && ri.done) + "/" + i2.cloud.syncWrites.length + "/" + !!i2.dev.localStore[K.SYNC_PENDING]);
+  CLOCK.t += C.SYNC_TORN_CONFIRM_MS + 2000;
+  var ri2 = await CMLSync.handleLocalChange(envI, null);
+  var ui = CMLSync.unpack(cp(i2.cloud.syncStore));
+  check("★ وبعد المهلة يدفع لقطةً متّسقة برقمٍ يعلو ميتاها", "pushed/true",
+        (ri2 && ri2.done) + "/" + (!!ui && ui.meta.rev > pki.meta.rev));
+
+  // --- ٢) صيغةٌ مستقبلية: لا دفع فوقها ولا إصلاح ---
+  var j = freshPair();
+  j.cloud.syncStore[K.SYNC_META] = { v: 2, rev: 40, at: CLOCK.t, device: "future", chunks: 1 };
+  j.cloud.syncStore[K.SYNC_CHUNK_PREFIX + "0"] = "{\"future\":true}";
+  var pj = { overrides: { ar: { Local: "محلي" } }, patterns: [] };
+  seedDev(j.dev, pj.overrides, {});
+  j.dev.localStore[K.SYNC_PENDING] = CLOCK.t - 5000;
+  var envJ = hookedEnv(j.dev, j.cloud, {});
+  var rj = await CMLSync.handleLocalChange(envJ, null);
+  check("★ كودكس٢: ميتا v:2 ⇒ unsupported بلا أي كتابة سحابة", "unsupported/0/unsupported",
+        (rj && rj.done) + "/" + j.cloud.syncWrites.length + "/" + (j.dev.localStore[K.SYNC_STATE] || {}).status);
+  j.dev.localStore[K.SYNC_LASTHASH] = CMLSync.hashPayload(pj);
+  j.dev.localStore[K.SYNC_PENDING] = 0;
+  var rj2 = await CMLSync.handleSyncChange(envJ, kv(K.SYNC_META, {}));
+  check("★ كودكس٢: وحدثُ السحابة لا يعدّها تمزّقًا فلا يُصلح فوقها", "unsupported/0",
+        (rj2 && rj2.done) + "/" + (j.dev.localStore[K.SYNC_PENDING] || 0));
+  check("inspect: فارغة/صالحة/مستقبلية/ناقصة", "empty/valid/unsupported/incomplete",
+        [CMLSync.inspect({}).kind, CMLSync.inspect(cp(seedCloud(freshPair().cloud, { ar: { a: "ب" } }).sets)).kind,
+         CMLSync.inspect(j.cloud.syncStore).kind,
+         CMLSync.inspect(kv(K.SYNC_CHUNK_PREFIX + "0", "x")).kind].join("/"));
+
+  // --- ٨) دفتر الشواهد تحت تسلسلٍ واحد: شاهدٌ يُسجَّل أثناء كتابة الجولة لا يضيع ---
+  var tk = freshPair();
+  var tBase = { overrides: { ar: { Keep: "باقٍ", Gone: "سيُحذف" } }, patterns: [] };
+  seedDev(tk.dev, tBase.overrides, {});
+  tk.dev.localStore[K.SYNC_LASTHASH] = CMLSync.hashPayload(tBase);
+  // لقطةُ الجهاز الآخر دُفعت قبل الحذف (طابعُها أقدم من الشاهد) — فلا تُحيي المحذوف
+  seedCloud(tk.cloud, { ar: { Keep: "باقٍ", Gone: "سيُحذف", New: "جديد" } }, "devB", CLOCK.t - 1000, 9);
+  var fired = false, tombP = null, tombStamp = CLOCK.t + 50;
+  var envT = hookedEnv(tk.dev, tk.cloud, {
+    beforeLocal: function (keys) {
+      // القراءة الطازجة للجولة (تحت قفل الدفتر): الحذف يقع الآن من مكانٍ آخر
+      if (!fired && keys.indexOf(K.SYNC_GEN) >= 0 && keys.indexOf(K.SYNC_TOMBS) >= 0 &&
+          keys.indexOf(K.OVERRIDES) >= 0 && keys.indexOf(K.SYNC_LASTHASH) < 0) {
+        fired = true;
+        var ov2 = cp(tk.dev.localStore[K.OVERRIDES]); delete ov2.ar.Gone;
+        tk.dev.localStore[K.OVERRIDES] = ov2;
+        tombP = CMLSync.recordTombs(envT, ["ar|Gone"], tombStamp);
+      }
+    },
+  });
+  var rt = await CMLSync.handleSyncChange(envT, kv(K.SYNC_META, {}));
+  await tombP;
+  var tomb = (tk.dev.localStore[K.SYNC_TOMBS] || {})["ar|Gone"];
+  check("★ كودكس٨: شاهدٌ سُجّل أثناء كتابة الجولة باقٍ بعدها", String(tombStamp), String(tomb));
+  check("★ كودكس٨: والمحذوف لم يُحيه الدمج، والجديد وصل", "false/جديد",
+        has((tk.dev.localStore[K.OVERRIDES] || {}).ar, "Gone") + "/" + ((tk.dev.localStore[K.OVERRIDES] || {}).ar || {}).New);
+  // والحذف قُبيل القراءة الأولى للجولة وشاهدُه يُكتب بعدها بلحظة (نافذة العامل بين
+  // حدث التخزين وكتابة الشاهد): الدمج جاء بالمفتاح من البعيد، والشاهد المستجدّ يمنعه
+  var tk2 = freshPair();
+  var tBase2 = { overrides: { ar: { Keep: "باقٍ", Gone: "سيُحذف" } }, patterns: [] };
+  seedDev(tk2.dev, { ar: { Keep: "باقٍ" } }, {});
+  tk2.dev.localStore[K.SYNC_LASTHASH] = CMLSync.hashPayload(tBase2);
+  seedCloud(tk2.cloud, { ar: { Keep: "باقٍ", Gone: "سيُحذف", New: "جديد" } }, "devB", CLOCK.t - 1000, 9);
+  var envT2 = hookedEnv(tk2.dev, tk2.cloud, {
+    beforeSyncRead: function () { tk2.dev.localStore[K.SYNC_TOMBS] = { "ar|Gone": CLOCK.t + 60 }; },
+  });
+  await CMLSync.handleSyncChange(envT2, kv(K.SYNC_META, {}));
+  var l2 = (tk2.dev.localStore[K.OVERRIDES] || {}).ar || {};
+  check("★ شاهدٌ كُتب بعد القراءة الأولى للجولة يمنع إحياء المحذوف", "false/جديد/true",
+        has(l2, "Gone") + "/" + l2.New + "/" + !!(tk2.dev.localStore[K.SYNC_TOMBS] || {})["ar|Gone"]);
+  // وحين تكون اللقطة أحدث من الشاهد فالعقد الموثّق نافذ: المفتاح عاد عن قصد
+  var tk3 = freshPair();
+  seedDev(tk3.dev, { ar: { Keep: "باقٍ" } }, {});
+  tk3.dev.localStore[K.SYNC_LASTHASH] = CMLSync.hashPayload(tBase2);
+  seedCloud(tk3.cloud, { ar: { Keep: "باقٍ", Gone: "أُعيد", New: "جديد" } }, "devB", CLOCK.t + 5000, 9);
+  var envT3 = hookedEnv(tk3.dev, tk3.cloud, {
+    beforeSyncRead: function () { tk3.dev.localStore[K.SYNC_TOMBS] = { "ar|Gone": CLOCK.t + 60 }; },
+  });
+  await CMLSync.handleSyncChange(envT3, kv(K.SYNC_META, {}));
+  // ★ (مراجعة مستقلة) حذفٌ وقع أثناء الجولة لم يُنشر ولم تره لقطةٌ قط — فلا يُحييه دمجُ لقطةٍ
+  // ولو كان طابعُها أحدث (كان الطابع وحده يُحيي المحذوف)
+  check("★ حذفٌ أثناء الجولة لا تُحييه لقطةٌ لم تره ولو أحدث طابعًا", "undefined",
+        String(((tk3.dev.localStore[K.OVERRIDES] || {}).ar || {}).Gone));
+
+  check("mergeFreshTombs: المستجدّ يُضمّ، وما لم يتغيّر فقرارُ الجولة فيه نافذ", "a:5,c:9",
+        (function () {
+          var m = CMLSync.mergeFreshTombs({ a: 5 }, { a: 5, b: 3 }, { a: 5, b: 3, c: 9 });
+          return Object.keys(m).sort().map(function (k2) { return k2 + ":" + m[k2]; }).join(",");
+        })());
+
+  // --- everSynced بالإسقاط المعقَّم: ما لا يُرفع لا يعطّل انتشار الحذف ---
+  var ev = freshPair();
+  var evOv = { ar: { Del: "سيُحذف بعيدًا", Stay: "باقٍ" } }; evOv.ar[LONG] = "طويل لا يُرفع";
+  seedDev(ev.dev, evOv, {});
+  ev.dev.localStore[K.SYNC_LASTHASH] = CMLSync.hashPayload(CMLSync.sanitizePayload({ overrides: evOv, patterns: [] }));
+  ev.dev.localStore[K.SYNC_STATE] = { status: "ok", at: CLOCK.t - 60000, rev: 3 };
+  seedCloud(ev.cloud, { ar: { Stay: "باقٍ" } }, "devB", CLOCK.t, 4);
+  var rev2 = await CMLSync.handleSyncChange(hookedEnv(ev.dev, ev.cloud, {}), kv(K.SYNC_META, {}));
+  var evl = (ev.dev.localStore[K.OVERRIDES] || {}).ar || {};
+  check("★ الحذف بالغياب يبلغ جهازًا فيه ما لا يُرفع، وما لا يُرفع باقٍ", "false/باقٍ/طويل لا يُرفع",
+        has(evl, "Del") + "/" + evl.Stay + "/" + evl[LONG]);
+  void rev2;
 }
 
 function finish() {

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>code frame</title>
+<!--
+  إطار اختبارٍ لصفحة _codetest.html (وثائق Claude Code) — ليس صفحة اختبارٍ بنفسه: كل إطارٍ محرّكٌ مستقل
+  بحالةٍ من سلسلة الاستعلام، والصفحة الأم تقرأ النتائج من window هنا:
+    ct=md|plain  نوع المستند كما يراه المحرّك (نسخ ‎.md‎ وllms.txt) — يُضبط قبل تحميل المحرّك
+    hyd=1        ترطيبٌ مؤجَّل بسقفٍ للنطاق (meta.hydrateMaxMs=2000) والعامُّ مُصغَّر إلى 600 مث
+    skip=1       meta.skipSel="#chat-content" (أجوبة المساعد المولَّدة)، والحصاد قبل المحرّك للمقارنة
+    live=1       meta.live مع قشرة مراسلةٍ تلتقط طلبات الورقة الحيّة
+    body=1       meta.bodies وbodySel="#content" (وضع الكتلة) مع زرّ «Copy page» بنسختين من نصّه (خفيّة وظاهرة)
+    dir=1        meta.dirSel="#content" مع عنوانٍ بمرساة Mintlify (محرف عرضٍ صفري وأيقونة) — لا يُحسم اتجاهها بـauto؛
+                 وأجوبة المساعد في dirSel وskipSel معًا (كالجدول): الاتجاه وحده لكل كتلة، ونصُّها لا يُمسّ
+    guard=1      ★ (ر6-ب) حارس المتن المختلط: meta.bodies وbodySel="#content" وbodyGuard=0.2 (off=1: بلا عتبة)، والمتن صفحةٌ اصطناعية
+                 (GPAGE: A وB وC) وقطعتُها بمسارها (‎/zq-guard/b‎ وc، وما سواهما A) بعد 150 مث؛ وقاموس الإطار ثابتٌ لا يُضاف إليه شيء.
+                 ★ (ر6-ج) والمهلة تضبطها الصفحة الأم بـwindow.__shardDelay؛ و(المراجعة) siteoff=1: الإضافة مطفأةٌ للموقع عند التحميل
+                 ★ (ر6-د) و‎/zq-guard/n…‎ كلُّها بلا قطعة (القرار 84): ومنها صفحةُ مجموعةٍ يغطّي قاموسُ الواجهة متنَها (GLIST) وصفحةٌ بلا كتلة
+                 (GEMPTY)؛ وrc=1: المتن ‎.zq-prose‎ في مُغلِّفٍ لكل صفحة، والتنقّل يُبقي الصفحة السابقة في المستند مخبوءةً بنمطٍ مضمَّن
+                 ‎display: none !important‎ كما تفعل وثائق المطوّرين (Next.js)، والرجوع والتقدّم بتبديل style وحده
+                 ★ (ر7-ب) ولافتةُ صدى عنوانٍ خارج المتن (#echoLbl «Settings»، meta.echoSel) تتبع حارسه
+  محتوى اصطناعي من صنع المشروع يحاكي بنية Mintlify (المعرّفات وخُطّافات data-component-part).
+-->
+<link rel="stylesheet" href="../extension/base.css">
+<link rel="stylesheet" href="../extension/code-point.css">
+<style>.pr3{padding-right:.75rem}.tocpl{padding-left:calc(var(--toc-padding-left) + var(--toc-focus-padding,0rem))}
+.rot180{rotate:180deg}.m90{rotate:-90deg}
+.digest-feature-link::after{content:"\2192"}.fttrunc{display:block;max-width:60px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-needs-label{display:inline-block;margin-right:6px}.ssc-machine-filemark{display:inline-block;margin-left:10px}</style>
+<body>
+<header id="navbar"><button id="navBtn" aria-label="Settings">Settings</button>
+  <a id="cta" href="#"><span>Open Claude Code</span><svg id="ctaSvg" viewBox="0 0 18 18" width="18" height="18"><path d="M6.5 2.75L12.75 9L6.5 15.25"></path></svg></a>
+  <button id="sel"><span>English</span><svg id="selSvg" class="rotate-90" viewBox="0 0 18 18" width="18" height="18"><path d="M6.5 2.75L12.75 9L6.5 15.25"></path></svg></button></header>
+<nav id="sidebar"><a id="sideA" class="pr3" style="padding-left:1rem" href="#">Frame label</a>
+  <a id="sideN" class="pr3" style="padding-left: 1.75rem;" href="#">Frame label</a>
+  <button id="sideGrp" aria-expanded="false"><span>Group</span><div id="sideChev"><svg viewBox="0 0 18 18" width="8" height="18"><path d="M6.5 2.75L12.75 9L6.5 15.25"></path></svg></div></button></nav>
+<div id="table-of-contents"><a id="tocA" class="tocpl" style="--toc-padding-left:2rem" href="#">Frame label</a>
+  <a id="tocEn" class="tocpl" dir="ltr" style="--toc-padding-left:1rem" href="#">Frame label</a></div>
+<!-- درج التنقّل على الجوال: #navigation-items نفسها خارج #sidebar (فحص الاتجاه ٣) -->
+<div id="navigation-items"><a id="drawA" class="pr3" style="padding-left:1rem" href="#">Frame label</a>
+  <button><span>Group</span><div id="drawChev"><svg viewBox="0 0 18 18" width="8" height="18"><path d="M6.5 2.75L12.75 9L6.5 15.25"></path></svg></div></button></div>
+<main id="content-area"><div id="content">
+  <p id="out">Settings</p>
+  <table><tbody><tr><td id="cellAr" style="text-align:left" dir="rtl">نعم</td><td id="cellEn" style="text-align:left" dir="ltr">Yes</td></tr></tbody></table>
+  <div class="code-block" id="cb"><div data-component-part="code-block-root"><pre><code>curl -fsSL https://claude.ai/install.sh</code></pre></div></div>
+  <div id="caret" data-component-part="accordion-caret-right"><svg class="m90" viewBox="0 0 18 18" width="18" height="18"><path d="M4 4H14L9 14Z"></path></svg></div>
+  <svg id="pgPrev" data-component-part="pagination-chevron" viewBox="0 0 3 6" width="3" height="6"><path d="M3 0L0 3L3 6"></path></svg>
+  <svg id="pgNext" class="rot180" data-component-part="pagination-chevron" viewBox="0 0 3 6" width="3" height="6"><path d="M3 0L0 3L3 6"></path></svg>
+  <h3 id="hdEn" dir="ltr"><div><a id="ancEn" href="#hdEn"><svg viewBox="0 0 4 4" width="4" height="4"></svg></a></div>Frame label</h3>
+  <!-- إصدارٌ في سجلّ الإصدارات كما يرسمه Mintlify (مكوّن .update): مرساته في div > div > a (التحقق النهائي، ١٧ ربيع الآخر ١٤٤٨هـ) -->
+  <div class="update" id="updEn" dir="ltr"><div><div><a id="ancUpd" href="#updEn"><svg viewBox="0 0 4 4" width="4" height="4"></svg></a></div></div></div>
+  <p><a id="dgAr" class="link digest-feature-link" href="#">Frame label</a> <a id="dgEn" class="link digest-feature-link" dir="ltr" href="#">Frame label</a></p>
+  <p><span id="plNeeds" class="pl-needs-label">x</span><span id="sscFm" class="ssc-machine-filemark">y</span></p>
+  <style data-custom-css-path="style.css">.zq-site{margin-left:7px}</style>
+  <style>:root{--banner-height:0px}</style>
+</div></main>
+<footer id="footer"><a id="ft" class="fttrunc" href="https://www.anthropic.com/x">Frame label</a></footer>
+<div id="chat-assistant-sheet"><textarea placeholder="Ask a question..."></textarea>
+  <div id="chat-content"><p id="ans">Settings</p><button id="ansBtn" aria-label="Settings">x</button><p id="ansOther">Answer text</p></div></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };
+var Q = {}; location.search.slice(1).split("&").forEach(function (kv) { if (kv) { var p = kv.split("="); Q[p[0]] = p[1] || "1"; } });
+window.__dcl = null; window.__tr = null;
+document.addEventListener("DOMContentLoaded", function () { window.__dcl = performance.now(); });
+// أول لحظة يتغيّر فيها النص الرئيس (قياس بوابة الترطيب)
+new MutationObserver(function () {
+  if (window.__tr === null && document.getElementById("out").textContent !== "Settings") window.__tr = performance.now();
+}).observe(document.getElementById("out"), { childList: true, characterData: true, subtree: true });
+if (Q.dir) {
+  // عنوانٌ كما يرسمه Mintlify: مرساةٌ (-ml-10) فيها محرف عرضٍ صفري وأيقونةٌ في <div> (فالمرساة مالكُ كتلة)، ثم نصّ العنوان
+  var hd = document.createElement("h2"); hd.id = "hd"; hd.style.display = "flex";
+  hd.innerHTML = '<div style="position:absolute"><a id="anc" class="ml-flip" href="#hd">\u200B<div><svg viewBox="0 0 4 4" width="4" height="4"></svg></div></a></div><span id="hdt">Settings</span>';
+  document.getElementById("content").insertBefore(hd, document.getElementById("content").firstChild);
+}
+if (Q.body) {
+  var cp = document.createElement("div");
+  cp.innerHTML = '<button id="cp"><div><svg viewBox="0 0 4 4" width="4" height="4"></svg><span class="grid"><span aria-hidden="true">Copy page</span><span>Copy page</span></span></div></button>' +
+    '<p id="mix"><span>Copy page</span> <span>and more</span></p>';
+  document.getElementById("content").appendChild(cp);
+}
+// ★ (ر6-ب) حارس المتن المختلط: صفحاتٌ اصطناعية بكتلٍ معدودة. A: تسع فقرات وعنوانٌ وخليةٌ من قاموس الواجهة (11 كتلة)، وقطعتها تغطّي ستّ
+// فقرات ⇒ 3 من 11 = 27٪ فوق العتبة (20٪) فتُحجب. B: قطعتها ثماني فقرات ⇒ 1 من 11 = 9٪ فتُعرَّب. C: ثماني فقرات وقطعتها ستّ ⇒ 2 من 10 = 20٪
+// تمامًا، لا تزيد على العتبة فتُعرَّب. وفي كل قطعةٍ ست فقراتٍ للوحة تبويبٍ متأخرة (#gpanel)
+var GW = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+var GA = ["واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة"];
+var GN = { a: ["Alpha", "ألفا", 9, 6], b: ["Bravo", "برافو", 9, 8], c: ["Charlie", "تشارلي", 8, 6] };
+function GPAGE(k) {
+  var h = '<h2 id="gh">Settings</h2>';
+  for (var i = 0; i < GN[k][2]; i++) h += '<p id="g' + (i + 1) + '">' + GN[k][0] + " step " + GW[i] + " explains the setup.</p>";
+  return h + '<table><tbody><tr><td id="gtd" title="Settings">Yes</td></tr></tbody></table><div id="gpanel"></div>';
+}
+function GPANEL(k, n) {
+  var h = "";
+  for (var i = 0; i < n; i++) h += '<p id="gq' + (i + 1) + '">' + GN[k][0] + " panel " + GW[i] + " lists more steps.</p>";
+  return h;
+}
+// ★ (ر6-د، القرار 84) صفحة مجموعةٍ بلا قطعة متنُها كلُّه من قاموس الواجهة: عنوانٌ وثلاثة بنودٍ وخلية (5 كتلٍ مغطّاة، 0٪) فلا تُحجب وتُعرَّب
+// كما كانت؛ وصفحةٌ بلا كتلةٍ في متنها (أيقونةٌ وتعليماتٌ برمجية) فلا تُحجب
+function GLIST() {
+  return '<h2 id="gh">Settings</h2><ul><li id="gl1">Frame label</li><li id="gl2">Group</li><li id="gl3">Copy page</li></ul>' +
+    '<table><tbody><tr><td id="gtd" title="Settings">Yes</td></tr></tbody></table>';
+}
+function GEMPTY() { return '<div id="ge"><svg viewBox="0 0 4 4" width="4" height="4"></svg></div><pre><code>npm i zq</code></pre>'; }
+// ★ (ر6-د) rc=1: مُغلِّف صفحةٍ في المتن ‎.zq-prose‎
+function GWRAP(k, id) { return '<div class="zq-wrap" id="' + id + '"><div class="zq-prose">' + GPAGE(k) + '</div></div>'; }
+function guardShard(path) {
+  // ★ (ر6-ب، المراجعة) ‎/zq-guard/n‎: صفحةٌ بلا قطعة (حُجب متنها في البناء)؛ و‎/zq-guard/k‎: قطعة A ومعها علامتا إبقاءٍ للفقرتين 7 و8
+  if (/\/zq-guard\/n/.test(path)) return null;
+  var k = /\/zq-guard\/b/.test(path) ? "b" : /\/zq-guard\/c/.test(path) ? "c" : "a", blocks = {}, i, keep = [];
+  if (/\/zq-guard\/k/.test(path)) for (i = 6; i < 8; i++) keep.push(CMLShared.blockFp(GN.a[0] + " step " + GW[i] + " explains the setup."));
+  for (i = 0; i < GN[k][3]; i++) blocks[CMLShared.blockFp(GN[k][0] + " step " + GW[i] + " explains the setup.")] = "الخطوة " + GN[k][1] + " " + GA[i] + " تشرح الإعداد.";
+  for (i = 0; i < 6; i++) blocks[CMLShared.blockFp(GN[k][0] + " panel " + GW[i] + " lists more steps.")] = "اللوحة " + GN[k][1] + " " + GA[i] + " فيها خطواتٌ أخرى.";
+  return { page: CMLShared.pageKey(META, path), blocks: blocks, keep: keep };
+}
+if (Q.guard) {
+  document.getElementById("content").innerHTML = Q.rc ? GWRAP("a", "wa") : GPAGE("a");
+  // ★ (ر7-ب، M2) لافتةٌ خارج المتن تحكي عنوان الصفحة «Settings» (كشريط «القسم الحالي» في وثائق المطوّرين — meta.echoSel): نصُّها في قاموس
+  // الواجهة عمدًا، فبقاؤها إنجليزيةً في الصفحة المحجوبة هو اتّباعُها حارسَ المتن لا غيابُ القاموس
+  var eb = document.createElement("div"); eb.id = "echoBar"; eb.innerHTML = '<span id="echoLbl">Settings</span>';
+  document.getElementById("content").parentNode.insertBefore(eb, document.getElementById("content"));
+  // كل كتابةٍ في نصوص المتن (قيمُ عقد النص) تُعدّ: الصفحة المحجوبة لا يُكتب في متنها شيءٌ قطّ، ولا قبل الحكم (فلا وميض عربيٍّ يُمحى)
+  window.__gWrites = 0;
+  new MutationObserver(function (l) { l.forEach(function (m) { if (m.type === "characterData") window.__gWrites++; }); })
+    .observe(document.getElementById("content"), { subtree: true, characterData: true });
+}
+if (Q.ct) {
+  var CTV = Q.ct === "md" ? "text/markdown" : "text/plain";
+  Object.defineProperty(document, "contentType", { configurable: true, get: function () { return CTV; } });
+}
+</script>
+<script src="_chrome-mock.js"></script>
+<script>
+window.__reqs = [];
+var MOCK = makeChromeMock({ session: false,
+  sendMessage: Q.guard ? function (msg, cb) {
+    window.__reqs.push(msg);
+    if (!msg || msg.type !== "bodies") { if (cb) cb(null); return; }
+    // ★ (ر6-ج) ومهلة الجواب قابلةٌ للضبط من الصفحة الأم (window.__shardDelay) لتُرى لحظة الحكم بعد وصول القطعة
+    setTimeout(function () { if (cb) cb(guardShard(msg.path || "")); }, typeof window.__shardDelay === "number" ? window.__shardDelay : 150);
+  } : Q.live ? function (msg, cb) { if (msg && msg.type === "rtlcss") window.__reqs.push(msg); if (cb) cb(null); } : undefined });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+// ★ (ر6-ج، المراجعة) الإضافة مطفأةٌ لهذا الموقع عند التحميل (لا طلبَ لقطعةٍ قبل التشغيل)
+if (Q.siteoff) MOCK.localStore["cml_site.code"] = false;
+window.chrome = MOCK.chrome;
+var META = { scan: "none", live: !!Q.live, chat: false, hydrate: Q.hyd ? "defer" : "none" };
+// المضمَّنة كما في جدول النطاقات (CSS الموقع الثابت وحده) — والصفحة الأم تتحقق من تطابقهما
+if (Q.live) META.liveInline = "style[data-custom-css-path], #content style";
+if (Q.hyd) META.hydrateMaxMs = 2000;
+if (Q.skip) META.skipSel = "#chat-content";
+if (Q.dir) { META.dirSel = "#content, #chat-content"; META.skipSel = "#chat-content"; }
+if (Q.body) { META.bodies = true; META.bodySel = "#content"; }
+if (Q.guard) { META.bodies = true; META.bodySel = "#content"; META.dirSel = "#content"; if (!Q.off) META.bodyGuard = 0.2; }
+if (Q.guard) META.echoSel = "#echoBar > span";   // ★ (ر7-ب، M2)
+// ★ (ر6-د) rc=1: جذور المتن بالصنف (كجذور وثائق المطوّرين) فتجتمع في المستند جذورُ الصفحة الحاضرة والمخبوءة
+if (Q.guard && Q.rc) { META.bodySel = ".zq-prose"; META.dirSel = ".zq-prose"; }
+window.CLAUDE_L10N = { domain: "code", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Settings": "الإعدادات", "Frame label": "تسمية الإطار", "Answer text": "نص الجواب",
+    "Ask a question...": "اطرح سؤالًا...", "Group": "مجموعة", "Copy page": "نسخ الصفحة" }, patterns: [], plurals: {} } } };
+if (Q.guard) window.CLAUDE_L10N.dicts.ar.strings["Yes"] = "نعم";
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+// السقف العامّ مُصغَّرًا: سقف النطاق (2000) أطول منه، فإن فُتحت البوابة عند العامّ ظهر الخلل
+if (Q.hyd) CMLConst.HYDRATE_MAX_MS = 600;
+// الحصاد قبل المحرّك (القشرة تقرأ الإعدادات متزامنةً فيترجم المحرّك عند تحميله): ما يحصده الحاصد بمستثنى النطاق
+window.__harvest = CMLShared.harvestDom(document.body, { chat: false, max: Infinity, skip: CMLShared.harvestSkip(META, "full") });
+window.__snap = [];
+(function () {
+  var tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n;
+  while ((n = tw.nextNode())) if (n.nodeValue.trim() && !/^(SCRIPT|STYLE)$/.test(n.parentNode.nodeName)) window.__snap.push({ node: n, orig: n.nodeValue });
+  document.body.querySelectorAll("[aria-label],[placeholder],[title],[alt]").forEach(function (el) {
+    ["placeholder", "aria-label", "title", "alt"].forEach(function (a) { var v = el.getAttribute(a); if (v && v.trim()) window.__snap.push({ el: el, attr: a, orig: v }); });
+  });
+  // كل نصٍّ وسمةٍ في الإطار يدخل القاموس (ما لم يكن فيه) — فمجموعةُ ما يغيّره المحرّك تُقارن بالحصاد في الاتجاهين
+  var S = window.CLAUDE_L10N.dicts.ar.strings;
+  // (ما لا حرف فيه — محرف العرض الصفري في المرساة — لا يُضاف: لا يُترجَم في الموقع أيضًا)
+  // ★ (ر6-ب) وفي إطار الحارس لا يُضاف شيء: المتن كتلٌ معدودة يغطّيها ما في القطعة وما في القاموس الثابت وحده
+  if (!Q.guard) window.__snap.forEach(function (x, i) { var k = x.orig.trim(); if (/[A-Za-z\u0621-\u064A]/.test(k) && !Object.prototype.hasOwnProperty.call(S, k)) S[k] = "ع" + i; });
+})();
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>window.__ready = true;</script>
+</body>
+</html>

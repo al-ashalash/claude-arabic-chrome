@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en-US">
+<meta charset="utf-8">
+<title>sitelang test</title>
+<!--
+  حارس لغة الموقع (1.1.0، منقولٌ إلى 2.0.0 — ١٦ ربيع الآخر ١٤٤٨هـ): لغة واجهة claude.ai إعدادٌ في حساب المستخدم، والموقع
+  يكتبها في سمة lang على الجذر. إن كتب الموقع لغةً غير الإنجليزية تخمد الإضافة كلها (لا ترجمة ولا اتجاه ولا lang=ar،
+  وتُستعاد الصفحة) دون أن يُمسّ إعداد المستخدم، وتعود متى عاد الموقع إلى الإنجليزية. وما نكتبه نحن (lang=ar) لا يُحسب
+  كتابةً من الموقع، ولا يُثبَّت شيءٌ فوق لغةٍ أجنبية كتبها الموقع ولو محا معها سماتنا (مراقب التثبيت watchHtml)،
+  وما كتبه الموقع يصير الأصل المستعاد. وجواب النافذة (cml-hello) يحمل اللغة لتقول سبب الخمود.
+  قاموس التطبيق المبنيّ نفسه (dictionary.js) بجدول نطاقه (meta.siteLang).
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:820px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+
+<h1>حارس لغة الموقع</h1>
+<div id="ui"><button id="b1">New chat</button> <span id="s1">Settings</span></div>
+
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th></tr></thead><tbody></tbody></table>
+
+<link rel="stylesheet" href="../extension/base.css">
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/dictionary.js"></script>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) { if (cb) cb(null); } });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_chatrtl: true, cml_rtl: true });
+// مستمع رسائل النافذة (القشرة بلا onMessage): نلتقطه لنسأله كما تسأله النافذة
+var HELLO = null;
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { HELLO = fn; } };
+window.chrome = MOCK.chrome;
+</script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g"), ""); }
+var H = document.documentElement;
+function snap() { return [H.getAttribute("dir") || "-", H.getAttribute("lang") || "-", H.getAttribute("data-cml") || "-", noBidi(document.getElementById("b1").textContent)].join("|"); }
+function hello() { var r = null; if (HELLO) HELLO({ type: "cml-hello" }, {}, function (x) { r = x; }); return r ? String(r.siteLang) + "/" + r.enabled : "no-hello"; }
+(async function () {
+  await wait(700);
+  check("الجدول: الحارس للتطبيق (meta.siteLang)، والنطاق من القاموس المبنيّ", "true/app", CMLConst.domain("app").meta.siteLang + "/" + CLAUDE_L10N.domain);
+  check("★ الموقع بالإنجليزية: الإضافة تعمل (اتجاه ولغة وترجمة)", "rtl|ar|on|محادثة جديدة", snap());
+  check("جواب النافذة: لا لغةَ أجنبية", "null/true", hello());
+  // الموقع يكتب لغةً أخرى اختارها المستخدم في حسابه
+  H.setAttribute("lang", "xx-YY");
+  await wait(500);
+  check("★ الموقع بلغةٍ أخرى: الإضافة تخمد كلها (لا اتجاه ولا lang=ar ولا ترجمة)", "-|xx-YY|-|New chat", snap());
+  check("★ إعداد المستخدم لم يُمسّ", "true", String(MOCK.localStore.cml_enabled === true));
+  check("★ جواب النافذة يحمل لغة الموقع (فتقول سبب الخمود)", "xx-YY/false", hello());
+  // تغيير إعدادٍ في أثناء الخمود لا يوقظ الإضافة
+  MOCK.fireChanged({ cml_rtl: { newValue: true } }, "local");
+  await wait(400);
+  check("تغيير إعدادٍ أثناء الخمود لا يوقظها", "-|xx-YY|-|New chat", snap());
+  // الموقع يعود إلى الإنجليزية
+  H.setAttribute("lang", "en-US");
+  await wait(600);
+  check("★ عودة الموقع إلى الإنجليزية: تعود الإضافة", "rtl|ar|on|محادثة جديدة", snap());
+  // عربيةُ الموقع نفسه (إن أتاحها يومًا) تُقدَّم على الإضافة
+  H.setAttribute("lang", "ar-SA");
+  await wait(500);
+  check("★ الموقع بعربيته هو (ar-SA): الإضافة تتنحّى", "-|ar-SA|-|New chat", snap());
+  H.setAttribute("lang", "en-US");
+  await wait(600);
+  check("ثم تعود بالإنجليزية", "rtl|ar|on|محادثة جديدة", snap());
+  // ★ الموقع يعيد رسم الجذر فيمحو سماتنا ويكتب لغةً أجنبية معًا: لا يُثبَّت شيءٌ فوقها (مراقب التثبيت لا يسبق الحارس)
+  H.removeAttribute("dir"); H.removeAttribute("data-cml"); H.setAttribute("lang", "xx-YY");
+  await wait(600);
+  check("★ محوُ السمات مع لغةٍ أجنبية معًا: لا تثبيت فوقها والإضافة خاملة", "-|xx-YY|-|New chat", snap());
+  // وما كتبه الموقع صار الأصل المستعاد: عودة الإنجليزية ثم إيقاف المستخدم يعيدان قيمة الموقع الأخيرة لا قيمة الإقلاع
+  H.setAttribute("lang", "en-GB");
+  await wait(600);
+  MOCK.localStore.cml_enabled = false;
+  MOCK.fireChanged({ cml_enabled: { newValue: false } }, "local");
+  await wait(500);
+  check("★ ما كتبه الموقع هو الأصل: إيقاف الإضافة يعيد lang=en-GB (لا قيمة الإقلاع en-US)", "-|en-GB|-|New chat", snap());
+  MOCK.localStore.cml_enabled = true;
+  MOCK.fireChanged({ cml_enabled: { newValue: true } }, "local");
+  await wait(500);
+  check("والتشغيل يعيدها", "rtl|ar|on|محادثة جديدة", snap());
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "sitelang " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "SITELANG: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

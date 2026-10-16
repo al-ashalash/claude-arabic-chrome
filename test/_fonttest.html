@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>font test</title>
+<!--
+  اختبار الخط العربي (DESIGN-fonts §٥.٤؛ S6-B): وحدة الخط cml-font.js والمحرّك engine.js الحقيقيان، وملفات الخطوط
+  المحزومة الحقيقية تُقرأ بـ fetch من مجلد الإضافة وتُكتب نسخها base64 كما يكتبها عامل الخدمة.
+  - أوجه «الموقع» مقلَّدة بـ local("Arial"), local("DejaVu Sans"), local("Liberation Sans") (وأخواتها للمذيَّل والأحادي)
+    فيصحّ على ويندوز ولينكس، وبمدى U+0000-00FF كوجوه العلامة التي لا عربية فيها: فيُمتحن سقوط العربية إلى وجهنا.
+  - كل سيناريو إطارٌ (_fontframe.html) بتخزينه وقاموسه، والوحدات فيه بترتيب المانيفست في <head> كأنها عند document_start.
+  - والصفحة نفسها إطارٌ أعلى يُقلع المحرّك فيه بنسخةٍ تالفة: طلبُ إصلاحٍ واحدٌ بالضبط، ثم «يكتب العامل» فتظهر الأوجه.
+  العقد: document.title = "fonttest N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1000px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vertical-align:top}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+#frames iframe{width:420px;height:220px;border:1px solid #999;display:inline-block;margin:4px}
+@font-face{font-family:"anthropic-sans";src:local("Arial"),local("DejaVu Sans"),local("Liberation Sans");font-weight:300 800;font-style:normal;unicode-range:U+0000-00FF}
+#tb{font-family:"anthropic-sans",system-ui}</style>
+<h1>اختبار الخط العربي</h1>
+<p><button id="tb">New chat</button></p>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<p id="notes"></p>
+<div id="frames"></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+// ── الإطار الأعلى: المحرّك يُقلع بنسخةٍ تالفة (بصمةٌ أخرى) فيطلب الإصلاح مرةً من الإطار الأعلى وحده ──
+var TOP = { sent: [], onMsg: null };
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true, cml_font_data: { id: "cairo", v: "0000000000000000", b64: "AAAA" } });
+MOCK.chrome.runtime.sendMessage = function (msg, cb) { TOP.sent.push(msg && msg.type); if (cb) setTimeout(function () { cb(undefined); }, 0); };
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { TOP.onMsg = fn; } };
+window.chrome = MOCK.chrome;
+var DICT = { "New chat": "محادثة جديدة", "Settings": "الإعدادات", "Projects": "المشاريع" };
+window.CLAUDE_L10N = { domain: "app", meta: { scan: "none", live: false, chat: true, hydrate: "none", siteLang: true,
+    fontFamilies: { "anthropic-sans": "ui", "anthropic-serif": "read", "anthropic-mono": "mono" } },
+  default: "ar", langs: [{ code: "ar" }], dicts: { ar: { dir: "rtl", strings: DICT, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/cml-font.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var TOPF = window.CMLFont.last, TOP_BOOT = TOPF ? TOPF.stats() : null;
+var C = CMLConst, SH = CMLShared;
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+  document.title = "fonttest " + pass + "/" + total + " …";
+}
+function note(t) { var n = document.getElementById("notes"); n.appendChild(document.createTextNode(t)); n.appendChild(document.createElement("br")); }
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function until(pred, ms) {
+  var t0 = Date.now();
+  return new Promise(function (res) {
+    (function tick() {
+      var v = false; try { v = pred(); } catch (e) {}
+      if (v || Date.now() - t0 > (ms || 5000)) { res(v); return; }
+      setTimeout(tick, 30);
+    })();
+  });
+}
+function frames2(win) { return new Promise(function (r) { win.requestAnimationFrame(function () { win.requestAnimationFrame(function () { r(); }); }); }); }
+// المدى بصيغةٍ واحدة: المتصفح يكتبه بلا أصفار بادئة (U+600-6FF) والفهرس بها (U+0600-06FF)
+function normRange(s) {
+  return String(s || "").split(",").map(function (p) {
+    p = p.trim().toUpperCase().replace(/^U\+/, "");
+    var ab = p.split("-"), a = parseInt(ab[0], 16), b = ab.length > 1 ? parseInt(ab[1], 16) : a;
+    return a.toString(16) + "-" + b.toString(16);
+  }).join(",");
+}
+var AR = normRange(C.FONT_AR_RANGE);
+function arFaces(win) { var out = []; win.document.fonts.forEach(function (f) { if (normRange(f.unicodeRange) === AR) out.push(f); }); return out; }
+function famsOf(list) { return list.map(function (f) { return SH.normFamily(f.family); }).sort().join(","); }
+function med(a) { a = a.slice().sort(function (x, y) { return x - y; }); return a[Math.floor(a.length / 2)]; }
+
+// ── الخطوط المحزومة الحقيقية ونسخها كما يكتبها عامل الخدمة ──
+var FDATA = {};
+function entryOf(id) { return C.FONTS.filter(function (e) { return e.id === id; })[0]; }
+function loadFonts() {
+  return Promise.all(C.FONTS.map(function (e) {
+    return fetch("../extension/" + e.file).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
+      FDATA[e.id] = { id: e.id, v: e.sha, b64: SH.bufToB64(buf) };
+    });
+  }));
+}
+
+// ── السيناريوهات: إطارٌ بتخزينه ونطاقه ──
+var LOCAL_SANS = 'local("Arial"),local("DejaVu Sans"),local("Liberation Sans")';
+var LOCAL_SERIF = 'local("Times New Roman"),local("DejaVu Serif"),local("Liberation Serif")';
+var LOCAL_MONO = 'local("Courier New"),local("DejaVu Sans Mono"),local("Liberation Mono")';
+function face(fam, srcs, more) { return '@font-face{font-family:' + fam + ';src:' + srcs + ';unicode-range:U+0000-00FF;' + (more || "") + '}'; }
+var APP_CSS = '<style>' +
+  face('"anthropic-sans"', LOCAL_SANS, 'font-weight:300 800;font-style:normal') +
+  face('"anthropic-sans"', LOCAL_SANS, 'font-weight:300 800;font-style:italic') +
+  face('"anthropic-serif"', LOCAL_SERIF, 'font-weight:300 800;font-style:normal') +
+  face('"anthropic-serif"', LOCAL_SERIF, 'font-weight:300 800;font-style:italic') +
+  face('"anthropic-mono"', LOCAL_MONO, 'font-weight:300 800') +
+  face('"Anthropicons"', LOCAL_SANS) + face('"KaTeX_Main"', LOCAL_SERIF) +
+  face('"anthropic-sans Fallback"', LOCAL_SANS, 'size-adjust:103%') +
+  ':root{--font-ui:"anthropic-sans", system-ui, sans-serif}body{font-family:var(--font-ui)}' +
+  '.serif{font-family:"anthropic-serif",serif}.mono{font-family:"anthropic-mono",monospace}</style>';
+var APP_BODY = '<button id="b1">New chat</button> <div id="d1">Settings</div> <p class="serif" id="s1">Projects</p>';
+var CFGS = {}, ENV = {}, seq = 0;
+window.__fsetup = function (win) {
+  var n = new URL(win.location.href).searchParams.get("n");
+  var cfg = CFGS[n], env = ENV[n];
+  var mock = makeChromeMock({ session: false });
+  Object.assign(mock.localStore, { cml_enabled: true, cml_rtl: cfg.rtl !== false }, cfg.seed || {});
+  env.win = win; env.mock = mock; env.sent = []; env.fetches = 0;
+  mock.chrome.runtime.sendMessage = function (msg, cb) { env.sent.push(msg && msg.type); if (cb) setTimeout(function () { cb(undefined); }, 0); };
+  mock.chrome.runtime.onMessage = { addListener: function (fn) { env.onMsg = fn; } };
+  win.chrome = mock.chrome;
+  var d = cfg.domain || "app";
+  var meta = Object.assign({}, C.domain(d).meta, { live: false, scan: "none" }, cfg.meta || {});
+  win.CLAUDE_L10N = { domain: d, meta: meta, default: "ar", langs: [{ code: "ar" }, { code: "xx" }],
+    dicts: { ar: { dir: "rtl", strings: DICT, patterns: [], plurals: {} }, xx: { dir: "ltr", strings: {}, patterns: [], plurals: {} } } };
+  var rf = win.fetch;
+  win.fetch = function () { env.fetches++; return rf.apply(win, arguments); };
+  win.addEventListener("error", function () { jsErrors++; });
+  var after = cfg.afterEngine;
+  cfg.afterEngine = function (w) { env.F = w.CMLFont && w.CMLFont.last; env.boot = env.F ? env.F.stats() : null; env.bootAr = arFaces(w); if (after) after(w); };
+  return cfg;
+};
+var FETCHES = 0;
+function frame(cfg, path) {
+  var n = "f" + (++seq);
+  CFGS[n] = cfg; ENV[n] = { name: n };
+  var ifr = document.createElement("iframe");
+  ifr.src = (path || "_fontframe.html") + "?n=" + n;
+  document.getElementById("frames").appendChild(ifr);
+  var env = ENV[n];
+  env.el = ifr;
+  env.done = function () { FETCHES += env.fetches; try { ifr.remove(); } catch (e) {} };
+  return until(function () { return env.win && env.win.document.readyState === "complete" && env.F; }, 15000).then(function () { return env; });
+}
+function set(env, obj) { env.mock.chrome.storage.local.set(obj); }
+function stats(env) { return env.F.stats(); }
+function settled(env) { return until(function () { var s = stats(env); return s.pending === 0 && s.tier >= 1; }, 5000); }
+
+(async function () {
+  try {
+    await loadFonts();
+    var CAIRO = entryOf("cairo"), NASKH = entryOf("noto-naskh-arabic"), MARK = entryOf("markazi-text");
+
+    // ══ ١ (★) الإقلاع: وجه الإقلاع وحده، ثم المنتظم للقراءة والشيفرة، بواصفات الموقع حرفًا ومدًى عربي ══
+    var E = await frame({ headEarly: APP_CSS, body: APP_BODY, seed: { cml_font_data: FDATA.cairo } });
+    // «الإقلاع» نداء sync الأول في استدعاء loadSettings قبل endBoot (الوحدة تسجّل ما بنته فيه)؛ وأول نداءٍ لمراقب الترجمة
+    // بعده بلحظة يرفع الدرجة، فالأطر هنا لا تُقرأ إلا بعده
+    var bootFam = arFaces(E.win).filter(function (f) { return SH.normFamily(f.family) === "anthropic-sans" && f.style === "normal"; }).length;
+    check("★ ١ في الإقلاع وجه الإقلاع وحده: الدلو المنتظم للدور ui", "1/1", E.boot.bootFaces + "/" + bootFam);
+    await settled(E);
+    check("★ ١ ثم الدلاء المنتظمة للقراءة والشيفرة عند أول check أو في الإطار التالي", "3/3/anthropic-mono,anthropic-sans,anthropic-serif",
+      stats(E).faces + "/" + stats(E).families + "/" + famsOf(arFaces(E.win)));
+    var siteFaces = []; E.win.document.fonts.forEach(function (f) { if (normRange(f.unicodeRange) !== AR) siteFaces.push(f); });
+    var copied = arFaces(E.win).every(function (f) {
+      return siteFaces.some(function (s) { return SH.normFamily(s.family) === SH.normFamily(f.family) && s.weight === f.weight && s.style === f.style && s.stretch === f.stretch; });
+    });
+    check("★ ١ weight/style/stretch منسوخةٌ من وجه الموقع حرفًا، والمدى هو FONT_AR_RANGE", "true/true",
+      copied + "/" + arFaces(E.win).every(function (f) { return normRange(f.unicodeRange) === AR; }));
+    check("★ السمة data-cml-font على <html> ما دام لنا وجه", "true", E.win.document.documentElement.hasAttribute(C.FONT_ATTR));
+    // ٢ لا وجه لعائلةٍ خارج القائمة
+    check("★ ٢ لا وجه للأيقونات ولا KaTeX ولا «… Fallback»", "true",
+      arFaces(E.win).every(function (f) { return ["anthropic-sans", "anthropic-serif", "anthropic-mono"].indexOf(SH.normFamily(f.family)) >= 0; }));
+    // ١٤ الواصفات المترية بحسب الدور، وصندوق العلامة بالبناء
+    var roleOf = { "anthropic-sans": "ui", "anthropic-serif": "read", "anthropic-mono": "mono" };
+    var metricsOk = arFaces(E.win).every(function (f) {
+      var d = SH.fontFaceDesc(CAIRO, roleOf[SH.normFamily(f.family)]);
+      return f.sizeAdjust === d.sizeAdjust && f.ascentOverride === d.ascentOverride && f.descentOverride === d.descentOverride && f.lineGapOverride === d.lineGapOverride;
+    });
+    var box = ["ui", "read"].every(function (r) { var m = CAIRO.m[r]; return Math.abs(m.a * m.s - 0.9925) <= 0.005 && Math.abs(m.d * m.s - 0.2575) <= 0.005; });
+    check("١٤ الواصفات المترية تساوي الفهرس بحسب الدور (read غير ui)، وa×s وd×s صندوق العلامة", "true/true/true",
+      metricsOk + "/" + (SH.fontFaceDesc(CAIRO, "read").ascentOverride !== SH.fontFaceDesc(CAIRO, "ui").ascentOverride) + "/" + box);
+    // ١٥ لا عنصر يُضاف، ولا سمة إلا data-cml-font على <html>
+    check("★ ١٥ الوحدة لا تضيف <style> ولا <link>، ولا سمة إلا data-cml-font على <html> وحده", "1/1/true",
+      E.win.document.querySelectorAll("style,link").length + "/" + E.win.document.querySelectorAll("[" + C.FONT_ATTR + "]").length + "/" +
+      (E.win.document.querySelector("[" + C.FONT_ATTR + "]") === E.win.document.documentElement));
+    // ١٩ البلوغ: ok بعد أن كتب المحرّك ترجمته
+    var reachOk = stats(E).reach;
+    // ١١ الدلاء غير المنتظمة عند الاستعمال وحده، و١٠ المائل يُعلَن italic ويطابق رسمُه القائمَ بكسلًا بكسلًا
+    var italBefore = arFaces(E.win).some(function (f) { return f.style === "italic"; });
+    await E.win.document.fonts.load("italic 16px anthropic-sans", "A");
+    await until(function () { return arFaces(E.win).some(function (f) { return f.style === "italic"; }); }, 3000);
+    var italAfter = arFaces(E.win).some(function (f) { return f.style === "italic" && SH.normFamily(f.family) === "anthropic-sans"; });
+    check("١١ الدلاء غير المنتظمة لا تُعكس إلا بعد أن يصير وجه الموقع loading", "false/true", italBefore + "/" + italAfter);
+    function ink(win, font) {
+      var c = win.document.createElement("canvas"); c.width = 360; c.height = 48;
+      var x = c.getContext("2d"); x.font = font; x.fillStyle = "#000"; x.fillText("محادثة جديدة · الإعدادات", 4, 34);
+      return Array.prototype.join.call(x.getImageData(0, 0, 360, 48).data, "");
+    }
+    await sleep(50);
+    var inkN = ink(E.win, "normal 400 24px anthropic-sans"), inkI = ink(E.win, "italic 400 24px anthropic-sans");
+    check("١٠ الدلو المائل يُعكس italic، والعربية فيه ترسم كالقائمة بكسلًا بكسلًا (لا ميل مصطنع)", "true/true",
+      arFaces(E.win).some(function (f) { return f.style === "italic"; }) + "/" + (inkN === inkI && inkN.length > 0));
+    // ٤ (★) لكل خط: العرض غير خط النظام، والوزن متغيّر (700 ≠ 400، و500 بينهما)
+    function arWidth(win, w, fam) {
+      var s = win.document.createElement("span");
+      s.style.cssText = "font:" + w + " 22px " + fam + ";white-space:nowrap";
+      s.textContent = "محادثة جديدة والإعدادات والمشاريع";
+      win.document.body.appendChild(s);
+      var r = s.getBoundingClientRect().width; s.remove(); return r;
+    }
+    for (var fi = 0; fi < C.FONTS.length; fi++) {
+      var fe = C.FONTS[fi];
+      if (stats(E).id !== fe.id) {
+        var w1 = {}; w1.cml_font = fe.id; w1.cml_font_data = FDATA[fe.id];
+        set(E, w1);
+        await until(function () { return stats(E).id === fe.id && stats(E).pending === 0; }, 4000);
+        await frames2(E.win);
+      }
+      var sys = arWidth(E.win, 400, "sans-serif"), a4 = arWidth(E.win, 400, "anthropic-sans"), a5 = arWidth(E.win, 500, "anthropic-sans"), a7 = arWidth(E.win, 700, "anthropic-sans");
+      check("★ ٤ " + fe.family + ": العربية بوجهنا لا بخط النظام، ومحور الوزن يعمل (700 ≠ 400، و500 بينهما)", "true/true/true",
+        (Math.abs(sys - a4) > 0.5) + "/" + (Math.abs(a7 - a4) > 0.5) + "/" + (Math.min(a4, a7) <= a5 && a5 <= Math.max(a4, a7)));
+    }
+    var eCompact = stats(E).compact;
+    // lostVars: محوُ السمة يعيده watchHtml
+    E.win.document.documentElement.removeAttribute(C.FONT_ATTR);
+    await sleep(60);
+    check("watchHtml يعيد data-cml-font إن محاه الموقع (F.lostVars)", "true", E.win.document.documentElement.hasAttribute(C.FONT_ATTR));
+    // ١٦ (★) document.fonts.clear() من الصفحة: يُعاد عند المحفِّز التالي فقط، ولا حلقة
+    var nBefore = arFaces(E.win).length, p0 = stats(E).passes;
+    E.win.document.fonts.clear();
+    var afterClear = arFaces(E.win).length;
+    await sleep(80);
+    var stillGone = arFaces(E.win).length;
+    E.win.document.body.appendChild(E.win.document.createElement("i")); // محفِّزٌ طبيعي: طفرةٌ يراها مراقب الترجمة
+    await until(function () { return arFaces(E.win).length === nBefore; }, 2000);
+    await sleep(300);
+    check("★ ١٦ document.fonts.clear() من الصفحة: لا إعادة إلا عند المحفِّز التالي، وتمريراتٌ محدودة", "0/0/true/true",
+      afterClear + "/" + stillGone + "/" + (arFaces(E.win).length === nBefore) + "/" + (stats(E).passes - p0 <= 3));
+    E.done();
+
+    // ══ ١٩ البلوغ none: قاعدة :root:lang(ar) من الموقع تحذف العائلة من متغيّرها ══
+    var EL = await frame({ seed: { cml_font_data: FDATA.cairo }, headEarly: '<style>' + face('"anthropic-sans"', LOCAL_SANS, 'font-weight:300 800') +
+      ':root{--font-ui:"anthropic-sans", system-ui, sans-serif}:root:lang(ar){--font-ui:system-ui, sans-serif}button,div{font-family:var(--font-ui)}</style>',
+      body: APP_BODY });
+    await settled(EL);
+    var reachNone = stats(EL).reach;
+    set(EL, { cml_font: C.FONT_SITE });
+    var reachSite = stats(EL).reach;
+    set(EL, { cml_font: "cairo" });
+    set(EL, { cml_enabled: false });
+    var reachOff = stats(EL).reach;
+    EL.done();
+    // err: نسخةٌ سليمة الطول والترويسة والبصمة، فاسدة الجسم ⇒ فشل التحليل
+    var junk = new Uint8Array(CAIRO.bytes); junk.set([0x77, 0x4f, 0x46, 0x32]);
+    for (var ji = 4; ji < junk.length; ji++) junk[ji] = (ji * 7) & 255;
+    var EE = await frame({ headEarly: APP_CSS, body: APP_BODY, seed: { cml_font_data: { id: "cairo", v: CAIRO.sha, b64: SH.bufToB64(junk.buffer) } } });
+    await sleep(100);
+    check("★ ١٩ البلوغ: ok بأوجهنا، وnone بقاعدة :lang(ar) تحذف العائلة، وoff مع «خط الموقع» والإطفاء، وerr عند فشل التحليل",
+      "ok/none/off/off/err", reachOk + "/" + reachNone + "/" + reachSite + "/" + reachOff + "/" + stats(EE).reach);
+    check("وفشل التحليل لا يترك وجهًا ولا سمة، ولا يُعاد", "0/false/0",
+      stats(EE).faces + "/" + EE.win.document.documentElement.hasAttribute(C.FONT_ATTR) + "/" + arFaces(EE.win).length);
+    EE.done();
+
+    // ══ ٢ لاسمٍ في القائمة لم تعلنه الصفحة لا وجه، وFONT_MONO=false يُسقط دور mono ══
+    var ED = await frame({ domain: "docs", meta: { routes: null, hydrate: "none" }, seed: { cml_font_data: FDATA.cairo },
+      headEarly: '<style>' + face("anthropicSans", LOCAL_SANS, 'font-weight:300 800') + '</style>', body: APP_BODY });
+    await settled(ED);
+    check("★ ٢ عائلاتٌ في القائمة لم يعلنها الموقع (anthropicSerif وanthropicMono) بلا وجه", "1/anthropicsans",
+      stats(ED).faces + "/" + famsOf(arFaces(ED.win)));
+    ED.done();
+    var EM = await frame({ headEarly: APP_CSS, body: APP_BODY, seed: { cml_font_data: FDATA.cairo }, afterConst: function (w) { w.CMLConst.FONT_MONO = false; } });
+    await settled(EM);
+    check("★ ٢ FONT_MONO=false يُسقط دور الشيفرة كله", "2/false", stats(EM).faces + "/" + arFaces(EM.win).some(function (f) { return SH.normFamily(f.family) === "anthropic-mono"; }));
+    EM.done();
+
+    // ══ وثائق Claude Code: وجهان في الإقلاع، والوجه المضغوط بقيم سياقه (S5d-B) ══
+    var CODE_CSS = '<style>' + face('"Anthropic Sans"', LOCAL_SANS, 'font-weight:400') + face('"Anthropic Sans"', LOCAL_SANS, 'font-weight:600') +
+      face("Inter", LOCAL_SANS, 'font-weight:100 900') + face('"Anthropic Serif"', LOCAL_SERIF, 'font-weight:400') + face("paperMono", LOCAL_MONO, 'font-weight:100 800') + '</style>';
+    var EC = await frame({ domain: "code", meta: { routes: null, hydrate: "none" }, seed: { cml_font_data: FDATA.cairo }, headEarly: CODE_CSS, body: APP_BODY });
+    await settled(EC);
+    var comp = arFaces(EC.win).filter(function (f) { return SH.normFamily(f.family) === "cml-ar-compact"; });
+    check("١ وثائق Claude Code: وجهان في الإقلاع (عائلتا ui)، ثم المنتظم للقراءة والشيفرة", "2/4", stats(EC).bootFaces + "/" + (stats(EC).faces - stats(EC).compact));
+    check("★ «cml-ar-compact» بقيم clamp لسياقه: code ← 0.85 بوجهين، وapp (null) بلا وجه", "2/" + (CAIRO.clamp.code.s * 100) + "%/" + CAIRO.wght.join(" ") + "/0",
+      comp.length + "/" + (comp[0] && comp[0].sizeAdjust) + "/" + (comp[0] && comp[0].weight) + "/" + eCompact);
+    EC.done();
+
+    // ══ ٥ (★) أول رسمٍ للعربية: في أول إطارٍ بعد أن يكتب المحرّك عربيته، وجه الإقلاع موجود ══
+    var paint = { seen: false, ok: null };
+    var E5 = await frame({ headEarly: APP_CSS, body: APP_BODY, seed: { cml_font_data: FDATA.cairo }, afterConst: function (w) {
+      var mo = new w.MutationObserver(function () {
+        if (paint.seen) return;
+        var t = w.document.body && w.document.body.textContent;
+        if (!t || t.indexOf("محادثة") < 0) return;
+        paint.seen = true;
+        w.requestAnimationFrame(function () {
+          var have = false;
+          w.document.fonts.forEach(function (f) { if (normRange(f.unicodeRange) === AR && SH.normFamily(f.family) === "anthropic-sans" && f.status === "loaded") have = true; });
+          paint.ok = have;
+        });
+      });
+      mo.observe(w.document.documentElement, { childList: true, subtree: true, characterData: true });
+    } });
+    await until(function () { return paint.ok !== null; }, 3000);
+    check("★ ٥ أول رسمٍ للعربية المترجَمة: وجه الإقلاع حاضرٌ في إطاره (قبل الرسم)", "true/true", paint.seen + "/" + paint.ok);
+    E5.done();
+
+    // ══ ٦ (★) صفر أوجه ولا سمة في كل حالٍ خاملة، وتعود بلا إعادة تحميل ══
+    var E6 = await frame({ headEarly: APP_CSS, body: APP_BODY, seed: { cml_font_data: FDATA.cairo } });
+    await settled(E6);
+    async function offOn(label, off, on) {
+      off();
+      await sleep(30);
+      var z = stats(E6).faces + "/" + E6.win.document.documentElement.hasAttribute(C.FONT_ATTR);
+      on();
+      await until(function () { return stats(E6).faces > 0; }, 3000);
+      check("★ ٦ " + label + ": صفر أوجه ولا سمة، وتعود بلا إعادة تحميل", "0/false/true", z + "/" + (stats(E6).faces > 0));
+    }
+    await offOn("المفتاح الرئيس مطفأ", function () { set(E6, { cml_enabled: false }); }, function () { set(E6, { cml_enabled: true }); });
+    await offOn("الموقع مطفأ", function () { set(E6, { "cml_site.app": false }); }, function () { set(E6, { "cml_site.app": true }); });
+    await offOn("واجهة الموقع بغير الإنجليزية (حارس لغة الموقع، ق٧)", function () { E6.win.document.documentElement.setAttribute("lang", "xx-YY"); },
+      function () { E6.win.document.documentElement.setAttribute("lang", "en"); });
+    await offOn("لغة التعريب غير العربية", function () { set(E6, { cml_lang: "xx" }); }, function () { set(E6, { cml_lang: "ar" }); });
+    await offOn("cml_font = \"site\"", function () { set(E6, { cml_font: C.FONT_SITE }); }, function () { set(E6, { cml_font: "cairo" }); });
+    E6.done();
+    // المسار الخامل: الوثائق خارج ‎/docs/en/‎ خاملة، وتعمل بالتنقّل إليه ثم تخمد بالخروج — بلا إعادة تحميل
+    var ER = await frame({ domain: "docs", meta: { hydrate: "none" }, seed: { cml_font_data: FDATA.cairo },
+      headEarly: '<style>' + face("anthropicSans", LOCAL_SANS, 'font-weight:300 800') + '</style>', body: APP_BODY });
+    var r0 = stats(ER).faces + "/" + ER.win.document.documentElement.hasAttribute(C.FONT_ATTR);
+    ER.win.history.pushState({}, "", "/docs/en/intro"); ER.win.dispatchEvent(new ER.win.PopStateEvent("popstate"));
+    await until(function () { return stats(ER).faces > 0; }, 3000);
+    var r1 = stats(ER).faces > 0;
+    ER.win.history.pushState({}, "", "/settings/keys"); ER.win.dispatchEvent(new ER.win.PopStateEvent("popstate"));
+    await until(function () { return stats(ER).faces === 0; }, 3000);
+    check("★ ٦ المسار الخامل: صفر أوجه، والتنقّل إلى المسار الكامل يعيدها والخروج يحذفها", "0/false/true/0/0",
+      r0 + "/" + r1 + "/" + stats(ER).faces + "/" + ER.sent.filter(function (t) { return t === "font-ensure"; }).length);
+    ER.done();
+
+    // ══ ٧ (★) التبديل الحيّ عبر onChanged ══
+    var spy = { n: 0 };
+    var E7 = await frame({ rtl: false, headEarly: APP_CSS, body: APP_BODY, seed: { cml_font_data: FDATA.cairo }, afterConst: function (w) {
+      var q = w.Document.prototype.querySelectorAll;
+      w.Document.prototype.querySelectorAll = function (s) { if (s === '[data-cml-noflip="computed"]') spy.n++; return q.apply(this, arguments); };
+    } });
+    await settled(E7);
+    var n0 = stats(E7).faces, s0 = spy.n, oldFaces = arFaces(E7.win);
+    set(E7, { cml_font: "noto-naskh-arabic" });
+    var kept = stats(E7).id + "/" + stats(E7).faces + "/" + oldFaces.every(function (f) { return E7.win.document.fonts.has(f); });
+    set(E7, { cml_font_data: FDATA["noto-naskh-arabic"] });
+    await until(function () { return stats(E7).id === "noto-naskh-arabic" && stats(E7).pending === 0; }, 4000);
+    check("★ ٧ التبديل إلى معرّفٍ جديد يُبقي الأوجه القديمة إلى أن تصل نسخته", "cairo/" + n0 + "/true", kept);
+    check("★ ٧ ثم تُستبدل الأوجه بالعدد نفسه", n0 + "/false", stats(E7).faces + "/" + oldFaces.some(function (f) { return E7.win.document.fonts.has(f); }));
+    check("★ ٧ والتبديل لا يستدعي fullPass (جاسوس عدّاد)، والجاسوس يرى الإقلاع", "true/0", (s0 > 0) + "/" + (spy.n - s0));
+    set(E7, { cml_font: C.FONT_SITE });
+    check("★ ٧ «خط الموقع» يحذف الأوجه فورًا، ولا font-ensure واحدة في التبديل الحيّ", "0/false/0",
+      stats(E7).faces + "/" + E7.win.document.documentElement.hasAttribute(C.FONT_ATTR) + "/" + E7.sent.filter(function (t) { return t === "font-ensure"; }).length);
+    E7.done();
+
+    // ══ ٨ (★) النسخة غائبة أو تالفة في الإقلاع: صفر أوجه، وصفر طلبٍ من الإطار الفرعي ══
+    var B64LEN = Math.ceil(CAIRO.bytes / 3) * 4;
+    var hdr = new Uint8Array(CAIRO.bytes); hdr.set([0x00, 0x01, 0x00, 0x00]);
+    var bad = {
+      "غائبة": undefined,
+      "معرّفٌ آخر": FDATA["markazi-text"],
+      "بصمةٌ أخرى": { id: "cairo", v: "ffffffffffffffff", b64: FDATA.cairo.b64 },
+      "طولٌ خاطئ": { id: "cairo", v: CAIRO.sha, b64: FDATA.cairo.b64.slice(0, -4) },
+      "base64 فاسد": { id: "cairo", v: CAIRO.sha, b64: new Array(B64LEN + 1).join("*") },
+      "سجلُّ err": { id: "cairo", v: CAIRO.sha, err: "file" },
+      "ترويسةٌ غير wOF2": { id: "cairo", v: CAIRO.sha, b64: SH.bufToB64(hdr.buffer) },
+    };
+    var badRes = [], badSent = 0;
+    for (var bk in bad) {
+      var seedB = {}; if (bad[bk] !== undefined) seedB.cml_font_data = bad[bk];
+      var EB = await frame({ headEarly: APP_CSS, body: APP_BODY, seed: seedB });
+      await sleep(40);
+      badRes.push(stats(EB).faces + arFaces(EB.win).length);
+      badSent += EB.sent.filter(function (t) { return t === "font-ensure"; }).length;
+      EB.done();
+    }
+    check("★ ٨ النسخة غائبة أو تالفة في الإقلاع (" + Object.keys(bad).length + " صور): صفر أوجه بلا استثناء، وصفر font-ensure من الإطار الفرعي",
+      Object.keys(bad).map(function () { return 0; }).join(",") + "/0", badRes.join(",") + "/" + badSent);
+    // ★ (المراجعة العدائية S6-B) نسخةٌ تالفة الجسم بترويسةٍ وطولٍ صحيحين: لا يكشفها إلا التحليل ⇒ err وصفر أوجه وطلب
+    // إصلاحٍ واحد (onFail)؛ ثم النسخة المُصلَحة تحت المعرّف والبصمة أنفسهما تُفكّ من جديد فتظهر الأوجه بلا إعادة تحميل
+    var body = new Uint8Array(SH.b64ToBuf(FDATA.cairo.b64));
+    for (var bi = 48; bi < body.length; bi++) body[bi] = (bi * 7) & 0xff;
+    var badBody = { id: "cairo", v: CAIRO.sha, b64: SH.bufToB64(body.buffer) };
+    var EBB = await frame({ headEarly: APP_CSS, body: APP_BODY, seed: { cml_font_data: badBody } });
+    await sleep(60);
+    var bbErr = stats(EBB).reach + "/" + (stats(EBB).faces + arFaces(EBB.win).length);
+    set(EBB, { cml_font_data: FDATA.cairo });
+    await until(function () { return stats(EBB).faces > 0; }, 3000);
+    check("★ ٨ نسخةٌ تالفة الجسم (ترويسةٌ وطولٌ صحيحان): err بلا وجه، ثم المُصلَحة بالبصمة نفسها تُفكّ من جديد فتظهر الأوجه", "err/0/true/ok",
+      bbErr + "/" + (stats(EBB).faces > 0) + "/" + stats(EBB).reach);
+    EBB.done();
+    var failN = 0, FX = CMLFont.create({ families: { "anthropic-sans": "ui" }, ctx: "app", onFail: function () { failN++; } });
+    FX.sync(true, CAIRO, badBody.b64);
+    await sleep(60);
+    FX.sync(true, CAIRO, badBody.b64); // النصّ نفسه لا يُعاد فكّه ولا يُعاد الطلب
+    await sleep(30);
+    var fxErr = FX.stats().reach + "/" + failN;
+    FX.sync(false);
+    check("★ ٨ فشل التحليل يُبلغ المحرّك مرةً (onFail ← font-ensure من الإطار الأعلى)", "err/1", fxErr);
+
+    // ══ ٩ الأوزان الثابتة 400/500/600/700 ⇒ أربعة أوجهٍ ثابتة من الملف المتغيّر نفسه (مركز المساعدة) ══
+    var SUP_CSS = '<style>' + [400, 500, 600, 700].map(function (w) { return face('"AnthropicSans-Regular-Web"', LOCAL_SANS, "font-weight:" + w); }).join("") +
+      face('"AnthropicSans-Regular-Web"', LOCAL_SANS, "font-style:italic") + '</style>';
+    var E9 = await frame({ domain: "support", meta: { hydrate: "none", bodies: false }, seed: { cml_font_data: FDATA.cairo }, headEarly: SUP_CSS, body: APP_BODY });
+    await settled(E9);
+    await Promise.all([500, 600, 700].map(function (w) { return E9.win.document.fonts.load(w + " 16px AnthropicSans-Regular-Web", "A"); }));
+    await until(function () { return arFaces(E9.win).filter(function (f) { return f.style === "normal"; }).length === 4; }, 3000);
+    check("٩ أوجه الموقع الثابتة 400/500/600/700 ⇒ أربعة أوجهٍ بأوزانٍ ثابتة من الملف المتغيّر", "400,500,600,700",
+      arFaces(E9.win).filter(function (f) { return f.style === "normal" && SH.normFamily(f.family) !== "cml-ar-compact"; }).map(function (f) { return f.weight; }).sort().join(","));
+    E9.done();
+
+    // ══ ١٢ المصالحة (ن١٣): ورقةٌ لاحقة، وحذفٌ وعودة داخل المهلة، وعودةٌ بواصفاتٍ أخرى، وحذفٌ بلا عودة ══
+    var E12 = await frame({ headEarly: '<style>' + face('"anthropic-sans"', LOCAL_SANS, 'font-weight:300 800') + face('"ctl-serif"', LOCAL_SERIF, 'font-weight:400 600') +
+      'body{font-family:"anthropic-sans",sans-serif}</style>', body: APP_BODY, seed: { cml_font_data: FDATA.cairo } });
+    await settled(E12);
+    function addSheet(win, css) {
+      var u = win.URL.createObjectURL(new win.Blob([css], { type: "text/css" }));
+      var l = win.document.createElement("link"); l.rel = "stylesheet"; l.href = u;
+      win.document.head.appendChild(l); return l;
+    }
+    function serifOurs() { return arFaces(E12.win).filter(function (f) { return SH.normFamily(f.family) === "anthropic-serif"; }); }
+    var L1 = addSheet(E12.win, face('"anthropic-serif"', LOCAL_SERIF, 'font-weight:300 800'));
+    await until(function () { return serifOurs().length === 1; }, 3000);
+    check("١٢ ورقةٌ تُلحق بعد DOMContentLoaded ⇒ تُعكس عائلتها عند load", "1/300 800", serifOurs().length + "/" + (serifOurs()[0] && serifOurs()[0].weight));
+    var F1 = serifOurs()[0], gap = false, sampling = true;
+    (function sample() { if (!sampling) return; if (!serifOurs().length) gap = true; E12.win.requestAnimationFrame(sample); })();
+    L1.remove();
+    await sleep(300);
+    var L2 = addSheet(E12.win, face('"anthropic-serif"', LOCAL_SERIF, 'font-weight:300 800'));
+    await sleep(400);
+    sampling = false;
+    check("١٢ حذف الورقة ثم إعادتها داخل المهلة ⇒ لا يُحذف وجهُنا، ولا إطار بلا خطنا", "true/false", (serifOurs()[0] === F1) + "/" + gap);
+    function enWidth(fam) {
+      var s = E12.win.document.createElement("span"); s.style.cssText = "font:500 20px " + fam + ";white-space:nowrap"; s.textContent = "Quick brown fox 0123";
+      E12.win.document.body.appendChild(s); var r = s.getBoundingClientRect().width; s.remove(); return r;
+    }
+    L2.remove();
+    var L3 = addSheet(E12.win, face('"anthropic-serif"', LOCAL_SERIF, 'font-weight:400 600'));
+    await until(function () { return serifOurs().length === 1 && serifOurs()[0].weight === "400 600"; }, 3000);
+    await E12.win.document.fonts.load("500 20px anthropic-serif", "Q");
+    await E12.win.document.fonts.load("500 20px ctl-serif", "Q");
+    check("١٢ عودتها بواصفاتٍ أخرى ⇒ يُستبدل وجهُنا فورًا، والإنجليزية بخط الموقع", "1/400 600/false/true",
+      serifOurs().length + "/" + serifOurs()[0].weight + "/" + E12.win.document.fonts.has(F1) + "/" + (Math.abs(enWidth('"anthropic-serif"') - enWidth('"ctl-serif"')) < 0.01));
+    L3.remove();
+    E12.win.document.body.appendChild(E12.win.document.createElement("i"));
+    await sleep(600);
+    var orphanStill = serifOurs().length;
+    await until(function () { return serifOurs().length === 0; }, 3500);
+    check("١٢ حذفها بلا عودة ⇒ يبقى اليتيم في المهلة ثم يُحذف بعدها", "1/0", orphanStill + "/" + serifOurs().length);
+    E12.done();
+
+    // ══ ١٣ الإلحاق (مركز الخصوصية) ══
+    var PRIV_CSS = '<style>:root{--font-family-primary: system-ui, "Segoe UI", sans-serif; --font-family-secondary: "Tiempos Text Regular", serif}' +
+      face('"Tiempos Text Regular"', LOCAL_SERIF, 'font-weight:400') + 'body{font-family:var(--font-family-primary)}h1{font-family:var(--font-family-secondary)}</style>';
+    var E13 = await frame({ domain: "privacy", meta: { hydrate: "none", bodies: false }, seed: { cml_font_data: FDATA.cairo }, headEarly: PRIV_CSS,
+      body: '<h1>Settings</h1><div id="__next"><p>New chat</p></div>' });
+    await settled(E13);
+    var H13 = E13.win.document.documentElement;
+    function pv(v) { return H13.style.getPropertyValue(v).trim(); }
+    function arFamCount(win, fam) { return arFaces(win).filter(function (f) { return SH.normFamily(f.family) === fam; }).length; }
+    check("★ ١٣ رصّة نظامٍ (متن الخصوصية) ⇒ \"cml-ar\" أولًا، ومتغيّرٌ يبدأ بخطٍّ معلَن لا يُمسّ، ووجها cml-ar", "true//2",
+      (pv("--font-family-primary").indexOf('"cml-ar", system-ui') === 0) + "/" + pv("--font-family-secondary") + "/" + arFamCount(E13.win, "cml-ar"));
+    set(E13, { cml_enabled: false });
+    var offV = pv("--font-family-primary") + "/" + arFamCount(E13.win, "cml-ar");
+    set(E13, { cml_enabled: true });
+    await until(function () { return pv("--font-family-primary").indexOf('"cml-ar"') === 0; }, 3000);
+    H13.removeAttribute("style");
+    await until(function () { return pv("--font-family-primary").indexOf('"cml-ar"') === 0; }, 2000);
+    check("١٣ الإطفاء يزيل الإلحاق ووجهيه، ومحوُ style على <html> يعيده watchHtml", "/0/true", offV + "/" + (pv("--font-family-primary").indexOf('"cml-ar"') === 0));
+    var st13 = E13.win.document.createElement("style");
+    st13.textContent = face('"Brand Sans"', LOCAL_SANS) + ':root{--font-family-primary:"Brand Sans", system-ui, sans-serif}';
+    E13.win.document.head.appendChild(st13);
+    await until(function () { return pv("--font-family-primary") === ""; }, 3000);
+    check("١٣ إذا صار أول اسمٍ خطًّا معلَنًا انطفأ الإلحاق من نفسه", "/0", pv("--font-family-primary") + "/" + arFamCount(E13.win, "cml-ar"));
+    E13.done();
+
+    // ══ ٣ (★) سطرٌ إنجليزي في عائلة الموقع، قبل تحميل وجه الموقع وبعده (ن٦) ══
+    // وجه «الموقع» يُجلب بعنوانٍ (فيُقاس قبل اكتماله) وبصندوق العلامة (99.25٪/25.75٪، كوجوه «… Fallback» في اللقطات)، وبعده في
+    // الرصّة «… Fallback» محليٌّ بالصندوق نفسه كما تعلنه المواقع
+    async function metrics(useFont, tag) {
+      var BOX = "ascent-override:99.25%;descent-override:25.75%;line-gap-override:0%";
+      var css = '<style>' + face('"anthropic-sans"', LOCAL_SANS, 'font-weight:300 800') +
+        '@font-face{font-family:"anthropic-serif";src:url("../extension/fonts/markazi-text.woff2?m=' + tag + '") format("woff2");font-weight:300 800;unicode-range:U+0000-00FF;' + BOX + '}' +
+        face('"anthropic-serif Fallback"', LOCAL_SERIF, BOX) + '</style>';
+      var seed3 = { cml_font_data: FDATA.cairo }; if (!useFont) seed3.cml_font = C.FONT_SITE;
+      var E3 = await frame({ headEarly: css, body: '<p>x</p>', seed: seed3 });
+      if (useFont) await settled(E3); else await sleep(50);
+      var d = E3.win.document, out = [];
+      function probe(fam) {
+        var w = d.createElement("div"); w.style.cssText = "font-size:16px;line-height:normal;font-family:" + fam;
+        w.innerHTML = '<span class="t">Hello, World! Quick 0123</span><span class="c" style="display:inline-block;width:1ch;height:1ex"></span>';
+        d.body.appendChild(w);
+        var t = w.querySelector(".t").getBoundingClientRect(), c = w.querySelector(".c").getBoundingClientRect();
+        return { w: t.width.toFixed(3), h: t.height.toFixed(3), ch: c.width.toFixed(3), ex: c.height.toFixed(3) };
+      }
+      var serifStack = '"anthropic-serif", "anthropic-serif Fallback"';
+      var pre = probe(serifStack);            // قبل تحميل وجه الموقع: الاستعمال الأول يطلق تحميله
+      var sansPre = probe('"anthropic-sans"');
+      await d.fonts.ready;
+      await frames2(E3.win);
+      var post = probe(serifStack), sansPost = probe('"anthropic-sans"');
+      var faces3 = stats(E3).faces;
+      E3.done();
+      return { pre: pre, post: post, sansPre: sansPre, sansPost: sansPost, faces: faces3 };
+    }
+    function k4(m) { return [m.w, m.h, m.ch, m.ex].join(","); }
+    var mOn = await metrics(true, "a"), mOff = await metrics(false, "b");
+    note("٣ بأوجهنا: قبل " + k4(mOn.pre) + " · بعد " + k4(mOn.post) + " — بلا أوجهنا: قبل " + k4(mOff.pre) + " · بعد " + k4(mOff.post) +
+         " (العرض، والارتفاع، و1ch، و1ex)");
+    check("★ ٣ بعد تحميل وجه الموقع: عرض السطر الإنجليزي وارتفاعه تحت normal و1ch و1ex لا تتغيّر بأوجهنا", "true/true/true",
+      (mOn.faces > 0 && mOff.faces === 0) + "/" + (k4(mOn.post) === k4(mOff.post)) + "/" + (k4(mOn.sansPost) === k4(mOff.sansPost) && k4(mOn.sansPre) === k4(mOff.sansPre)));
+    check("★ ٣ قبل تحميله: العرض لا يتغيّر، وصندوق السطر صندوق العلامة نفسه فلا قفزة عند التحميل (a×s = B.asc)", "true/true/true",
+      (mOn.pre.w === mOff.pre.w) + "/" + (mOn.pre.h === mOff.pre.h) + "/" + (mOn.pre.h === mOn.post.h));
+
+    // ══ ١٧ الميزانية: الإقلاع (فكٌّ ووجه الإقلاع) ≤ 10 + 0.15 × KiB (وسيط 5)، ولا مهمة فوق 50 مث، و24 دلوًا على مهامّ ══
+    var benchCss = '<style>' + face('"anthropic-sans"', LOCAL_SANS, 'font-weight:300 800') +
+      Array.apply(null, Array(24)).map(function (x, i) { return face('"Anthropic Sans"', LOCAL_SANS, "font-weight:" + (100 + i * 12) + " " + (400 + i * 20)); }).join("") + '</style>';
+    var EBn = await frame({ headEarly: benchCss, body: '<p>x</p>', seed: { cml_font: C.FONT_SITE } });
+    var BW = EBn.win;
+    for (var bi = 0; bi < C.FONTS.length; bi++) {
+      var be = C.FONTS[bi], times = [];
+      for (var run = 0; run < 7; run++) {
+        var inst = BW.CMLFont.create({ families: { "anthropic-sans": "ui" }, range: C.FONT_AR_RANGE, attr: "data-zz-bench", ctx: null });
+        var t0 = BW.performance.now();
+        inst.sync(true, be, FDATA[be.id].b64);
+        var dt = BW.performance.now() - t0;
+        if (inst.stats().faces !== 1) dt = 1e9;
+        inst.clear();
+        if (run >= 2) times.push(dt); // إحماءان ثم خمسة
+      }
+      var budget = 10 + 0.15 * (be.bytes / 1024);
+      note("١٧ " + be.family + ": إقلاعٌ وسيطه " + med(times).toFixed(1) + " مث، والميزانية " + budget.toFixed(1));
+      check("١٧ ميزانية الإقلاع لـ" + be.family + " (فكٌّ ووجه الإقلاع، وسيط 5) ≤ 10 + 0.15 × KiB", "true", med(times) <= budget);
+    }
+    var big = BW.CMLFont.create({ families: { "Anthropic Sans": "ui" }, range: C.FONT_AR_RANGE, attr: "data-zz-bench", ctx: null });
+    var tb0 = BW.performance.now();
+    big.sync(true, NASKH, FDATA["noto-naskh-arabic"].b64);
+    await until(function () { return big.stats().pending === 0; }, 8000);
+    var bs = big.stats();
+    note("١٧ أربعةٌ وعشرون دلوًا بـNoto Naskh Arabic: " + bs.faces + " وجهًا في " + bs.tasks + " مهامّ، أطولها " + bs.maxTask + " مث، والمجموع " + (BW.performance.now() - tb0).toFixed(0) + " مث");
+    check("١٧ أربعةٌ وعشرون دلوًا تُبنى على مهامّ متعددة، ولا مهمة للخط تتجاوز 50 مث", "24/true/true", bs.faces + "/" + (bs.tasks > 1) + "/" + (bs.maxTask <= 50));
+    big.clear();
+    EBn.done();
+
+    // ══ ١٨ (★) تطبيع الأسماء (م٣) ══
+    var nf = SH.normFamily;
+    check("★ ١٨ normFamily يطابق المنصَّص وغير المنصَّص والمهروب وما يعيده FontFace.family", "true/true/true/true/true",
+      (nf("anthropic-sans") === nf('"anthropic-sans"')) + "/" + (nf("'Tiempos Text Regular'") === "tiempos text regular") + "/" +
+      (nf('"Atkinson Hyperlegible Next"') === nf("Atkinson  Hyperlegible Next")) + "/" + (nf('"A\\"B"') === 'a"b') + "/" +
+      (function () { var ok = false; document.fonts.forEach(function (f) { if (nf(f.family) === "anthropic-sans") ok = true; }); return ok; })());
+
+    // ══ ٨ (★) الإطار الأعلى: طلب إصلاحٍ واحدٌ بالضبط، ثم «يكتب العامل» فتظهر الأوجه بلا إعادة تحميل ══
+    check("★ ٨ الإطار الأعلى بنسخةٍ تالفة في الإقلاع: صفر أوجه، وfont-ensure واحدةٌ بالضبط", "0/1",
+      (TOP_BOOT ? TOP_BOOT.faces : "?") + "/" + TOP.sent.filter(function (t) { return t === "font-ensure"; }).length);
+    MOCK.chrome.storage.local.set({ cml_font_data: FDATA.cairo });
+    await until(function () { return TOPF.stats().faces > 0; }, 3000);
+    check("★ ٨ ثم يكتب العامل النسخة فتظهر الأوجه بلا إعادة تحميل، ولا طلب ثانٍ", "true/1",
+      (TOPF.stats().faces > 0) + "/" + TOP.sent.filter(function (t) { return t === "font-ensure"; }).length);
+    var hello = await new Promise(function (r) { TOP.onMsg({ type: "cml-hello" }, {}, r); });
+    check("★ ١٩ حقل font في ردّ cml-hello (للبطاقة والنافذة)", "ok/cairo", hello && hello.font && (hello.font.reach + "/" + hello.font.id));
+    MOCK.chrome.storage.local.set({ cml_font: "markazi-text" });
+    await sleep(50);
+    MOCK.chrome.storage.local.set({ cml_font_data: FDATA["markazi-text"] });
+    await until(function () { return TOPF.stats().id === "markazi-text"; }, 3000);
+    check("★ ٧ ولا font-ensure في التبديل الحيّ من الإطار الأعلى أيضًا", "markazi-text/1",
+      TOPF.stats().id + "/" + TOP.sent.filter(function (t) { return t === "font-ensure"; }).length);
+
+    // ══ ث٣ لا طلب شبكيًّا من الوحدة ولا من المحرّك في الأطر ══
+    check("ث٣ لا fetch في أيٍّ من الأطر (الخط من التخزين وحده)", "0", FETCHES);
+    check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  } catch (e) {
+    check("استثناء في الاختبار", "", String(e && (e.stack || e.message) || e).slice(0, 500));
+  }
+  document.title = "fonttest " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "FONTTEST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

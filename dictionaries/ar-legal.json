@@ -1,0 +1,45 @@
+{
+  "_meta": {
+    "language": "ar",
+    "direction": "rtl",
+    "domain": "legal",
+    "languageNameEnglish": "Arabic",
+    "languageNameNative": "العربية",
+    "sourceLanguage": "en",
+    "version": "2.0.0",
+    "count": 19
+  },
+  "_guide": {
+    "ar": "قاموس الوثائق القانونية الخمس (www.anthropic.com/legal). أضِف داخل strings سطرًا: \"النص الإنجليزي كما يظهر\": \"الترجمة\"، ثم ابنِ بـ node tools/build.mjs. هنا واجهة الوثيقة وحدها (العنوان وسطر «Effective» والسمات وتسميات تبويبات aup)، ومتونها في ar-legal.blocks.json؛ وغلاف anthropic.com ومنتقي لغة الوثيقة يبقيان إنجليزيين كما عند الشركة.",
+    "en": "Dictionary for الوثائق القانونية (www.anthropic.com/legal). Add \"exact English text\": \"Arabic\" lines under strings, then run node tools/build.mjs."
+  },
+  "strings": {
+    "Additional Use Case Guidelines": "إرشادات حالات الاستخدام الإضافية",
+    "Consumer Terms of Service": "شروط الخدمة للمستهلكين",
+    "Consumer Terms of Service \\ Anthropic": "شروط الخدمة للمستهلكين \\ Anthropic",
+    "Cookie Policy": "سياسة ملفات تعريف الارتباط",
+    "Cookie Policy \\ Anthropic": "سياسة ملفات تعريف الارتباط \\ Anthropic",
+    "Cookie Purpose and Description": "الغرض من ملفات تعريف الارتباط ووصفها",
+    "Effective": "تاريخ السريان:",
+    "High-risk Use Case Requirements": "متطلبات حالات الاستخدام عالية المخاطر",
+    "Marketing analytics": "تحليلات التسويق",
+    "Non-User Privacy Policy": "سياسة الخصوصية لغير المستخدمين",
+    "Non-User Privacy Policy \\ Anthropic": "سياسة الخصوصية لغير المستخدمين \\ Anthropic",
+    "Privacy Policy": "سياسة الخصوصية",
+    "Privacy Policy \\ Anthropic": "سياسة الخصوصية \\ Anthropic",
+    "Section tabs": "تبويبات الأقسام",
+    "Universal Usage Standards": "معايير الاستخدام العامة",
+    "Usage Policy": "سياسة الاستخدام",
+    "Usage Policy \\ Anthropic": "سياسة الاستخدام \\ Anthropic",
+    "Use of personal data": "استخدام البيانات الشخصية",
+    "Use of Personal Data": "استخدام البيانات الشخصية"
+  },
+  "plurals": {},
+  "patterns": [
+    {
+      "en": "Jul 21, 2026",
+      "re": "^(Jan|January|Feb|February|Mar|March|Apr|April|May|Jun|June|Jul|July|Aug|August|Sep|Sept|September|Oct|October|Nov|November|Dec|December) (\\d{1,2}), (\\d{4})$",
+      "ar": "$2 %M1 $3"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"page":"/docs/en/api/beta/organization/rbac_groups/update","blocks":{"dbad5ea3eda92aa0":"تحديث اسم مجموعة RBAC. ولا يمكن تعديل المجموعات التي يزوّدها مزوّد هوية (نوع المصدر <c1>\"scim\"</c1>) عبر API ما دامت إحدى المؤسسات في المستأجر تستخدم التزويد عبر SCIM.","f3c822327facf6b8":"API مجموعات RBAC متاح لمؤسسات Claude Enterprise فقط."}}

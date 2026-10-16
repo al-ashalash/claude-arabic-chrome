@@ -1,0 +1,1 @@
+{"page":"/docs/en/api/beta/organization/spend_limits/increase_requests/deny","blocks":{"3090cb33f6a48a83":"رفض طلب معلّق لرفع حد الإنفاق.","2014197c6fe760b7":"متساوية الأثر (idempotent) بالنسبة إلى الحالة <c1>denied</c1>؛ ورفض طلب في الحالة <c2>approved</c2> بالفعل يُرجع 400. وترسل Anthropic بريدًا إلكترونيًّا إلى مقدّم الطلب ما لم تُضبط <c3>suppress_notification</c3>."}}

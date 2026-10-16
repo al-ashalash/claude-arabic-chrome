@@ -3,8 +3,8 @@
   "base": "en",
   "default": "ar",
   "languages": [
-    { "code": "en", "endonym": "English", "englishName": "English", "direction": "ltr", "isBase": true,  "font": "",                                                                                        "dictionary": "en.json", "enabled": false, "note_ar": "اللغة الأساس — تُعرض كما هي بلا ترجمة", "note_en": "Base language — shown as-is" },
-    { "code": "ar", "endonym": "العربية", "englishName": "Arabic",  "direction": "rtl", "isBase": false, "font": "\"Noto Naskh Arabic\", \"IBM Plex Sans Arabic\", \"Segoe UI\", Tahoma, sans-serif",           "dictionary": "ar.json", "enabled": true,  "note_ar": "العربية — من اليمين إلى اليسار", "note_en": "Arabic — right-to-left" }
+    { "code": "en", "endonym": "English", "englishName": "English", "direction": "ltr", "isBase": true,  "dictionary": "en.json", "enabled": false, "note_ar": "اللغة الأساس — تُعرض كما هي بلا ترجمة", "note_en": "Base language — shown as-is" },
+    { "code": "ar", "endonym": "العربية", "englishName": "Arabic",  "direction": "rtl", "isBase": false, "dictionary": "ar.json", "enabled": true,  "note_ar": "العربية — من اليمين إلى اليسار", "note_en": "Arabic — right-to-left" }
   ],
   "note_ar": "القاعدة عامة لا قائمة مرشّحين: أي لغة تُضاف بأداة addlang.mjs التي تكتشف اتجاهها آليًّا — واللغات ذات الاتجاه من اليمين إلى اليسار يخدمها محرّك الاتجاه نفسه بلا عمل إضافي.",
   "note_en": "General rule, not a candidate list: any language is added via addlang.mjs (direction auto-detected); right-to-left languages are served by the same direction engine with no extra work."

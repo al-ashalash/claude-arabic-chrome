@@ -1,0 +1,282 @@
+/* intercom-point.css — إصلاحاتٌ نقطية لمنصة Intercom (مركز المساعدة ومركز الخصوصية).
+   تُحقن بعد base.css وrtl-intercom.css.
+   (الاتجاه نفسه لا يُصلَح هنا: المحرّك يضع dir على غلاف #__next المملوك — أدقّ من CSS،
+   إذ تبقى سمة dir="ltr" على الغلاف فتظلّ قواعد ltr: في المنصة مطابِقة.) */
+
+/* جزر المتن الإنجليزي داخل صفحةٍ RTL: للمنصة ست قواعد [dir=rtl] على متن المقالة (المحاذاة
+   والقوائم والأقسام المطوية) تطابق عبر أي سلفٍ RTL — فكانت الفقرة الإنجليزية تُحاذى يمينًا
+   ونقطةُ قائمتها في أقصى اليمين ولو حسم المحرّك اتجاه كتلتها LTR (المتون تبقى إنجليزية إلى
+   المرحلة ٤). فالكتلة التي اتجاهها الفعلي LTR (:dir، من dir الذي يضعه المحرّك على الكتلة)
+   تستعيد قيم المنصة الأصلية لقواعدها غير المشروطة بالاتجاه (مأخوذةً من لقطة أوراقها)؛
+   والكتل العربية تبقى على قواعد المنصة RTL كما هي.
+   في @layer cml-point وبـ!important: المعلَنة أولًا — فتغلب مهمّات المنصة غير المطبَّقة،
+   وما يعيد المحرّك بثّه من قواعدها المشروطة (بتخصيصٍ مرتفع في cml-imp وخارجها). */
+@layer cml-point {
+  /* ★ start/end لا left/right (فحص الاتجاه الشامل ق٣): الغلاف LTR قد يحوي فقرةً عُرِّبت فاتجاهها RTL — والمحاذاة
+     المنطقية تُحسم باتجاه كل عنصرٍ بنفسه، فلا تُحاذى العربية يسارًا (206 عناوين وفقرات قِيست) */
+  html[data-cml="on"] .intercom-interblocks-align-left:dir(ltr) { text-align: start !important; }
+  html[data-cml="on"] .intercom-interblocks-align-right:dir(ltr) { text-align: end !important; }
+  html[data-cml="on"] article :is(ol, ul):dir(ltr) { padding-left: 16px !important; padding-right: 0 !important; }
+  html[data-cml="on"] article li:dir(ltr) {
+    direction: ltr !important; text-align: start !important;
+    margin-left: 15px !important; margin-right: 0 !important;
+  }
+  html[data-cml="on"] .intercom-interblocks-collapsible-section details > div:not(:first-child):dir(ltr) {
+    margin-left: 16px !important; margin-right: 0 !important;
+  }
+}
+
+/* ★ (ر5-ج، ٢٩ ربيع الآخر ١٤٤٨هـ — ملاحظة المالك ٢(أ)) جداول المتن تبدأ عند حافّة حاويتها اليمنى: كان جدول «ما المتاح على كل واجهة» في مقالة
+   Cowork يُقصّ من يمينه (عشرون بكسلًا بعرضَي 1366 و390، فظهرت خلايا العمود الأول «ء المهام…» و«ستئناف…»). والسبب في الورقة المولَّدة: للمنصة قاعدتان
+   على الجدول — القديمة ‎article table { margin: 24px -20px }‎ (كتلةٌ تمرّر بنفسها وتمتدّ في حشوة المقالة من الجهتين)، وقالب المقالات
+   الحالي ‎.DocsArticleBody_body__… table { margin: 0 0 var(--space-5) }‎ يُلغيها (أخصّ وأحدث) ويضع الجدول في غلافٍ يمرّر
+   (‎.intercom-interblocks-table‎، overflow-x: auto). والمولّد يعيد بثّ الأولى نسخةً مطابقة (‎margin-inline: -20px‎) بتخصيص سلّمه، ولا
+   يعيد الثانية لأن مختصرها بمتغيّر لا يُعرف عدد قيمه (physical-unflippable)؛ فغلبت النسخةُ قاعدةَ المنصة وعاد الهامش السالب، والغلاف
+   RTL أصلُ تمريره يمينه فلا يُبلغ ما خرج يمينًا أبدًا. فيعود هامش الجدول الأفقي إلى ما تضعه المنصة (صفر): يبدأ عند الحافّة اليمنى،
+   والأعرض من غلافه يفيض نحو اليسار فيُمرَّر إليه (يقيسه rtl-audit في فحص الجداول ٦ب). ولا يمسّ القالب القديم (بلا هذا الصنف) */
+@layer cml-point {
+  html[data-cml="on"][data-cml-rtl] [class*="DocsArticleBody_body__"] table {
+    margin-inline: 0 !important;
+  }
+}
+
+/* ★ العلاج النقطي للقصّ مع الخط العربي المضاف (DESIGN-fonts §٤.٦؛ قرار المالك — الخيار ٢، ١٩ ربيع الآخر ١٤٤٨هـ).
+   الخطوط العربية المحزومة أعمقُ ذيولًا تحت خط الأساس (ي ن ر و ع ج) من Segoe UI، ومركزا المساعدة والخصوصية يقطع السطر الواحد بـ
+   overflow: hidden عند ارتفاعٍ ثابت، فيُقصّ من الذيل أكثر مما يُقصّ اليوم. فيصير القطع clip بهامشٍ حول صندوق الحشوة
+   بوحدة em لأن زيادة الذيل تتبع حجم الخط (0.16em أصغر هامشٍ يجتاز به Cairo وNoto Naskh Arabic القاعدة؛ 2px لا يكفي فوق 20px):
+   - لا يتغيّر صندوقٌ ولا موضع، وعلامة الحذف (text-overflow) تعمل مع clip كما مع hidden، ولا يُرسم بعدها شيء؛
+   - hidden يجعل العنصر حاويةَ تمرير فيصير أدنى حجمه في الصفّ المرن والشبكة صفرًا، وclip لا يفعل؛ فيُعاد الصفر بإعلانٍ
+     عاديٍّ في أدنى طبقات الصفحة (cml-point أولُ الطبقات المعلنة)، فيغلبه كل حدٍّ يضعه الموقع بنفسه؛
+   - وخطُّ أساس inline-block تحت hidden حافته السفلى وتحت clip سطره الأخير، فيُستثنى المعروض سطريًّا بأصنافه (inline-*).
+   - ويُستثنى ما عليه أداة overflow-auto/scroll/visible أو overflow-x-… وoverflow-y-…: أدوات Tailwind تأتي بعد truncate فتغلبه في
+     الموقع، وclip المهمّ كان سيوقف تمريرَ حاويةِ تمرير أو يُحدث قصًّا لم يكن (المراجعة العدائية، ٢٠ ربيع الآخر ١٤٤٨هـ).
+   - ويُستثنى ما عليه صنف line-clamp-: إن قطع الموقع به بعد سطرين أظهر الهامشُ أعالي السطر التالي، فيعالجه علاج القطع بعدد الأسطر أدناه.
+   معلَّقٌ على data-cml-font (C.FONT_ATTR) وحدها، فبلا خطٍّ مضاف — «خط الموقع» أو الإطفاء — تبقى المواقع كما هي حرفًا.
+   و«fonts.mjs measure» يقرأ المحدِّدات داخل :is() والهامش من هذه القاعدة نفسها (لا نسخة)، والقفل يحفظ بصمتها:
+   فكل تعديلٍ هنا يُسقط «fonts.mjs verify» حتى تُعاد المعايرة. */
+@layer cml-point {
+  html[data-cml="on"][data-cml-font] :is(
+    .truncate, /* Tailwind: الصفوف المقطوعة (14/22.4، 16/25.6 …) */
+    .CommandPalette_rowCrumbs__ohbxV, /* لوحة الأوامر: مسار الصف (13/18.2) */
+    .CommandPalette_rowSummary__dxm5D, /* لوحة الأوامر: ملخّص الصف (13/18.2) */
+    .DocsCollection_articleSummary__2dl4V, /* ملخّص المقالة في المجموعة (13/19.5) */
+    .DocsArticle_relatedCardSummary__QZ6yB, /* ملخّص المقالة ذات الصلة (13/19.5) */
+    .DocsCollection_articleTitle__nvUXK, /* عنوان المقالة في المجموعة (14/22.4) */
+    .DocsArticle_relatedCardTitle__f4Dqj, /* عنوان المقالة ذات الصلة (14/22.4) */
+    .DocsTopBar_siteName__8ya59, /* اسم الموقع في الشريط العلوي (16/25.6) */
+    .DocsTopBar_brandLabel__HiCpi, /* وسم العلامة في الشريط العلوي (16/25.6) */
+    /* قواعد القطع بلا حجم خط (يرث حجمه، فيمثّله «fonts.mjs measure» بأحجام الأدوات؛ مراجعة S5-B): */
+    .CommandPalette_rowTitle__sMgmG, .CommandPalette_crumb__uZ1DB, /* لوحة الأوامر: عنوان الصف ومقاطع مساره */
+    .DocsCollection_breadcrumbLink__rVrOP, .DocsCollection_breadcrumbCurrent__LwypZ, /* مسار المجموعة */
+    .DocsArticle_crumbLink__S6a6m, .DocsArticle_crumbCurrent__Jy3_j, /* مسار المقالة */
+    .DocsHome_rowSummary__ZJsee, .DocsHome_rowTitle__e_X7Y /* صفوف الرئيسة */
+  ):not([class*="inline-"], [class*="overflow-auto"], [class*="overflow-scroll"], [class*="overflow-visible"], [class*="overflow-x-"], [class*="overflow-y-"], [class*="line-clamp-"]) {
+    overflow: clip !important;
+    overflow-clip-margin: 0.16em !important;
+    min-width: 0;
+    min-height: 0;
+  }
+  /* ملخّص بطاقة الرئيسة لا يقطعه الموقع إلا تحت 820px (وفوقه يلتفّ بلا قصّ): فالعلاج بشرطه نفسه، وإلا أحدث قصًّا
+     لم يكن وأسقط أدنى حجمه في عمود البطاقة المرن (مراجعة S5-B) */
+  @media (max-width:819px) {
+    html[data-cml="on"][data-cml-font] :is(
+      .DocsHome_card__WgIjM[data-template=classic] .DocsHome_cardSummary__EDYmO /* ملخّص بطاقة الرئيسة (13/17.55) */
+    ):not([class*="inline-"], [class*="overflow-auto"], [class*="overflow-scroll"], [class*="overflow-visible"], [class*="overflow-x-"], [class*="overflow-y-"], [class*="line-clamp-"]) {
+      overflow: clip !important;
+      overflow-clip-margin: 0.16em !important;
+      min-width: 0;
+      min-height: 0;
+    }
+  }
+} /* نهاية العلاج النقطي للقصّ */
+
+/* ★ علاج القطع بعدد الأسطر (line-clamp) مع الخط العربي المضاف (S5d-B، ٢٠ ربيع الآخر ١٤٤٨هـ؛ «طبّقها حسب المتاح دون حصول خلل»).
+   مركزا المساعدة والخصوصية يقطع بعض النصوص بعد عددٍ من الأسطر فيُخفي ما بعد السطر الأخير بـ overflow: hidden، وهامش القصّ لا يصلح هنا
+   لأنه يُظهر أعالي السطر التالي للحدّ. فتُرسم العربية داخل عنصر القطع وكل ما تحته بعائلةٍ تُلحق أولَ قائمة خطه:
+   - «cml-ar-compact»: تسجّلها الوحدة من بايتات الخط المختار نفسه بحجمٍ أصغر (size-adjust = s_c، ولا يقلّ عن 0.85) وتجاوزاتٍ
+     B.asc/s_c وB.desc/s_c ومدًى عربي، متى اجتاز بها الخطُّ ارتفاعاتِ القطع الحقيقية في هذا الموقع (web/code/fonts.clamp.json)؛
+   - فإن لم تسجّلها وقعت العربية على «cml-ar-today»: أوجهٌ محلية بمدًى عربي وبلا تجاوز، لكلٍّ مدى وزنٍ يطابق ما يختاره ويندوز
+     لـ "Segoe UI" عند ذلك الوزن (قيس كل وزنٍ من 1 إلى 1000: الخفيف حتى 325، ونصف الخفيف حتى 375، والعادي حتى 499، ونصف العريض
+     حتى 649، والعريض حتى 799، وفوقه لا عربية في Segoe UI Black فيرسمها النظام بـ Times New Roman العريض)، والمائل وجهٌ عادي
+     قائمٌ واحد يعرّضه المتصفح من 600 كما يفعل اليوم (بلا ميلٍ مصطنع في العربية، كالوجه الرئيس) — فترسم كالمرجع «Segoe UI» في القياس عند كل وزنٍ وميل، ولا يزيد القصّ عليه؛
+   - ثم var(--cml-ff): قائمة خط العنصر نفسها كما يعلنها الموقع (المرآة المولَّدة آخر الملف، بترتيب أوراقه وطبقاته)، فلا يتغيّر حرفٌ إنجليزي.
+   هذه القاعدة للجذور (عنصر القطع نفسه)، وما تحتها يرثها؛ وما يعلن له الموقع خطًّا قد يحمل وجهنا الرئيس (عائلةٌ معكوسة أو متغيّر)
+   تشمله قاعدةٌ مولَّدة آخر المرآة على أي عمق، وما يعلن له خطَّ نظامٍ صريحًا (monospace المجرّد …) يبقى كما هو فعربيته كاليوم.
+   ولا يتغيّر صندوقٌ ولا موضع: المسافة خارج المدى العربي، فأول خطٍّ متاح يبقى خط الموقع، وخط الأساس خطه.
+   معلَّقٌ على data-cml-font كالعلاج النقطي؛ و«fonts.mjs measure» يقرأ الجذور والمحدِّدات وأوجه اليوم من هنا (لا نسخة)،
+   والقفل يحفظ بصمتها فيسقط «fonts.mjs verify» إن تغيّرت بعد المعايرة. */
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI Light"), local("SegoeUI-Light"); font-weight: 1 325; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI Semilight"), local("SegoeUI-Semilight"); font-weight: 326 375; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI"), local("SegoeUI"); font-weight: 376 499; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI Semibold"), local("SegoeUI-Semibold"); font-weight: 500 649; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI Bold"), local("SegoeUI-Bold"); font-weight: 650 799; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Times New Roman Bold"), local("TimesNewRomanPS-BoldMT"); font-weight: 800 1000; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI"), local("SegoeUI"); font-weight: 400; font-style: italic; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@layer cml-point {
+  html[data-cml="on"][data-cml-font] :is(
+    [class*="line-clamp-"], /* أصناف line-clamp كلها وصيغها المشروطة */
+    [style*="line-clamp"] /* القطع بنمطٍ مضمَّن */
+  ) {
+    font-family: "cml-ar-compact", "cml-ar-today", var(--cml-ff) !important;
+  }
+} /* نهاية علاج القطع بعدد الأسطر */
+
+/* ── مرآة --cml-ff: مولَّدة من لقطة sitecss-intercom/ بـ «node web/code/toolchain/fonts.mjs clamp-css»، فلا تُحرَّر باليد. ──
+   تعريف متغيّرٍ لا يقرؤه إلا علاج القطع (المعلَّق على السمة)، فلا أثر له في الرسم: 72 قاعدة بترتيب أوراق الموقع وطبقاته؛ ثم 70 محدِّدًا لما تحت الجذور يعلن له الموقع خطًّا قد يحمل وجهنا. */
+@layer cml-point {
+@layer cml-ua;
+@layer cml-ua{:where(code,kbd,samp,pre,tt,xmp,listing,plaintext,textarea){--cml-ff:monospace}:where(math){--cml-ff:math}}
+:host,html{--cml-ff:ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji}
+code,kbd,pre,samp{--cml-ff:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace}
+button,input,optgroup,select,textarea{--cml-ff:inherit}
+.font-primary{--cml-ff:var(--font-family-primary)}
+.font-secondary{--cml-ff:var(--font-family-secondary)}
+.\[font\:inherit\]{--cml-ff:inherit}
+html{--cml-ff:sans-serif}
+body{--cml-ff:var(--font-family-secondary)}
+h1,h2{--cml-ff:var(--font-family-primary)}
+h3,h4,h5,h6,p{--cml-ff:var(--font-family-secondary)}
+code,pre{--cml-ff:monospace}
+.body__messenger__headerless-font-family{--cml-ff:system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol}
+.intercom-reaction-picker .intercom-reaction{--cml-ff:inherit}
+.section__ticket-portal .tickets-avatar{--cml-ff:system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol}
+.cookie-settings-modal__title{--cml-ff:var(--font-family-primary)}
+.cookie-settings-modal__description{--cml-ff:var(--font-family-secondary)}
+.cookie-settings-modal__category-header{--cml-ff:var(--font-family-secondary)}
+.cookie-settings-modal__always-on{--cml-ff:var(--font-family-secondary)}
+.cookie-settings-modal__category-description{--cml-ff:var(--font-family-secondary)}
+.cookie-settings-modal__accept-all-button,.cookie-settings-modal__reject-button,.cookie-settings-modal__save-button{--cml-ff:inherit}
+.tokens_docsRoot__1XQPC{--cml-ff:var(--font-body)}
+.MarkdownViewModal_modal__woGP_{--cml-ff:var(--font-body)}
+.MarkdownViewModal_title__v35Z9{--cml-ff:var(--font-display)}
+.MarkdownViewModal_pre__RaVDY{--cml-ff:var(--font-mono)}
+.MarkdownViewModal_btn__wzh1b{--cml-ff:inherit}
+.DocsCollection_title__Fu6KK{--cml-ff:var(--font-display)}
+.DocsCollection_sectionTitle__0_BID{--cml-ff:var(--font-display)}
+.DocsCollection_articleDate__fodxN{--cml-ff:var(--font-body)}
+.DocsCollection_articleSummary__2dl4V{--cml-ff:var(--font-body)}
+.DocsActionBar_btn__jbxkw{--cml-ff:inherit}
+.DocsActionBar_menuItem__gqnIR{--cml-ff:var(--font-body)}
+.DocsArticleBody_body__BYuoi .intercom-interblocks-heading h1,.DocsArticleBody_body__BYuoi h1{--cml-ff:var(--font-display)}
+.DocsArticleBody_body__BYuoi .intercom-interblocks-subheading h2,.DocsArticleBody_body__BYuoi h2{--cml-ff:var(--font-display)}
+.DocsArticleBody_body__BYuoi .intercom-interblocks-subheading3 h3,.DocsArticleBody_body__BYuoi .intercom-interblocks-subheading4 h4,.DocsArticleBody_body__BYuoi h3,.DocsArticleBody_body__BYuoi h4{--cml-ff:var(--font-body)}
+.DocsArticleBody_body__BYuoi code{--cml-ff:var(--font-mono)}
+.DocsArticleBody_body__BYuoi pre{--cml-ff:var(--font-mono)}
+.DocsArticleBody_body__BYuoi pre code{--cml-ff:inherit}
+.DocsSidebar_localeFooter__2fk1X{--cml-ff:var(--font-body)}
+.CommandPalette_palette__dEGC8{--cml-ff:var(--font-body)}
+.CommandPalette_input___IaLi{--cml-ff:inherit}
+.CommandPalette_filterPill__JbKk5{--cml-ff:inherit}
+.CommandPalette_filterMenuItem__xRy7U{--cml-ff:var(--font-body)}
+.CommandPalette_row__hy89q{--cml-ff:inherit}
+.CommandPalette_kbd___b5ow{--cml-ff:var(--font-mono)}
+.DocsArticle_article__C1mpK{--cml-ff:var(--font-body)}
+.DocsArticle_title__3pXkn{--cml-ff:var(--font-display)}
+.DocsArticle_relatedTitle__Ysv8Y{--cml-ff:var(--font-display)}
+.DocsArticle_relatedCardSummary__QZ6yB{--cml-ff:var(--font-body)}
+.DocsTopBar_siteName__8ya59{--cml-ff:var(--font-display)}
+.DocsTopBar_brandLabel__HiCpi{--cml-ff:var(--font-display)}
+.DocsTopBar_localePicker__7eCwg,.DocsTopBar_tab__AXxRm{--cml-ff:var(--font-body)}
+.DocsTopBar_search__tI7kY{--cml-ff:var(--font-body)}
+.DocsTopBar_kbd__R7hwM{--cml-ff:var(--font-mono)}
+@media(max-width:819px){
+ .DocsTopBar_mobileNavigationLink__TMgbf{--cml-ff:var(--font-body)}
+ .DocsTopBar_mobileNavigationSectionHeading__L__G5{--cml-ff:var(--font-body)}
+}
+.DocsToc_toc__klYmW{--cml-ff:var(--font-body)}
+.DocsHome_title__dk2KS{--cml-ff:var(--font-display)}
+.DocsHome_heroSubcopyBelowSearch__UvatN,.DocsHome_heroSubcopy__aX_vG{--cml-ff:var(--font-body)}
+.DocsHome_cardTitle__zVFWo{--cml-ff:var(--font-display)}
+.DocsHome_cardSummary__EDYmO{--cml-ff:var(--font-body)}
+.DocsHome_cardCount__MfQHS{--cml-ff:var(--font-body)}
+.DocsHome_blockTitle__1XH5s,.DocsHome_contentBlockTitle__jhkNk{--cml-ff:var(--font-display)}
+.DocsHome_rowSummary__ZJsee{--cml-ff:var(--font-body)}
+@media(max-width:819px){
+ .DocsHome_card__WgIjM[data-template=classic] .DocsHome_cardTitle__zVFWo,.DocsHome_card__WgIjM[data-template=compact] .DocsHome_cardTitle__zVFWo{--cml-ff:var(--font-body)}
+}
+.DocsHome_heroFullTitle__4M0mE{--cml-ff:var(--font-display)}
+.DocsHome_heroFullSubcopyBelowSearch__SjHA8,.DocsHome_heroFullSubcopy__DnPgW{--cml-ff:var(--font-body)}
+.DocsEmptyState_eyebrow__eaTkJ{--cml-ff:var(--font-mono)}
+.DocsEmptyState_heading__7hFFl{--cml-ff:var(--font-display)}
+.DocsSearch_cardTitle__3T7oN{--cml-ff:var(--font-display)}
+.DocsSearchButton_button__XQInE{--cml-ff:var(--font-body)}
+.DocsSearchButton_key__iS91N{--cml-ff:var(--font-mono)}
+.DocsReactionPicker_prompt__jhEmS{--cml-ff:var(--font-body)}
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-primary,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-secondary,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h1,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h2,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h3,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h4,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h5,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h6,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) p,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .cookie-settings-modal__title,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .cookie-settings-modal__description,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .cookie-settings-modal__category-header,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .cookie-settings-modal__always-on,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .cookie-settings-modal__category-description,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .tokens_docsRoot__1XQPC,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .MarkdownViewModal_modal__woGP_,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .MarkdownViewModal_title__v35Z9,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .MarkdownViewModal_pre__RaVDY,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsCollection_title__Fu6KK,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsCollection_sectionTitle__0_BID,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsCollection_articleDate__fodxN,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsCollection_articleSummary__2dl4V,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsActionBar_menuItem__gqnIR,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h1:is(.DocsArticleBody_body__BYuoi .intercom-interblocks-heading h1),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h1:is(.DocsArticleBody_body__BYuoi h1),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h2:is(.DocsArticleBody_body__BYuoi .intercom-interblocks-subheading h2),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h2:is(.DocsArticleBody_body__BYuoi h2),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h3:is(.DocsArticleBody_body__BYuoi .intercom-interblocks-subheading3 h3),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h4:is(.DocsArticleBody_body__BYuoi .intercom-interblocks-subheading4 h4),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h3:is(.DocsArticleBody_body__BYuoi h3),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h4:is(.DocsArticleBody_body__BYuoi h4),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) code:is(.DocsArticleBody_body__BYuoi code),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) pre:is(.DocsArticleBody_body__BYuoi pre),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsSidebar_localeFooter__2fk1X,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .CommandPalette_palette__dEGC8,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .CommandPalette_filterMenuItem__xRy7U,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .CommandPalette_kbd___b5ow,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsArticle_article__C1mpK,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsArticle_title__3pXkn,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsArticle_relatedTitle__Ysv8Y,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsArticle_relatedCardSummary__QZ6yB,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsTopBar_siteName__8ya59,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsTopBar_brandLabel__HiCpi,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsTopBar_localePicker__7eCwg,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsTopBar_tab__AXxRm,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsTopBar_search__tI7kY,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsTopBar_kbd__R7hwM,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsToc_toc__klYmW,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsHome_title__dk2KS,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsHome_heroSubcopyBelowSearch__UvatN,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsHome_heroSubcopy__aX_vG,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsHome_cardTitle__zVFWo,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsHome_cardSummary__EDYmO,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsHome_cardCount__MfQHS,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsHome_blockTitle__1XH5s,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsHome_contentBlockTitle__jhkNk,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsHome_rowSummary__ZJsee,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsHome_heroFullTitle__4M0mE,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsHome_heroFullSubcopyBelowSearch__SjHA8,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsHome_heroFullSubcopy__DnPgW,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsEmptyState_eyebrow__eaTkJ,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsEmptyState_heading__7hFFl,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsSearch_cardTitle__3T7oN,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsSearchButton_button__XQInE,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsSearchButton_key__iS91N,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsReactionPicker_prompt__jhEmS {
+  font-family: "cml-ar-compact", "cml-ar-today", var(--cml-ff) !important;
+}
+@media(max-width:819px){
+ html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsTopBar_mobileNavigationLink__TMgbf,
+ html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsTopBar_mobileNavigationSectionHeading__L__G5,
+ html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsHome_cardTitle__zVFWo:is(.DocsHome_card__WgIjM[data-template=classic] .DocsHome_cardTitle__zVFWo),
+ html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .DocsHome_cardTitle__zVFWo:is(.DocsHome_card__WgIjM[data-template=compact] .DocsHome_cardTitle__zVFWo) {
+   font-family: "cml-ar-compact", "cml-ar-today", var(--cml-ff) !important;
+ }
+}
+}
+/* ── نهاية مرآة --cml-ff ── */

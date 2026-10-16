@@ -2,21 +2,71 @@
 //
 // يقرأ ما يقرؤه أيُّ زائرٍ للمنصة عبر واجهتها العامة نفسِها (لا مفتاح، لا تسجيل)، **وقت
 // البناء على جهاز المطوّر فقط** — لا شأن للإضافة بهذا (عهد الخصوصية). ويأخذ **المقابلَ
-// المصطلحي وحده** (اللِّمّة العربية ومقابلاتها الإنجليزية/الفرنسية/الإسبانية ومعرّفَ
-// المدخل للإسناد) — **لا التعريفات**، فهي محتوًى محميٌّ لأصحابه.
+// المصطلحي وحده** (اللِّمّة العربية ومقابلها الإنجليزي ومعرّفَ المدخل للإسناد) — **لا
+// التعريفات**، فهي محتوًى محميٌّ لأصحابه.
 //
-//   node harvest-siwar.mjs [--lexicon=<id>] [--out=<ملف>]
-// الافتراضي: معجم البيانات والذكاء الاصطناعي (سدايا + المجمع، الإصدار الثالث).
-// مهذّب: 4 طلبات متزامنة، وتأخيرٌ صغير، وقابلٌ للاستئناف (يتخطى ما نُزّل).
+//   node harvest-siwar.mjs [--lexicon=<id>] [--out=<ملف>] [--limit=<N>] [--dry-run] [--self-test]
+// الافتراضي: معجم البيانات والذكاء الاصطناعي (سدايا + المجمع، الإصدار الثالث) ⇒ glossary/_lexicons/ai-pairs.json
+// (ولغيره glossary/_lexicons/pairs-<id>.json). مهذّب: 4 طلبات متزامنة، وتأخيرٌ صغير، وقابلٌ للاستئناف (يتخطى ما نُزّل).
+//
+// ‎--limit=N‎ (للتجارب الصغيرة): لا يُجلب أكثر من N مدخلًا. تُقرأ صفحات القائمة حتى يجتمع N مدخلًا رأسُها عربي
+// (التجميع يتخطى غيرها على كل حال)، ثم تُطلب تلك المداخل وحدها: طلبُ قائمةٍ واحد في الغالب، وN طلبًا على الأكثر.
+// ولا يكتب فوق حصادٍ كامل قائم. ويُختم ناتجه بـ_meta.limited = N، فترفضه الأدوات القارئة (terms-match وsiwar-terms وsiwar-diff)
+// إلا بـ--allow-limited الذي لا تمرّره إلا وصفة التجربة (siwar-lib.mjs). وبلا ‎--limit‎ يبقى السلوك كما هو: المعجم كله.
+// ‎--dry-run‎: يتحقق من الوسائط ومن حارس ‎--out‎، ويطبع الخطة، ويخرج بلا أي طلب ولا كتابة.
+// ‎--self-test‎: فحصٌ ذاتي لمنطق الاختيار على بياناتٍ مصطنعة، بلا شبكة ولا ملفات.
+//
+// ★ شروط سوار: لا احتفاظ ببيانات واجهاتها أكثر من ثلاثين يومًا، ويُشار إلى المعجم والمنصة والمجمع. فالناتج
+// غير متتبَّع (_lexicons/) ويحمل تاريخ جلبه (‎_meta.fetched‎ = أقدم مدخلٍ جُمع منه) وإسناده، والذاكرة الخام في
+// _siwar-cache/ غير متتبَّعة كذلك ويُعاد جلب ما جاوز منها المدة؛ و`node siwar-dump.mjs --purge-expired` يحذف
+// من الموضعين ما جاوزها، والأدوات القارئة ترفضه (siwar-lib.mjs). لا يُكتب شيءٌ من هذا في ملفٍ متتبَّع.
 import fs from "node:fs";
 import path from "node:path";
-import { GLOSSARY } from "./paths.mjs";
+import { LEXDIR, CACHE_DIR, AI_LEXICON_ID, AI_PAIRS, ATTRIBUTION, isExpired, fileDay, fixLemma, assertIgnoredOut } from "./siwar-lib.mjs";
 
 const BASE = "https://siwar.ksaa.gov.sa";
 const arg = (k, d) => { const a = process.argv.find((x) => x.startsWith("--" + k + "=")); return a ? a.split("=").slice(1).join("=") : d; };
-const LEX = arg("lexicon", "4cd164a7-7160-4de8-af5c-34382f5da657");
-const OUT = arg("out", path.join(GLOSSARY, "terms-siwar.json"));
-const CACHE = path.join(GLOSSARY, "_siwar-cache", LEX);
+const die = (msg, code = 2) => { console.error(`✗ harvest-siwar: ${msg}`); process.exit(code); };
+
+// اختيار معرّفات المداخل من صفحة قائمة: بلا حدٍّ تؤخذ كلها بترتيبها؛ ومع الحد تؤخذ ذوات الرأس العربي وحدها حتى يُبلغ
+const AR_HEAD = /[ء-ي]/;
+function take(ids, words, limit) {
+  for (const w of words || []) {
+    if (ids.size >= limit) break;
+    if (Number.isFinite(limit) && !AR_HEAD.test(String(w.word || ""))) continue;
+    ids.set(w.lexicalEntryId, w.word);
+  }
+  return ids;
+}
+if (process.argv.includes("--self-test")) {
+  const page = [{ lexicalEntryId: "a", word: "سحابة" }, { lexicalEntryId: "b", word: "cloud" }, { lexicalEntryId: "c", word: "خادم" },
+    { lexicalEntryId: "d", word: "شبكة" }, { lexicalEntryId: "a", word: "سحابة" }];
+  const keys = (limit) => [...take(new Map(), page, limit).keys()].join(",");
+  const cases = [[Infinity, "a,b,c,d"], [2, "a,c"], [1, "a"], [10, "a,c,d"]];
+  const bad = cases.filter(([n, want]) => keys(n) !== want);
+  for (const [n, want] of bad) console.error(`✗ limit=${n}: ${keys(n)} ≠ ${want}`);
+  console.log(bad.length ? `✗ الفحص الذاتي: أخفق ${bad.length} من ${cases.length}` : `✓ الفحص الذاتي: ${cases.length} حالات`);
+  process.exit(bad.length ? 1 : 0);
+}
+
+const LEX = arg("lexicon", AI_LEXICON_ID);
+const OUT = arg("out", LEX === AI_LEXICON_ID ? AI_PAIRS : path.join(LEXDIR, `pairs-${LEX}.json`));
+const LIMIT_ARG = arg("limit", null);
+const LIMIT = LIMIT_ARG === null ? Infinity : Number(LIMIT_ARG);
+if (LIMIT_ARG !== null && !(Number.isInteger(LIMIT) && LIMIT > 0)) die(`‎--limit‎ يقبل عددًا صحيحًا موجبًا، وجاء «${LIMIT_ARG}»`);
+const LIMITED = Number.isFinite(LIMIT);
+assertIgnoredOut(OUT, "harvest-siwar"); // ‎--out‎ أيضًا: لا يُكتب الناتج إلا في موضعٍ يتجاهله git، قبل أي طلب
+if (LIMITED && fs.existsSync(OUT)) { // حصادٌ محدود لا يحلّ محلَّ حصادٍ كامل
+  let prev = {};
+  try { prev = JSON.parse(fs.readFileSync(OUT, "utf8"))._meta || {}; } catch {}
+  if (!prev.limited) die(`${OUT} حصادٌ كامل قائم؛ الحصاد المحدود لا يكتب فوقه (احذفه بعد انتهاء دورته، أو اختر ‎--out‎ آخر متجاهَلًا)`);
+}
+if (process.argv.includes("--dry-run")) {
+  console.log(`تشغيلٌ جاف بلا طلب: المعجم ${LEX} | المخرج ${path.relative(process.cwd(), OUT)} (متجاهَل) | ` +
+    (LIMITED ? `الحد: ${LIMIT} من المداخل؛ طلبُ قائمةٍ واحد في الغالب، وطلبات المداخل ${LIMIT} على الأكثر` : "بلا حد: المعجم كله"));
+  process.exit(0);
+}
+const CACHE = path.join(CACHE_DIR, LEX);
 fs.mkdirSync(CACHE, { recursive: true });
 const UA = { "User-Agent": "claude-mutarjim/1.0 (open-source Arabic UI; term-equivalents only, build-time)", "Accept": "application/json" };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -34,12 +84,12 @@ async function screen(first, rows) {
 const first = await screen(0, 100);
 const meta = first.lexicon || {};
 const total = first.paginated.totalCount;
-console.log(`المعجم: ${meta.name} | المؤلف: ${(meta.authors || []).map((a) => a.name).join("، ")} | المداخل: ${total}`);
-let ids = new Map();
-for (const w of first.paginated.words) ids.set(w.lexicalEntryId, w.word);
-for (let f = 100; f < total; f += 100) {
+console.log(`المعجم: ${meta.name} | المؤلف: ${(meta.authors || []).map((a) => a.name).join("، ")} | المداخل: ${total}` +
+  (LIMITED ? ` | الحد: ${LIMIT}` : ""));
+let ids = take(new Map(), first.paginated.words, LIMIT);
+for (let f = 100; f < total && ids.size < LIMIT; f += 100) {
   const pg = await screen(f, 100);
-  for (const w of pg.paginated.words) ids.set(w.lexicalEntryId, w.word);
+  take(ids, pg.paginated.words, LIMIT);
   process.stdout.write(`\rالقائمة: ${ids.size}/${total}   `);
   await sleep(120);
 }
@@ -50,7 +100,7 @@ const list = [...ids.keys()];
 let done = 0, failed = 0;
 async function one(id) {
   const fp = path.join(CACHE, id + ".json");
-  if (fs.existsSync(fp)) { done++; return; }
+  if (fs.existsSync(fp) && !isExpired(fileDay(fp))) { done++; return; } // ما جاوز ثلاثين يومًا يُعاد جلبه
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       const res = await fetch(`${BASE}/api/search/get-public-entry/${id}`, { headers: UA });
@@ -81,16 +131,27 @@ async function worker() {
 await Promise.all([worker(), worker(), worker(), worker()]);
 console.log(`\nتمّ: ${done} | أخفق: ${failed}`);
 
-// ---- 3) التجميع: أزواج (en → ar) مع fr/es والمعرّف للإسناد ----
+// ---- 3) التجميع: أزواج (en → ar) والمعرّف للإسناد ----
 const terms = [];
+let oldest = null;
 for (const id of list) {
   const fp = path.join(CACHE, id + ".json");
   if (!fs.existsSync(fp)) continue;
+  const at = fileDay(fp);
+  if (isExpired(at)) continue; // أخفق إعادة جلبه: لا يُستعمل ما جاوز المدة
   const o = JSON.parse(fs.readFileSync(fp, "utf8"));
-  if (o.lang !== "ar") continue; // القائمة قد تحوي مداخل اللغات الأخرى؛ نريد الرأس العربي
-  const en = (o.rel || []).find((r) => r.lang === "eng"), fr = (o.rel || []).find((r) => r.lang === "fra"), es = (o.rel || []).find((r) => r.lang === "spa");
+  if (o.lang !== "ar") continue; // القائمة قد تحوي مداخل بغير العربية؛ نريد الرأس العربي
+  const en = (o.rel || []).find((r) => r.lang === "eng");
   if (!en || !en.lemma) continue;
-  terms.push({ en: en.lemma, ar: o.lemma, fr: fr ? fr.lemma : undefined, es: es ? es.lemma : undefined, id, url: `${BASE}/public-dict-information/${LEX}?entry=${id}` });
+  if (!oldest || at < oldest) oldest = at;
+  terms.push({ en: fixLemma(en.lemma), ar: fixLemma(o.lemma), id });
 }
-fs.writeFileSync(OUT, JSON.stringify({ _meta: { lexicon: meta.name, lexiconId: LEX, authors: (meta.authors || []).map((a) => a.name), sponsors: (meta.sponsors || []).map((s) => s.name), totalEntries: total, harvested: new Date().toISOString().slice(0, 10), note: "مقابلاتٌ مصطلحية فقط — لا تعريفات؛ قُرئت من الواجهة العامة للمنصة وقت البناء" }, terms }, null, 1), "utf8");
-console.log(`أزواج (en→ar): ${terms.length} → ${OUT}`);
+if (!terms.length) { console.error(`✗ لا أزواج صالحة (في المدة) في الذاكرة — لم يُكتب ${OUT}`); process.exit(1); }
+const rec = { _meta: { key: LEX === AI_LEXICON_ID ? "ai-pairs" : "pairs-" + LEX, code: LEX === AI_LEXICON_ID ? "AI" : null, model: "pairs",
+  lexicon: meta.name, lexiconId: LEX, publishers: (meta.authors || []).map((a) => a.name), sponsors: (meta.sponsors || []).map((s) => s.name),
+  totalEntries: total, pairsEnAr: terms.length, ...(LIMITED ? { limited: LIMIT } : {}), fetched: oldest, url: `${BASE}/public-dict-information/${LEX}`, ...ATTRIBUTION,
+  note: "مقابلاتٌ مصطلحية فقط (en وar ومعرّف المدخل؛ لا تعريفات ولا أمثلة) من الواجهة العامة للمنصة وقت البناء. غير متتبَّع؛ شروط سوار: لا احتفاظ فوق ثلاثين يومًا من fetched — ترفضه الأدوات بعدها ويحذفه siwar-dump.mjs --purge-expired" }, terms };
+fs.mkdirSync(path.dirname(OUT), { recursive: true });
+fs.writeFileSync(OUT + ".tmp", JSON.stringify(rec, null, 1), "utf8");
+fs.renameSync(OUT + ".tmp", OUT); // كتابةٌ ثم إعادة تسمية: لا يرى قارئٌ متزامن ملفًّا نصف مكتوب
+console.log(`أزواج (en→ar): ${terms.length} → ${OUT} (جُلبت ${oldest})`);

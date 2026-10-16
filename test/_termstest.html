@@ -38,8 +38,8 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
 <script>
 var MOCK = makeChromeMock({ session: false });
 Object.assign(MOCK.localStore, { cml_overrides: { ar: { "Zzq my own correction": "تصحيحي الخاص" } } });
-// ما يخصّ الصفحة يبقى فيها: options.js يقرأ المانيفست لخانة «عن الإضافة»
-MOCK.chrome.runtime.getManifest = function () { return { short_name: "تعريب كلود للويب", version: "test", version_name: "test" }; };
+// ما يخصّ الصفحة يبقى فيها: options.js يقرأ المانيفست لخانة «عن الإضافة» — ★ (ر8-ب) باسم 2.0.0 المختصر لا اسم 1.0.0
+MOCK.chrome.runtime.getManifest = function () { return { short_name: "تعريب كلود", version: "test", version_name: "test" }; };
 window.__store = MOCK.localStore;
 window.chrome = MOCK.chrome;
 </script>
@@ -122,6 +122,59 @@ setTimeout(function () {
     })
     .then(function () {
       check("حرف واحد لا يرسم آلاف الأسطر", "true", String(rows().length <= 60));
+      // ★ القواعد الذكية: الإضافة اليدوية لنصٍّ بمتغيّر تصير قاعدة، وتُعرض، وتُصدَّر، وتُحذف
+      document.getElementById("newSrc").value = "Zzq delete {count} chats?";
+      document.getElementById("newDst").value = "احذف {count} محادثة؟";
+      document.getElementById("addTerm").click();
+      return new Promise(function (r) { setTimeout(r, 400); });
+    })
+    .then(function () {
+      var pats = window.__store.cml_user_patterns || [];
+      check("★ الإضافة اليدوية لنصٍّ بمتغيّر تُحفظ قاعدةً لا مطابقةً حرفية", "1/false",
+            pats.length + "/" + String(mine().indexOf("Zzq delete {count} chats?") >= 0));
+      return search("");
+    })
+    .then(function () {
+      var row = rowFor("Zzq delete {count} chats?");
+      check("★ القاعدة تُعرض مع تصحيحاتك بصيغة {المتغيّر}", "احذف {count} محادثة؟", row ? row.querySelector("input").value : "(غائبة)");
+      // التصدير يحمل القواعد
+      var captured = null, oldURL = URL.createObjectURL, oldClick = HTMLAnchorElement.prototype.click;
+      URL.createObjectURL = function (b) { captured = b; return "blob:test"; };
+      HTMLAnchorElement.prototype.click = function () {};
+      document.getElementById("exportOv").click();
+      return new Promise(function (r) { setTimeout(r, 300); }).then(function () {
+        URL.createObjectURL = oldURL; HTMLAnchorElement.prototype.click = oldClick;
+        return captured ? captured.text() : "";
+      });
+    })
+    .then(function (txt) {
+      var j = {}; try { j = JSON.parse(txt); } catch (e) {}
+      check("★ التصدير يحمل القواعد الذكية والتصحيحات", "1/Zzq delete {count} chats?/true",
+            (j.rules || []).length + "/" + ((j.rules || [])[0] || {}).en + "/" + String((j.terms || []).length >= 1));
+      var row = rowFor("Zzq delete {count} chats?");
+      var del = row && [].slice.call(row.querySelectorAll(".acts button")).find(function (b) { return b.textContent === "حذف القاعدة"; });
+      if (del) del.click();
+      return new Promise(function (r) { setTimeout(r, 400); });
+    })
+    .then(function () {
+      check("★ «حذف القاعدة» يزيلها بهويتها", "0", (window.__store.cml_user_patterns || []).length);
+      // ★ المعقِّم الموحّد: نصٌّ فوق TEXT_MAX أو ترجمةٌ فوق ضعفه لا تُحفظ (المحرّك لا يطبّقها والمزامنة لا ترفعها)
+      document.getElementById("newSrc").value = "Zzq " + "long ".repeat(80);
+      document.getElementById("newDst").value = "طويل";
+      document.getElementById("addTerm").click();
+      return new Promise(function (r) { setTimeout(r, 300); });
+    })
+    .then(function () {
+      var st = document.getElementById("termsStatus").textContent;
+      check("★ نصٌّ أطول من الحدّ يُرفض برسالةٍ ولا يُحفظ", "false/true",
+            String(mine().some(function (k) { return k.indexOf("Zzq long") === 0; })) + "/" + String(st.indexOf("تعذّر الحفظ") >= 0));
+      document.getElementById("newSrc").value = "Zzq short source";
+      document.getElementById("newDst").value = "ت".repeat(CMLConst.TEXT_MAX * 2 + 1);
+      document.getElementById("addTerm").click();
+      return new Promise(function (r) { setTimeout(r, 300); });
+    })
+    .then(function () {
+      check("★ ترجمةٌ أطول من ضعف الحدّ تُرفض كذلك", "false", String(mine().indexOf("Zzq short source") >= 0));
       document.title = "terms " + pass + "/" + total;
       var h = document.createElement("p");
       h.className = pass === total ? "ok" : "bad";

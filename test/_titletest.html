@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en-US">
+<meta charset="utf-8">
+<title>titletest start</title>
+<!--
+  عنوان التبويب (<title>) — قرار المالك (١٩ ربيع الآخر ١٤٤٨هـ): «ترجم كل شيء إلا ما استُثني من الأكواد أو الرموز ونحوه»
+  يشمل عنوان التبويب في المواقع كلها. وحدة العنوان في المحرّك (syncTitle): العنوان كاملًا من القاموس، وإلا فما قبل ذيله
+  (meta.titleSuffix) بالبحث الذي للنصوص (القاموس والجموع والأنماط) والذيلُ باسمه من قاموس الموقع أو titleKeep؛ وما لم يُترجم
+  يبقى العنوان كلّه على أصله (لا مختلط). مسارات titleSkip (عنوانها محتوى المستخدم) لا تُمسّ، وما كتبناه يُرجع عند التنقّل إليها
+  وعند الإطفاء ومفتاح الموقع وحارس لغة الموقع. ولا تقاذف مع موقعٍ يعيد عنوانه (قفلٌ على <head> كالذي في حزم claude.ai).
+  يعمل بجدول نطاق التطبيق نفسه (CMLConst.domain("app").meta) وقاموسٍ صغيرٍ مضبوط، ويفحص ذيول المواقع الأخرى في قواميسها المبنيّة.
+  العقد: document.title = "titletest N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<h1>عنوان التبويب</h1>
+<div id="host"><svg width="1" height="1" id="svg1"><title>Settings</title></svg></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };
+var HOME = location.pathname;</script>
+<script src="../extension/cml-const.js"></script>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true, cml_chatrtl: true });
+window.chrome = MOCK.chrome;
+// جدول نطاق التطبيق نفسه (الذيول والمستثنى وحارس اللغة)، وذيلان للاختبار: أحدهما مترجَمٌ في القاموس والآخر لا
+var APPM = CMLConst.domain("app").meta;
+window.CLAUDE_L10N = { domain: "app",
+  // (ر3) وذيلٌ بفاصل الشرطة المائلة العكسية كذيل صفحات anthropic.com («<العنوان> \ Anthropic»)
+  meta: Object.assign({}, APPM, { titleSuffix: APPM.titleSuffix.concat([" | Test Center", " | Unknown Hub", " \\ Test Center"]) }),
+  default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl",
+    strings: { "Settings": "الإعدادات", "Billing": "الفوترة", "Test Center": "مركز الاختبار", "Download Claude": "تنزيل Claude",
+               "Recents": "الأحدث", "New chat": "محادثة جديدة", "Keys": "API المفاتيح" },
+    patterns: [{ re: "^Page ([0-9]+)$", ar: "الصفحة $1", en: "Page {n}" },
+               { re: "^Add (.+)$", ar: "إضافة $1", en: "Add {name}" }],   // نمطٌ عريض كأنماط القاموس («Add {name}»)
+    plurals: { "%d file": { plural: "%d files", forms: ["لا ملفات", "ملف واحد", "ملفان", "%d ملفات", "%d ملفًا", "%d ملف"] } } } } };
+</script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+var RLM = String.fromCharCode(0x200F);
+var AR_CH = new RegExp("[" + String.fromCharCode(0x600) + "-" + String.fromCharCode(0x6FF) + "]");
+function noBidi(s) { return String(s).replace(new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g"), ""); }
+function T() { return document.title.split(RLM).join(""); }
+function titleEl() { return document.querySelector("head > title"); }
+function render(txt) { var p = document.createElement("p"); p.textContent = txt; document.getElementById("host").appendChild(p); return p; }
+function setTitle(s) { document.title = s; return wait(60); }
+var UUID = "3f2a9c1e-7b4d-4e8a-9c2b-1d5e6f7a8b9c";
+var H = document.documentElement;
+function loadDict(f) {
+  return new Promise(function (res) {
+    var s = document.createElement("script");
+    s.src = "../extension/" + f;
+    s.onload = function () { res(globalThis.CLAUDE_L10N); };
+    s.onerror = function () { res(null); };
+    document.body.appendChild(s);
+  });
+}
+
+(async function () {
+  await wait(400);
+  check("عنوانٌ لا يطابق شيئًا يبقى كما هو (عنوان الصفحة عند التحميل)", "titletest start", document.title);
+
+  // ---- المطابقة والذيل ----
+  await setTitle("Settings - Claude");
+  check("★ ذيل التطبيق «- Claude»: يُترجم ما قبله ويبقى اسم المنتج (titleKeep)", "الإعدادات - Claude", T());
+  await setTitle("Download Claude");
+  check("★ العنوان كاملًا في القاموس (بلا ذيل) يُترجم كلُّه", "تنزيل Claude", T());
+  await setTitle("Billing | Test Center");
+  check("★ ذيلٌ اسمه في قاموس الموقع: يُترجم الطرفان والفاصل كما هو", "الفوترة | مركز الاختبار", T());
+  // ★ (ر3، ٢٨ ربيع الآخر ١٤٤٨هـ) الشرطة المائلة العكسية فاصلٌ كسائر الفواصل (sepSplit): بدونها كان الاسم «\ Test Center» فلا يُعرف
+  await setTitle("Billing \\ Test Center");
+  check("★ (ر3) فاصل الشرطة المائلة العكسية «\\» كفاصل صفحات anthropic.com: يُترجم الطرفان والفاصل كما هو", "الفوترة \\ مركز الاختبار", T());
+  await setTitle("Settings | Claude Code");
+  check("★ ذيل Claude Code على الويب «| Claude Code»", "الإعدادات | Claude Code", T());
+  await setTitle("Page 7 - Claude");
+  var pat = T();
+  await setTitle("3 files - Claude");
+  check("★ ما قبل الذيل بالبحث نفسه: الأنماط والجموع", "الصفحة 7 - Claude / 3 ملفات - Claude", pat + " / " + T());
+
+  // ---- لا مطابقة، ولا مختلط ----
+  await setTitle("Quarterly roadmap - Claude");
+  check("★ لا مطابقة: العنوان على أصله", "Quarterly roadmap - Claude", T());
+  await setTitle("Billing | Unknown Hub");
+  var mixA = T();
+  await setTitle("Settings and more | Test Center");
+  check("★ لا عنوان مختلط: ذيلٌ بلا ترجمة، أو ما قبل ذيلٍ مترجَم بلا ترجمة ⇒ كلُّه على أصله",
+        "Billing | Unknown Hub / Settings and more | Test Center", mixA + " / " + T());
+  // (المراجعة العدائية، ٢٠ ربيع الآخر ١٤٤٨هـ) نمطٌ عريض للنصوص كان يطابق العنوان كلَّه فيبتلع الذيل في التقاطه، ويعرّب ما قبل الذيل
+  // وفي التقاطه كلامٌ إنجليزي (اسم جلسةٍ أو عنصرٍ هو محتوى المستخدم): «إضافة tests | Claude Code». التقاطٌ لاتيني ⇒ لا مطابقة،
+  // إلا اسمَ منتجٍ في titleKeep
+  await setTitle("Add tests | Claude Code");
+  var wide1 = T();
+  await setTitle("Add tests - Claude");
+  var wide2 = T();
+  await setTitle("Add Claude Code | Claude Code");
+  check("★ لا عنوان مختلطًا من نمطٍ عريض: التقاطٌ لاتيني يُبقي العنوان على أصله، إلا اسمَ منتجٍ في titleKeep",
+        "Add tests | Claude Code / Add tests - Claude / إضافة Claude Code | Claude Code", wide1 + " / " + wide2 + " / " + T());
+  await setTitle("Keys - Claude");
+  check("★ ترجمةٌ أولُ حرفٍ قويٍّ فيها لاتيني: علامة RLM في أولها لتُعرض من اليمين", "8207/API المفاتيح - Claude",
+        document.title.charCodeAt(0) + "/" + T());
+
+  // ---- تغيّر العنوان في تطبيق الصفحة الواحدة ----
+  await setTitle("Settings - Claude");
+  titleEl().firstChild.nodeValue = "Recents - Claude";   // React يكتب قيمة عقدته
+  await wait(60);
+  var spa1 = T();
+  var old = titleEl(); old.parentNode.removeChild(old);  // next/head يستبدل العنصر
+  var nt = document.createElement("title"); nt.textContent = "New chat - Claude"; document.head.appendChild(nt);
+  await wait(60);
+  check("★ تغيّر العنوان في التنقّل: قيمة العقدة، ثم استبدال العنصر", "الأحدث - Claude / محادثة جديدة - Claude", spa1 + " / " + T());
+  check("وعقدة العنوان هي هي (قيمةٌ تُكتب لا عقدةٌ تُستبدل)", "true", String(nt.firstChild === titleEl().firstChild && nt === titleEl()));
+  // عنوانٌ من عقدتين لا يُمسّ (لا يُعرف أيّ عقدةٍ يملكها الموقع)
+  var te = titleEl(); te.textContent = ""; te.appendChild(document.createTextNode("Settings")); te.appendChild(document.createTextNode(" - Claude"));
+  await wait(60);
+  check("عنوانٌ من عقدتين نصيّتين لا يُمسّ", "Settings - Claude", T());
+  te.textContent = "Settings - Claude";
+  await wait(60);
+  // عنوان SVG داخل الصفحة تلميحٌ لا عنوان: يبقى في مسار النص العام
+  check("عنوان SVG في الصفحة (تلميح) يبقى في مسار النص: يُترجم", "الإعدادات",
+        noBidi(document.querySelector("#svg1 title").textContent));
+
+  // ---- مسارات محتوى المستخدم (titleSkip): بالمسار لا بالنص ----
+  var skipRoutes = ["/chat/" + UUID, "/project/" + UUID, "/cowork/project/" + UUID, "/artifacts/" + UUID, "/artifact/x1",
+                    "/share/s1", "/code/session_011CUabc12", "/analytics/chat/" + UUID, "/analytics/insights/r1", "/messages/c1"];
+  var gotSkip = [];
+  for (var i = 0; i < skipRoutes.length; i++) {
+    history.pushState({}, "", skipRoutes[i]);
+    await setTitle(i % 2 ? "Download Claude" : "Settings - Claude");  // محادثةٌ اسمها «Settings» مثلًا
+    gotSkip.push(T());
+  }
+  check("★ مسارات محتوى المستخدم (محادثة، مشروع، مُخرَج، مشاركة، جلسة Claude Code، تحليلات، رسائل): العنوان لا يُمسّ",
+        skipRoutes.map(function (r, j) { return j % 2 ? "Download Claude" : "Settings - Claude"; }).join(" | "), gotSkip.join(" | "));
+  var okRoutes = ["/artifacts/design", "/settings/profile", "/projects/create", "/aws_marketplace", "/claude-in-slack/T0123ABCD/C0456EFGH/configure"];
+  var gotOk = [];
+  for (var k = 0; k < okRoutes.length; k++) {
+    // تنقّلاتٌ متتالية تعيد العنوان الإنجليزي نفسه (رأس المسار) بعد كتابتنا بمهلة: تنقّلٌ لا قفل، فلا يُحسب إرجاعًا سريعًا
+    history.pushState({}, "", okRoutes[k]);
+    document.title = "Settings - Claude";
+    await wait(200);
+    gotOk.push(T());
+  }
+  check("★ ومسارات الواجهة المجاورة لها تُترجم (/artifacts/design، /settings، aws_marketplace…)",
+        okRoutes.map(function () { return "الإعدادات - Claude"; }).join(" | "), gotOk.join(" | "));
+  // التنقّل إلى مسارٍ مستثنى وعنوانُنا باقٍ (الموقع لم يغيّره بعد): يُرجع، والعودة تعيد الترجمة
+  history.pushState({}, "", HOME);
+  await setTitle("New chat - Claude");
+  var before = T();
+  history.pushState({}, "", "/chat/" + UUID); render("x");
+  await wait(150);
+  var inChat = T();
+  history.pushState({}, "", HOME); render("y");
+  await wait(150);
+  check("★ التنقّل إلى محادثةٍ وعنوانُنا باقٍ: يُرجع الأصل، والعودة تعيد الترجمة",
+        "محادثة جديدة - Claude > New chat - Claude > محادثة جديدة - Claude", before + " > " + inChat + " > " + T());
+
+  // ---- الاستعادة: الإطفاء ومفتاح الموقع وحارس اللغة ----
+  await setTitle("Settings - Claude");
+  MOCK.localStore.cml_enabled = false; MOCK.fireChanged({ cml_enabled: { newValue: false } }, "local");
+  await wait(60);
+  var off = T();
+  MOCK.localStore.cml_enabled = true; MOCK.fireChanged({ cml_enabled: { newValue: true } }, "local");
+  await wait(60);
+  check("★ إيقاف الإضافة يعيد العنوان الأصلي، وتشغيلها يعيد الترجمة", "Settings - Claude > الإعدادات - Claude", off + " > " + T());
+  MOCK.localStore["cml_site.app"] = false; MOCK.fireChanged({ "cml_site.app": { newValue: false } }, "local");
+  await wait(60);
+  var soff = T();
+  MOCK.localStore["cml_site.app"] = true; MOCK.fireChanged({ "cml_site.app": { newValue: true } }, "local");
+  await wait(60);
+  check("★ مفتاح الموقع: إطفاؤه يعيد الأصل وتشغيله يعيد الترجمة", "Settings - Claude > الإعدادات - Claude", soff + " > " + T());
+  // عنوانٌ يتغيّر والإضافة موقوفة لا يُترجم
+  MOCK.localStore.cml_enabled = false; MOCK.fireChanged({ cml_enabled: { newValue: false } }, "local");
+  await setTitle("Recents - Claude");
+  var offNew = T();
+  MOCK.localStore.cml_enabled = true; MOCK.fireChanged({ cml_enabled: { newValue: true } }, "local");
+  await wait(60);
+  check("عنوانٌ جديد والإضافة موقوفة يبقى أصله، ويُترجم عند التشغيل", "Recents - Claude > الأحدث - Claude", offNew + " > " + T());
+  H.setAttribute("lang", "xx-YY");
+  await wait(200);
+  var foreign = T();
+  H.setAttribute("lang", "en-US");
+  await wait(300);
+  check("★ حارس لغة الموقع: لغةٌ أخرى يكتبها الموقع تعيد العنوان الأصلي، والإنجليزية تعيد الترجمة",
+        "Recents - Claude > الأحدث - Claude", foreign + " > " + T());
+
+  // ---- الموقع يحفظ عنوانَنا ثم يعيده (أداة العنوان في claude.ai: let t = document.title … document.title = t) ----
+  await setTitle("Settings - Claude");
+  var saved = document.title;                        // العربي كما كتبناه
+  await setTitle("Quarterly roadmap - Claude");
+  await setTitle(saved);                             // أعاده الموقع بعقدةٍ جديدة
+  var back = T();
+  MOCK.localStore.cml_enabled = false; MOCK.fireChanged({ cml_enabled: { newValue: false } }, "local");
+  await wait(60);
+  var backOff = T();
+  MOCK.localStore.cml_enabled = true; MOCK.fireChanged({ cml_enabled: { newValue: true } }, "local");
+  await wait(60);
+  check("★ كتابتُنا يعيدها الموقع بعد أن حفظها: يُعرف أصلها فيعود الإنجليزي عند الإيقاف (لا يعلق عربيًّا)",
+        "الإعدادات - Claude > Settings - Claude > الإعدادات - Claude", back + " > " + backOff + " > " + T());
+
+  // ---- التصحيحات: ما قبل الذيل بتصحيح المستخدم كسائر النصوص ----
+  MOCK.localStore.cml_overrides = { ar: { "Settings": "التهيئة" } };
+  MOCK.fireChanged({ cml_overrides: { newValue: MOCK.localStore.cml_overrides } }, "local");
+  await wait(60);
+  var ov = T();
+  MOCK.localStore.cml_overrides = {};
+  MOCK.fireChanged({ cml_overrides: { newValue: {} } }, "local");
+  await wait(60);
+  check("تصحيحُ المستخدم يسري على العنوان فورًا، وحذفه يعيد ترجمة القاموس", "التهيئة - Claude > الإعدادات - Claude", ov + " > " + T());
+
+  // ---- لا تقاذف: قفلٌ على <head> يعيد عنوانه الإنجليزي كلما تغيّر ----
+  var LOCK = "Recents - Claude", lockWrites = 0;
+  var lock = new MutationObserver(function () { if (document.title !== LOCK) { lockWrites++; document.title = LOCK; } });
+  lock.observe(document.head, { childList: true, subtree: true, characterData: true });
+  document.title = LOCK;
+  await wait(600);
+  var w1 = lockWrites, lockT = document.title;
+  await wait(600);
+  check("★ لا تقاذف مع قفل الموقع: نتوقف بعد سقفٍ صغير ويبقى عنوانه الإنجليزي",
+        "true/Recents - Claude/" + w1, String(w1 >= 1 && w1 <= (CMLConst.TITLE_PIN_MAX || 5) + 1) + "/" + lockT + "/" + lockWrites);
+  lock.disconnect();
+  await setTitle("Settings - Claude");
+  check("وبعد زوال القفل وتغيّر العنوان تعود الترجمة", "الإعدادات - Claude", T());
+  // (المراجعة العدائية) والاتجاه المعاكس: قفلٌ حفظ عنوانَنا العربي (مكوّن الأجزاء في claude.ai يحفظ document.title عند تركيبه) ثم
+  // تُطفأ الإضافة — كان الإرجاع يتقاذف معه بلا سقف (فرعُ «كتابتنا أعادها الموقع» بلا عدّ)، مراقبان يتبادلان الكتابة في المهام
+  // الدقيقة فتتجمّد الصفحة. (القفل هنا مسقوفٌ بـ500 كي لا تتجمّد صفحة الاختبار نفسها)
+  var HELD = document.title, heldN = 0;
+  var lock2 = new MutationObserver(function () { if (document.title !== HELD && heldN < 500) { heldN++; document.title = HELD; } });
+  lock2.observe(document.head, { childList: true, subtree: true, characterData: true });
+  MOCK.localStore.cml_enabled = false; MOCK.fireChanged({ cml_enabled: { newValue: false } }, "local");
+  await wait(300);
+  var heldW = heldN;
+  lock2.disconnect();
+  MOCK.localStore.cml_enabled = true; MOCK.fireChanged({ cml_enabled: { newValue: true } }, "local");
+  await wait(60);
+  await setTitle("Recents - Claude");
+  check("★ لا تقاذف في الإرجاع: قفلٌ على عنواننا العربي والإضافة تُطفأ ⇒ نتوقف بعد السقف، ثم تعود الترجمة بتغيّر العنوان",
+        "true/الأحدث - Claude", String(heldW >= 1 && heldW <= (CMLConst.TITLE_PIN_MAX || 5) + 1) + "/" + T());
+
+  // ---- الجدول والقواميس المبنيّة ----
+  var sfxOk = CMLConst.DOMAINS.map(function (d) {
+    var s = d.meta && d.meta.titleSuffix;
+    return d.id + ":" + (Array.isArray(s) && s.length ? s.length : 0);
+  }).join(" ");
+  check("★ لكل نطاقٍ في الجدول ذيولُ عنوانه", "app:2 support:1 privacy:1 legal:1 academy:1 docs:2 code:1", sfxOk);
+  var bad = [];
+  CMLConst.DOMAINS.forEach(function (d) { (d.meta.titleSkip || []).forEach(function (s) { try { new RegExp(s); } catch (e) { bad.push(s); } }); });
+  check("كل تعابير titleSkip صالحة", "", bad.join(" | "));
+  var SK = (APPM.titleSkip || []).map(function (s) { return new RegExp(s); });
+  function skipped(p) { return SK.some(function (r) { return r.test(p); }) ? "S" : "-"; }
+  var paths = ["/", "/new", "/recents", "/chats", "/projects", "/projects/create", "/cowork/projects", "/artifacts", "/artifacts/design", "/code",
+               "/code/routines", "/cowork_sessions", "/aws_marketplace", "/analytics/insights/new", "/directory",
+               "/chat/" + UUID, "/project/" + UUID, "/epitaxy/project/p9", "/artifacts/latest/a1", "/code/artifact/a1", "/public/artifacts/a1",
+               "/share/s1", "/analytics-shared/insights/r1", "/directory/connectors", "/memory/notes", "/cowork/local_" + UUID,
+               "/code/session_011CUabc12", "/scheduled-task/" + UUID];
+  check("★ جدول المسارات المستثناة للتطبيق: ١٥ مسار واجهة تُترجم، و١٣ مسارًا عنوانها محتوى المستخدم",
+        "---------------SSSSSSSSSSSSS", paths.map(skipped).join(""));
+  // (المراجعة العدائية) مساراتٌ عنوانُها اسمٌ ومعرّفها قد لا يكون UUID ولا «بادئة_رقم»: عناصر مكتبة «تخصيص» (مهارات المستخدم
+  // وإضافات مؤسسته وموصّلاتها: أداة العنوان «<الاسم> - Claude»)، والمهام المجدولة (معرّفها اسمٌ بصيغة kebab)، والمساحات،
+  // وتفاصيل الروتينات والمجدولات — وصفحات «جديد» و«اكتشاف» والقوائم تبقى تُترجم
+  var paths2 = ["/customize", "/customize/skills", "/customize/skills/discover", "/customize/plugins/p1", "/customize/skills/user/my-skill",
+                "/customize/connectors/c1", "/scheduled-task/daily-standup", "/space/s1", "/code/routines/new", "/code/scheduled/new",
+                "/code/routines/trigabc", "/epitaxy/scheduled/morning-brief", "/code/scheduled"];
+  check("★ وعناصر «تخصيص» والمهام المجدولة والمساحات وتفاصيل الروتينات مستثناة بمسارها (لا بمعرّفها)",
+        "---SSSSS--SS-", paths2.map(skipped).join(""));
+  var built = {}, names = [];
+  for (var di = 0; di < CMLConst.DOMAINS.length; di++) {
+    var D = CMLConst.DOMAINS[di];
+    if (D.id === "app") continue;                      // قاموس التطبيق كبير؛ ذيوله أسماء منتجات (titleKeep)
+    var L = await loadDict(D.dict);
+    var strs = L && L.dicts && L.dicts.ar && L.dicts.ar.strings;
+    built[D.id] = !!(L && L.meta && JSON.stringify(L.meta.titleSuffix) === JSON.stringify(D.meta.titleSuffix));
+    (D.meta.titleSuffix || []).forEach(function (s) {
+      var nm = s.replace(/^\s*[|·:–—\\-]\s*/, "").trim();   // (ر3) والشرطة المائلة العكسية فاصلٌ كذلك
+      var keep = (D.meta.titleKeep || []).indexOf(nm) >= 0;
+      names.push(D.id + ":" + (keep ? "keep" : (strs && Object.prototype.hasOwnProperty.call(strs, nm) && AR_CH.test(strs[nm]) ? "ar" : "MISSING " + nm)));
+    });
+  }
+  check("★ القواميس المبنيّة تحمل ذيول الجدول (build.mjs يحقن meta)", "support:true privacy:true legal:true academy:true docs:true code:true",
+        Object.keys(built).map(function (k) { return k + ":" + built[k]; }).join(" "));
+  // (ر3) وذيل الوثائق القانونية «\ Anthropic» اسمُ الشركة في titleKeep؛ (ر4) وذيل الأكاديمية « · Claude Academy» اسمُ المنتج فيه
+  check("★ اسمُ كل ذيلٍ مترجَمٌ في قاموس موقعه (أو اسم منتجٍ في titleKeep)",
+        "support:ar privacy:ar legal:keep academy:keep docs:ar docs:ar code:ar", names.join(" "));
+  check("وذيلا التطبيق اسما منتجين في titleKeep", "Claude|Claude Code", APPM.titleSuffix.map(function (s) {
+    var nm = s.replace(/^\s*[|·:–—-]\s*/, "").trim(); return APPM.titleKeep.indexOf(nm) >= 0 ? nm : "?" + nm; }).join("|"));
+
+  history.pushState({}, "", HOME);
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "titletest " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "TITLETEST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})().catch(function (e) { jsErrors++; document.title = "titletest 0/1"; var p = document.createElement("pre"); p.textContent = String(e && e.stack || e); document.body.appendChild(p); });
+</script>

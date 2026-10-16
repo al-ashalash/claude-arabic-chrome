@@ -1,0 +1,145 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>live test</title>
+<!--
+  اختبار عقد الورقة الحيّة بين سكربت المحتوى والعامل (مراجعة كودكس ١١–١٣، ١٤ جزئيًّا).
+  قشرة chrome بمراسلةٍ تلتقط الطلبات ولا تردّ حتى نأمرها — فنتحكّم في ترتيب الردود:
+   ١) المدخل سجلّاتٌ بترتيب المستند (لا الأبجدي)، وورقة الطباعة والمعطَّلة خارجه.
+   ٢) ورقةٌ تُضاف لاحقًا يلتقطها مراقبُ الرأس فيُطلب بناءٌ جديد (لا مهلٌ ثابتة).
+   ٣) ردٌّ قديمٌ بطيء لا يستبدل بناءً أحدث.
+   ٤) ردٌّ يصل بعد إطفاء الاتجاه لا يُحقن ولا يرفع البوابة.
+   ٥) (١٦ ربيع الآخر ١٤٤٨هـ) المضمَّنة اختياريةٌ لكل نطاق (meta.liveInline — هذه القشرة تختارها)، وما داخل المحادثة
+      (.prose) أو المستثنى (meta.skipSel) لا يُرسل أبدًا؛ والتطبيق (لا يختارها) في _liveapptest.html.
+  العقد: document.title = "livetest N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<link rel="stylesheet" href="/nonexistent/zeta.css">
+<link rel="stylesheet" href="/nonexistent/alpha.css">
+<link rel="stylesheet" href="/nonexistent/print.css" media="print">
+<link rel="alternate stylesheet" href="/nonexistent/alt.css">
+<!-- أوراق <style> مضمَّنة (وثائق Claude Code): متجاورتان تمسّان المحور ⇒ سجلٌّ واحد بعد alpha؛ ومتغيّراتٌ وحدها،
+     وما فيه @import، خارج البناء -->
+<style>.zq-a{margin-left:3px}</style>
+<style>.zq-b{padding-right:1px}</style>
+<style>:root{--zq-var:1}</style>
+<style>@import url(/nonexistent/imp.css);.zq-c{left:0}</style>
+<h1>اختبار الورقة الحيّة</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<p id="probe">Hello</p>
+<!-- ورقتان يولّدهما الموقع داخل محتوى محادثةٍ وجوابٍ مستثنى: لا تدخلان الطلب أبدًا (ولا تقطعان تتابع المضمَّنة) -->
+<div class="prose"><svg width="1" height="1"><style>.zq-chat{margin-left:3px}</style></svg></div>
+<div id="zq-skip"><style>.zq-skipped{margin-left:4px}</style></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+var REQS = [];
+var MOCK = makeChromeMock({
+  session: false,
+  sendMessage: function (msg, cb) { if (msg && msg.type === "rtlcss") REQS.push({ msg: msg, cb: cb }); else if (cb) cb(null); },
+});
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+// قاموسٌ أدنى: لغةٌ من اليمين إلى اليسار ومفردة واحدة — الاختبار للورقة لا للترجمة
+// النطاق يختار المضمَّنة (meta.liveInline)، واستثناء المحادثة قائم (chat)، والمستثنى #zq-skip
+window.CLAUDE_L10N = { domain: "code", meta: { live: true, liveInline: true, chat: true, skipSel: "#zq-skip" }, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Hello": "مرحبا" }, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+// الروابط وحدها بأسمائها (فحوص ترتيب الروابط)، والنوع لكل سجلّ: L رابط، S مضمَّنة (بترتيب المستند)
+function names(req) { return req.msg.sheets.filter(function (x) { return x.url; }).map(function (x) { return x.url.split("/").pop(); }).join(","); }
+function kinds(req) { return req.msg.sheets.map(function (x) { return x.url ? "L" : "S"; }).join(""); }
+function styleEl() { return document.getElementById("cml-live-rtl"); }
+function gate() { return document.documentElement.getAttribute("data-cml-rtl"); }
+
+async function main() {
+  await wait(400);
+  check("الإقلاع طلب بناءً حيًّا واحدًا", "1", REQS.length);
+  var r1 = REQS[0];
+  check("★ ترتيب المستند لا الأبجدي، والطباعة والبديلة خارجه", "zeta.css,alpha.css", r1 ? names(r1) : "");
+  check("المدخل سجلّاتٌ فيها الوسيط", "true", !!(r1 && r1.msg.sheets[0] && "media" in r1.msg.sheets[0]));
+  // ★ (وثائق Claude Code) <style> المضمَّنة تدخل بترتيب المستند: ورقة الصفحة نفسها (فيها padding) ثم الرابطان ثم
+  // المتجاورتان سجلًّا واحدًا؛ وورقة المتغيّرات وحدها وورقة @import خارجه
+  var last = r1 ? r1.msg.sheets[r1.msg.sheets.length - 1] : null;
+  check("★ المضمَّنة بترتيب المستند، والمتجاورة سجلٌّ واحد، وما لا يمسّ المحور أو فيه @import خارجه", "SLLS/true/true/false/false",
+        (r1 ? kinds(r1) : "") + "/" + !!(last && /\.zq-a\{/.test(last.inline || "")) + "/" + !!(last && /\.zq-b\{/.test(last.inline || "")) + "/" +
+        !!(r1 && JSON.stringify(r1.msg.sheets).indexOf("--zq-var") >= 0) + "/" + !!(r1 && JSON.stringify(r1.msg.sheets).indexOf("imp.css") >= 0));
+
+  check("★ ورقةٌ داخل المحادثة (.prose) أو المستثنى (skipSel) لا تُرسل أبدًا", "false/false",
+        !!(r1 && JSON.stringify(r1.msg.sheets).indexOf("zq-chat") >= 0) + "/" + !!(r1 && JSON.stringify(r1.msg.sheets).indexOf("zq-skipped") >= 0));
+  // ورقةٌ تُضاف لاحقًا ⇒ مراقبُ الرأس يطلب بناءً جديدًا (بصمةٌ أخرى)
+  var ln = document.createElement("link");
+  ln.rel = "stylesheet"; ln.href = "/nonexistent/lazy.css";
+  document.head.appendChild(ln);
+  await wait(700);
+  check("★ ورقةٌ كسولة يلتقطها مراقبُ الرأس فيُطلب بناءٌ جديد", "2/zeta.css,alpha.css,lazy.css",
+        REQS.length + "/" + (REQS[1] ? names(REQS[1]) : ""));
+
+  // الأحدث يصل أولًا، ثم القديم البطيء: لا يستبدله
+  REQS[1].cb({ css: "/*NEW*/" });
+  check("الردّ الأحدث يُحقن وترتفع البوابة live", "/*NEW*//live",
+        (styleEl() ? styleEl().textContent : "") + "/" + gate());
+  r1.cb({ css: "/*OLD*/" });
+  check("★ الردّ القديم البطيء لا يستبدل الأحدث", "/*NEW*/", styleEl() ? styleEl().textContent : "");
+
+  // إطفاء الاتجاه ثم ردٌّ متأخر: لا حقن ولا بوابة
+  var ln2 = document.createElement("link");
+  ln2.rel = "stylesheet"; ln2.href = "/nonexistent/later.css";
+  document.head.appendChild(ln2);
+  await wait(700);
+  var r3 = REQS[2];
+  check("تبدّل المجموعة طلب بناءً ثالثًا", "3", REQS.length);
+  MOCK.fireChanged({ cml_rtl: { newValue: false } }, "local");
+  await wait(50);
+  if (r3) r3.cb({ css: "/*AFTER-OFF*/" });
+  check("★ ردٌّ بعد إطفاء الاتجاه لا يُحقن ولا يرفع البوابة", "/*NEW*//null",
+        (styleEl() ? styleEl().textContent : "") + "/" + gate());
+
+  // تبديل href في العنصر نفسه يُلتقط أيضًا (بعد إعادة التشغيل)
+  MOCK.fireChanged({ cml_rtl: { newValue: true } }, "local");
+  await wait(50);
+  var before = REQS.length;
+  ln2.href = "/nonexistent/later-v2.css";
+  await wait(700);
+  check("★ تبديل href في العنصر نفسه يطلب بناءً", "true", REQS.length > before &&
+        names(REQS[REQS.length - 1]).indexOf("later-v2.css") !== -1);
+  // ★ ورقةٌ مضمَّنة تُضاف إلى الرأس: يلتقطها المراقب فيُطلب بناءٌ ببصمةٍ جديدة، ونصُّها في الطلب نفسه (لا جلب)
+  var fpBefore = REQS[REQS.length - 1].msg.fp, n0 = REQS.length;
+  var st = document.createElement("style"); st.textContent = ".zq-d{margin-right:4px}";
+  document.head.appendChild(st);
+  await wait(700);
+  var rq = REQS[REQS.length - 1];
+  check("★ <style> مضمَّنة تُضاف إلى الرأس تطلب بناءً ببصمةٍ أخرى ونصُّها في الطلب", "true/true/true",
+        (REQS.length > n0) + "/" + (rq.msg.fp !== fpBefore) + "/" + (JSON.stringify(rq.msg.sheets).indexOf(".zq-d{margin-right:4px}") >= 0));
+  // وورقتُنا نفسها (cml-live-rtl) لا توقظ المراقب: حقنُ ردٍّ لا يطلب بناءً جديدًا
+  var n1 = REQS.length;
+  rq.cb({ css: "/*MINE*/" });
+  await wait(700);
+  check("ورقتنا المحقونة لا تطلب بناءً جديدًا (لا دوران)", "true/" + n1, (styleEl() && styleEl().textContent === "/*MINE*/") + "/" + REQS.length);
+  check("ولا في أي طلبٍ بعده", "false", REQS.some(function (q) { return /zq-chat|zq-skipped/.test(JSON.stringify(q.msg.sheets)); }));
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+}
+main().then(finish, function (e) { check("استثناء غير متوقع", "(لا شيء)", String(e && e.message || e)); finish(); });
+function finish() {
+  document.title = "livetest " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "LIVETEST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+}
+</script>

@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>code test</title>
+<!--
+  اختبار نطاق وثائق Claude Code (code.claude.com/docs — Mintlify فوق Next.js): ما أُضيف للمحرّك لأجله،
+  كلٌّ في إطارٍ مستقل (_codeframe.html) لأن لكل حالةٍ محرّكها:
+   ١) حارس نوع المستند: نسخ ‎.md‎ وllms.txt (نصٌّ خام تحت المطابقة) خاملةٌ تمامًا — لا سمات ولا إخفاء ولا ترجمة.
+   ٢) سقف الترطيب لكل نطاق (meta.hydrateMaxMs) يحلّ محلّ العام (HYDRATE_MAX_MS) ولو كان أطول منه.
+   ٣) meta.skipSel: أجوبة المساعد المولَّدة لا تُعرَّب نصًّا ولا سمة، ولا تُحصد (الحاصد والمحرّك متطابقان
+      في الاتجاهين)، وما عُرِّب ثم نُقل إليها يُرجع أصله.
+   ٤) الورقة الحيّة تحمل أوراق <style> المضمَّنة (CSS الموقع الخاص في المتن) بترتيب المستند.
+   ٥) code-point.css: الحشوة السطرية في الشريط والفهرس، والرموز الاتجاهية، وجزيرة الشيفرة، ومحاذاة الخلايا.
+   ٩) ★ (ر6-ب) حارس المتن المختلط (meta.bodyGuard): صفحةٌ تزيد حصّة كتلها غير المغطّاة على العتبة يبقى متنها إنجليزيًّا كلّه والواجهة عربية،
+      والحكم ثابتٌ للصفحة (لوحةٌ متأخرة تتبعه)، ويُعاد بالتنقّل وحده، والإطفاء يرفعه؛ والعتبة في جدول النطاقات لـcode وحده.
+      ★ (ر6-ج) وتوقيته: بعد التنقّل يُحكم حين تتبدّل هويّة الشجرة وبهدوءٍ يُعدّ من لحظة التبدّل (لا تعيده إضافات الموقع الصغيرة)،
+      وفورًا عند التشغيل إن تبدّلت والإضافة مطفأة، ولا حكم على شجرة الصفحة السابقة ولو بلغ السقف.
+      ★ (ر6-د) والعتبة 5٪ في مواقع المتون الخمسة (القرار 83)، والصفحة بلا قطعة تُحكم بقطعةٍ فارغة فتُحجب بسببها «none» إلا أن يغطّي قاموسُ
+      الواجهة متنَها أو لا كتلة فيه (القرار 84)؛ والصفحات السابقة المخبوءة في المستند (display:none مضمَّن) لا تُعدّ ولا يُكتب فيها.
+  العقد: document.title = "codetest N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+iframe{width:600px;height:220px;border:1px solid #ddd}</style>
+<h1>اختبار نطاق وثائق Claude Code</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<div id="frames"></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g"), ""); }
+// إطارٌ بحالته، ويُنتظر حتى يحمّل محرّكه (أو يخرج — حارس نوع المستند)
+function frame(q) {
+  return new Promise(function (res) {
+    var f = document.createElement("iframe");
+    f.src = "_codeframe.html?" + q;
+    f.onload = function () { res(f.contentWindow); };
+    document.getElementById("frames").appendChild(f);
+  });
+}
+function attrs(w) {
+  var h = w.document.documentElement;
+  return ["data-cml", "dir", "data-cml-rtl", "data-cml-boot", "data-cml-hold"].map(function (a) { return String(h.getAttribute(a)); }).join("/");
+}
+
+(async function () {
+  // ١) حارس نوع المستند
+  var md = await frame("ct=md"), pl = await frame("ct=plain"), ctl = await frame("");
+  await wait(900);
+  check("★ ‎.md‎ (text/markdown): المحرّك خاملٌ تمامًا — لا سمات ولا إخفاء ولا ترجمة", "null/null/null/null/null/Settings/true",
+        attrs(md) + "/" + md.document.getElementById("out").textContent + "/" + md.__ready);
+  check("★ llms.txt (text/plain): خاملٌ كذلك", "null/null/null/null/null/Settings",
+        attrs(pl) + "/" + pl.document.getElementById("out").textContent);
+  check("والمستند HTML نفسه يعمل (الإطار سليم)، وبلا skipSel يُعرَّب ما في #chat-content (فاختبار الاستثناء ليس فارغًا)",
+        "on/rtl/v2/null/null/الإعدادات/الإعدادات",
+        attrs(ctl) + "/" + noBidi(ctl.document.getElementById("out").textContent) + "/" + noBidi(ctl.document.getElementById("ans").textContent));
+
+  // ٥) code-point.css على المستند العامل
+  var D = ctl.document, cs = function (id) { return ctl.getComputedStyle(D.getElementById(id)); };
+  check("★ حشوة الشريط السطرية (padding-left:1rem) تُنقل إلى البداية: يسار 12 ويمين 16", "12px/16px",
+        cs("sideA").paddingLeft + "/" + cs("sideA").paddingRight);
+  check("★ تداخل الفهرس بقيمته المرصودة (--toc-padding-left:2rem) من اليمين", "0px/32px",
+        cs("tocA").paddingLeft + "/" + cs("tocA").paddingRight);
+  // ★ (فحص الاتجاه ١–٣، ١٦ ربيع الآخر ١٤٤٨هـ) البند الإنجليزي (LTR) تداخلُه من بدايته هو: اليسار
+  check("★ بند الفهرس الإنجليزي (dir=ltr) تداخلُه من اليسار (لا يُقلب إلى اليمين)", "16px/0px",
+        cs("tocEn").paddingLeft + "/" + cs("tocEn").paddingRight);
+  check("★ بند المجموعة المتداخلة (padding-left: 1.75rem) يُنقل إلى البداية: يسار 12 ويمين 28", "12px/28px",
+        cs("sideN").paddingLeft + "/" + cs("sideN").paddingRight);
+  check("★ درج التنقّل على الجوال (#navigation-items خارج #sidebar): الحشوة إلى البداية وسهم المجموعة معكوس", "12px/16px/-1 1",
+        cs("drawA").paddingLeft + "/" + cs("drawA").paddingRight + "/" + cs("drawChev").scale);
+  check("★ الرموز الاتجاهية معكوسة بـscale وتدويرُ الموقع باقٍ؛ والمُدار لأسفل (قائمةٌ منسدلة) لا يُعكس",
+        "-1 1/-1 1/none/-1 1/180deg/-1 1/-1 1/none",
+        [cs("ctaSvg").scale, cs("pgPrev").scale, cs("pgPrev").rotate, cs("pgNext").scale, cs("pgNext").rotate,
+         cs("caret").scale, cs("sideChev").scale, cs("selSvg").scale].join("/"));
+  // ★ (فحص الاتجاه ٦) لا قصّ لمنطقة المحتوى (كان يقصّ الجداول العريضة القابلة للتمرير): سببُ الفيض وحده يُخفى — مرساة
+  // العنوان الإنجليزي دون 1024 (الإطار بعرض 600)
+  check("★ كتلة الشيفرة جزيرة LTR، ومنطقة المحتوى لا تُقصّ، ومرساة العنوان الإنجليزي مخفيّةٌ دون 1024", "ltr/visible/none",
+        cs("cb").direction + "/" + cs("content-area").overflowX + "/" + cs("ancEn").display);
+  // ★ (التحقق النهائي، ١٧ ربيع الآخر ١٤٤٨هـ) ومرساة الإصدار في سجلّ الإصدارات (‎.update > div > div > a‎) سببُ الفيض نفسه على الجوال
+  check("★ مرساة الإصدار الإنجليزي في سجلّ الإصدارات (‎.update‎) مخفيّةٌ دون 1024 كمرساة العنوان", "none", cs("ancUpd").display);
+  // (رمز السهم بعدده السداسي: 2190 ← و2192 →؛ والمحتوى المحسوب بين علامتي تنصيص)
+  var aft = function (id) { var c = ctl.getComputedStyle(D.getElementById(id), "::after").content; return c.length === 3 ? c.charCodeAt(1).toString(16) : c; };
+  check("★ رابط «ما الجديد» المعرَّب سهمُه في اتجاهه (2190) والإنجليزي بجواره على حاله (2192) — فحص الاتجاه ٥", "2190/2192",
+        aft("dgAr") + "/" + aft("dgEn"));
+  var FT = D.getElementById("ft");
+  check("★ رابط التذييل يلتفّ بدل القصّ (فحص الاتجاه ٨)", "normal/true", cs("ft").whiteSpace + "/" + (FT.scrollWidth <= FT.clientWidth));
+  check("احتياط أوراق المكوّنات قبل الورقة الحيّة: إعلاناتها الفيزيائية منطقيةٌ هنا (نهاية 6، وبداية 10 من اليمين)", "6px/0px/0px/10px",
+        cs("plNeeds").marginLeft + "/" + cs("plNeeds").marginRight + "/" + cs("sscFm").marginLeft + "/" + cs("sscFm").marginRight);
+  check("محاذاة الخلية السطرية: العربية إلى بدايتها والإنجليزية يسارًا", "start/left", cs("cellAr").textAlign + "/" + cs("cellEn").textAlign);
+
+  // ٢) سقف الترطيب لكل نطاق
+  var hy = await frame("hyd=1");
+  var t0 = performance.now();
+  while (hy.__dcl === null && performance.now() - t0 < 5000) await wait(50);
+  var sinceDcl = function () { return hy.performance.now() - hy.__dcl; };
+  while (sinceDcl() < 1300) await wait(50);
+  var early = hy.document.getElementById("out").textContent;
+  t0 = performance.now();
+  while (hy.__tr === null && performance.now() - t0 < 6000) await wait(50);
+  var at = hy.__tr === null ? -1 : Math.round(hy.__tr - hy.__dcl);
+  check("★ سقف النطاق (2000) يحلّ محلّ العامّ (600): لا نصَّ عند 1300 مث، ويُفتح عند سقفه", "Settings/true",
+        early + "/" + (at >= 1900 && at < 4500) + (at >= 1900 && at < 4500 ? "" : " (" + at + " مث)"));
+  check("وبعد الفتح يُعرَّب النص", "الإعدادات", noBidi(hy.document.getElementById("out").textContent));
+
+  // ٣) meta.skipSel
+  var sk = await frame("skip=1");
+  await wait(700);
+  var SD = sk.document;
+  check("★ أجوبة المساعد (#chat-content) لا تُعرَّب نصًّا ولا سمة، وما خارجها يُعرَّب", "Settings/Settings/Answer text/الإعدادات/اطرح سؤالًا...",
+        [SD.getElementById("ans").textContent, SD.getElementById("ansBtn").getAttribute("aria-label"), SD.getElementById("ansOther").textContent,
+         noBidi(SD.getElementById("out").textContent), noBidi(SD.querySelector("textarea").getAttribute("placeholder"))].join("/"));
+  // هوية الحاصد والمحرّك بمستثنى النطاق (CMLShared.harvestSkip)
+  var sig = function (k, kind) { return kind + "|" + k; };
+  var hs = {}, chg = {};
+  sk.__harvest.forEach(function (h) { hs[sig(h.key, h.kind)] = 1; });
+  sk.__snap.forEach(function (x) {
+    var now = x.node ? x.node.nodeValue : x.el.getAttribute(x.attr);
+    if (now !== x.orig) chg[sig(x.orig.trim(), x.node ? "text" : "attr:" + x.attr)] = 1;
+  });
+  var onlyH = Object.keys(hs).filter(function (k) { return !chg[k]; }), onlyC = Object.keys(chg).filter(function (k) { return !hs[k]; });
+  check("★ الحاصد والمحرّك متطابقان بمستثنى النطاق في الاتجاهين", "/", onlyH.join(" ، ") + "/" + onlyC.join(" ، "));
+  check("والحاصد لا يقرأ من الأجوبة شيئًا", "false", sk.__harvest.some(function (h) { return h.key === "Answer text"; }));
+  // ما يُضاف إلى الجواب لاحقًا (بثّ) لا يُعرَّب، وعنصرٌ مُعرَّب يُنقل إليه يعود أصله
+  var np = SD.createElement("p"); np.textContent = "Settings"; SD.getElementById("chat-content").appendChild(np);
+  var nb = SD.createElement("button"); nb.setAttribute("aria-label", "Settings"); SD.getElementById("chat-content").appendChild(nb);
+  SD.getElementById("chat-content").appendChild(SD.getElementById("out"));
+  await wait(900);
+  check("★ ما يُبثّ في الجواب لا يُعرَّب، والمُعرَّب المنقول إليه يعود أصله", "Settings/Settings/Settings",
+        np.textContent + "/" + nb.getAttribute("aria-label") + "/" + SD.getElementById("out").textContent);
+
+  // ٤) الورقة الحيّة: <style> المضمَّنة في المتن بترتيب المستند
+  var lv = await frame("live=1");
+  await wait(900);
+  var rq = lv.__reqs[0], sheets = rq ? rq.sheets : [];
+  var inl = sheets.filter(function (x) { return !x.url; }).map(function (x) { return x.inline; }).join("\n");
+  // ★ (مراجعتا القيود والمحرّك، ١٦ ربيع الآخر ١٤٤٨هـ) المضمَّنة بمحدِّد النطاق وحده (meta.liveInline — CSS الموقع الثابت):
+  // ورقةُ الرأس بلا السمة (.pr3) وأوراق المكوّنات خارجها — فلا تتبدّل البصمة من صفحةٍ إلى صفحة
+  check("الإطار يختار المضمَّنة بمحدِّد الجدول نفسه", "true", lv.CLAUDE_L10N.meta.liveInline === lv.CMLConst.domain("code").meta.liveInline);
+  check("★ الورقة الحيّة تحمل CSS الموقع المضمَّن (style[data-custom-css-path]) بعد الروابط، لا ورقة رأسٍ أخرى ولا متغيّرات :root",
+        "LLS/true/false/false",
+        sheets.map(function (x) { return x.url ? "L" : "S"; }).join("") + "/" + (inl.indexOf(".zq-site{margin-left:7px}") >= 0) + "/" +
+        (inl.indexOf(".pr3{") >= 0) + "/" + (inl.indexOf("--banner-height") >= 0));
+
+  // ٦) اتجاه الكتل (dirSel) خارج المحادثة: مالكٌ بلا حرفٍ قويّ (مرساة العنوان) يرث اتجاه عنوانه المعرَّب لا auto=LTR
+  var dr = await frame("dir=1");
+  await wait(700);
+  var DD = dr.document;
+  check("★ مرساة العنوان (بلا حرفٍ قويّ) ترث اتجاه العنوان المعرَّب: لا dir عليها ومحسوبها rtl", "الإعدادات/rtl/null/rtl",
+        noBidi(DD.getElementById("hdt").textContent) + "/" + DD.getElementById("hd").getAttribute("dir") + "/" +
+        DD.getElementById("anc").getAttribute("dir") + "/" + dr.getComputedStyle(DD.getElementById("anc")).direction);
+  // ★ (فحص الاتجاه ٤، ١٦ ربيع الآخر ١٤٤٨هـ) أجوبة المساعد في dirSel: الجواب الإنجليزي LTR بترقيمه لا RTL موروثًا، ونصُّه على
+  // حاله (skipSel)؛ ونصٌّ يُبثّ في عقدةٍ قائمة من الجواب (يكبر حرفًا حرفًا) يُعاد حكم اتجاهه
+  var AO = DD.getElementById("ansOther");
+  check("★ جواب المساعد الإنجليزي LTR (اتجاهٌ لكل كتلة) ونصُّه لا يُمسّ", "ltr/Answer text", dr.getComputedStyle(AO).direction + "/" + AO.textContent);
+  AO.firstChild.nodeValue = "Claude Code أداةٌ تعمل في الطرفية وتفهم المستودع كلّه وتنفّذ المهام";
+  await wait(900);
+  check("★ نصٌّ يُبثّ في عقدةٍ قائمة من الجواب يُعاد حكم اتجاهه (عربيٌّ بدأ باسمٍ لاتيني ⇒ RTL)", "rtl", dr.getComputedStyle(AO).direction);
+  // ٧) وضع الكتلة: لافتةٌ بنسختين متطابقتين من نصّها (Mintlify يحفظ عرض الزرّ بنسخةٍ خفيّة) تُعرَّب كلّها،
+  // وجملةٌ من عقدتين مختلفتين تبقى إنجليزيةً كلّها (لا خلط)
+  var bd = await frame("body=1");
+  await wait(800);
+  var BD = bd.document, cps = BD.querySelectorAll("#cp span span");
+  check("★ «Copy page» بنسختيه (الخفيّة والظاهرة) يُعرَّب كلّه، والجملة المختلطة تبقى إنجليزيةً كلّها", "نسخ الصفحة/نسخ الصفحة/Copy page and more",
+        noBidi(cps[0].textContent) + "/" + noBidi(cps[1].textContent) + "/" + BD.getElementById("mix").textContent);
+  // ٨) ورقة <style> يُدرجها الترطيب في المتن (أدوات Mintlify التفاعلية — قِيس في صفحة settings: تُدرَج لحظةَ إشارة الترطيب)
+  // لا يراها مراقب الرأس، وتدخل الورقة الحيّة بمعاودة applyChrome عند فتح بوابة الترطيب
+  var lh = await frame("live=1&hyd=1");
+  await wait(900);
+  // (ورقة CSS الموقع — بسمتها — تدخل؛ وورقةُ مكوّنٍ تفاعلي في المتن تدخل كذلك: خارجها كانت قواعد الورقة الحيّة المعاد بثّها
+  // بخصوصيةٍ عالية تمحو حشوة أدواتها وحدودها — التحقق النهائي، ١٧ ربيع الآخر ١٤٤٨هـ؛ وورقةٌ في الرأس بلا السمة لا تدخل)
+  var n0 = lh.__reqs.length, late = lh.document.createElement("style"), comp = lh.document.createElement("style");
+  late.setAttribute("data-custom-css-path", "late.css");
+  late.textContent = ".zq-late{margin-left:5px}";
+  comp.textContent = ".zq-comp{margin-left:6px}";
+  lh.document.getElementById("content").appendChild(late);
+  lh.document.getElementById("content").appendChild(comp);
+  await wait(3800);
+  var lastReq = lh.__reqs[lh.__reqs.length - 1];
+  check("★ <style> CSS الموقع تُدرَج في المتن قبل الترطيب تدخل الورقة الحيّة بعده، وورقةُ المكوّن في المتن تدخل معها", "true/true/true",
+        (lh.__reqs.length > n0) + "/" + !!(lastReq && JSON.stringify(lastReq.sheets).indexOf(".zq-late{margin-left:5px}") >= 0) + "/" +
+        lh.__reqs.some(function (q) { return JSON.stringify(q.sheets).indexOf("zq-comp") >= 0; }));
+  // ٩) ★ (ر6-ب، ٢٩ ربيع الآخر ١٤٤٨هـ) حارس المتن المختلط — إطار guard=1 (العتبة 20٪؛ الصفحات A وB وC في _codeframe.html)
+  var AR = new RegExp("[" + String.fromCharCode(0x0621) + "-" + String.fromCharCode(0x064A) + "]");
+  var gd = await frame("guard=1");
+  await wait(1000);
+  var G = gd.document, GH = gd.location.pathname + gd.location.search;
+  var gt = function (id) { var e = G.getElementById(id); return e ? noBidi(e.textContent).trim() : "(لا عنصر)"; };
+  var gAr = function (pre, n) { var c = 0; for (var i = 1; i <= n; i++) if (AR.test(gt(pre + i))) c++; return c; };
+  var gAttr = function () { return G.documentElement.getAttribute("data-cml-body") || "-"; };
+  var gReqs = function () { return gd.__reqs.filter(function (m) { return m && m.type === "bodies"; }).length; };
+  // (الكتل: العنوان «Settings» والخلية «Yes» يعرّبهما قاموس الواجهة، وسمة title «Settings» كذلك — فبقاؤها إنجليزيةً هو الحجب لا غياب القاموس)
+  check("★ (ر6-ب) صفحةٌ حصّة كتلها غير المغطّاة 27٪ (3 من 11) والعتبة 20٪: محجوبة، والمتن إنجليزيٌّ كلّه (الفقرات التسع والعنوان والخلية وسمة title " +
+        "ولو عرّبها قاموس الواجهة)، والواجهة خارج المتن عربية، وقد وصلت القطعة",
+        "held/0/Settings/Yes/Settings/تسمية الإطار/1",
+        [gAttr(), gAr("g", 9), gt("gh"), gt("gtd"), G.getElementById("gtd").getAttribute("title"), gt("sideA"), gReqs()].join("/"));
+  check("★ (ر6-ب) ولم يُكتب في متن الصفحة المحجوبة شيءٌ قطّ، ولا قبل وصول القطعة والحكم (لا وميض عربيٍّ يُمحى): صفر كتابة", "0", gd.__gWrites);
+  // ★ (ر7-ب، M2) لافتة صدى العنوان خارج المتن (meta.echoSel) تتبع حارسه: في الصفحة المحجوبة على أصلها كعنوانها ولو كان نصُّها في قاموس الواجهة
+  check("★ (ر7-ب) لافتة صدى العنوان خارج المتن في صفحةٍ محجوبة: إنجليزيةٌ كعنوانها (لا قاموس الواجهة)، والواجهة حولها عربية", "Settings/Settings/تسمية الإطار",
+        [gt("echoLbl"), gt("gh"), gt("sideA")].join("/"));
+  // ★ (ر6-د، القرار 84) وسبب الحجب على الجذر: للصفحة قطعةٌ تغيّر متنها بعدها (drift)
+  check("★ (ر6-د) سبب حجب الصفحة التي لها قطعة على الجذر: data-cml-held=\"drift\"", "held/drift",
+        gAttr() + "/" + (G.documentElement.getAttribute("data-cml-held") || "-"));
+  // لوحة تبويبٍ تظهر بعد الحكم: ست فقراتٍ كلها في القطعة — لو أُعيد الحكم لنزلت الحصّة إلى 3 من 17 (18٪) فعُرِّبت الصفحة
+  G.getElementById("gpanel").innerHTML = gd.GPANEL("a", 6);
+  await wait(900);
+  check("★ (ر6-ب) لوحة تبويبٍ متأخرة في صفحةٍ محجوبة (فقراتها الست في القطعة): تبقى إنجليزية، والحكم ثابتٌ لا يُعاد", "held/0/0",
+        gAttr() + "/" + gAr("gq", 6) + "/" + gAr("g", 9));
+  // التنقّل داخل الموقع إلى صفحةٍ تغطّيها قطعتها (B: 1 من 11 = 9٪): المسار ثم تبدّل المتن كما يفعل Next.js
+  var preB = gAttr();
+  gd.history.pushState({}, "", "/zq-guard/b");
+  G.getElementById("content").innerHTML = gd.GPAGE("b");
+  await wait(1500);
+  check("★ (ر6-ب) التنقّل من صفحةٍ محجوبة إلى صفحةٍ تحت العتبة (9٪): حكمٌ جديد فتُعرَّب (ثماني فقرات، والتاسعة غير المغطّاة إنجليزية)، والعنوان والخلية وسمة title من قاموس الواجهة",
+        "held→tr/8/Bravo step nine explains the setup./الإعدادات/نعم/الإعدادات",
+        [preB + "→" + gAttr(), gAr("g", 8), gt("g9"), gt("gh"), gt("gtd"), noBidi(G.getElementById("gtd").getAttribute("title"))].join("/"));
+  check("★ (ر7-ب) والتنقّل إلى صفحةٍ تُعرَّب: اللافتة تأخذ نصَّ عنوانها المعرَّب كما عُرض", "الإعدادات/الإعدادات", gt("echoLbl") + "/" + gt("gh"));
+  G.getElementById("gpanel").innerHTML = gd.GPANEL("b", 1);
+  await wait(900);
+  check("وفقرةٌ متأخرة في صفحةٍ لم تُحجب تُعرَّب من قطعتها", "tr/1", gAttr() + "/" + gAr("gq", 1));
+  // الإطفاء في الصفحة المعرَّبة يعيد متنها كما كان حرفًا بحرف
+  var gch = function (on) { var c = {}; c["cml_site.code"] = { newValue: on }; gd.MOCK.localStore["cml_site.code"] = on; gd.MOCK.fireChanged(c, "local"); };
+  var origB = gd.GPAGE("b").replace('<div id="gpanel"></div>', '<div id="gpanel"><p id="gq1">Bravo panel one lists more steps.</p></div>');
+  gch(false);
+  await wait(700);
+  check("(ر6-ب) الإطفاء في صفحةٍ معرَّبة يعيد متنها الإنجليزي حرفًا بحرف ويرفع السمة", "true/-",
+        (G.getElementById("content").innerHTML === origB) + "/" + gAttr());
+  gch(true);
+  await wait(900);
+  check("وإعادة التشغيل تعرّبها من جديد", "tr/8", gAttr() + "/" + gAr("g", 8));
+  // والعودة إلى الصفحة المحجوبة (popstate): يُعاد الحكم لها فتُحجب
+  gd.history.back();
+  await wait(30);
+  G.getElementById("content").innerHTML = gd.GPAGE("a");
+  await wait(1500);
+  check("★ (ر6-ب) والعودة إلى الصفحة المحجوبة (popstate): يُعاد حكمها فتُحجب ومتنها إنجليزيٌّ كلّه", "held/0/Settings/Yes/" + GH,
+        [gAttr(), gAr("g", 9), gt("gh"), gt("gtd"), gd.location.pathname + gd.location.search].join("/"));
+  check("★ (ر7-ب) والعودة إلى الصفحة المحجوبة: اللافتة تعود إلى أصلها مع عنوانها", "held/Settings/Settings", [gAttr(), gt("echoLbl"), gt("gh")].join("/"));
+  // الإطفاء في الصفحة المحجوبة: السمة تُرفع والواجهة تعود إنجليزية؛ والتشغيل يعيد الحكم نفسه (لا حكمٌ جديد في الصفحة نفسها)
+  gch(false);
+  await wait(700);
+  var offA = [gAttr(), gt("sideA"), gAr("g", 9)].join("/");
+  gch(true);
+  await wait(900);
+  check("★ (ر6-ب) الإطفاء في صفحةٍ محجوبة يرفع السمة ويعيد الواجهة إنجليزية، والتشغيل يعيد «held» والواجهة العربية والمتن الإنجليزي",
+        "-/Frame label/0|held/تسمية الإطار/0", offA + "|" + [gAttr(), gt("sideA"), gAr("g", 9)].join("/"));
+  // C على العتبة تمامًا (2 من 10 = 20٪): «تزيد على» لا «تبلغ» فتُعرَّب. ويتبدّل المسار أولًا ثم المتن بعد 450 مث (بعد وصول القطعة):
+  // الحكم ينتظر تبدّل الشجرة وهدوءها — ولو حُكم عند وصول القطعة لعُدّ متن الصفحة المحجوبة A بقطعة C فحُجبت C خطأً
+  gd.history.pushState({}, "", "/zq-guard/c");
+  await wait(450);
+  var midC = gAttr();
+  G.getElementById("content").innerHTML = gd.GPAGE("c");
+  await wait(1500);
+  check("★ (ر6-ب) المسار قبل المتن بـ450 مث: لا حكم قبل تبدّل المتن وهدوئه، ثم صفحةٌ حصّتها على العتبة تمامًا (20٪) لا تُحجب فتُعرَّب فقراتها الست",
+        "-→tr/6", midC + "→" + gAttr() + "/" + gAr("g", 8));
+  // ★ (ر6-ب، المراجعة) ثلاثة مسارات للحارس لم يمسّها اختبار (طفراتٌ نجت: حكمُ صفحةٍ بلا قطعة، وإسقاط علامات الإبقاء، وترك ما كُتب في عقدٍ باقية):
+  // (١) من C المعرَّبة إلى A المحجوبة، والعنوان والجدول عقدٌ باقية في التبدّل كما يُبقي Mintlify «Copy page» وعنوان الفهرس — كُتب فيها في C
+  var preA2 = gAttr(), keepH = G.getElementById("gh"), keepT = G.getElementById("gtd").parentNode.parentNode.parentNode;
+  gd.history.pushState({}, "", "/zq-guard/a2");
+  var gtmp = G.createElement("div"), gcn = G.getElementById("content");
+  gtmp.innerHTML = gd.GPAGE("a");
+  gtmp.replaceChild(keepH, gtmp.querySelector("h2"));
+  gtmp.replaceChild(keepT, gtmp.querySelector("table"));
+  while (gcn.firstChild) gcn.removeChild(gcn.firstChild);
+  while (gtmp.firstChild) gcn.appendChild(gtmp.firstChild);
+  await wait(1500);
+  check("★ (ر6-ب، المراجعة) من صفحةٍ معرَّبة إلى محجوبة وبعضُ عقد المتن باقيةٌ في التبدّل (العنوان والجدول): ما كُتب فيها قبلُ يُرجع عند الحكم، نصًّا وسمةَ title",
+        "tr→held/0/Settings/Yes/Settings/true", [preA2 + "→" + gAttr(), gAr("g", 9), gt("gh"), gt("gtd"), G.getElementById("gtd").getAttribute("title"),
+        G.getElementById("gh") === keepH].join("/"));
+  // (٢) صفحةٌ بلا قطعة (صفحات Claude Code كلها في 2.0.0، وكل صفحةٍ بلا قطعةٍ في مواقع المتون)
+  // ★ (ر6-د، القرار 84) كانت لا تُحجب فيكتب قاموس الواجهة عنوانها وخليتها بالعربية داخل متنٍ إنجليزي؛ فصارت تُحكم بقطعةٍ فارغة
+  var gHeld = function () { return G.documentElement.getAttribute("data-cml-held") || "-"; };
+  gd.history.pushState({}, "", "/zq-guard/n");
+  G.getElementById("content").innerHTML = gd.GPAGE("a");
+  await wait(1500);
+  check("★ (ر6-د، القرار 84) صفحةٌ بلا قطعة متنُها فقرات (9 من 11 غير مغطّاة): محجوبةٌ كالمحروسة بسببها «none» — لا يكتب قاموس الواجهة داخل متنها (العنوان والخلية وسمة title إنجليزية)، والواجهة خارجه عربية",
+        "held/none/0/Settings/Yes/Settings/تسمية الإطار",
+        [gAttr(), gHeld(), gAr("g", 9), gt("gh"), gt("gtd"), G.getElementById("gtd").getAttribute("title"), gt("sideA")].join("/"));
+  // الإطفاء والتشغيل فيها كالمحروسة (ر6-ب ★6): السمتان تُرفعان والواجهة تعود إنجليزية، ثم يعود الحكم نفسه بسببه
+  gch(false);
+  await wait(700);
+  var gOffN = [gAttr(), gHeld(), gt("sideA"), gt("gh")].join("/");
+  gch(true);
+  await wait(900);
+  check("★ (ر6-د) الإطفاء في صفحةٍ محجوبةٍ بلا قطعة يرفع السمتين ويعيد الواجهة إنجليزية، والتشغيل يعيد «held» و«none» والواجهة العربية والمتن الإنجليزي",
+        "-/-/Frame label/Settings|held/none/تسمية الإطار/Settings", gOffN + "|" + [gAttr(), gHeld(), gt("sideA"), gt("gh")].join("/"));
+  // صفحة مجموعةٍ بلا قطعة يغطّي قاموسُ الواجهة متنَها كلَّه (0 من 5): لا تُحجب، فيعرّبها القاموس كما كان
+  gd.history.pushState({}, "", "/zq-guard/nl");
+  G.getElementById("content").innerHTML = gd.GLIST();
+  await wait(1500);
+  check("★ (ر6-د) صفحةٌ بلا قطعة يغطّي قاموسُ الواجهة متنَها كلَّه (صفحة مجموعة: عنوانٌ وبنودٌ وخلية): لا تُحجب، ويعرّب القاموسُ متنَها كما كان",
+        "-/-/الإعدادات/تسمية الإطار/مجموعة/نسخ الصفحة/نعم", [gAttr(), gHeld(), gt("gh"), gt("gl1"), gt("gl2"), gt("gl3"), gt("gtd")].join("/"));
+  // وصفحةٌ بلا قطعة ولا كتلة في متنها (أيقونةٌ وتعليماتٌ برمجية)
+  gd.history.pushState({}, "", "/zq-guard/n0");
+  G.getElementById("content").innerHTML = gd.GEMPTY();
+  await wait(1500);
+  check("★ (ر6-د) صفحةٌ بلا قطعة ولا كتلة في متنها: لا تُحجب", "-/-/true", gAttr() + "/" + gHeld() + "/" + !!G.getElementById("ge"));
+  // الإطفاء ثم التنقّل إلى صفحةٍ بلا قطعة ثم التشغيل (كـR8 في ر6-ج): يُحكم فور الجواب null — لا انتظارَ لقطعةٍ لن تأتي
+  gch(false);
+  await wait(300);
+  gd.history.pushState({}, "", "/zq-guard/n8");
+  G.getElementById("content").innerHTML = gd.GPAGE("c");
+  await wait(300);
+  gd.__shardDelay = 20;
+  gch(true);
+  await wait(120);
+  var gOnN = [gAttr(), gHeld(), gAr("g", 8)].join("/");
+  delete gd.__shardDelay;
+  await wait(300);
+  check("★ (ر6-د) الإطفاء ثم التنقّل إلى صفحةٍ بلا قطعة ثم التشغيل: يُحكم فور وصول الجواب null (قبل 120 مث، لا انتظارَ لقطعةٍ لن تأتي) فتُحجب «none» ومتنها إنجليزي",
+        "held/none/0|held/none/0", gOnN + "|" + [gAttr(), gHeld(), gAr("g", 8)].join("/"));
+  // (٣) علامات الإبقاء (ومنها علامات التحضير الـ314 في merge-blocks)
+  gd.history.pushState({}, "", "/zq-guard/k");
+  G.getElementById("content").innerHTML = gd.GPAGE("a");
+  await wait(1500);
+  check("★ (ر6-ب، المراجعة) علامات الإبقاء في القطعة مغطّاةٌ في الحكم: A بعلامتين ⇒ 1 من 11 (9٪) فتُعرَّب، والفقرتان المُبقاتان والثالثة غير المغطّاة إنجليزية",
+        "tr/6/Alpha step seven explains the setup./Alpha step eight explains the setup./Alpha step nine explains the setup.",
+        [gAttr(), gAr("g", 9), gt("g7"), gt("g8"), gt("g9")].join("/"));
+  // ★ (ر6-ج، ٣٠ ربيع الآخر ١٤٤٨هـ — مراجعة ر6-ب R10 وR8 وR4) توقيت الحارس: التبدّل تبدّلُ هويّة الشجرة لا أيُّ إضافة، والهدوء من لحظته
+  // (٤) R10: Mintlify يُلحق بعد التبدّل عقدًا صغيرة بلا نص (أشرطة تمرير، +25–80 مث) فكان كلٌّ منها يعيد عدّ الهدوء. هنا عقدةٌ كل 50 مث مدّة 900 مث
+  var gSeq = [], gmo = new gd.MutationObserver(function () { gSeq.push([gd.performance.now(), gAttr()]); });
+  gmo.observe(G.documentElement, { attributes: true, attributeFilter: ["data-cml-body"] });
+  gd.history.pushState({}, "", "/zq-guard/b");
+  G.getElementById("content").innerHTML = gd.GPAGE("b");
+  var gSwapAt = gd.performance.now(), gTick = 0, gTrickle = gd.setInterval(function () {
+    var sb = G.createElement("div"); sb.className = "zq-sb"; G.getElementById("gpanel").appendChild(sb);
+    if (++gTick >= 18) gd.clearInterval(gTrickle);
+  }, 50);
+  await wait(450);
+  var gMid = [gAttr(), gAr("g", 8)].join("/");
+  await wait(800);
+  gmo.disconnect();
+  // لحظة الحكم: أول «tr» أو «held» بعد رفع السمة في التنقّل
+  var gOff = false, gDec = null;
+  gSeq.forEach(function (x) { if (x[1] === "-") gOff = true; else if (gOff && gDec === null) gDec = x[0] - gSwapAt; });
+  check("★ (ر6-ج) R10: التنقّل إلى صفحةٍ تحت العتبة والموقع يُلحق عقدةً صغيرة كل 50 مث بعد التبدّل: يُحكم بعد هدوءٍ يُعدّ من التبدّل (قبل 400 مث) لا من آخر إضافة، فتُعرَّب فقراتها الثماني والإضافات مستمرة",
+        "tr/8/true", gMid + "/" + (gDec !== null && gDec < 400) + (gDec !== null && gDec < 400 ? "" : " (" + (gDec === null ? "-" : Math.round(gDec)) + " مث)"));
+  // (٥) R8: الإطفاء ثم التنقّل والإضافة مطفأة (تبدّل المسار والمتن) ثم التشغيل — الشجرة شجرةُ الصفحة الحاضرة، فلا انتظارَ لتبدّلٍ مضى حتى السقف،
+  // ولا هدوءَ بعد التشغيل: يُحكم لحظة وصول القطعة (هنا بعد 20 مث، والفحص عند 100 مث — قبل انقضاء هدوءٍ يُعدّ من التشغيل)
+  gch(false);
+  await wait(400);
+  gd.history.pushState({}, "", "/zq-guard/c");
+  G.getElementById("content").innerHTML = gd.GPAGE("c");
+  await wait(400);
+  var gOffC = gAttr();
+  gd.__shardDelay = 20;
+  gch(true);
+  await wait(100);
+  var gOnC = [gAttr(), gAr("g", 8)].join("/");
+  delete gd.__shardDelay;
+  await wait(300);
+  check("★ (ر6-ج) R8: الإطفاء ثم التنقّل ثم التشغيل: الشجرة تبدّلت والإضافة مطفأة فيُحكم فور وصول القطعة (قبل 100 مث، لا بعد هدوءٍ ولا عند السقف 2.5 ث) فتُعرَّب C",
+        "-|tr/6|tr/6", gOffC + "|" + gOnC + "|" + gAttr() + "/" + gAr("g", 8));
+  // (٦) والتشغيل بعد تبدّل المسار وحده (المتن متنُ الصفحة السابقة بعدُ): لا يُحكم على شجرة السابقة بقطعة الجديدة، ويُحكم حين تتبدّل
+  gch(false);
+  await wait(300);
+  gd.history.pushState({}, "", "/zq-guard/b2");
+  await wait(100);
+  gch(true);
+  await wait(500);
+  var gMidB = [gAttr(), gAr("g", 8)].join("/");
+  G.getElementById("content").innerHTML = gd.GPAGE("b");
+  await wait(600);
+  check("★ (ر6-ج) R8: والتشغيل بعد تبدّل المسار وحده (المتن متنُ C بعدُ): لا يُحكم على شجرة C بقطعة B (كانت تُحجب خطأً)، ثم يُحكم حين تتبدّل فتُعرَّب B",
+        "-/0|tr/8", gMidB + "|" + gAttr() + "/" + gAr("g", 8));
+  // (٧) R4: من صفحةٍ محجوبة (A) إلى صفحةٍ تحت العتبة (B)، المسار أولًا ثم إضافاتٌ لا صلة لها بالتبدّل (تلميحٌ في الشريط وعقدةٌ في المتن) يتبعها
+  // هدوء، والمتن بعد السقف: لو حُكم على متن A بقطعة B لحُجبت B خطأً (فقرات A ليست في قطعة B)
+  gd.history.pushState({}, "", "/zq-guard/a3");
+  G.getElementById("content").innerHTML = gd.GPAGE("a");
+  await wait(600);
+  var gPreA = gAttr();
+  gd.history.pushState({}, "", "/zq-guard/b3");
+  await wait(20);
+  var gTip = G.createElement("div"); gTip.textContent = "Copied"; G.getElementById("sidebar").appendChild(gTip);
+  var gSb = G.createElement("div"); gSb.className = "zq-sb"; G.getElementById("gpanel").appendChild(gSb);
+  await wait(600);
+  check("★ (ر6-ج) R4: المسار أولًا ثم إضافاتٌ لا صلة لها بالتبدّل يتبعها هدوء: لا حكم على متن الصفحة المحجوبة السابقة (A) بقطعة الجديدة (B)",
+        "held→-/0", gPreA + "→" + gAttr() + "/" + gAr("g", 9));
+  await wait(2200);
+  var gCapA = [gAttr(), gAr("g", 9)].join("/");
+  G.getElementById("content").innerHTML = gd.GPAGE("b");
+  await wait(60);
+  check("★ (ر6-ج) R4: ولا حكم عند السقف (2.5 ث) والمتن متنُ A بعدُ؛ ثم يُحكم فور تبدّله بعد السقف (بلا هدوء) فتُعرَّب B",
+        "-/0|tr/8", gCapA + "|" + gAttr() + "/" + gAr("g", 8));
+  // (٨) تنقّلٌ يُبقي فيه الموقع عقد المتن ويغيّر نصوصها في مكانها (إعادة استعمال React): الجذر وأبناؤه باقون، فيُعرف التبدّل بنصّ العنوان h1
+  var gH1 = G.createElement("h1"); gH1.textContent = "Bravo";
+  G.getElementById("content").insertBefore(gH1, G.getElementById("content").firstChild);
+  await wait(300);
+  var gPreIn = gAttr();
+  gd.history.pushState({}, "", "/zq-guard/c5");
+  gH1.firstChild.nodeValue = "Charlie";
+  for (var gx = 1; gx <= 9; gx++) G.getElementById("g" + gx).firstChild.nodeValue = "Charlie step " + gd.GW[gx - 1] + " explains the setup.";
+  await wait(600);
+  check("★ (ر6-ج) تنقّلٌ تبقى فيه عقد المتن وتتغيّر نصوصها في مكانها: يُعرف التبدّل بنصّ العنوان h1 فيُحكم بعد الهدوء (C بعنوانٍ وثلاث فقراتٍ غير مغطّاة: 4 من 12 فتُحجب)، لا انتظارَ بلا حكم",
+        "tr→held/0", gPreIn + "→" + gAttr() + "/" + gAr("g", 9));
+  // ★ (ر6-ج، المراجعة) الإضافة مطفأةٌ عند التحميل، ثم يتبدّل العنوان قبل الشجرة (كالرجوع والتقدّم)، ثم تُشغَّل فتصل القطعة والشجرةُ شجرةُ
+  // الصفحة السابقة بعدُ، ثم تتبدّل: أول طلبٍ للقطعة في المستند فلا انتظار — كان judgeBody يرفض الحكم على الشجرة السابقة ثم لا يُعاد بعد
+  // تبدّلها، فتبقى الصفحة بلا حكمٍ ولا كتابة ما بقيت
+  var gs = await frame("guard=1&siteoff=1");
+  await wait(700);
+  var GS = gs.document, gsAttr = function () { return GS.documentElement.getAttribute("data-cml-body") || "-"; };
+  var gsAr = function (n) { var c = 0; for (var i = 1; i <= n; i++) { var e = GS.getElementById("g" + i); if (e && AR.test(noBidi(e.textContent))) c++; } return c; };
+  var gsPre = [gsAttr(), gsAr(9)].join("/");
+  gs.history.pushState({}, "", "/zq-guard/b7");
+  await wait(100);
+  var gsc = {}; gsc["cml_site.code"] = { newValue: true }; gs.MOCK.localStore["cml_site.code"] = true; gs.MOCK.fireChanged(gsc, "local");
+  await wait(500);
+  var gsMid = [gsAttr(), gsAr(9)].join("/");
+  GS.getElementById("content").innerHTML = gs.GPAGE("b");
+  await wait(600);
+  check("★ (ر6-ج، المراجعة) مطفأةٌ عند التحميل ثم العنوان قبل الشجرة ثم التشغيل ووصول القطعة على شجرة السابقة: لا حكم عليها، ثم يُحكم حين تتبدّل فتُعرَّب B (لا تبقى بلا حكم)",
+        "-/0|-/0|tr/8", gsPre + "|" + gsMid + "|" + gsAttr() + "/" + gsAr(8));
+  // بلا عتبة (off=1): كما كان قبل الحارس — الصفحة A نفسها تُعرَّب كتلُها المغطّاة وتبقى الثلاث إنجليزية
+  var go = await frame("guard=1&off=1");
+  await wait(1000);
+  var GO = go.document, got = function (id) { return noBidi(GO.getElementById(id).textContent).trim(); };
+  var goAr = 0; for (var gi = 1; gi <= 9; gi++) if (AR.test(got("g" + gi))) goAr++;
+  check("(ر6-ب) نطاقٌ بلا عتبة: لا حارس، فالصفحة نفسها تُعرَّب كما كانت (ست فقرات عربية والعنوان والخلية)", "tr/6/الإعدادات/نعم",
+        [GO.documentElement.getAttribute("data-cml-body") || "-", goAr, got("gh"), got("gtd")].join("/"));
+  // ★ (ر6-د، القرار 83) العتبة في جدول النطاقات: 5٪ في مواقع المتون الخمسة كلها، ولا عتبة فيما لا متون له
+  check("★ (ر6-د، القرار 83) العتبة في جدول النطاقات: 0.05 في مواقع المتون الخمسة كلها (code وdocs وsupport وprivacy وlegal)، ولا عتبة في app وacademy",
+        "0.05/0.05/0.05/0.05/0.05/-/-",
+        ["code", "docs", "support", "privacy", "legal", "app", "academy"].map(function (d) { var v = gd.CMLConst.domain(d).meta.bodyGuard; return v === undefined ? "-" : v; }).join("/"));
+  // ★ (ر6-د) موقعٌ يُبقي الصفحات السابقة في المستند مخبوءةً بنمطٍ مضمَّن (وثائق المطوّرين، Next.js: ‎display: none !important‎ على مُغلِّفها) —
+  // مقيسٌ في ر6-د: كانت كتل المخبوءة تُعدّ في حكم الحاضرة (batch-processing: «tr» 9 من 250 تحميلًا، و«held» 519 من 859 بعد تنقّل)، ويُكتب فيها
+  // بحال الحاضرة فيظهر عند الرجوع عنوانُ صفحةٍ محجوبة عربيًّا حتى يُحكم لها
+  var rc = await frame("guard=1&rc=1");
+  await wait(1000);
+  var RC = rc.document, rcAttr = function () { return RC.documentElement.getAttribute("data-cml-body") || "-"; };
+  var rcAr = function (w) { var c = 0, ps = RC.getElementById(w).querySelectorAll("p"); for (var i = 0; i < ps.length; i++) if (AR.test(noBidi(ps[i].textContent))) c++; return c; };
+  var rcH = function (w) { return noBidi(RC.getElementById(w).querySelector("h2").textContent).trim(); };
+  var rcPre = [rcAttr(), rcAr("wa"), rcH("wa")].join("/");
+  // التنقّل إلى B: المسار، ثم في المهمة نفسها تُدرَج B قبل A وتُخبَّأ A
+  rc.history.pushState({}, "", "/zq-guard/b8");
+  var rcTmp = RC.createElement("div"); rcTmp.innerHTML = rc.GWRAP("b", "wb");
+  RC.getElementById("content").insertBefore(rcTmp.firstChild, RC.getElementById("wa"));
+  RC.getElementById("wa").setAttribute("style", "display: none !important;");
+  await wait(900);
+  check("★ (ر6-د) التنقّل في موقعٍ يُبقي الصفحة السابقة مخبوءةً في المستند: تُعدّ كتل الحاضرة وحدها (B: 1 من 11، لا 10 من 22 بكتل A) فتُعرَّب",
+        "held/0/Settings→tr/8", rcPre + "→" + [rcAttr(), rcAr("wb")].join("/"));
+  check("★ (ر6-د) ولا يُكتب في الصفحة المخبوءة شيءٌ بحال الحاضرة: عنوان A (من قاموس الواجهة) وفقراتها كما تُركت", "Settings/0", rcH("wa") + "/" + rcAr("wa"));
+  // الرجوع: الموقع يُظهر A ويخبّئ B بتبديل style وحده — لا طفرةَ يراها مراقب المحرّك
+  rc.history.back();
+  await wait(30);
+  RC.getElementById("wa").removeAttribute("style");
+  RC.getElementById("wb").setAttribute("style", "display: none !important;");
+  var rcRev = [rcH("wa"), rcAr("wa")].join("/");
+  await wait(600);
+  check("★ (ر6-د) الرجوع بتبديل style وحده: تظهر A كما تُركت (لا عربية فيها: لا وميض)، ويُحكم لها «held» قبل 600 مث (النظر كل 100 مث، لا السقف 2.5 ث)",
+        "Settings/0|held/0/Settings", rcRev + "|" + [rcAttr(), rcAr("wa"), rcH("wa")].join("/"));
+  // والتقدّم إلى B المخبوءة: تظهر عربيةً كما تُركت — لم يُرجعها حكمُ A وهي مخبوءة
+  rc.history.forward();
+  await wait(30);
+  RC.getElementById("wb").removeAttribute("style");
+  RC.getElementById("wa").setAttribute("style", "display: none !important;");
+  var rcRevB = rcAr("wb");
+  await wait(600);
+  check("★ (ر6-د) والتقدّم إلى B المخبوءة: تظهر عربيةً كما تُركت (لا نافذةَ إنجليزية)، ويُحكم لها «tr»", "8|tr/8", rcRevB + "|" + [rcAttr(), rcAr("wb")].join("/"));
+  // ★ (ر6-د، المراجعة) تنقّلٌ بحال تحميل: تنقّلٌ عاديٌّ إلى صفحةٍ في متنها عنوان h1 (قطعة B: «tr»)، ثم تنقّلٌ تُخبَّأ فيه تلك الصفحة ويظهر هيكلٌ بلا جذر
+  // متنٍ 500 مث ثم تأتي الحاضرة (متن A وقطعتها: 3 من 12 فوق العتبة). كانت قاعدة العنوان تقارن عنوان السابقة بلا شيء فتقول «فارقت»، فيُحكم على
+  // الهيكل (0 كتلة: لا حجب) ثم تُكتب قطعة A في متنها إذا جاء — متنٌ مختلط
+  rc.history.pushState({}, "", "/zq-guard/b10");
+  var ldT = RC.createElement("div");
+  ldT.innerHTML = '<div class="zq-wrap" id="wh"><div class="zq-prose"><h1 id="hh">Settings</h1>' + rc.GPAGE("b") + '</div></div>';
+  RC.getElementById("content").insertBefore(ldT.firstChild, RC.getElementById("wb"));
+  RC.getElementById("wb").setAttribute("style", "display: none !important;");
+  await wait(900);
+  var ldH = [rcAttr(), rcAr("wh")].join("/");
+  rc.history.pushState({}, "", "/zq-guard/a9");
+  RC.getElementById("wh").setAttribute("style", "display: none !important;");
+  var ldS = RC.createElement("div"); ldS.id = "ldskel"; ldS.textContent = "…"; RC.getElementById("content").appendChild(ldS);
+  await wait(500);
+  var ldMid = rcAttr() + "/" + (RC.documentElement.getAttribute("data-cml-held") || "-");
+  var ldN = RC.createElement("div");
+  ldN.innerHTML = '<div class="zq-wrap" id="wa9"><div class="zq-prose"><h1 id="h9">Settings</h1>' + rc.GPAGE("a") + '</div></div>';
+  RC.getElementById("content").replaceChild(ldN.firstChild, ldS);
+  await wait(900);
+  check("★ (ر6-د، المراجعة) تنقّلٌ بحال تحميل (الصفحة السابقة مخبوءة وهيكلٌ بلا متن 500 مث): لا حكم على الهيكل، ثم يُحكم للحاضرة بمتنها فتُحجب (A: 3 من 12) بلا عربية",
+        "tr/8|-/-|held/0", ldH + "|" + ldMid + "|" + [rcAttr(), rcAr("wa9")].join("/"));
+  // ★ (ر6-د، المراجعة) عنوان الصفحة h1 خارج جذر المتن، والموقع يعيد استعمال الجذر وأبنائه ويغيّر نصوصهم في مكانها (مركز المساعدة: من مقالةٍ إلى
+  // أخرى): يُعرف التبدّل بعنوان الصفحة فيُحكم لكل صفحةٍ بمتنها. كان لا يُرى تبدّلٌ فلا يُحكم أبدًا: B المعرَّبة تبقى إنجليزية
+  var gi = await frame("guard=1");
+  await wait(1000);
+  var GI = gi.document, giAttr = function () { return GI.documentElement.getAttribute("data-cml-body") || "-"; };
+  var giAr = function () { var c = 0; for (var x = 1; x <= 9; x++) if (AR.test(noBidi(GI.getElementById("g" + x).textContent))) c++; return c; };
+  var giH = GI.createElement("h1"); giH.id = "ih"; giH.textContent = "Alpha";
+  GI.getElementById("content").parentNode.insertBefore(giH, GI.getElementById("content"));
+  await wait(300);
+  var giA = giAttr() + "/" + giAr();
+  var giSwap = function (path, k) {
+    gi.history.pushState({}, "", path);
+    giH.firstChild.nodeValue = gi.GN[k][0];
+    for (var x = 1; x <= 9; x++) GI.getElementById("g" + x).firstChild.nodeValue = gi.GN[k][0] + " step " + gi.GW[x - 1] + " explains the setup.";
+  };
+  giSwap("/zq-guard/b12", "b");
+  await wait(700);
+  var giB = giAttr() + "/" + giAr();
+  giSwap("/zq-guard/a12", "a");
+  await wait(700);
+  check("★ (ر6-د، المراجعة) عنوان الصفحة خارج جذر المتن والنصوص تتغيّر في مكانها (من مقالةٍ إلى أخرى في مركز المساعدة): يُحكم لكل صفحة، فتُعرَّب B (ثماني فقرات) ثم تُحجب A",
+        "held/0|tr/8|held/0", giA + "|" + giB + "|" + giAttr() + "/" + giAr());
+  // ★ (ر6-د، المراجعة) صفحتان بعنوانٍ واحد: العنوان h1 داخل الجذر، والجذر وأبناؤه باقون، والموقع يبني عنصر العنوان من جديد بنصّه نفسه ويغيّر النصوص
+  // في مكانها (مرجع الواجهة البرمجية: «Create a Message» وصنوها التجريبي): يُعرف التبدّل بخروج عنصر العنوان السابق. كان لا يُحكم أبدًا
+  var gj = await frame("guard=1");
+  await wait(1000);
+  var GJ = gj.document, gjAttr = function () { return GJ.documentElement.getAttribute("data-cml-body") || "-"; };
+  var gjAr = function () { var c = 0; for (var x = 1; x <= 9; x++) if (AR.test(noBidi(GJ.getElementById("g" + x).textContent))) c++; return c; };
+  var gjNewH = function () { var h = GJ.createElement("h1"); h.textContent = "Zq Title"; return h; };
+  var gjH = gjNewH(); GJ.getElementById("content").insertBefore(gjH, GJ.getElementById("content").firstChild);
+  await wait(300);
+  var gjA = gjAttr() + "/" + gjAr();
+  var gjSwap = function (path, k) {
+    gj.history.pushState({}, "", path);
+    var nh = gjNewH(); GJ.getElementById("content").replaceChild(nh, gjH); gjH = nh;
+    for (var x = 1; x <= 9; x++) GJ.getElementById("g" + x).firstChild.nodeValue = gj.GN[k][0] + " step " + gj.GW[x - 1] + " explains the setup.";
+  };
+  gjSwap("/zq-guard/b13", "b");
+  await wait(700);
+  var gjB = gjAttr() + "/" + gjAr();
+  gjSwap("/zq-guard/a13", "a");
+  await wait(700);
+  check("★ (ر6-د، المراجعة) صفحتان بعنوانٍ واحد يُبنى عنصرُه من جديد والنصوص تتغيّر في مكانها (مرجع الواجهة البرمجية): يُحكم لكل صفحة، فتُعرَّب B (ثماني فقرات) ثم تُحجب A",
+        "held/0|tr/8|held/0", gjA + "|" + gjB + "|" + gjAttr() + "/" + gjAr());
+  var errs = 0;
+  [md, pl, ctl, hy, sk, lv, dr, bd, lh, gd, gs, go, rc, gi, gj].forEach(function (w) { errs += w.jsErrors || 0; });
+  check("لا أخطاء JS غير ملتقطة (الصفحة والإطارات)", "0/0", jsErrors + "/" + errs);
+})().then(finish, function (e) { check("استثناء غير متوقع", "(لا شيء)", String(e && e.message || e)); finish(); });
+function finish() {
+  document.title = "codetest " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "CODETEST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+}
+</script>

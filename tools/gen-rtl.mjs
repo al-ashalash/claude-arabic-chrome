@@ -16,13 +16,33 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+// ★ (١-١) أهدافٌ للمواقع: لقطةٌ ومخرجٌ وعتباتُ صحةٍ بحجم كل موقع — منصة Intercom (مركز
+// المساعدة والخصوصية) أصغر أوراقًا من التطبيق بكثير، فعتبات التطبيق كانت ترفضها «هزيلة».
+//   node gen-rtl.mjs [--target=app|intercom|docs|code|legal|academy] [<مجلد اللقطة>] [--out-dir=<مجلد>]
+const TARGETS = {
+  app:      { dir: "sitecss",          out: "rtl-overrides.css", cov: "rtl-coverage.js", minRules: 1000, minFlipped: 200 },
+  intercom: { dir: "sitecss-intercom", out: "rtl-intercom.css",  cov: null,              minRules: 400,  minFlipped: 60 },
+  docs:     { dir: "sitecss-docs",     out: "rtl-docs.css",      cov: null,              minRules: 400,  minFlipped: 60 },
+  // وثائق Claude Code (Mintlify، Tailwind v4): قِيس على لقطةٍ من الروابط والأوراق المضمَّنة 4,587 قاعدة و306 مقلوبًا
+  code:     { dir: "sitecss-code",     out: "rtl-code.css",      cov: null,              minRules: 1000, minFlipped: 150 },
+  // ★ (ر3، ٢٨ ربيع الآخر ١٤٤٨هـ) الوثائق القانونية في www.anthropic.com/legal (Next.js 16): قِيس على لقطة الصفحات الخمس (6 أوراقٍ
+  // مرتبطة و10 مضمَّنة) 3,086 قاعدة و348 مقلوبًا — والعتبتان نحو نصفهما (كما في دراسة ر3)
+  legal:    { dir: "sitecss-legal",    out: "rtl-legal.css",     cov: null,              minRules: 1500, minFlipped: 170 },
+  // ★ (ر4، ٢٨ ربيع الآخر ١٤٤٨هـ) الأكاديمية في academy.claude.com (Vite وTailwind ونظام تصميم CDS): لقطة عشر صفحاتٍ بلا ورقة أفلام
+  // حالات الاستخدام (جزيرةٌ إنجليزية LTR داخل المتن)، ثلاث أوراق (index وIcon ومضمَّنة) — قِيس 5,546 قاعدة و431 مقلوبًا كما في الدراسة،
+  // والعتبتان نحو نصفهما
+  academy:  { dir: "sitecss-academy",  out: "rtl-academy.css",   cov: null,              minRules: 2500, minFlipped: 200 },
+};
+const TARGET_NAME = (process.argv.find((a) => a.startsWith("--target=")) || "--target=app").slice(9);
+const TARGET = TARGETS[TARGET_NAME];
+if (!TARGET) { console.error("! هدفٌ مجهول: " + TARGET_NAME + " — المعروف: " + Object.keys(TARGETS).join("، ")); process.exit(2); }
 // مسار اللقطة يصمد في البنيتين: مجلد العمل (web/code/sitecss) ونسخة النشر السطحية
 // (sitecss/ في الجذر — ينشئه المساهم وينزّل فيه CSS الموقع؛ اللقطة نفسها لا تُنشر).
 // ويقبل تمريرًا صريحًا: node gen-rtl.mjs <مجلد اللقطة>
 const CANDIDATES = [
-  process.argv[2],
-  path.resolve(HERE, "..", "sitecss"),        // مجلد العمل: code/sitecss بجوار toolchain
-  path.resolve(HERE, "..", "..", "sitecss"),  // نسخة النشر: sitecss في الجذر بجوار tools
+  process.argv.slice(2).find((a) => !a.startsWith("--")),
+  path.resolve(HERE, "..", TARGET.dir),        // مجلد العمل: code/<لقطة الهدف> بجوار toolchain
+  path.resolve(HERE, "..", "..", TARGET.dir),  // نسخة النشر: اللقطة في الجذر بجوار tools
 ].filter(Boolean);
 const SITECSS = CANDIDATES.find((p) => { try { return fs.readdirSync(p).some((f) => f.endsWith(".css")); } catch { return false; } });
 if (!SITECSS) {
@@ -31,8 +51,11 @@ if (!SITECSS) {
   process.exit(1);
 }
 const { EXT } = await import(new URL("./paths.mjs", import.meta.url).href);
-
-await import(new URL("../../user/extension/cml-rtl.js", import.meta.url).href);
+const { pathToFileURL } = await import("node:url");
+// عبر EXT لا ../../user/ (يعمل في بنية العمل ونسخة النشر سواء — مراجعة كودكس)
+await import(pathToFileURL(path.join(EXT, "cml-rtl.js")).href);
+// ‎--out-dir=<مجلد>‎: يكتب الناتجين هناك بدل مجلد الإضافة (بوابة «البناء طازج» تقارن ولا تكتب)
+const OUT_DIR = (process.argv.find((a) => a.startsWith("--out-dir=")) || "").slice("--out-dir=".length) || EXT;
 const R = globalThis.CMLRtl;
 
 // ---- 1) اجمع لقطة الموقع ----
@@ -73,7 +96,7 @@ if (unf) console.log(`متعذّر (يصرّح به الطبيب): ${unf}`);
 
 // ---- 3) بوابات الصحة قبل الكتابة ----
 if (parseErrors > 50) { console.error(`! ${parseErrors} خطأ تحليل — صيغة CSS الموقع تغيّرت؟ لن أكتب.`); process.exit(1); }
-if (all.length < 1000 || st.flipped < 200) {
+if (all.length < TARGET.minRules || st.flipped < TARGET.minFlipped) {
   console.error(`! المدخل هزيل (قواعد ${all.length}، قلب ${st.flipped}) — لقطة ناقصة؟ لن أكتب.`);
   process.exit(1);
 }
@@ -84,7 +107,7 @@ const header =
   " * سلّم تخصيص موحّد: المصفِّرات :not(#..×2) < المنطقيات والمطابقات ×3 < المعزَّزات ×4،\n" +
   " * ومحدِّدات الموقع ملفوفة في :where() (صفر تخصيص) — فالحسم بسلّمنا ثم بترتيب الموقع.\n" +
   " * إعلانات !important في @layer cml-imp (المعلَنة ثانيةً — فالمبكر يغلب في المهمّات،\n" +
-  " * وcml-point قبلها محجوزة لإصلاحات base.css النقطية فتبقى لها الكلمة الأخيرة).\n" +
+  " * وcml-point قبلها محجوزة لإصلاحات app-point.css النقطية فتبقى لها الكلمة الأخيرة).\n" +
   " * كل قاعدة خلف بوابة " + R.GATE + " — بلا السمة الملفُّ خامل حرفيًّا.\n" +
   " * الأنماط السطرية (المحسوبة بجافاسكربت) لا تُمسّ عمدًا. */\n" +
   "@layer cml-point, cml-imp;\n";
@@ -137,7 +160,8 @@ if (leaks.length) {
 console.log(`  لا فيزيائيَّ في المنطقيات (${(out.logical || []).length + (out.logicalImp || []).length} قاعدة)، والمصفِّرات unset كلها`);
 
 // ---- 4) اكتب ----
-fs.writeFileSync(path.join(EXT, "rtl-overrides.css"), css, "utf8");
+fs.writeFileSync(path.join(OUT_DIR, TARGET.out), css, "utf8");
+if (TARGET.cov) {
 const cov =
   "/* AUTO-GENERATED by code/toolchain/gen-rtl.mjs — بصمات تغطية محرّك الاتجاه.\n" +
   " * يقارن بها «طبيب الاتجاه» CSS الموقعَ الحيّ ليكشف ما استجدّ ولا نغطيه. */\n" +
@@ -146,9 +170,10 @@ const cov =
     sources: manifest && Array.isArray(manifest.css) ? manifest.css.map((x) => ({ file: x.file, sha: x.sha256 })) : files.map((f) => ({ file: f })),
     keys: out.coverage,
   }) + ";\n";
-fs.writeFileSync(path.join(EXT, "rtl-coverage.js"), cov, "utf8");
+fs.writeFileSync(path.join(OUT_DIR, TARGET.cov), cov, "utf8");
+}
 
-console.log(`\n✓ rtl-overrides.css: ${(css.length / 1024).toFixed(1)}KB (تصفير ${out.neutral.length} + منطقي/مطابق ${out.logical.length} + معزَّز ${out.dirBoost.length} + مهمّات ${impRules.length})`);
+console.log(`\n✓ ${TARGET.out}: ${(css.length / 1024).toFixed(1)}KB (تصفير ${out.neutral.length} + منطقي/مطابق ${out.logical.length} + معزَّز ${out.dirBoost.length} + مهمّات ${impRules.length})`);
 console.log(`  نسخ مطابقة: ${st.identity} إعلانًا | حركات اتجاهية (تُبلَّغ لا تُقلب): ${parseStats.animatedPhysical}`);
-console.log(`✓ rtl-coverage.js: ${out.coverage.length} بصمة`);
+if (TARGET.cov) console.log(`✓ ${TARGET.cov}: ${out.coverage.length} بصمة`);
 console.log("✓ البوابات الثلاث: إعادة التحليل، البوابة على كل قاعدة، لا فيزيائيَّ في الناتج");

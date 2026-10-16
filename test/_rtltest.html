@@ -81,6 +81,12 @@ check("المحدِّد المهرَّب يبقى كما هو", "true", !!findRu
 check("متغيّر التبديل ‎--x: ;‎ يُهمل بصمت (لا خطأ تحليل)", "0", P.stats.parseErrors);
 check("@keyframes تُتخطى كتلة كاملة", "true", !findRule(P.rules, "from") && !findRule(P.rules, "to") && P.stats.skippedAt >= 1);
 check("عدد القواعد المحلَّلة", "5", P.rules.length);
+// (ر5-ج، المراجعة المستقلة) تسطيح ‎@scope‎ لا يتّسع عن النطاق: حدٌّ نسبيٌّ إلى الجذر يُتخطّى نطاقُه كلّه كما كان، ومحدِّدٌ لإخوة الجذر يُسقط وحده
+var PS1 = R.parseCss("@scope (.a) to (:scope > .b) { .c { margin-left: 1px } }");
+check("@scope بحدٍّ فيه ‎:scope‎ يُتخطّى كلّه (لا تسطيح يُسقط الحدّ)", "0/1", PS1.rules.length + "/" + PS1.stats.skippedAt);
+var PS2 = R.parseCss("@scope (.a) to (.b) { + .c, .d { margin-left: 1px } ~ .e { margin-left: 2px } }");
+check("@scope: محدِّد إخوة الجذر (‎+‎ و‎~‎) يُسقط وحده ويبقى ما سواه", ":where(.a) .d:not(:where(.b),:where(.b) *)",
+      PS2.rules.map(function (x) { return x.sel; }).join(" | "));
 
 // ===== الطبقة ١/ب: جدول analyzeDecl =====
 function fmtA(a) {
@@ -95,7 +101,8 @@ function fmtA(a) {
 }
 function ad(name, prop, value, expect) { check(name, expect, fmtA(R.analyzeDecl(prop, value))); }
 ad("margin-left يصير منطقيًّا مع مصفِّر", "margin-left", "8px", "flip margin-inline-start:8px | neutral margin-left:unset");
-ad("margin المختصرة غير المتناظرة: أربع خانات بلا مصفِّر", "margin", "0 8px 0 0", "flip margin-top:0; margin-inline-end:8px; margin-bottom:0; margin-inline-start:0");
+// (فحص الاتجاه الشامل ق١) الخانتان الأفقيتان وحدهما: بثُّ العمودية بتخصيصنا كان يمحو أدوات الموقع العمودية
+ad("margin المختصرة غير المتناظرة: خانتان أفقيتان بلا مصفِّر", "margin", "0 8px 0 0", "flip margin-inline-end:8px; margin-inline-start:0");
 ad("margin المتناظرة لا شأن للاتجاه بها", "margin", "0 8px", "null");
 ad("border-radius غير المتناظرة: أربع زوايا منطقية", "border-radius", "4px 8px", "flip border-start-start-radius:4px; border-start-end-radius:8px; border-end-end-radius:4px; border-end-start-radius:8px");
 ad("border-radius الإهليلجية لا تُقلب", "border-radius", "4px / 8px", "unflippable radius-elliptical");
@@ -202,6 +209,36 @@ check("★ dir=auto إنجليزية: الهامش يسارًا", "8px", cs("fxA
 check("dir=auto إنجليزية: لا هامش يمينًا", "0px", cs("fxAutoChild").marginRight);
 // (ك) السطري المحسوب بجافاسكربت لا يُمسّ: يغلب مصفِّرنا غير المهم
 check("★ style=left:10px السطري يبقى (لا !important فوقه)", "10px", cs("fxInline").left);
+// (م) ★ النسخ المطابقة والمختصر لا يمسّان الخانات العمودية (فحص الاتجاه الشامل، ق١): تمهيد Tailwind
+// ‎*{padding:0;margin:0;border:0 solid}‎ في ‎@layer base‎ كانت نسخته المطابقة تُبثّ كاملةً بتخصيصنا خارج الطبقات
+// فتمحو ‎.pt-14‎ و‎.mt-8‎ و‎.border-b‎ في ‎@layer utilities‎ — والمختصر غير المتناظر يبثّ خانتيه العموديتين كذلك
+var FIX2 = "@layer base,utilities;\n" +
+  "@layer base{*{padding:0;margin:0;border:0 solid}}\n" +
+  "@layer utilities{.id-pt{padding-top:56px}.id-bb{border-bottom-width:1px}.id-mt{margin-top:32px}" +
+  ".id-ml{margin-left:12px}.id-pl{padding-left:8px}.id-bl{border-left-width:2px}" +
+  ".id-px{padding-left:16px;padding-right:16px}.id-sb{padding:0 8px 6px 0}.id-py{padding-top:12px;padding-bottom:12px}}";
+var FP2 = R.parseCss(FIX2);
+var FF2 = R.flipSheet(FP2.rules, { layerOrder: FP2.layerOrder });
+var gen2 = R.serializeRules(FF2.neutral) + "\n" + R.serializeRules(FF2.logical);
+check("النسخة المطابقة للتمهيد بلا خانات عمودية", "false",
+  /(^|[;{])\s*(margin|padding|border)\s*:|(top|bottom|block)[a-z-]*\s*:/.test(gen2));
+var idBox = document.createElement("div");
+idBox.innerHTML = '<div id="idV" class="id-pt id-bb id-mt">v</div><div id="idH" class="id-ml id-pl id-bl">h</div>' +
+  '<div id="idX" class="id-px">x</div><div id="idS" class="id-sb id-py">s</div>';
+document.body.appendChild(idBox);
+var stSite2 = document.createElement("style"); stSite2.textContent = FIX2; document.head.appendChild(stSite2);
+var stGen2 = document.createElement("style"); stGen2.textContent = gen2; document.head.appendChild(stGen2);
+void document.documentElement.offsetHeight;
+check("★ ‎.pt-14‎ تبقى تحت البوابة (padding-top)", "56px", cs("idV").paddingTop);
+check("★ ‎.mt-8‎ تبقى تحت البوابة (margin-top)", "32px", cs("idV").marginTop);
+check("★ ‎.border-b‎ تبقى تحت البوابة", "1px", cs("idV").borderBottomWidth);
+check("★ الأفقي يُقلب مع التمهيد: margin/padding/border يمينًا", "12px/0px/8px/2px",
+  [cs("idH").marginRight, cs("idH").marginLeft, cs("idH").paddingRight, cs("idH").borderRightWidth].join("/"));
+check("★ المتناظر الأفقي يغلب نسخة التمهيد", "16px/16px", cs("idX").paddingLeft + "/" + cs("idX").paddingRight);
+check("★ المختصر غير المتناظر: عموديّه للموقع وأفقيّه مقلوب", "12px/12px/8px/0px",
+  [cs("idS").paddingTop, cs("idS").paddingBottom, cs("idS").paddingLeft, cs("idS").paddingRight].join("/"));
+idBox.remove(); stSite2.remove(); stGen2.remove();
+void document.documentElement.offsetHeight;
 // (ل) بلا بوابة الملف خامل حرفيًّا — ثم تعود بعودتها
 document.documentElement.removeAttribute("data-cml-rtl");
 void document.documentElement.offsetHeight; // إجبار إعادة حساب
@@ -270,6 +307,36 @@ function finish() {
     String(liveRe.rules.filter(function (r) { return r.sel.indexOf(CMLRtl.LIVE_GATE) !== 0; }).length));
   check("★ مدخلٌ هزيل يُرفض (تبقى اللقطة عاملة)", "true",
     String(CMLRtl.buildLiveSheet([".a{margin-left:1px}"]) === null));
+  // ★ (ر9-د، ٥ جمادى الأولى ١٤٤٨هـ) صفحةٌ خفيفة أوراقُها كاملة تُبنى لها ورقةٌ حيّة: صفحة الدخول في claude.ai بوكيل مستخدمٍ محمول
+  // (ورقتان فيهما 2,675 قاعدة و87 مقلوبًا) كانت تُرفض «هزيلة» فتبقى اللقطة عليها، واللقطة لا تعرف صنف الإزاحة المنطقية
+  // ms-[clamp(…)] في حزمة المحمول فتغلبه نسختُها من تصفير * (إطار العرض في «أنشئ مع Claude» بلا إزاحته، مقيس). والشكل هنا اصطناعيٌّ
+  // بالعددين نفسيهما؛ وما دون إحدى العتبتين (60 مقلوبًا، 1000 قاعدة) يُرفض كما كان
+  function liveShape(nFlip, nRules) {
+    var s = "";
+    for (var i = 0; i < nRules; i++) s += i < nFlip ? ".lf" + i + "{margin-left:" + (i + 1) + "px}" : ".lv" + i + "{margin-top:" + (i + 1) + "px}";
+    return s;
+  }
+  var lightOut = CMLRtl.buildLiveSheet([{ text: liveShape(87, 2675) }]);
+  check("★ صفحةٌ خفيفة كاملة الأوراق تُبنى لها ورقةٌ حيّة (شكل الدخول بوكيلٍ محمول: 2,675 قاعدة و87 مقلوبًا)", "true/87",
+    String(!!(lightOut && lightOut.css)) + "/" + (lightOut ? lightOut.stats.flipped : "-"));
+  var thinF = {}, thinR = {};
+  check("★ وما دون عتبة المقلوب (59) أو عتبة القواعد (999) يُرفض هزيلًا (تبقى اللقطة عاملة)", "true/thin|true/thin",
+    String(CMLRtl.buildLiveSheet([{ text: liveShape(59, 2675) }], thinF) === null) + "/" + thinF.reason + "|" +
+    String(CMLRtl.buildLiveSheet([{ text: liveShape(87, 999) }], thinR) === null) + "/" + thinR.reason);
+  // ★ (مراجعة كودكس ١٣) سجلّاتٌ لا نصوص: الوسيط سياقٌ، والعناوين النسبية تُطلق، و@import يُرفض
+  var big = Array.from({length:1200},function(_,i){ return ".u"+i+"{margin-left:"+i+"px;left:0}"; }).join("");
+  var infoI = {};
+  check("★ @import يُرفض صراحةً (لا نتبعه فلا نبني ناقصًا)", "true/import",
+    String(CMLRtl.buildLiveSheet([{ text: "@import url(x.css);" + big }], infoI) === null) + "/" + infoI.reason);
+  var withMedia = CMLRtl.buildLiveSheet([{ text: big, media: "(min-width: 900px)" }]);
+  check("★ وسيطُ الورقة يصير @media على قواعدها", "true",
+    String(!!withMedia && withMedia.css.indexOf("@media (min-width: 900px){") !== -1));
+  var withAll = CMLRtl.buildLiveSheet([{ text: big, media: "all" }]);
+  check("وسيط all/screen لا يُغلَّف", "false", String(!!withAll && withAll.css.indexOf("@media") !== -1));
+  var withUrl = CMLRtl.buildLiveSheet([{ text: big + ".bg{background:url(img/a.png) left top no-repeat;margin-left:3px}", base: "https://assets.claude.ai/css/site.css" }]);
+  check("★ العنوان النسبي في القيمة يُطلق على عنوان الورقة", "true",
+    String(!!withUrl && withUrl.css.indexOf("url(img/a.png)") === -1 &&
+           (withUrl.css.indexOf("https://assets.claude.ai/css/img/a.png") !== -1 || withUrl.css.indexOf("a.png") === -1)));
   // ★★ (شُخّص حيًّا) السطح المحسوب لا يُفرض عليه اتجاه: خلطُه بجزيرة القراءة كان
   // يقلب القوائم المنبثقة كلها إلى اليسار — فالسمة "computed" مراسٍ فقط لا اتجاه
   check("★★ جزيرة القراءة وحدها تُلزَم direction:ltr", "true",
@@ -277,6 +344,139 @@ function finish() {
   check("★★ والسطح المحسوب (computed) لا يُفرض عليه اتجاه", "true",
     String(CMLRtl.ISLANDS_CSS.indexOf("[data-cml-noflip]{") === -1 &&
            CMLRtl.ISLANDS_CSS.indexOf("computed") === -1));
+  cascadeCases().then(htmlCompoundCase).then(htmlCompoundQuoted).then(finalize, function (e) {
+    check("استثناء في حالات التعاقب", "(لا شيء)", String(e && e.message || e));
+    finalize();
+  });
+}
+
+// ===== حالات التعاقب (مراجعة كودكس ٩ و١٠): المقلوب يطابق الأصل مرآةً بـgetComputedStyle =====
+// الأصل في إطار LTR بأوراق الموقع وحدها، والمقلوب في إطار RTL مع الورقة المولَّدة بمسار
+// البناء نفسه (المهمّات في cml-imp المعلَنة أولًا). العقد: هامش اليمين في المقلوب = هامش
+// اليسار في الأصل، والعكس.
+function cascadeCases() {
+  var CASES = [
+    ["تكرارٌ يفصله مخالف (1 ثم 2 ثم 1)", ".a{margin-left:1px}.a{margin-left:2px}.a{margin-left:1px}", "a"],
+    ["تكرارٌ عادي ثم مهمّ", ".a{margin-left:1px}.a{margin-left:1px!important}", "a"],
+    ["مهمّان في طبقتين: الأسبق يغلب", "@layer first,second;@layer first{.a{margin-left:1px!important}}@layer second{.a{margin-left:2px!important}}", "a"],
+    ["مهمٌّ مطبَّق يغلب مهمًّا غير مطبَّق", "@layer first{.a{margin-left:1px!important}}.a{margin-left:2px!important}", "a"],
+    ["عاديان في طبقتين: المتأخر يغلب", "@layer first,second;@layer first{.a{margin-left:1px}}@layer second{.a{margin-left:2px}}", "a"],
+    ["اختصارٌ ثم مفرد", ".a{margin:0 0 0 3px}.a{margin-left:1px}", "a"],
+    ["تكرارٌ يفصله محدِّدٌ آخر على العنصر نفسه", ".a{margin-left:1px}.b{margin-left:2px}.a{margin-left:1px}", "a b"],
+    // ★ (ر5-ج، ٢٩ ربيع الآخر ١٤٤٨هـ — القرار 75) قاعدة ‎@scope‎ (نثر CDS في الوثائق وclaude.ai) تدخل النسخ المطابقة: كانت تُتخطّى فتغلبها
+    // نسخةُ مُصفِّر * في سلّمنا (خلايا الجداول بلا حشوة أفقية في RTL). و‎.z‎ تجعل خانات الهامش متنازَعةً كما في أوراق المواقع
+    ["@scope: مختصرٌ متناظر داخل النطاق يغلب مُصفِّر * المنسوخ", "@layer base,components;@layer base{*{margin:0}}@layer components{@scope(body) to (.np){.a{margin:0 5px}}}.z{margin-left:7px}", "a"],
+  ];
+  function frame(css, cls, mirrored, generated) {
+    return new Promise(function (res) {
+      var f = document.createElement("iframe");
+      f.style.cssText = "position:absolute;left:-9999px;width:200px;height:100px";
+      f.srcdoc = '<html dir="' + (mirrored ? "rtl" : "ltr") + '"' + (mirrored ? ' data-cml-rtl="v2"' : "") +
+        "><head><style>@layer cml-point,cml-imp;</style><style>" + css + "</style>" +
+        (mirrored ? "<style>" + generated + "</style>" : "") +
+        '</head><body><div class="' + cls + '">x</div></body></html>';
+      f.onload = function () {
+        var st = f.contentWindow.getComputedStyle(f.contentDocument.querySelector("div"));
+        var v = { l: st.marginLeft, r: st.marginRight };
+        f.remove();
+        res(v);
+      };
+      document.body.appendChild(f);
+    });
+  }
+  var chain = Promise.resolve();
+  CASES.forEach(function (c) {
+    chain = chain.then(function () {
+      var parsed = R.parseCss(c[1]);
+      var out = R.flipSheet(parsed.rules, { layerOrder: parsed.layerOrder });
+      var gen = "@layer cml-point,cml-imp;@layer cml-imp{" +
+        R.serializeRules(out.neutralImp.concat(out.logicalImp, out.dirBoostImp)) + "}" +
+        R.serializeRules(out.neutral.concat(out.logical, out.dirBoost));
+      return frame(c[1], c[2], false).then(function (o) {
+        return frame(c[1], c[2], true, gen).then(function (m) {
+          check("★ تعاقب: " + c[0], "L" + o.l + "/R" + o.r, "L" + m.r + "/R" + m.l);
+        });
+      });
+    });
+  });
+  return chain;
+}
+
+// ===== ★ (ر9-هـ، ٥ جمادى الأولى ١٤٤٨هـ) مركّب html يُقطع في المستوى الأعلى وحده =====
+// متغيّر Tailwind الجديد في وثائق Claude Code ‎html[data-auth-pending~=nav] .x‎: كان المركّب يُقطع عند أول ‎~‎ ولو داخل المعقوف، فيخرج
+// ‎:where([data-auth-pending) ~ :where(=nav] .x)‎ بمعقوفٍ وقوسٍ مفتوحين يبتلع بهما المتصفحُ كلَّ قاعدةٍ بعده في الورقة (177 قاعدةً في الورقة
+// الحيّة لصفحة overview)، ومنها قاعدة زرّ طيّ الفهرس: موضعه المنطقي (inset-inline-end) ونسخة استدارته (9999px) التي تغلب نسخة تمهيد
+// ‎button{border-radius:0}‎ — فلصق الزرّ بحافّة الشاشة اليمنى مربّعًا (صنفا فحص الاتجاه e222fbffd940 و361aee9e69f8). والحالة هنا بشكلها:
+// قلبُ زاويةٍ يجعل خانات الاستدارة متنازَعةً فتُبثّ النسخ المطابقة، ثم قاعدة html بالسمة، ثم الزرّ بعدها في التعاقب، ومعها ‎:not([…~="a b"])‎
+function htmlCompoundCase() {
+  var SITE = "@layer base,utilities;@layer base{button{border-radius:0}}" +
+    "@layer utilities{.rl{border-top-left-radius:4px}html[data-auth-pending~=nav] .ap{margin-left:4px}html:not([data-x~=\"a b\"]) .an{padding-left:2px}}" +
+    "#t{position:absolute;top:0;right:10px;width:20px;height:20px;border-radius:9999px}";
+  var parsed = R.parseCss(SITE);
+  var out = R.flipSheet(parsed.rules, { layerOrder: parsed.layerOrder });
+  var gen = "@layer cml-point,cml-imp;@layer cml-imp{" + R.serializeRules(out.neutralImp.concat(out.logicalImp, out.dirBoostImp)) + "}" +
+    R.serializeRules(out.neutral.concat(out.logical, out.dirBoost));
+  var nGen = R.parseCss(gen).rules.length, nRead = 0;
+  try {
+    var sh = new CSSStyleSheet();
+    sh.replaceSync(gen);
+    (function walk(list) { for (var i = 0; i < list.length; i++) { if (list[i].selectorText !== undefined) nRead++; if (list[i].cssRules) walk(list[i].cssRules); } })(sh.cssRules);
+  } catch (e) { nRead = -1; }
+  check("★ (ر9-هـ) مركّب html بسمةٍ فيها ‎~=‎ أو مسافة لا يبتلع ما بعده: يقرأ المتصفح كلَّ قاعدةٍ مولَّدة", "9/9", nGen + "/" + nRead);
+  return new Promise(function (res) {
+    var f = document.createElement("iframe");
+    f.style.cssText = "position:absolute;left:-9999px;width:300px;height:120px";
+    f.srcdoc = '<html dir="rtl" data-cml-rtl="v2" data-auth-pending="nav"><head><style>@layer cml-point,cml-imp;</style><style>' + SITE +
+      "</style><style>" + gen + '</style></head><body style="margin:0"><div style="position:relative;width:300px;height:40px">' +
+      '<button id="t" class="rl"></button></div><div class="ap" id="ap">x</div><div class="an" id="an">y</div></body></html>';
+    f.onload = function () {
+      var w = f.contentWindow, d = f.contentDocument;
+      var t = w.getComputedStyle(d.getElementById("t")), ap = w.getComputedStyle(d.getElementById("ap")), an = w.getComputedStyle(d.getElementById("an"));
+      check("★ (ر9-هـ) وبعدها زرٌّ كزرّ طيّ الفهرس: موضعه منعكس (left) واستدارته باقية، وقاعدتا html نفسيهما منعكستان",
+        "10px/9999px/9999px/4px:0px/2px", [t.left, t.borderTopLeftRadius, t.borderTopRightRadius, ap.marginRight + ":" + ap.marginLeft, an.paddingRight].join("/"));
+      f.remove();
+      res();
+    };
+    document.body.appendChild(f);
+  });
+}
+
+// ===== ★ (ر9، المراجعة الموحّدة، ٥ جمادى الأولى ١٤٤٨هـ) compoundLen: علامتا التنصيص والهروب =====
+// تحققا ر9-هـ أعلاه يمرّان بالعمق و‎~=‎ وحدهما، فكانت طفرتان في compoundLen تنجوان منهما: حذفُ معالجة علامتي التنصيص (قيمةُ سمةٍ
+// فيها ‎]‎ أو ‎(‎ تُخرج العمق إلى الصفر أو تُبقيه فوقه، فيُقطع المركّب في غير موضعه ولا يطابق المحدِّدُ عنصرَه)، وحذفُ معالجة الهروب
+// (صنفٌ على html فيه ‎\+‎ يُقطع عند ‎+‎ فيبقى ‎:where(.e\)‎ قوسًا مهرَّبًا لا يُغلق ويبتلع ما بعده). والقلب يُقاس على العناصر لا العدُّ وحده
+function htmlCompoundQuoted() {
+  var SITE = "@layer utilities{html[data-q=\"a]b c\"] .q{margin-left:3px}html:not([data-n=\"(\"]) .n{padding-left:4px}" +
+    "html.e\\+f .e{margin-left:5px}.z{margin-left:7px}}";
+  var parsed = R.parseCss(SITE);
+  var out = R.flipSheet(parsed.rules, { layerOrder: parsed.layerOrder });
+  var gen = "@layer cml-point,cml-imp;@layer cml-imp{" + R.serializeRules(out.neutralImp.concat(out.logicalImp, out.dirBoostImp)) + "}" +
+    R.serializeRules(out.neutral.concat(out.logical, out.dirBoost));
+  var nGen = R.parseCss(gen).rules.length, nRead = 0;
+  try {
+    var sh = new CSSStyleSheet();
+    sh.replaceSync(gen);
+    (function walk(list) { for (var i = 0; i < list.length; i++) { if (list[i].selectorText !== undefined) nRead++; if (list[i].cssRules) walk(list[i].cssRules); } })(sh.cssRules);
+  } catch (e) { nRead = -1; }
+  return new Promise(function (res) {
+    var f = document.createElement("iframe");
+    f.style.cssText = "position:absolute;left:-9999px;width:300px;height:120px";
+    f.srcdoc = '<html dir="rtl" data-cml-rtl="v2" data-q="a]b c" class="e+f"><head><style>@layer cml-point,cml-imp;</style><style>' + SITE +
+      "</style><style>" + gen + '</style></head><body style="margin:0"><div class="q" id="q">q</div><div class="n" id="n">n</div>' +
+      '<div class="e" id="e">e</div><div class="z" id="z">z</div></body></html>';
+    f.onload = function () {
+      var w = f.contentWindow, d = f.contentDocument, st = function (id) { return w.getComputedStyle(d.getElementById(id)); };
+      check("★ (ر9، المراجعة الموحّدة) مركّب html بقيمة سمةٍ بين علامتي تنصيص فيها ] أو ( وبصنفٍ فيه محرفٌ مهرَّب: يقرأ المتصفح كلَّ قاعدةٍ مولَّدة وتنعكس العناصر كلها",
+        "8/8|3px:0px/4px/5px/7px", nGen + "/" + nRead + "|" +
+        [st("q").marginRight + ":" + st("q").marginLeft, st("n").paddingRight, st("e").marginRight, st("z").marginRight].join("/"));
+      f.remove();
+      res();
+    };
+    document.body.appendChild(f);
+  });
+}
+
+function finalize() {
   document.title = "rtltest " + pass + "/" + total;
   var h = document.createElement("p");
   h.className = pass === total ? "ok" : "bad";

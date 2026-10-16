@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>textmax test</title>
+<!--
+  لا سقف طول (٢١ ربيع الآخر ١٤٤٨هـ، توجيه المالك: «لا يمنع أي حدٍّ تقني تعريب نص موقعٍ مهما طال ما دام ليس محادثةً أو
+  محتوى مستخدم»). كان ما فوق TEXT_MAX (300) لا يُطلب أصلًا، فـ104 رسائل في كتالوج claude.ai لا تُترجم أبدًا. الآن:
+   ١) المطابقة الحرفية بلا سقف: نصٌّ من 2,000 محرف يُترجم عقدةً وسمةً، ومُضافًا بعد الإقلاع (مسار الطفرات).
+   ٢) القوالب الطويلة تُترجم (نمطٌ من makePattern، والنمط المدموج لرسالة SSH ذات 474 محرفًا)، والجمع الطويل كذلك.
+   ٣) الأداء بالفهرسة لا بالإسقاط (cml-shared patternIndex): نصٌّ طويلٌ لا يطابق لا يُشغَّل عليه تعبيرٌ واحد من القاموس الحقيقي
+      (عدّادٌ على exec)، وكلفة البحث فيه بالفهرس لا تُقاس (متوسطٌ تحت 0.25 مث لنصٍّ من 2,000 محرف على 5,700 نمط).
+   ٤) نمطٌ قصيرٌ عامّ لا يبتلع فقرةً طويلة (ما تلتقطه المتغيّرات ≤ PATTERN_CAPTURE_MAX)، ويبقى حيًّا على القصير.
+   ٥) الحماية استثناء المحادثة لا الطول: لا يُمسّ شيءٌ داخل جواب Claude وهو يُبثّ (progressive-markdown) ولا بعده
+      (standard-markdown، epitaxy-markdown) ولا رسالة المستخدم ولا مربع الكتابة — ولو ساوى نصَّ واجهةٍ في القاموس أو طال —
+      وشريط «نسخ» داخل حاوية الجواب واجهةٌ يُعرَّب.
+  القاموس هو قاموس التطبيق الحقيقي المبنيّ (dictionary.js) ومعه مدخلاتٌ مصطنعة للاختبار. العقد: document.title = "textmax N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right;word-break:break-word}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+#host{display:none}</style>
+<h1>اختبار «لا سقف طول»</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<div id="host"></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+window.chrome = MOCK.chrome;
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dictionary.js"></script>
+<script>
+function fill(head, len, word) { var s = head; while (s.length < len) s += " " + word; s = s.slice(0, len - 1); if (s.charAt(s.length - 1) === " ") s = s.slice(0, -1) + "x"; return s + "."; }
+var D = CLAUDE_L10N.dicts.ar;
+// ١) حرفيٌّ طويل (بلا أرقام، فلا يطابقه جمع)
+var LONG_EN = fill("Before you continue, read this long notice carefully", 2000, "carefully");
+var LONG_AR = "قبل أن تتابع، اقرأ هذا الإشعار الطويل بعناية.";
+var LONG_ATTR_EN = fill("This long tooltip explains the setting in detail", 1500, "detail");
+var LONG_ATTR_AR = "يشرح هذا التلميح الطويل الإعداد بالتفصيل.";
+var LATE_EN = fill("A long banner added after the first pass", 2400, "banner");
+var LATE_AR = "لافتةٌ طويلة أُضيفت بعد المرور الأول.";
+D.strings[LONG_EN] = LONG_AR; D.strings[LONG_ATTR_EN] = LONG_ATTR_AR; D.strings[LATE_EN] = LATE_AR;
+// ٢) قالبٌ طويل بمولّد الأنماط نفسه (gen-patterns ← makePattern)
+var TPL_EN = fill("Zqx connection to {host} needs your attention because the key on file for {account} expired", 900, "zqxlong");
+var TPL_AR = "يحتاج اتصال Zqx بـ {host} إلى انتباهك لأن المفتاح المحفوظ لـ {account} انتهت صلاحيته.";
+var TPL_PAT = CMLShared.makePattern(TPL_EN, TPL_AR);
+var TPL_TXT = TPL_EN.replace("{host}", "build-01.example.com").replace("{account}", "deploy-bot");
+var TPL_OUT = "يحتاج اتصال Zqx بـ build-01.example.com إلى انتباهك لأن المفتاح المحفوظ لـ deploy-bot انتهت صلاحيته.";
+// ٤) نمطٌ قصيرٌ عامّ (يبدأ بمتغيّر: سلّة الذيل)
+var GEN = { en: "{a} zqor {b}.", re: "^(.+?) zqor (.+?)\\.$", ar: "$1 أو $2." };
+var GEN_LONG = fill("Plenty of English prose that a short generic template must never swallow zqor anything else here", 1000, "prose");
+D.patterns = (TPL_PAT ? [TPL_PAT] : []).concat(D.patterns, [GEN]);
+// النمط المدموج لرسالة SSH الطويلة (474 محرفًا): ناتجه المتوقَّع من نمطه نفسه
+var SSH = null;
+for (var q = 0; q < D.patterns.length; q++) if (/^Signing in to “\{host\}”, or to a jump host on the way, needs a password or one-time code/.test(D.patterns[q].en || "")) { SSH = D.patterns[q]; break; }
+var SSH_TXT = SSH ? SSH.en.split("{host}").join("build-01.example.com") : "";
+var SSH_OUT = SSH ? SSH.ar.split("$1").join("build-01.example.com") : "";
+// الجمع الطويل (n06، 321 محرفًا) بعدد 3 ⇒ صيغة few
+var PL_KEY = "Org members connecting from an IP address outside the %d listed ranges will lose access to Claude in this organization, including the desktop and mobile apps and Claude Code, within 15 minutes of turning this on. Make sure every network your org members connect from, such as offices, VPNs, and proxies, is covered first.";
+var PL_TXT = PL_KEY.replace("%d", "3");
+var PL_OUT = D.plurals[PL_KEY] ? D.plurals[PL_KEY].forms[3].replace("%d", "3") : "(لا مدخل)";
+// عدّاد الكلفة: كل تعبيرٍ من القاموس (نمطًا أو جمعًا) يُجرَّب على نصٍّ أطول من 300 — String.prototype.match يمرّ بـ exec
+var esc = function (s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); };
+var DICT_SRC = new Set();
+D.patterns.forEach(function (p) { try { DICT_SRC.add(new RegExp(p.re).source); } catch (e) {} });
+Object.keys(D.plurals).forEach(function (k) { [k, D.plurals[k].plural].forEach(function (p) { if (p) DICT_SRC.add(new RegExp("^" + esc(p).replace("%d", "(\\d+)") + "$").source); }); });
+var RUNS = { long: 0, short: 0 }, LONG_HITS = [];
+var origExec = RegExp.prototype.exec;
+// (ما طابق لا يُعدّ: القالب الطويل يُجرَّب على نصّه فيطابق — المعدود تعبيرٌ شُغِّل على نصٍّ طويل فلم يطابقه، أي كلفةٌ بلا ثمرة)
+RegExp.prototype.exec = function (s) {
+  var r = origExec.apply(this, arguments);
+  if (DICT_SRC.has(this.source)) {
+    if (String(s).length > 300) { if (r === null) { RUNS.long++; if (LONG_HITS.length < 5) LONG_HITS.push(this.source.slice(0, 40)); } }
+    else RUNS.short++;
+  }
+  return r;
+};
+</script>
+<script>
+// العقد تُزرع قبل المحرّك: يجدها مرورُه الأول
+(function () {
+  var host = document.getElementById("host");
+  function add(id, text, attr, parent) { var p = document.createElement("p"); p.id = id; p.textContent = text; if (attr) p.setAttribute("title", attr); (parent || host).appendChild(p); return p; }
+  add("long", LONG_EN); add("attr", "x", LONG_ATTR_EN); add("tpl", TPL_TXT); add("ssh", SSH_TXT); add("pl", PL_TXT);
+  add("genLong", GEN_LONG); add("genShort", "Alpha zqor Beta.");
+  add("uiSettings", "Settings");
+  // مناطق المحادثة بأشكالها في حزم claude.ai اليوم (٢١ ربيع الآخر ١٤٤٨هـ)
+  var box = document.createElement("div"); box.id = "chat"; host.appendChild(box);
+  box.innerHTML =
+    '<div data-testid="assistant-message" data-is-streaming="true" id="msgStream">' +
+      '<div class="progressive-markdown"><p id="chStream"></p></div>' +
+    '</div>' +
+    '<div data-testid="assistant-message" data-is-streaming="false">' +
+      '<div class="standard-markdown"><p id="chDone">Settings</p><p id="chDoneLong"></p><p id="chDoneTpl"></p></div>' +
+      '<div data-testid="message-actions"><button id="chCopy" aria-label="Copy">Copy</button></div>' +
+    '</div>' +
+    '<div data-testid="user-message"><p id="chUser">Settings</p><p id="chUserLong"></p></div>' +
+    '<div class="epitaxy-markdown"><p id="chEpi">Settings</p></div>' +
+    '<div class="ProseMirror" contenteditable="true"><p id="chComposer">Settings</p></div>' +
+    '<textarea id="chTa">Settings</textarea>';
+  document.getElementById("chDoneLong").textContent = LONG_EN;
+  document.getElementById("chDoneTpl").textContent = TPL_TXT;
+  document.getElementById("chUserLong").textContent = LONG_EN;
+})();
+</script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  // العرض بعلامةٍ في أوله: خلية الجدول نفسها عقدةُ نصٍّ يعرّبها المحرّك لو طابقت — والحكم قبل العرض
+  [name, "⟨" + String(expect).slice(0, 80), "⟨" + String(got).slice(0, 80)].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(/[⁦-⁩‎‏]/g, ""); }
+function txt(id) { return noBidi(document.getElementById(id).textContent); }
+
+async function main() {
+  await wait(700);
+  var SET_AR = D.strings["Settings"], COPY_AR = D.strings["Copy"];
+  check("الأطوال كما صُمّمت (2000/1500/900/1000)", "2000/1500/900/1000", [LONG_EN.length, LONG_ATTR_EN.length, TPL_EN.length, GEN_LONG.length].join("/"));
+  check("شروط الاختبار: «Settings» و«Copy» في القاموس، والقالب الطويل نمطٌ، ونمط SSH والجمع الطويل مدموجان", "true/true/true/true/true",
+    [/[؀-ۿ]/.test(SET_AR || ""), /[؀-ۿ]/.test(COPY_AR || ""), !!TPL_PAT, !!SSH, !!D.plurals[PL_KEY]].join("/"));
+  check("لا سقف ترجمةٍ في الثوابت: TEXT_MAX_EXACT أُزيل، وسقف الالتقاط 300", "undefined/300", CMLConst.TEXT_MAX_EXACT + "/" + CMLConst.PATTERN_CAPTURE_MAX);
+  // ١
+  check("★ نصٌّ حرفيٌّ من 2,000 محرف يُترجم بالمفتاح نفسه", LONG_AR, txt("long"));
+  check("★ وسمةٌ من 1,500 محرف (title) كذلك", LONG_ATTR_AR, noBidi(document.getElementById("attr").getAttribute("title")));
+  // ٢
+  check("★ قالبٌ طويل (900 محرف، متغيّران) يُترجم بنمطه", TPL_OUT, txt("tpl"));
+  check("★ ونمط رسالة SSH المدموج (474 محرفًا) يُترجم", noBidi(SSH_OUT), txt("ssh"));
+  check("★ وجمعٌ طويل (321 محرفًا، العدد 3) يُترجم بصيغته", noBidi(PL_OUT), txt("pl"));
+  // ٤
+  check("★ نمطٌ قصيرٌ عامّ لا يبتلع فقرةً من 1,000 محرف (تبقى إنجليزية كاملة)", GEN_LONG, txt("genLong"));
+  check("والنمط نفسه حيٌّ على القصير", "Alpha أو Beta.", txt("genShort"));
+  // ٥
+  check("الواجهة خارج المحادثة تُعرَّب («Settings»)", SET_AR, txt("uiSettings"));
+  check("★ متن جوابٍ مكتمل (standard-markdown): «Settings» والطويل والقالب لا تُمسّ", "Settings/true/true",
+    txt("chDone") + "/" + (txt("chDoneLong") === LONG_EN) + "/" + (txt("chDoneTpl") === TPL_TXT));
+  check("★ رسالة المستخدم: «Settings» والطويل لا يُمسّان", "Settings/true", txt("chUser") + "/" + (txt("chUserLong") === LONG_EN));
+  check("★ العارض الجديد (epitaxy-markdown) ومربع الكتابة (contenteditable) وtextarea لا تُمسّ", "Settings/Settings/Settings",
+    [txt("chEpi"), txt("chComposer"), document.getElementById("chTa").value].join("/"));
+  check("شريط «نسخ» داخل حاوية الجواب واجهةٌ يُعرَّب (لا استثناء للحاوية كلها)", COPY_AR + "/" + COPY_AR,
+    txt("chCopy") + "/" + noBidi(document.getElementById("chCopy").getAttribute("aria-label")));
+  // البثّ: جوابٌ يُكتب على دفعات في progressive-markdown حتى يساوي نصَّ واجهة، ثم الطويل، ثم ينتهي البثّ
+  var p = document.getElementById("chStream"), steps = ["Set", "Settings", LONG_EN.slice(0, 700), LONG_EN, "Settings"], seen = [];
+  for (var i = 0; i < steps.length; i++) { p.textContent = steps[i]; await wait(120); seen.push(txt("chStream") === steps[i]); }
+  var md = p.parentNode; md.className = "standard-markdown"; document.getElementById("msgStream").setAttribute("data-is-streaming", "false");
+  await wait(200);
+  check("★ جوابٌ وهو يُبثّ (progressive-markdown) لا يُمسّ في أي دفعة ولا بعد انتهاء البثّ", "true,true,true,true,true/Settings",
+    seen.join(",") + "/" + txt("chStream"));
+  check("★ لا كلفة: لا تعبيرَ من القاموس جُرِّب على نصٍّ طويل لا يطابقه (الإقلاع)", "0", RUNS.long + (LONG_HITS.length ? " " + LONG_HITS.join(" | ") : ""));
+  check("والقصير مرّ بالتعبيرات فعلًا (العدّاد يعمل)", true, RUNS.short > 0);
+
+  // مسار الطفرات: طويلٌ حرفي بعد الإقلاع، ومئتا نصٍّ طويلٍ مختلف لا يطابق شيئًا (أشكالٌ شتى: أول كلمةٍ وآخر محرف)
+  var host = document.getElementById("host"), before = RUNS.long;
+  var late = document.createElement("p"); late.textContent = LATE_EN; host.appendChild(late);
+  var heads = ["The", "Your", "Settings for", "Claude", "Members of", "Show", "to", "in", "Access", "Done"];
+  var tails = ["settings", "done", "members", "access", "files", "chats", "project", "zqx"];
+  var frag = document.createDocumentFragment();
+  for (var k = 0; k < 200; k++) {
+    var t = fill(heads[k % heads.length] + " unknown long text number " + k, 2000, tails[k % tails.length]);
+    if (k % 3 === 1) t = t.slice(0, -1) + "?"; else if (k % 3 === 2) t = t.slice(0, -1) + " " + tails[(k + 3) % tails.length];
+    var qn = document.createElement("p"); qn.className = "miss2"; qn.textContent = t; frag.appendChild(qn);
+  }
+  var t0 = performance.now();
+  host.appendChild(frag);
+  await wait(400);
+  var ms = performance.now() - t0;
+  check("★ طويلٌ حرفيٌّ (2,400 محرف) مُضافٌ بعد الإقلاع يُترجم (مسار الطفرات)", LATE_AR, noBidi(late.textContent));
+  var still = Array.prototype.every.call(document.querySelectorAll(".miss2"), function (n) { return !/[؀-ۿ]/.test(n.textContent); });
+  check("★ مئتا نصٍّ طويلٍ (2,000 محرف) لا يطابق: تبقى إنجليزية ولا تعبيرَ من القاموس جُرِّب عليها", "true/0", still + "/" + (RUNS.long - before));
+  check("ومرّت في مهلة الاختبار (" + Math.round(ms) + " مث، والانتظار 400)", true, ms < 2500);
+
+  // الكلفة بالفهرس نفسه الذي يستعمله المحرّك (patternIndex) على أنماط القاموس الحقيقي كلها: طويلٌ لا يطابق مقابل قصيرٍ لا يطابق
+  RegExp.prototype.exec = origExec;
+  var srcs = D.patterns.map(function (p) { return p.re; }), res = srcs.map(function (s) { try { return new RegExp(s); } catch (e) { return null; } });
+  var idx = CMLShared.patternIndex(srcs);
+  function look(s) { return idx.find(s, function (i) { return res[i] && res[i].test(s) ? { i: i } : null; }, CMLConst.PATTERN_CAPTURE_MAX); }
+  var longs = [], shorts = [];
+  for (var j = 0; j < 500; j++) {
+    longs.push(fill(heads[j % heads.length] + " zqlong text " + j, 2000, tails[j % tails.length]));
+    shorts.push(heads[j % heads.length] + " zqshort text " + j + " " + tails[j % tails.length] + ".");
+  }
+  var hitsL = 0, hitsS = 0, a0 = performance.now();
+  for (j = 0; j < longs.length; j++) if (look(longs[j])) hitsL++;
+  var aL = (performance.now() - a0) / longs.length;
+  a0 = performance.now();
+  for (j = 0; j < shorts.length; j++) if (look(shorts[j])) hitsS++;
+  var aS = (performance.now() - a0) / shorts.length;
+  // (اسم التحقق الحرج ثابت — قائمة _critical.json تطابق الأسماء — والأرقام في سطرٍ بعده)
+  check("★ كلفة البحث بالفهرس في نصٍّ من 2,000 محرف لا يطابق، على أنماط القاموس كلها: متوسطٌ تحت 0.25 مث", "true/0", (aL < 0.25) + "/" + hitsL);
+  check("القياس: " + srcs.length + " نمطًا — الطويل " + aL.toFixed(3) + " مث والقصير " + aS.toFixed(3) + " مث للنص", true, true);
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+}
+main().then(finish, function (e) { check("استثناء غير متوقع", "(لا شيء)", String(e && e.message || e)); finish(); });
+function finish() {
+  RegExp.prototype.exec = origExec;
+  document.title = "textmax " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "TEXTMAX: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+}
+</script>

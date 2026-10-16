@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>host test</title>
+<!--
+  اختبار عزل النطاقات في المحرّك (١-٠ب): المحرّك نفسه على «مركز المساعدة» بقاموسه.
+   ١) يعرّب بقاموس نطاقه، وتصحيحاتُه من cml_overrides.support لا من مفتاح التطبيق.
+   ٢) استثناء المحادثة للتطبيق وحده: عنصر ‎.prose‎ على هذا النطاق يُعرَّب (متنُ المقالات فيه).
+   ٣) مفتاح النطاق (cml_site.support) يطفئه وحده، والرئيس (cml_enabled) يطفئ الجميع.
+   ٤) لا كتابة في مفاتيح التطبيق، ولا فحص للحزم (scan:none) ولو طُلب.
+  العقد: document.title = "hosttest N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<h1>اختبار عزل النطاقات</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<div id="host"><p id="a">Hello</p><p id="s">Search</p><div class="prose"><p id="art">Hello</p></div></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, {
+  cml_enabled: true, cml_rtl: true,
+  cml_overrides: { ar: { "Hello": "تصحيح-التطبيق" } },           // للتطبيق وحده
+  "cml_overrides.support": { ar: { "Search": "ابحث" } },          // تصحيح النطاق
+});
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "support", meta: { scan: "none", live: false, chat: false, hydrate: "none", intercom: true },
+  default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Hello": "مرحبا", "Search": "بحث" }, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g"), ""); }
+function txt(id) { return noBidi(document.getElementById(id).textContent); }
+var H = document.documentElement;
+function fire(ch) { MOCK.fireChanged(ch, "local"); }
+function kv(k, v) { var o = {}; o[k] = { newValue: v }; return o; }
+
+(async function () {
+  await wait(500);
+  check("★ يعرّب بقاموس نطاقه لا بتصحيح التطبيق", "مرحبا", txt("a"));
+  check("★ تصحيحات النطاق من مفتاحه (cml_overrides.support)", "ابحث", txt("s"));
+  check("★ ‎.prose‎ على هذا النطاق يُعرَّب (الاستثناء للتطبيق وحده)", "مرحبا", txt("art"));
+  check("السمات: dir=rtl وdata-cml=on", "rtl/on", H.getAttribute("dir") + "/" + H.getAttribute("data-cml"));
+
+  fire(kv("cml_site.support", false));
+  await wait(200);
+  check("★ مفتاح النطاق يطفئه: يعود الإنجليزي وتُرفع السمات", "Hello/Search/null/null",
+        txt("a") + "/" + txt("s") + "/" + H.getAttribute("dir") + "/" + H.getAttribute("data-cml"));
+  fire(kv("cml_site.support", true));
+  await wait(300);
+  check("وإعادته تعيد التعريب", "مرحبا", txt("a"));
+  fire(kv("cml_enabled", false));
+  await wait(200);
+  check("★ الرئيس يطفئ النطاق أيضًا", "Hello", txt("a"));
+  fire(kv("cml_enabled", true));
+  await wait(300);
+  check("وإعادته تعيد التعريب", "مرحبا", txt("a"));
+  // تصحيحٌ جديد للتطبيق لا يمسّ هذا النطاق، وتصحيحٌ للنطاق يسري فورًا
+  fire(kv("cml_overrides", { ar: { "Search": "تطبيق-فقط" } }));
+  fire(kv("cml_overrides.support", { ar: { "Search": "بحث-النطاق" } }));
+  await wait(300);
+  check("★ تصحيح التطبيق لا يسري هنا، وتصحيح النطاق يسري", "بحث-النطاق", txt("s"));
+
+  // لا فحص للحزم (scan:none) ولو طُلب، ولا كتابة في مفاتيح التطبيق
+  fire(kv("cml_scan_request", { at: Date.now() }));
+  await wait(300);
+  var wroteApp = MOCK.localWrites.some(function (w) {
+    return Object.keys(w).some(function (k) { return k === "cml_overrides" || k === "cml_scan_result" || k === "cml_user_patterns" || k === "cml_bad_rules"; });
+  });
+  var wroteScan = MOCK.localWrites.some(function (w) { return Object.keys(w).some(function (k) { return k.indexOf("cml_scan_result") === 0; }); });
+  check("★ لا كتابة في مفاتيح التطبيق، ولا فحص حزمٍ على هذا النطاق", "false/false", wroteApp + "/" + wroteScan);
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "hosttest " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "HOSTTEST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

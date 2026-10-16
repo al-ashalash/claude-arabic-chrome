@@ -1,0 +1,137 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>app point test</title>
+<!--
+  ★ (ر9-ب، ٣ جمادى الأولى ١٤٤٨هـ — القرار 95) إصلاحات app-point.css النقطية لتطبيق claude.ai: المحرّك الحقيقي بقاموس التطبيق
+  المبنيّ، وأوراق التطبيق بترتيب المانيفست (base.css ثم rtl-overrides.css ثم app-point.css)، على نموذجٍ اصطناعي.
+  أولها حقل البريد في /login: يضع عليه الموقع dir="ltr" (input#email.cds-input) والمحرّك يعرّب نصّه المؤقت:
+   ١) وهو فارغ يصير RTL، فيقف النص المؤقت ومؤشر الكتابة يمينًا كسائر النموذج؛
+   ٢) ومن أول حرفٍ يُكتب يعود LTR بسمة الموقع، وبمحو ما كُتب يعود RTL؛
+   ٣) ولا يمسّ حقلًا LTR غيره (رابطٌ، ومفتاحٌ نصّه المؤقت معرَّب كذلك، ومساحة نص)، ولا حقل بريدٍ نصّه المؤقت فارغ؛
+   ٤) وبإطفاء قلب الصفحة يبقى على سمة الموقع LTR والتعريب قائم؛
+   ٥) وبإطفاء الإضافة يبقى LTR ويعود نصّه المؤقت إنجليزيًّا، ولو كانت الصفحة نفسها RTL بسمةٍ من الموقع.
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:820px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+#loginForm input,#loginForm textarea{display:block;width:320px;margin:6px 0;font-size:16px}</style>
+
+<h1>اختبار إصلاحات التطبيق النقطية</h1>
+
+<!-- نموذج الدخول: حقل البريد كما يرسمه الموقع اليوم (dir="ltr" على الحقل نفسه)، وحقولٌ LTR أخرى لا شأن للقاعدة بها -->
+<form id="loginForm" onsubmit="return false">
+  <input id="email" class="cds-input cds-reset h-control" type="email" dir="ltr" autocomplete="email" placeholder="Enter your email">
+  <input id="fxUrl" type="url" dir="ltr" placeholder="https://example.com">
+  <input id="fxKey" type="text" dir="ltr" placeholder="Enter your email">
+  <textarea id="fxArea" dir="ltr" placeholder="Enter your email"></textarea>
+  <input id="fxBlank" type="email" dir="ltr" placeholder="">
+</form>
+
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+
+<link rel="stylesheet" href="../extension/base.css">
+<link rel="stylesheet" href="../extension/rtl-overrides.css">
+<link rel="stylesheet" href="../extension/app-point.css">
+<script>window.__jsErrors = 0; window.onerror = function () { window.__jsErrors++; };</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dictionary.js"></script>
+<script src="_chrome-mock.js"></script>
+<script>
+// القشرة الموحّدة: الترجمة وقلب الصفحة مفعّلان كما عند المستخدم
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+</script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function finish() {
+  check("لا أخطاء JS في الصفحة", "0", String(window.__jsErrors));
+  document.title = "apppoint " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "APPPOINT: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+}
+// انتظار شرطٍ بسقف (المحرّك يعرّب في دفعة الإقلاع ويطبّق الإعدادات بعد قراءتها)
+function waitFor(cond, then, ms) {
+  var t0 = Date.now();
+  (function poll() { if (cond() || Date.now() - t0 > (ms || 3000)) then(); else setTimeout(poll, 50); })();
+}
+var AR = "أدخل بريدك الإلكتروني", EN = "Enter your email";
+var html = document.documentElement, email = document.getElementById("email");
+var url = document.getElementById("fxUrl"), key = document.getElementById("fxKey"), area = document.getElementById("fxArea");
+var blank = document.getElementById("fxBlank");
+function dirOf(el) { return getComputedStyle(el).direction; }
+function shown(el) { return el.matches(":placeholder-shown"); }
+// كتابة حرفٍ كما يكتبه المستخدم (مسار التحرير نفسه)، وإلا فالقيمة وحدثها
+function typeText(el, s) {
+  el.focus();
+  var done = false;
+  try { done = document.execCommand("insertText", false, s); } catch (e) {}
+  if (!done || el.value.indexOf(s) < 0) { el.value += s; el.dispatchEvent(new Event("input", { bubbles: true })); }
+}
+function clearText(el) { el.value = ""; el.dispatchEvent(new Event("input", { bubbles: true })); }
+
+waitFor(function () { return html.getAttribute("data-cml") === "on" && email.getAttribute("placeholder") === AR; }, function () {
+  check("المحرّك عامل: الصفحة RTL والنص المؤقت معرَّب في الحقول الأربعة", "on/rtl/" + [AR, AR, AR].join("|"),
+    html.getAttribute("data-cml") + "/" + html.getAttribute("dir") + "/" +
+    [email.getAttribute("placeholder"), key.getAttribute("placeholder"), area.getAttribute("placeholder")].join("|"));
+
+  // ١) الحقل الفارغ: النص المؤقت المعرَّب ظاهر، والحقل ونصّه المؤقت RTL ومحاذاته «start» فيقف يمينًا (وسمة الموقع باقية ltr)
+  check("★ (ر9-ب) حقل البريد LTR من الموقع وهو فارغ: RTL ونصّه المؤقت المعرَّب يمينًا", "true/ltr/rtl/rtl/start",
+    shown(email) + "/" + email.getAttribute("dir") + "/" + dirOf(email) + "/" + getComputedStyle(email, "::placeholder").direction + "/" +
+    getComputedStyle(email).textAlign);
+
+  // ٢) أول حرفٍ يُكتب يعيده LTR، والبريد كاملًا LTR، ومحوه يعيده RTL
+  typeText(email, "u");
+  var first = shown(email) + "/" + dirOf(email);
+  typeText(email, "ser@example.com");
+  var full = email.value + "/" + dirOf(email);
+  clearText(email);
+  email.blur();
+  check("★ (ر9-ب) حقل البريد: من أول حرفٍ يُكتب LTR والبريد المكتوب LTR، ومحوه يعيده RTL",
+    "false/ltr|user@example.com/ltr|true/rtl", first + "|" + full + "|" + shown(email) + "/" + dirOf(email));
+
+  // ٣) الحقول LTR الأخرى على حالها وهي فارغة — ولو عُرِّب نصّها المؤقت
+  check("★ (ر9-ب) لا يمسّ حقلًا LTR غير البريد: الرابط والمفتاح المعرَّب نصّه المؤقت ومساحة النص LTR وهي فارغة",
+    "true/ltr|true/ltr|true/ltr",
+    [url, key, area].map(function (el) { return shown(el) + "/" + dirOf(el); }).join("|"));
+  // وحقل بريدٍ LTR نصّه المؤقت فارغ: كروم يعدّه «ظاهرًا» ولا نصّ يُحاذى، فيبقى ومؤشرُه على سمة الموقع
+  check("★ (ر9-ب) حقل بريدٍ LTR نصّه المؤقت فارغ يبقى LTR", "true/ltr", shown(blank) + "/" + dirOf(blank));
+
+  // ٤) قلب الصفحة مطفأ: الحقل على سمة الموقع، والتعريب قائم
+  chrome.storage.local.set({ cml_rtl: false });
+  waitFor(function () { return html.getAttribute("dir") !== "rtl"; }, function () {
+    check("★ (ر9-ب) قلب الصفحة مطفأ: حقل البريد الفارغ على سمة الموقع LTR، والتعريب قائم",
+      "on/(لا شيء)/true/ltr/" + AR,
+      html.getAttribute("data-cml") + "/" + (html.getAttribute("dir") || "(لا شيء)") + "/" + shown(email) + "/" + dirOf(email) + "/" + email.getAttribute("placeholder"));
+
+    // ٥) الإضافة مطفأة: لا أثر ولو كانت الصفحة نفسها RTL بسمةٍ من الموقع (البوابة data-cml لا dir وحده)
+    chrome.storage.local.set({ cml_rtl: true });
+    waitFor(function () { return html.getAttribute("dir") === "rtl"; }, function () {
+      var back = dirOf(email);
+      chrome.storage.local.set({ cml_enabled: false });
+      waitFor(function () { return !html.hasAttribute("data-cml") && email.getAttribute("placeholder") === EN; }, function () {
+        var off = (html.getAttribute("data-cml") || "(لا شيء)") + "/" + (html.getAttribute("dir") || "(لا شيء)") + "/" +
+          dirOf(email) + "/" + email.getAttribute("placeholder");
+        html.setAttribute("dir", "rtl"); // الموقع نفسه RTL والإضافة مطفأة
+        var siteRtl = shown(email) + "/" + dirOf(email);
+        html.removeAttribute("dir");
+        check("★ (ر9-ب) الإضافة مطفأة: حقل البريد LTR ونصّه المؤقت إنجليزي، ولو كانت الصفحة نفسها RTL",
+          "rtl|(لا شيء)/(لا شيء)/ltr/" + EN + "|true/ltr", back + "|" + off + "|" + siteRtl);
+        finish();
+      });
+    });
+  });
+}, 4000);
+</script>

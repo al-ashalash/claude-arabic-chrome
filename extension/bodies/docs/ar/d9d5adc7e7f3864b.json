@@ -1,0 +1,1 @@
+{"page":"/docs/en/api/beta/organization/rbac_groups/members/remove","blocks":{"5da8cf928dfaca1d":"إزالة مستخدم من مجموعة RBAC. ولا يمكن تعديل عضوية المجموعات التي يزوّدها مزوّد هوية (نوع المصدر <c1>\"scim\"</c1>) عبر API ما دامت إحدى المؤسسات في المستأجر تستخدم التزويد عبر SCIM.","f3c822327facf6b8":"API مجموعات RBAC متاح لمؤسسات Claude Enterprise فقط."}}

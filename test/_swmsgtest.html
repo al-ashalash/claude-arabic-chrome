@@ -1,0 +1,331 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>swmsg test</title>
+<!--
+  اختبار رسائل عامل الخدمة عبر مستمع onMessage الحقيقي في sw.js (المراجعة المستقلة):
+   ١) أمر إدارة المزامنة من صفحة الإعدادات — وهي تُفتح في تبويب فيحمل مرسلُها tab — يُقبل.
+      (كان اشتراط غياب tab يرفض كل أوامرها في المتصفح الحقيقي.)
+   ٢) الأمر نفسه من سكربت محتوى (أصلُه صفحة الموقع) يُرفض.
+   ٣) طلب الورقة الحيّة من مرسلٍ خارج النطاقات، أو بورقةٍ من مضيفٍ غريب، يُرفض بلا جلب.
+   ٤) ميزانية ذاكرة الأوراق الحيّة عبر النطاقات: الأقدم يُطرد متى تجاوز المجموع.
+   ٥) تعديل التصحيحات أمرًا جزئيًّا: من صفحات الإضافة وحدها، على القراءة الطازجة، بالمعقِّم الواحد.
+   ٦) الورقة المضمَّنة (<style> من المستند — وثائق Claude Code): بلا جلب، وبصمتها ببصمة نصّها، وحدودها كالروابط.
+   ٧) نسخة الخط العربي (DESIGN-fonts §٤.٢، §٥.٤): العامل كاتبها الوحيد — عند التثبيت، وتغيّر الاختيار، وحذفها، وطلب
+      الإصلاح من مرسلٍ مأذون — بالتسلسل، وفي ميزانية صنف cache، وعند امتلاء التخزين لا يُمسّ صنف data.
+  العقد: document.title = "swmsg N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<h1>اختبار رسائل عامل الخدمة</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: true, sync: { itemBytes: 8192, totalBytes: 102400 } });
+var LISTENERS = { message: [], connect: [], installed: [], startup: [] };
+var EXT_ID = "cmltestextid";
+MOCK.chrome.runtime.id = EXT_ID;
+MOCK.chrome.runtime.getURL = function (p) { return "chrome-extension://" + EXT_ID + "/" + (p || ""); };
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { LISTENERS.message.push(fn); } };
+MOCK.chrome.runtime.onConnect = { addListener: function (fn) { LISTENERS.connect.push(fn); } };
+MOCK.chrome.runtime.onInstalled = { addListener: function (fn) { LISTENERS.installed.push(fn); } };
+MOCK.chrome.runtime.onStartup = { addListener: function (fn) { LISTENERS.startup.push(fn); } };
+var REAL_FETCH = window.fetch.bind(window);
+var FETCHES = [];
+window.fetch = function (u) { FETCHES.push(String(u)); return Promise.reject(new Error("لا شبكة في الاختبار")); };
+window.chrome = MOCK.chrome;
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/cml-arbiter.js"></script>
+<script src="../extension/cml-sync.js"></script>
+<script src="../extension/sw.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function send(msg, sender) {
+  return new Promise(function (res) {
+    var answered = false, async = false;
+    function respond(v) { answered = true; res(v); }
+    LISTENERS.message.forEach(function (fn) { if (fn(msg, sender, respond) === true) async = true; });
+    if (!async && !answered) res("(بلا ردّ)");
+  });
+}
+var OPTIONS_SENDER = { id: EXT_ID, url: "chrome-extension://" + EXT_ID + "/options.html", origin: "chrome-extension://" + EXT_ID,
+                       tab: { id: 7, url: "chrome-extension://" + EXT_ID + "/options.html" } };
+var CONTENT_SENDER = { id: EXT_ID, url: "https://claude.ai/new", origin: "https://claude.ai", tab: { id: 3 }, frameId: 0 };
+
+(async function () {
+  check("عامل الخدمة سجّل مستمع الرسائل", "true", LISTENERS.message.length > 0);
+  var r1 = await send({ type: "sync-admin", op: "enable" }, OPTIONS_SENDER);
+  check("★ أمر التفعيل من صفحة الإعدادات (في تبويب) يُقبل وينفَّذ", "true/true",
+        !!(r1 && r1.ok) + "/" + (MOCK.localStore[CMLConst.K.SYNC_ENABLED] === true));
+  var r2 = await send({ type: "sync-admin", op: "disable" }, CONTENT_SENDER);
+  check("★ الأمر نفسه من سكربت محتوى يُرفض ولا يمسّ شيئًا", "true/true",
+        !!(r2 && r2.error) + "/" + (MOCK.localStore[CMLConst.K.SYNC_ENABLED] === true));
+  var r3 = await send({ type: "sync-admin", op: "disable" }, OPTIONS_SENDER);
+  check("والإيقاف من صفحة الإعدادات يُنفَّذ", "true/false",
+        !!(r3 && r3.ok) + "/" + MOCK.localStore[CMLConst.K.SYNC_ENABLED]);
+  var r4 = await send({ type: "rtlcss", fp: "x", sheets: [{ url: "https://evil.example/a.css", media: "" }] }, CONTENT_SENDER);
+  check("★ ورقةٌ حيّة من مضيفٍ غريب تُرفض بلا جلب", "null/0", String(r4) + "/" + FETCHES.length);
+  var r5 = await send({ type: "rtlcss", fp: "x", sheets: [{ url: "https://claude.ai/a.css", media: "" }] },
+                      { id: EXT_ID, url: "https://evil.example/", tab: { id: 9 } });
+  check("★ ومن مرسلٍ على نطاقٍ غير مشمول تُرفض بلا جلب", "null/0", String(r5) + "/" + FETCHES.length);
+  var many = [];
+  for (var i = 0; i < CMLConst.RTL_LIVE_SHEETS_MAX + 1; i++) many.push({ url: "https://claude.ai/s" + i + ".css", media: "" });
+  var r6 = await send({ type: "rtlcss", fp: "x", sheets: many }, CONTENT_SENDER);
+  check("★ عددٌ فوق السقف يُرفض كلُّه (لا بناءَ جزئيًّا)", "null/0", String(r6) + "/" + FETCHES.length);
+  // ★ (وثائق Claude Code) الورقة المضمَّنة (<style> من المستند): نصُّها في الطلب فلا جلب لها، وتدخل البناء بترتيبها
+  // بين الروابط، وبصمةُ العامل تحمل بصمة نصّها — ومضمَّنةٌ فيها @import أو فوق السقف أو ليست نصًّا تُسقط الطلب كلَّه
+  var realBuild0 = CMLRtl.buildLiveSheet, realFetch0 = window.fetch, BUILT = null, FETCH2 = [];
+  CMLRtl.buildLiveSheet = function (recs) { BUILT = recs; return { css: "x{}", stats: { flipped: 1 }, rules: 1 }; };
+  window.fetch = function (u) { FETCH2.push(String(u)); return Promise.resolve(new Response("a{margin-left:1px}", { status: 200 })); };
+  var CODE_SENDER = { id: EXT_ID, url: "https://code.claude.com/docs/en/overview", origin: "https://code.claude.com", tab: { id: 4 }, frameId: 0 };
+  var CODE_LIVE = CMLConst.key(CMLConst.K.RTL_LIVE, "code");
+  var LNK = { url: "https://code.claude.com/docs/_next/static/chunks/a.css", media: "" };
+  // ★ (١٦ ربيع الآخر ١٤٤٨هـ) والمضمَّنة اختياريةٌ لكل نطاق (meta.liveInline): من التطبيق تُسقط الطلب كلَّه — حارسٌ ثانٍ خلف المحرّك
+  // فلا يُبنى ولا يُخزَّن CSS من محادثة
+  var i0 = await send({ type: "rtlcss", fp: "x", sheets: [{ url: "https://claude.ai/a.css", media: "" }, { inline: ".zq-chat{margin-left:3px}", media: "" }] }, CONTENT_SENDER);
+  check("★ ورقةٌ مضمَّنة من نطاقٍ لم يخترها (التطبيق) تُسقط الطلب كلَّه: لا جلب ولا بناء ولا تخزين", "null/0/null/false",
+        String(i0) + "/" + FETCH2.length + "/" + String(BUILT) + "/" + (JSON.stringify(MOCK.localStore).indexOf("zq-chat") >= 0));
+  var i1 = await send({ type: "rtlcss", fp: "x", sheets: [LNK, { inline: ".q{margin-left:2px}", media: "" }] }, CODE_SENDER);
+  check("★ ورقةٌ مضمَّنة تُبنى بترتيبها بلا جلبٍ لها (جلبٌ واحد للرابط)", "true/1/a{margin-left:1px}|.q{margin-left:2px}/true",
+        !!(i1 && i1.css) + "/" + FETCH2.length + "/" + (BUILT ? BUILT.map(function (r) { return r.text; }).join("|") : "") + "/" +
+        !!(BUILT && BUILT[1] && BUILT[1].base === null));
+  var fpI1 = (MOCK.localStore[CODE_LIVE] || {}).fp;
+  var i2 = await send({ type: "rtlcss", fp: "x", sheets: [LNK, { inline: ".q{margin-left:3px}", media: "" }] }, CODE_SENDER);
+  check("★ تغيّر نصّ المضمَّنة يغيّر البصمة فيُعاد البناء (لا ورقةٌ قديمة من الذاكرة)", "true/true/2",
+        !!(i2 && i2.css && !i2.cached) + "/" + (!!fpI1 && (MOCK.localStore[CODE_LIVE] || {}).fp !== fpI1) + "/" + FETCH2.length);
+  var i3 = await send({ type: "rtlcss", fp: "x", sheets: [LNK, { inline: "@import url(x.css);.q{left:0}", media: "" }] }, CODE_SENDER);
+  var big = ".q{margin-left:1px}/*" + "x".repeat(CMLConst.RTL_LIVE_SOURCE_MAX_BYTES) + "*/";
+  var i4 = await send({ type: "rtlcss", fp: "x", sheets: [LNK, { inline: big, media: "" }] }, CODE_SENDER);
+  var i5 = await send({ type: "rtlcss", fp: "x", sheets: [LNK, { inline: 42, media: "" }] }, CODE_SENDER);
+  check("★ مضمَّنةٌ فيها @import أو فوق سقف الورقة أو ليست نصًّا تُسقط الطلب كلَّه بلا جلب", "null/null/null/2",
+        String(i3) + "/" + String(i4) + "/" + String(i5) + "/" + FETCH2.length);
+  // ومضمَّنةٌ تُسقط البناء (أخطاء تحليل) لا تُسقط الورقة الحيّة: يُعاد البناء من الروابط وحدها
+  var CALLS = [];
+  CMLRtl.buildLiveSheet = function (recs) { CALLS.push(recs.length); return recs.some(function (r) { return r.base === null; }) ? null : { css: "y{}", stats: { flipped: 1 }, rules: 1 }; };
+  var i6 = await send({ type: "rtlcss", fp: "x", sheets: [LNK, { inline: ".q{margin-left:9px}", media: "" }] }, CODE_SENDER);
+  check("★ مضمَّنةٌ شاذّة تُسقط البناء: يُعاد من الروابط وحدها (لا تسوء الورقة الحيّة بضمّها)", "y{}/2,1",
+        (i6 && i6.css) + "/" + CALLS.join(","));
+  CMLRtl.buildLiveSheet = realBuild0; window.fetch = realFetch0; delete MOCK.localStore[CODE_LIVE];
+  // ★ (S8-C) ردُّ قطعة المتن يسبق بناء الورقة الحيّة: طلبا الصفحة الواحدة يصلان معًا، وجلبُ الورقة أسرع من جلب القطعة —
+  // فكان البناء المتزامن (ثوانٍ لورقة الوثائق) يحجز العامل والقطعةُ تنتظر خلفه فيبقى المتن إنجليزيًّا. الآن: القطعة، ثم البناء
+  var DOCS_SENDER = { id: EXT_ID, url: "https://platform.claude.com/docs/en/intro", origin: "https://platform.claude.com", tab: { id: 5 }, frameId: 0 };
+  var DOCS_LV0 = CMLConst.key(CMLConst.K.RTL_LIVE, "docs");
+  delete MOCK.localStore[DOCS_LV0];
+  var SH = CMLShared.shardOf("/docs/en/intro"), ORDER = [], realBuild1 = CMLRtl.buildLiveSheet, realFetch1 = window.fetch;
+  function later(ms, body) { return new Promise(function (r) { setTimeout(function () { r(new Response(body, { status: 200 })); }, ms); }); }
+  window.fetch = function (u) {
+    var s3 = String(u);
+    if (/bodies\/docs\/ar\/index\.json$/.test(s3)) return later(20, JSON.stringify({ shards: [SH] }));
+    if (s3.indexOf("bodies/docs/ar/" + SH + ".json") >= 0) return later(40, JSON.stringify({ blocks: { "0123456789abcdef": "س" }, keep: [] }));
+    return Promise.resolve(new Response("a{margin-left:1px}", { status: 200 }));
+  };
+  CMLRtl.buildLiveSheet = function () { ORDER.push("build"); return { css: "z{}", stats: { flipped: 1 }, rules: 1 }; };
+  var pB = send({ type: "bodies", path: "/docs/en/intro", lang: "ar" }, DOCS_SENDER).then(function (v) { ORDER.push("bodies"); return v; });
+  var pL = send({ type: "rtlcss", fp: "x", sheets: [{ url: "https://platform.claude.com/_next/static/css/a.css", media: "" }] }, DOCS_SENDER)
+    .then(function (v) { ORDER.push("live"); return v; });
+  var bRes = await pB, lRes = await pL;
+  check("★ ردُّ قطعة المتن يسبق بناء الورقة الحيّة (لا ينتظر المتن خلف بناءٍ متزامنٍ طويل)، وكلاهما يُجاب", "bodies,build,live/1/z{}",
+        ORDER.join(",") + "/" + Object.keys((bRes && bRes.blocks) || {}).length + "/" + (lRes && lRes.css));
+  // ★ (S8-C) فهرسُ القطع إن تعذّرت قراءته مرّةً لا يُحفظ فارغًا ما بقي العامل حيًّا: الطلب التالي يقرؤه من جديد
+  var idxTries = 0;
+  window.fetch = function (u) {
+    var s4 = String(u);
+    if (/bodies\/docs\/ar-xy\/index\.json$/.test(s4)) { idxTries++; return idxTries === 1 ? Promise.reject(new Error("عابر")) : later(5, JSON.stringify({ shards: [SH] })); }
+    if (s4.indexOf("bodies/docs/ar-xy/" + SH + ".json") >= 0) return later(5, JSON.stringify({ blocks: { "0123456789abcdef": "ص" }, keep: [] }));
+    return Promise.reject(new Error("لا شبكة في الاختبار"));
+  };
+  var x1 = await send({ type: "bodies", path: "/docs/en/intro", lang: "ar-xy" }, DOCS_SENDER);
+  var x2 = await send({ type: "bodies", path: "/docs/en/intro", lang: "ar-xy" }, DOCS_SENDER);
+  check("★ فهرس القطع الذي تعذّرت قراءته مرّةً يُعاد في الطلب التالي (لا تسقط قطع النطاق حتى يموت العامل)", "null/ص/2",
+        String(x1) + "/" + ((x2 && x2.blocks) || {})["0123456789abcdef"] + "/" + idxTries);
+  CMLRtl.buildLiveSheet = realBuild1; window.fetch = realFetch1; delete MOCK.localStore[DOCS_LV0];
+  // ★ تعديل التصحيحات أمرًا جزئيًّا عبر العامل (١-٠ج): يُطبَّق على القراءة الطازجة لا على نسخة الصفحة
+  var OVD = CMLConst.key(CMLConst.K.OVERRIDES, "docs"), PTD = CMLConst.key(CMLConst.K.USER_PATTERNS, "docs");
+  MOCK.localStore[OVD] = { ar: { "Old key": "قديم", "Keep me": "أبقِني" } };
+  var e1 = await send({ type: "terms-edit", d: "docs", lang: "ar", ops: [{ op: "set", k: "New key", v: "جديد" }] }, OPTIONS_SENDER);
+  check("★ أمر التعديل من الخيارات يُضاف إلى الموجود (لا يستبدل الكائن)", "true/3",
+        !!(e1 && e1.ok) + "/" + Object.keys(MOCK.localStore[OVD].ar).length);
+  var e2 = await send({ type: "terms-edit", d: "docs", lang: "ar", ops: [{ op: "del", k: "Old key" }] }, CONTENT_SENDER);
+  check("★ ومن سكربت محتوى يُرفض ولا يمسّ شيئًا", "forbidden/true", (e2 && e2.error) + "/" + ("Old key" in MOCK.localStore[OVD].ar));
+  var e3 = await send({ type: "terms-edit", d: "nowhere", lang: "ar", ops: [] }, OPTIONS_SENDER);
+  check("ونطاقٌ غير معروف يُرفض", "forbidden", e3 && e3.error);
+  var e4 = await send({ type: "terms-edit", d: "docs", lang: "ar", ops: [
+    { op: "del", k: "Keep me", ifv: "قيمةٌ رآها المستخدم قبل أن تتغيّر" },
+    { op: "del", k: "Old key", ifv: "قديم" },
+    { op: "set", k: "x".repeat(CMLConst.TEXT_MAX + 1), v: "طويل" },
+    { op: "rule", en: "Zzq delete {count} chats?", ar: "احذف {count} محادثة؟" }] }, OPTIONS_SENDER);
+  var rp = (e4 && e4.report) || {};
+  check("★ الحذف المشروط لا يمسّ ما تغيّر، والطويلُ يُتخطّى، والقاعدة تُبنى في العامل",
+        "1/2/1/true/false/^Zzq delete (.+?) chats\\?$",
+        rp.del + "/" + rp.skipped + "/" + rp.rule + "/" + ("Keep me" in MOCK.localStore[OVD].ar) + "/" +
+        ("Old key" in MOCK.localStore[OVD].ar) + "/" + ((MOCK.localStore[PTD] || [])[0] || {}).re);
+  MOCK.localStore[CMLConst.K.SYNC_GEN] = 5;
+  var g1 = await send({ type: "terms-edit", d: "docs", lang: "ar", gen: 4, ops: [{ op: "set", k: "Stale key", v: "قديم" }] }, OPTIONS_SENDER);
+  var g2 = await send({ type: "terms-edit", d: "docs", lang: "ar", gen: 5, ops: [{ op: "set", k: "Fresh key", v: "طازج" }] }, OPTIONS_SENDER);
+  check("★ أمرٌ بدأ على جيل إدارةٍ أقدم (إعادة ضبطٍ وقعت أثناء التأكيد) يُرفض ولا يُكتب", "stale/false/true/true",
+        (g1 && g1.error) + "/" + ("Stale key" in MOCK.localStore[OVD].ar) + "/" + !!(g2 && g2.ok) + "/" + ("Fresh key" in MOCK.localStore[OVD].ar));
+  var capOps = [];
+  for (var ci = 0; ci < 3; ci++) capOps.push({ op: "set", k: "Cap " + ci, v: "س" + ci, cap: 1 });
+  var capRes = CMLShared.applyTermEdits({ ar: { a: "أ" } }, [], "ar", capOps.concat([{ op: "set", k: "a", v: "أأ", cap: 1 }]),
+                                        { maxTerms: 2 });
+  check("السقف على الجديد لا على تحديث الموجود", "2/2/أأ",
+        capRes.report.set + "/" + capRes.report.capped + "/" + capRes.overrides.ar.a);
+
+  // ★ ميزانية ذاكرة الأوراق الحيّة: ورقةٌ جديدة لنطاقٍ تطرد الأقدمَ من أوراق غيره متى تجاوز
+  // المجموعُ الميزانية، ولا تمسّ شيئًا متى وسعها (البناء نفسه مُختبَرٌ في _livetest)
+  var realBuild = CMLRtl.buildLiveSheet, realBudget = CMLConst.RTL_LIVE_BUDGET_BYTES, realFetch = window.fetch;
+  CMLRtl.buildLiveSheet = function () { return { css: "b{}".repeat(200), stats: { flipped: 1 }, rules: 1 }; };
+  window.fetch = function () { return Promise.resolve(new Response("a{margin-left:1px}", { status: 200 })); };
+  var DOCS_LIVE = CMLConst.key(CMLConst.K.RTL_LIVE, "docs"), APP_LIVE = CMLConst.key(CMLConst.K.RTL_LIVE, "app");
+  CMLConst.RTL_LIVE_BUDGET_BYTES = 2000;
+  MOCK.localStore[DOCS_LIVE] = { fp: "d", css: "d{}".repeat(300), at: 1, bytes: 900 };
+  var r7 = await send({ type: "rtlcss", fp: "fp-a", sheets: [{ url: "https://claude.ai/a.css", media: "" }] }, CONTENT_SENDER);
+  check("ورقةٌ تسعها الميزانية مع غيرها: تُحفظ ولا يُطرد شيء", "true/true/true",
+        !!(r7 && r7.stored) + "/" + !!MOCK.localStore[APP_LIVE] + "/" + !!MOCK.localStore[DOCS_LIVE]);
+  var fpA = (MOCK.localStore[APP_LIVE] || {}).fp;   // البصمة يحسبها العامل من الأوراق لا من الطالب
+  CMLConst.RTL_LIVE_BUDGET_BYTES = 1000;
+  var r8 = await send({ type: "rtlcss", fp: "fp-b", sheets: [{ url: "https://claude.ai/b.css", media: "" }] }, CONTENT_SENDER);
+  check("★ تجاوزُ الميزانية: تُطرد ورقةُ النطاق الأقدم وتُحفظ الجديدة", "true/true/false",
+        !!(r8 && r8.stored) + "/" + ((MOCK.localStore[APP_LIVE] || {}).fp !== fpA) + "/" + (DOCS_LIVE in MOCK.localStore));
+  CMLRtl.buildLiveSheet = realBuild; CMLConst.RTL_LIVE_BUDGET_BYTES = realBudget; window.fetch = realFetch;
+
+  // ══ ٧) نسخة الخط العربي: العامل كاتبها الوحيد ══
+  var K = CMLConst.K, CAIRO = CMLConst.fontResolve(undefined), FFETCH = [];
+  // ملفات الخطوط من الحزمة نفسها (getURL) تُقرأ من مجلد الإضافة الحقيقي — وما سواها لا شبكة
+  window.fetch = function (u) {
+    var s2 = String(u), pre = "chrome-extension://" + EXT_ID + "/";
+    FFETCH.push(s2);
+    if (s2.indexOf(pre + "fonts/") === 0) return REAL_FETCH("../extension/" + s2.slice(pre.length));
+    return Promise.reject(new Error("لا شبكة في الاختبار"));
+  };
+  function fdata() { return MOCK.localStore[K.FONT_DATA]; }
+  // سلسلة العامل (fontChain): ما يطلقه حدثٌ ينضمّ إليها في الحال، فانتظارها مرتين يغطي دورًا أطلقته كتابةُ الدور السابق
+  function settle() { return window.fontChain.then(function () { return window.fontChain; }); }
+  function decoded(d) { try { var u = new Uint8Array(CMLShared.b64ToBuf(d.b64)); return String.fromCharCode(u[0], u[1], u[2], u[3]) + "/" + u.length; } catch (e) { return "x"; } }
+  check("العامل سجّل onInstalled وonStartup", "1/1", LISTENERS.installed.length + "/" + LISTENERS.startup.length);
+  LISTENERS.installed[0]({ reason: "install" });
+  await settle();
+  check("★ onInstalled يكتب نسخة الافتراضي: المعرّف والبصمة، والبايتات المفكوكة wOF2 بطول الفهرس", "cairo/" + CAIRO.sha + "/wOF2/" + CAIRO.bytes,
+    fdata() && (fdata().id + "/" + fdata().v + "/" + decoded(fdata())));
+  MOCK.chrome.storage.local.set({ cml_font: CMLConst.FONT_SITE });
+  await settle();
+  check("★ «خط الموقع» يحذف النسخة", "false", K.FONT_DATA in MOCK.localStore);
+  MOCK.chrome.storage.local.set({ cml_font: "zz-not-in-catalogue" });
+  await settle();
+  check("معرّفٌ مجهول يُحسم إلى الافتراضي", "cairo", fdata() && fdata().id);
+  MOCK.localStore[K.FONT_DATA] = { id: "cairo", v: "ffffffffffffffff", b64: "AAAA" };
+  MOCK.fireChanged({ cml_font_data: { newValue: MOCK.localStore[K.FONT_DATA] } }, "local");
+  await settle();
+  check("بصمةٌ مختلفة تعيد الكتابة", CAIRO.sha + "/true", fdata().v + "/" + (fdata().b64.length === Math.ceil(CAIRO.bytes / 3) * 4));
+  MOCK.localStore[K.FONT_DATA] = { id: "cairo", v: CAIRO.sha, err: "file" };
+  var nf0 = FFETCH.length;
+  MOCK.fireChanged({ cml_font_data: { newValue: MOCK.localStore[K.FONT_DATA] } }, "local");
+  await settle();
+  check("★ سجلُّ err لا يُعاد على البصمة نفسها من تلقاء نفسه (لا جلب)", "file/0", fdata().err + "/" + (FFETCH.length - nf0));
+  var BAD_SENDER = { id: EXT_ID, url: "https://evil.example/x", origin: "https://evil.example", tab: { id: 11 } };
+  var fe0 = await send({ type: "font-ensure" }, BAD_SENDER);
+  await settle();
+  check("★ font-ensure من مرسلٍ غير مأذون يُتجاهل", "null/file/0", String(fe0) + "/" + fdata().err + "/" + (FFETCH.length - nf0));
+  var fe1 = await send({ type: "font-ensure" }, CONTENT_SENDER);
+  check("★ وfont-ensure من تبويبٍ في نطاقٍ معروف يعيده، والردّ بلا حمولة", '{"ok":true}/true/undefined',
+    JSON.stringify(fe1) + "/" + (typeof fdata().b64 === "string") + "/" + fdata().err);
+  var nf1 = FFETCH.length;
+  var fe2 = await send({ type: "font-ensure" }, OPTIONS_SENDER);
+  check("ومن صفحة الإعدادات («إعادة المحاولة») يُقبل، ولا يُعاد جلبُ نسخةٍ سليمة", '{"ok":true}/0', JSON.stringify(fe2) + "/" + (FFETCH.length - nf1));
+  // ★ (المراجعة العدائية S6-B) نسخةٌ بالطول الصحيح وبايتاتٍ تالفة (المعرّف والبصمة صحيحان): onChanged لا يعيدها، وfont-ensure
+  // (المحرّك رفضها) يتحقق من بصمة بايتاتها فيعيد الجلب — وكانت تبقى تالفةً أبدًا
+  var goodB64 = fdata().b64;
+  MOCK.localStore[K.FONT_DATA] = { id: "cairo", v: CAIRO.sha, b64: new Array(goodB64.length + 1).join("A") };
+  var nf2 = FFETCH.length;
+  MOCK.fireChanged({ cml_font_data: { newValue: MOCK.localStore[K.FONT_DATA] } }, "local");
+  await settle();
+  var stillBad = fdata().b64 !== goodB64;
+  var fe3 = await send({ type: "font-ensure" }, CONTENT_SENDER);
+  await settle();
+  check("★ نسخةٌ تامّة الطول تالفة البايتات: font-ensure يتحقق من بصمتها فيعيد جلبها وكتابتها", '{"ok":true}/true/1/true',
+    JSON.stringify(fe3) + "/" + stillBad + "/" + (FFETCH.length - nf2) + "/" + (fdata().b64 === goodB64));
+  var wn0 = MOCK.localWrites.length;
+  MOCK.chrome.storage.local.set({ cml_font: "noto-naskh-arabic" });
+  MOCK.chrome.storage.local.set({ cml_font: "markazi-text" });
+  await settle();
+  var fw = MOCK.localWrites.slice(wn0).filter(function (w) { return w[K.FONT_DATA]; }).map(function (w) { return w[K.FONT_DATA].id + (w[K.FONT_DATA].b64 ? "" : "!"); });
+  check("★ تغييران سريعان: الكتابات متسلسلة وتنتهي إلى الأخير", "markazi-text/markazi-text/true",
+    fdata().id + "/" + fw[fw.length - 1] + "/" + fw.every(function (x) { return x.indexOf("!") < 0; }));
+  // إعادة الضبط تحذف المفتاحين (والمتصفح يبثّ الحذف): تُعاد الكتابة بالافتراضي
+  delete MOCK.localStore[K.FONT]; delete MOCK.localStore[K.FONT_DATA];
+  MOCK.fireChanged({ cml_font: { oldValue: "markazi-text" }, cml_font_data: { oldValue: {} } }, "local");
+  await settle();
+  check("★ بعد إعادة الضبط تُعاد كتابة النسخة (الافتراضي)", "cairo", fdata() && fdata().id);
+
+  // ★ التخزين القريب من الامتلاء (م٢): الأوراق الحيّة تملأ ميزانية cache ⇒ تُطرد الأقدم وتُكتب النسخة
+  var DOCS_LV = CMLConst.key(K.RTL_LIVE, "docs"), APP_LV = CMLConst.key(K.RTL_LIVE, "app");
+  var budget0 = CMLConst.RTL_LIVE_BUDGET_BYTES;
+  CMLConst.RTL_LIVE_BUDGET_BYTES = 200000;
+  MOCK.localStore[DOCS_LV] = { fp: "d", css: "d{}", at: 1, bytes: 60000 };
+  MOCK.localStore[APP_LV] = { fp: "a", css: "a{}", at: 2, bytes: 60000 };
+  delete MOCK.localStore[K.FONT_DATA];
+  MOCK.chrome.storage.local.set({ cml_font: "noto-naskh-arabic" });
+  await settle();
+  check("★ أوراقٌ حيّة تملأ ميزانية cache مع النسخة: تُطرد الأقدم وحدها وتُكتب النسخة", "noto-naskh-arabic/false/true",
+    (fdata() && fdata().id) + "/" + (DOCS_LV in MOCK.localStore) + "/" + (APP_LV in MOCK.localStore));
+  CMLConst.RTL_LIVE_BUDGET_BYTES = budget0;
+  // ★ تخزينٌ ممتلئ ببيانات صنف data: حصّةٌ مقلَّدة على المجموع (كخطأ QUOTA_BYTES في المتصفح، والرفض ذرّي)
+  var realSet = MOCK.chrome.storage.local.set, QUOTA = 0;
+  function used(extra) {
+    var t = 0, k2, all = Object.assign({}, MOCK.localStore, extra || {});
+    for (k2 in all) if (all[k2] !== undefined) t += k2.length + JSON.stringify(all[k2]).length;
+    return t;
+  }
+  MOCK.chrome.storage.local.set = function (obj, cb) {
+    if (used(obj) > QUOTA) {
+      // كما في المتصفح: الردّ لاحقٌ (لا متداخلٌ في نداء الكتابة)، وlastError منصوبٌ أثناءه وحده
+      setTimeout(function () {
+        MOCK.chrome.runtime.lastError = { message: "QUOTA_BYTES quota exceeded" };
+        try { if (cb) cb(); } finally { MOCK.chrome.runtime.lastError = undefined; }
+      }, 0);
+      return;
+    }
+    return realSet(obj, function () { setTimeout(function () { if (cb) cb(); }, 0); });
+  };
+  var OV = { ar: {} };
+  for (var oi = 0; oi < 1500; oi++) OV.ar["Zq data term " + oi] = "مصطلحٌ للاختبار رقم " + oi;
+  MOCK.localStore.cml_overrides = OV;
+  var ovBefore = JSON.stringify(MOCK.localStore.cml_overrides);
+  var cairoChars = Math.ceil(CAIRO.bytes / 3) * 4;
+  MOCK.localStore.cml_font = "cairo";
+  MOCK.localStore[APP_LV] = { fp: "a", css: "a{}", at: 2, bytes: 20000, pad: new Array(20001).join("x") };
+  delete MOCK.localStore[K.FONT_DATA];
+  QUOTA = used() + cairoChars - 5000;   // لا تسع النسخة إلا بطرد الأوراق
+  await ensureFontCache();
+  check("★ امتلاءٌ يسعه طرد الأوراق كلها: تُطرد وتُكتب النسخة، وبيانات data كما هي بايتًا بايتًا", "cairo/true/false/true",
+    (fdata() && fdata().id) + "/" + (typeof (fdata() || {}).b64 === "string") + "/" + (APP_LV in MOCK.localStore) + "/" +
+    (JSON.stringify(MOCK.localStore.cml_overrides) === ovBefore));
+  MOCK.localStore[APP_LV] = { fp: "a", css: "a{}", at: 2, bytes: 20000, pad: new Array(20001).join("x") };
+  delete MOCK.localStore[K.FONT_DATA];
+  QUOTA = used() - 20000 + cairoChars - 5000;   // ولا يسعها ولو طُردت الأوراق
+  await ensureFontCache();
+  check("★ امتلاءٌ لا يسعه شيء: سجلّ err quota، والأوراق مطرودة، وبيانات data كما هي بايتًا بايتًا", "quota/false/true",
+    (fdata() && fdata().err) + "/" + (APP_LV in MOCK.localStore) + "/" + (JSON.stringify(MOCK.localStore.cml_overrides) === ovBefore));
+  MOCK.chrome.storage.local.set = realSet;
+  delete MOCK.localStore.cml_overrides;
+  window.fetch = realFetch;
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "swmsg " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "SWMSG: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

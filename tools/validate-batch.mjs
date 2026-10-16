@@ -1,8 +1,16 @@
 // validate-batch.mjs — تحقّقٌ آليٌّ من دفعة ترجمة قبل دمجها: كل سطرٍ في المدخل له زوجٌ واحد
 // بنصٍّ إنجليزي حرفي، والمتغيّرات والوسوم في العربية هي نفسها في الإنجليزية، ولا ترجمة فارغة.
 //   node validate-batch.mjs <chunk.txt> <out.json>     → يطبع الملخّص ويخرج 1 عند أي خلل
+//   node validate-batch.mjs --mode=block <todo.json> <out.json>   → دفعة كتل المتون (validate-blocks.mjs)
 import fs from "node:fs";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
+if (process.argv.includes("--mode=block")) {
+  const r = spawnSync(process.execPath, [fileURLToPath(new URL("./validate-blocks.mjs", import.meta.url)),
+    ...process.argv.slice(2).filter((a) => a !== "--mode=block")], { stdio: "inherit" });
+  process.exit(r.status === null ? 1 : r.status);
+}
 const [chunkPath, outPath] = process.argv.slice(2);
 if (!chunkPath || !outPath) { console.error("الاستعمال: node validate-batch.mjs <chunk.txt> <out.json>"); process.exit(2); }
 const lines = fs.readFileSync(chunkPath, "utf8").split("\n").filter(Boolean);
@@ -27,7 +35,7 @@ for (const [i, p] of arr.entries()) {
   if (sig(p.en, TAGS) !== sig(p.ar, TAGS)) errors.push(`#${i}: وسوم مختلّة: ${p.en.slice(0, 60)}`);
   if (sig(p.en, ICU_KEYS) !== sig(p.ar, ICU_KEYS)) errors.push(`#${i}: فروع ICU مختلّة: ${p.en.slice(0, 60)}`);
   if ((p.en.match(/#/g) || []).length !== (p.ar.match(/#/g) || []).length && /plural/.test(p.en)) errors.push(`#${i}: عدد # مختلف: ${p.en.slice(0, 60)}`);
-  if (/[֐-׿]/.test(p.ar)) errors.push(`#${i}: حروف غير مسموحة`);
+  if (/[\u0590-\u05FF]/.test(p.ar)) errors.push(`#${i}: حروف غير مسموحة`);
 }
 const missing = lines.filter((l) => !seen.has(l));
 const extra = [...seen.keys()].filter((k) => !lines.includes(k));

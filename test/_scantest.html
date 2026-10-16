@@ -6,6 +6,8 @@
   <style>body{font-family:"Segoe UI",Tahoma,sans-serif;padding:24px;background:#faf9f7}
     pre{background:#fff;border:1px solid #e3e1dc;border-radius:8px;padding:12px;white-space:pre-wrap}
     b{color:#1f7a64}</style>
+  <!-- ★ (ر8-ب) ورقة الصفحة التي يجلبها «فحص الاتجاه» بعد فحص الترجمة -->
+  <link rel="stylesheet" href="assets/v1/sheet-Qw3Er5Ty.css">
 </head>
 <body>
   <h1>site-update scan test</h1>
@@ -22,14 +24,29 @@
     var MOCK = makeChromeMock({ session: false });
     window.__store = MOCK.localStore;
     window.chrome = MOCK.chrome;
+    // ★ (ر8-ب) مسجّل الجلب: كل طلبٍ يطلبه المحرّك بخياراته — فيُمتحن أن حزم الفحص وورقة «فحص الاتجاه» تُجلب بلا بيانات اعتماد
+    // (credentials:"omit"، مراجعة ر8-أ، F15)، وأن الجلب بها من أصل الصفحة نفسه ما زال يعمل
+    var FETCHES = [], realFetch = window.fetch;
+    window.fetch = function (u, o) {
+      FETCHES.push({ u: String(u && u.url || u), c: o && o.credentials });
+      return realFetch.apply(window, arguments);
+    };
   </script>
   <script src="../extension/cml-const.js"></script>
   <script src="../extension/cml-shared.js"></script>
+  <!-- ★ (ر8-ب) محرّك الاتجاه وبصمات تغطيته: لازمان لـ«فحص الاتجاه» (runRtlDoc) كما في مدخل التطبيق في المانيفست -->
+  <script src="../extension/cml-rtl.js"></script>
+  <script src="../extension/rtl-coverage.js"></script>
   <script src="../extension/dictionary.js"></script>
   <script src="../extension/engine.js"></script>
   <script>
-    // اطلب الفحص كما تفعل صفحة الإعدادات
-    setTimeout(function () { chrome.storage.local.set({ cml_scan_request: Date.now() }); }, 400);
+    // ★ (مراجعة كودكس ٢٢) طلبٌ لنطاقٍ آخر يُتجاهل قبل أي إقرار؛ ثم الطلب بصيغته الجديدة للتطبيق
+    var foreignIgnored = null;
+    setTimeout(function () { chrome.storage.local.set({ cml_scan_request: { d: "support", kind: "scan", at: Date.now(), id: "x1" } }); }, 300);
+    setTimeout(function () {
+      foreignIgnored = window.__store.cml_scan_result === undefined;
+      chrome.storage.local.set({ cml_scan_request: { d: "app", kind: "scan", at: Date.now(), id: "x2" } });
+    }, 800);
 
     var t0 = Date.now();
     var poll = setInterval(function () {
@@ -53,6 +70,11 @@
       ['New chat', 'Settings', 'Send', 'Cancel']
         .forEach(function (w) { check(list.indexOf(w) < 0, 'should be filtered (translated): ' + w); });
 
+      // ★ (ر8-د، N6) ما يبقى بالإنجليزية بقاعدة النطاق (L10N.keep من keep-en.json المتتبَّعة) مغطًّى لا «غير مترجَم»، وعددُه في النتيجة
+      ['Anthropic Console', 'Ayu Dark']
+        .forEach(function (w) { check(list.indexOf(w) < 0, 'kept-English name listed as missing: ' + w); });
+      check(r.kept === 2, 'kept count in the result: ' + r.kept);
+
       // التصنيف الذكي: نصّ فيه متغيّر يذهب إلى varList لا list
       check(vars.indexOf('Zzq delete {count} items now') >= 0, 'variable string not in varList');
       check(list.indexOf('Zzq delete {count} items now') < 0, 'variable string leaked into plain list');
@@ -71,6 +93,7 @@
       // محرف تحكّم بعد الفكّ ⇒ يُستبعد (الفكّ صار يقبله فوجب رفضه صراحة)
       check(!all.split('|').some(function (x) { return x.indexOf('Zzq control') === 0; }),
         'control character not rejected after decoding');
+      check(foreignIgnored === true, 'a request for another domain was not ignored');
       // ولا يظهر الهروب نصًّا خامًا في أي نتيجة
       check(all.indexOf('\\u2019') < 0 && all.indexOf('\\xe9') < 0, 'raw escape leaked into results');
 
@@ -79,12 +102,37 @@
       check(r.ghosts === 1, 'ghost 404 not counted as ghost: ' + r.ghosts);
       check(r.failed === 0, 'ghost wrongly counted as failed: ' + r.failed);
 
-      var total = pass + fails.length; // يُحسب لا يُثبَّت — مقامٌ يدويٌّ كذب لما زادت التحققات
-      document.getElementById('out').innerHTML =
-        '<b>SCAN: ' + pass + '/' + total + (fails.length ? ' — FAIL: ' + fails.join(' ; ') : ' — all pass') + '</b>' +
-        '<br>files crawled: ' + r.fetched + ' | strings found: ' + r.found +
-        '<br>plain: ' + list.length + ' | with variables: ' + vars.length;
-      document.title = 'scan ' + pass + '/' + total;
+      // ★ (ر8-ب) حزم الفحص كلها جُلبت بلا بيانات اعتماد (الملفات الأربعة والشبح)، والفحص أعلاه نجح بها من أصل الصفحة
+      var scanF = FETCHES.filter(function (f) { return /\.js$/.test(f.u); });
+      check(scanF.length >= 4 && scanF.every(function (f) { return f.c === 'omit'; }),
+        'scan fetches without credentials:"omit" (n=' + scanF.length + '): ' +
+        scanF.filter(function (f) { return f.c !== 'omit'; }).map(function (f) { return f.u.split('/').pop() + '=' + f.c; }).join(','));
+
+      // ★ (ر8-ب) ثم «فحص الاتجاه» (طبيب الاتجاه) في الصفحة نفسها بعد تحرير الحجز: يجلب ورقتها بلا بيانات اعتماد ويحلّلها —
+      // ولم يكن يمتحنه اختبارٌ قبل هذا
+      FETCHES.length = 0;
+      chrome.storage.local.set({ cml_rtldoc_request: { d: 'app', kind: 'rtl', at: Date.now(), id: 'x3' } });
+      var t1 = Date.now();
+      var poll2 = setInterval(function () {
+        var d = window.__store.cml_rtldoc_result;
+        if ((!d || d.status === 'running') && Date.now() - t1 < 15000) return;
+        clearInterval(poll2);
+        check(!!d && d.status === 'done' && d.files === 1 && d.failed === 0 && d.physical >= 4 && d.uncovered >= 4,
+          'rtl doctor did not fetch and parse the page sheet: ' +
+          JSON.stringify(d ? { status: d.status, files: d.files, failed: d.failed, physical: d.physical, uncovered: d.uncovered, error: d.error } : null));
+        var cssF = FETCHES.filter(function (f) { return /\.css$/.test(f.u); });
+        check(cssF.length === 1 && cssF[0].c === 'omit', 'rtl doctor fetch without credentials:"omit": ' + JSON.stringify(cssF));
+        report();
+      }, 200);
+
+      function report() {
+        var total = pass + fails.length; // يُحسب لا يُثبَّت — مقامٌ يدويٌّ كذب لما زادت التحققات
+        document.getElementById('out').innerHTML =
+          '<b>SCAN: ' + pass + '/' + total + (fails.length ? ' — FAIL: ' + fails.join(' ; ') : ' — all pass') + '</b>' +
+          '<br>files crawled: ' + r.fetched + ' | strings found: ' + r.found +
+          '<br>plain: ' + list.length + ' | with variables: ' + vars.length;
+        document.title = 'scan ' + pass + '/' + total;
+      }
     }, 300);
   </script>
 </body>

@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>إعدادات تعريب كلود للويب</title>
+  <!-- ★ (ر9-ج) اسم الإضافة المختصر بالقرار 100 (short_name في المانيفست)؛ وكان قبله اسم القرار 10، وقبلهما اسم 1.0.0 -->
+  <title>إعدادات تعريب كلود</title>
   <style>
     /* ══ الألوان ══
        --brand لون الأيقونة نفسه (#D97757). يُستعمل للتعبئة الصامتة: المفاتيح المفعّلة
@@ -34,12 +35,20 @@
     * { box-sizing: border-box; }
     body { margin:0; padding:24px 16px 60px; background:var(--bg); color:var(--fg);
       font-family:"Segoe UI",Tahoma,sans-serif; font-size:14px; line-height:1.6; }
-    .wrap { max-width:660px; margin:0 auto; }
+    .wrap { max-width:720px; margin:0 auto; }
     header h1 { font-size:20px; margin:0 0 2px; }
     header .sub { color:var(--mut); font-size:13px; margin:0 0 4px; }
     .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-top:16px; }
-    .card > h2 { font-size:15px; margin:0 0 4px; }
-    .card > .desc { color:var(--mut); font-size:12.5px; margin:0 0 10px; }
+    .card h2 { font-size:15px; margin:0; }
+    /* (ع١) الشرح الخافت أينما وقع في البطاقة — كانت «.card > .desc» لا تبلغ ما تحت غلاف،
+       فظهرت عشرة شروحٍ بخطّ المتن ولونه */
+    .card .desc { color:var(--mut); font-size:12.5px; margin:0 0 10px; }
+    /* رأس القسم: العنوان وشارة نطاقه («عام» أو «لهذا الموقع» أو «كل موقعٍ على حدة») */
+    .sechead { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin:0 0 6px; }
+    .scope { font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px; white-space:nowrap;
+             background:var(--tag-bg); color:var(--tag-fg); }
+    .scope.gen { background:var(--line); color:var(--fg); }
+    h3.sub { font-size:14px; margin:12px 0 4px; padding-top:12px; border-top:1px solid var(--line); }
     .row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-top:1px solid var(--line); }
     .row:first-of-type { border-top:none; }
     .row label { font-weight:600; }
@@ -48,16 +57,19 @@
     button:hover { border-color:var(--accent); }
     /* المعطَّل كان مطابقًا للمفعَّل تمامًا بمؤشر يدٍ — فيضغطه المستخدم ولا يفهم الصمت */
     button:disabled, button:disabled:hover { opacity:.55; cursor:not-allowed; border-color:var(--ctl); filter:none; }
+    select:disabled, input:disabled { opacity:.6; cursor:not-allowed; }
     .primary { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
     .primary:hover { filter:brightness(1.06); }
     .ghost { background:transparent; }
     .btnrow { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
-    .switch { position:relative; width:42px; height:24px; flex:none; }
+    .switch { position:relative; width:42px; height:24px; flex:none; display:inline-block; }
     .switch input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; }
+    .switch input:disabled { cursor:not-allowed; }
     .slider { position:absolute; inset:0; background:var(--ctl); border-radius:24px; transition:.2s; pointer-events:none; }
     .slider::before { content:""; position:absolute; height:18px; width:18px; right:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; }
     .switch input:checked + .slider { background:var(--brand); }  /* تعبئة بلا نصّ ⇒ لون الأيقونة نفسه */
     .switch input:checked + .slider::before { transform:translateX(-18px); }
+    .switch input:disabled + .slider { opacity:.5; }
     .switch input:focus-visible + .slider { outline:2px solid var(--brand); outline-offset:2px; }
     .status { color:var(--ok); font-size:12.5px; min-height:18px; margin-top:8px; }
     .status.err { color:var(--danger); } /* الخطأ والنجاح كانا لونًا واحدًا فلا يُميَّزان */
@@ -74,6 +86,7 @@
     .empty { color:var(--mut); font-size:12.5px; padding:8px 0; }
     /* بحث القاموس الأساسي: فاصل بين «تصحيحاتك» و«القاموس»، ووسمٌ يميّز مصدر السطر */
     .grp { font-size:12px; font-weight:700; color:var(--mut); padding:12px 0 4px; border-top:1px solid var(--line); margin-top:6px; }
+    .grp.dom { font-size:13px; color:var(--accent); border-top:2px solid var(--brand); }
     .grp:first-child { border-top:none; margin-top:0; }
     .tag { font-size:10.5px; font-weight:600; padding:1px 6px; border-radius:20px; white-space:nowrap;
            background:var(--line); color:var(--mut); margin-inline-start:6px; vertical-align:middle; }
@@ -84,190 +97,362 @@
     .donut { position:relative; width:76px; height:76px; flex:none; }
     .donut svg { transform:rotate(-90deg); display:block; }
     .donut circle { transition:stroke-dasharray .5s ease; }
+    /* (ع٢) قوسٌ طوله صفر بطرفٍ مستدير يُرسم نقطةً ملوّنة — القوس الصفري لا يُرسم أصلًا */
+    .donut circle.zero { visibility:hidden; }
     .donut .pct { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14.5px; }
     .cap { text-align:center; font-size:11.5px; color:var(--mut); margin-top:4px; }
-    /* دون ~520px كان صفُّ «إضافة تصحيح» وصفُّ البحث يفيضان فتُقصّ الصفحة من طرفها */
-    @media (max-width:520px) {
-      body { padding:16px 12px 48px; }
-      .row { flex-wrap:wrap; }
-      .row > input, .row > select, .row > textarea { flex:1 1 160px; min-width:0; }
-      .term { grid-template-columns:1fr; }
-      .term .acts { justify-content:flex-end; }
-    }
     .statTxt { font-size:12.5px; color:var(--mut); line-height:1.8; flex:1; min-width:210px; }
     .more { color:var(--mut); font-size:12px; padding:8px 0; }
     .danger { border-color:var(--danger); }
     .danger h2 { color:var(--danger); }
     .btn-danger { color:var(--danger); border-color:var(--danger); background:var(--danger-bg); }
     .about .privacy { color:var(--mut); font-size:12.5px; line-height:1.7; }
+    /* ★ (ر8-أ) قائمة المعاجم والمصادر في «حول»: مطويّةٌ افتراضيًّا فلا تطيل الصفحة، وبنودها تلتفّ فلا فيضان أفقيًّا على عرض الهاتف */
+    .about details.srcs { margin:0 0 1em; }
+    .about details.srcs summary { cursor:pointer; color:var(--fg); }
+    .about .srch { font-weight:600; color:var(--fg); margin:8px 0 2px; }
+    .about .srclist { margin:2px 0 6px; padding-inline-start:18px; }
+    .about .srclist li { padding:1px 0; overflow-wrap:anywhere; }
+    /* ★ (ر8-د2 — N7) «حول» بأقسامٍ معنونة قصيرة: قائمتا تعريفٍ (ما تفعله الإضافة، والخصوصية) بعمودين على الشاشة العريضة وبسطرين
+       على الهاتف (قاعدة الشاشة الضيقة أدناه)، وجدول الخطوط وأصحاب حقوقها؛ وسطر الحقوق اللاتيني يلتفّ ولا يفيض */
+    .about dl.facts { display:grid; grid-template-columns:max-content 1fr; gap:6px 14px; margin:4px 0 8px; color:var(--mut); font-size:12.5px; line-height:1.7; }
+    .about dl.facts dt { font-weight:600; color:var(--fg); }
+    .about dl.facts dd { margin:0; }
+    .about #fontHolders bdi { overflow-wrap:anywhere; }
     code { background:var(--bg); border:1px solid var(--line); border-radius:5px; padding:0 4px; }
     a { color:var(--accent); }
     .hidden { display:none !important; }
-    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
-    .modal { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; width:100%; max-width:560px; max-height:85vh; overflow:auto; box-shadow:0 8px 40px rgba(0,0,0,.25); }
-    .modal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
-    .modal-head h2 { margin:0; font-size:16px; }
-    .icon-btn { border:none; background:transparent; font-size:16px; cursor:pointer; padding:4px 8px; color:var(--mut); }
-    .icon-btn:hover { color:var(--fg); }
-    .modal-list { max-height:46vh; overflow:auto; margin-top:4px; }
-    /* قسم الاتجاه (RTL): خيارا المحرّك، وقائمة «فحص الاتجاه» */
+    /* الإخفاء المرئي وحده: تبقى التسمية لقارئ الشاشة (legend الحقول المجمّعة) */
+    .vh { position:absolute !important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+    /* قسمٌ لا ينطبق: يبقى في موضعه، وحقلُه معطَّل، وسببُه مكتوبٌ خارجه (يُقرأ بلوحة المفاتيح
+       عبر aria-describedby وفي وضع التصفّح معًا) — لا إخفاء صامت (قرار المالك) */
+    fieldset.fs { border:none; margin:0; padding:0; min-width:0; }
+    fieldset.fs:disabled > *:not(legend) { opacity:.55; }
+    .why-off { color:var(--fg); font-size:12.5px; margin:4px 0 10px; padding:6px 10px;
+               border-inline-start:3px solid var(--ctl); background:var(--bg); border-radius:4px; }
+    .gate { font-size:12.5px; margin:6px 0 8px; padding:8px 10px; border-radius:8px; border:1px solid var(--brand);
+            background:var(--tag-bg); color:var(--tag-fg); display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
     .engopt { display:flex; gap:10px; align-items:flex-start; padding:10px 0; border-top:1px solid var(--line); cursor:pointer; }
     .engopt:first-child { border-top:none; }
     /* أزرار الاختيار تسلم من قاعدة input العامة (حاشية وإطار يشوّهانها) */
     .engopt input { width:16px; height:16px; margin:3px 0 0; padding:0; border:none; background:none; flex:none; accent-color:var(--brand); }
     .engopt b { display:block; }
     .engopt .why { display:block; color:var(--mut); font-size:12.5px; }
+    /* بطاقة الخط العربي (DESIGN-fonts §٣.٢): سطر المعاينة بخطّ كل خيار — يلتفّ فلا فيضان على عرض الهاتف */
+    .fontopt > span { min-width:0; flex:1; }
+    .fontopt b .tag { font-weight:600; }
+    .fontsample { display:block; font-size:16px; line-height:1.9; overflow-wrap:anywhere; margin:2px 0; }
+    /* العريض داخل سطر المعاينة سطريٌّ: قاعدة «.engopt b» (كتلة) كانت تقسم المعاينة سطرين يبدأ ثانيهما بـ«·» */
+    .engopt .fontsample b { display:inline; }
+    .fontreach { list-style:none; margin:6px 0 0; padding:0; font-size:12.5px; }
+    .fontreach li { padding:3px 0; }
+    .fontreach li.bad { color:var(--danger); }
     .doclist { max-height:240px; overflow:auto; border:1px solid var(--line); border-radius:8px; padding:4px 10px; margin-top:8px; }
     .doclist .ditem { padding:5px 0; border-top:1px solid var(--line); font-size:12px; direction:ltr; text-align:start; unicode-bidi:plaintext; word-break:break-all; }
     .doclist .ditem:first-child { border-top:none; }
     /* قسم المزامنة: شريط سعة صغير — امتلاؤه نسبةُ اللقطة المرفوعة من سقف SYNC_TOTAL_BYTES */
     .syncbar { height:6px; background:var(--line); border-radius:6px; overflow:hidden; margin-top:8px; }
     .syncbar > div { height:100%; width:0; background:var(--brand); border-radius:6px; transition:width .4s ease; }
+    /* الجداول (المواقع، والفحص، والإحصاء، والمزامنة): صفٌّ لكل موقع، وعلى الهاتف يصير الصفُّ بطاقة */
+    table.grid { width:100%; border-collapse:collapse; font-size:12.5px; margin:4px 0 6px; }
+    table.grid th { text-align:start; font-weight:600; color:var(--mut); font-size:11.5px; padding:4px 6px; border-bottom:1px solid var(--line); }
+    table.grid td { padding:7px 6px; border-top:1px solid var(--line); vertical-align:middle; }
+    table.grid tr.sel td { background:var(--tag-bg); }
+    table.grid .host { color:var(--mut); font-size:11.5px; }
+    table.grid .where { color:var(--mut); font-size:11px; }
+    /* على خلفية الصفّ المختار (--tag-bg) لا يبلغ الخافتُ 4.5:1 في الفاتح (4.45) — فيُكتب بلون المتن */
+    table.grid tr.sel .host, table.grid tr.sel .where { color:var(--fg); }
+    table.grid select { padding:4px 6px; font-size:12.5px; }
+    table.grid td.num { white-space:nowrap; }
+    /* سطر التغطية المشحونة طويل («الصفحات المعرَّبة: … · المحصودة من الموقع: … · حصاد …») فيلتفّ — كان td.num بلا التفاف
+       فيفيض جدول «الكل» إلى 626 بكسل على عرض 375 ويجرّ الصفحة كلها أفقيًّا (S6-A §٧ البند ٥) */
+    table.grid td.cov { min-width:9em; overflow-wrap:anywhere; }
+    /* ★ (ر8-د2) جدول القاموس في «الكل» بأعمدته الثمانية: عنوانٌ يقول ما فيه (ويسمّيه لقارئ الشاشة)، واسمُ الموقع سطرٌ واحد،
+       وخطٌّ فاصل قبل أعمدة تصحيحاتك — كان الاسم يلتفّ سطرين على عرض 1000 فتلتبس الصفوف، و«الفقرات» تُقرأ عددَ فقرات المقالات */
+    #statsTable caption { caption-side:top; text-align:start; color:var(--mut); font-size:11.5px; padding:0 0 4px; }
+    /* ★ (ر8-د2، المراجعة) من 768 بكسل (حين تبلغ البطاقة عرضها الأقصى 720) لا من 561: باسمٍ لا يلتفّ يبلغ أدنى عرضٍ للجدول 567 بكسل،
+       فكان يفيض عن بطاقته بين 561 و630 ويجرّ الصفحة أفقيًّا (قِيس: 600/546 على عرض 561، و600/585 على 600؛ وفي HEAD لا فيض) */
+    @media (min-width:768px) {
+      #statsTable td:first-child { white-space:nowrap; }
+      #statsTable th:nth-child(6), #statsTable td:nth-child(6) { border-inline-start:1px solid var(--line); padding-inline-start:10px; }
+    }
+    .st-on { color:var(--ok); font-weight:600; }
+    .st-off { color:var(--mut); font-weight:600; }
+    .st-bad { color:var(--danger); font-weight:600; }
+    @media (max-width:560px) {
+      body { padding:16px 12px 48px; }
+      .row { flex-wrap:wrap; }
+      .row > input, .row > select, .row > textarea { flex:1 1 160px; min-width:0; }
+      .term { grid-template-columns:1fr; }
+      .term .acts { justify-content:flex-end; }
+      /* رأس الجدول يُطوى، وكل خليةٍ تحمل تسميتها (data-label) — وهي تُقرأ لقارئ الشاشة أيضًا */
+      table.grid thead { display:none; }
+      table.grid, table.grid tbody, table.grid tr, table.grid td { display:block; width:100%; }
+      table.grid tr { border:1px solid var(--line); border-radius:8px; margin:0 0 8px; padding:4px 8px; }
+      table.grid td { border-top:none; padding:4px 0; }
+      table.grid td[data-label]::before { content:attr(data-label) ": "; color:var(--mut); font-size:11px; }
+      table.grid td.num { white-space:normal; }
+      #statsTable caption { display:block; width:100%; }
+      .about dl.facts { grid-template-columns:1fr; gap:0; }
+      .about dl.facts dd { margin:0 0 8px; }
+    }
+    #domainSel { flex:1 1 220px; min-width:0; max-width:100%; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1 id="appName">تعريب كلود للويب</h1>
-      <p class="sub">إعدادات عرض واجهة claude.ai بالعربية</p>
+      <h1 id="appName">تعريب كلود (Claude) لنسخة الويب (غير رسمي)</h1>
+      <p class="sub">إعدادات عرض صفحات Claude بالعربية</p>
     </header>
 
-    <!-- General -->
-    <section class="card">
-      <!-- فخّ أذون المضيف منذ فايرفوكس 127: أذونُ المواقع لا تُمنح عند التثبيت،
-           فتُثبَّت الإضافة وتصمت على claude.ai صمتًا تامًّا والمستخدم لا يدري لماذا.
+    <!-- الموقع المختار: «المواقع كلها» أولًا وافتراضيًّا، ثم كل موقعٍ بعينه (من جدول النطاقات) -->
+    <section class="card" id="domainBar" style="padding:12px 16px">
+      <div class="row" style="border:none;padding:0;flex-wrap:wrap">
+        <label for="domainSel">الموقع</label>
+        <select id="domainSel" aria-describedby="domainNote"></select>
+      </div>
+      <p class="desc" id="domainNote" style="margin:6px 0 0"></p>
+    </section>
+
+    <!-- بطاقة الترحيب: مرةً واحدة بعد أول إقلاعٍ لـ2.0.0 (عدد المواقع من الجدول) -->
+    <section class="card hidden" id="welcomeBox" style="border-color:var(--brand)">
+      <h2 id="welcomeTitle">🎉 الآن يعمل التعريب في مواقع Claude</h2>
+      <p class="desc" id="welcomeLines" style="margin-top:6px"></p>
+      <!-- ★ (ر8-ب) «ما لا يُعرَّب» كما يُشحن 2.0.0، موافقًا قسم «ما لا تعرّبه» في README (مراجعة ر8-أ، F10): نصّ المحادثات ومُخرَجاتها
+           مستثنًى في المحرّك؛ والتعليمات البرمجية (pre وcode وkbd وsamp) لا تُمسّ؛ ومرجع الواجهة البرمجية يُعرَّب منه ما تعرّبه الشركة
+           وتبقى شجرة الخصائص والنماذج على أصلها (STL_KEEP في cml-const.js)؛ والأكاديمية لا يُعرَّب منها إلا واجهتها وعناوين الدورات
+           والدروس (ACADEMY_SKIP، القرار 69)؛ ومقالات وثائق Claude Code لم تُشحن (فهرس bodies/code فارغ، الحال §7 البند 21)؛ وما
+           غيّرته المواقع أو أضافته بعد الحصاد يبقى إنجليزيًّا حتى تحديثٍ للإضافة (آخر بنود «ما لا تعرّبه» في README).
+           ويفحص _optionstest الجملة الثانية على المشحون: إن شُحنت مقالات Claude Code أو مقالات الأكاديمية أخفق حتى تُحدَّث.
+           و«التعليمات البرمجية» لا «الشيفرة» (دليل الأسلوب §13) -->
+      <!-- ★ (ر8-د — N2) الجملة الثانية يكتبها renderWelcome من حال المواقع في جدول النطاقات (status.en)، فتوافق علامات «جزئي» في القائمة
+           أعلاها؛ والنصّ هنا احتياطٌ مطابقٌ لها اليوم (ومعه سياسة الاستخدام: الوثائق القانونية أربعٌ من خمس) -->
+      <p class="desc" id="welcomeKeep">
+        ما لا يُعرَّب: نصّ محادثاتك ومُخرَجاتها، والملفات المرفقة والمنزَّلة، والتعليمات البرمجية والأوامر، والصور والفيديو،
+        والصفحات خارج هذه المواقع، والخصائص والنماذج في مرجع الواجهة البرمجية.
+        <span id="welcomeKeepEn">وتبقى بالإنجليزية في هذا الإصدار سياسة الاستخدام في الوثائق القانونية، ومحتوى أكاديمية Claude عدا واجهتها
+        وعناوين الدورات والدروس، ومقالات وثائق Claude Code، وما غيّرته المواقع أو أضافته بعد إعداده.</span>
+      </p>
+      <!-- الخط العربي (DESIGN-fonts §٣.٤): اسم الافتراضي من الفهرس (C.FONT_DEFAULT) يملؤه renderWelcome -->
+      <p class="desc" id="welcomeFont"></p>
+      <div class="btnrow"><button class="primary" id="welcomeDismiss">حسنًا</button><button id="welcomeFontBtn">اختيار الخط</button></div>
+    </section>
+
+    <!-- ══ التشغيل: المفتاح الرئيس بوّابةٌ للمواقع كلها، والاتجاه العام ══ -->
+    <section class="card" id="runSection" data-sec="run">
+      <!-- فخّ أذونات المضيف منذ فايرفوكس 127: أذوناتُ المواقع لا تُمنح عند التثبيت،
+           فتُثبَّت الإضافة وتصمت على مواقع Claude صمتًا تامًّا والمستخدم لا يدري لماذا.
            اللوحة مخفية دائمًا، وoptions.js لا يُظهرها إلا في فايرفوكس ومتى كان
-           الإذن غير ممنوح — كروم يمنح الأذون تلقائيًّا فلا يراها أبدًا. -->
+           الإذن غير ممنوح — كروم يمنح الأذونات تلقائيًّا فلا يراها أبدًا. -->
       <div class="card hidden" id="ffPermBox" role="alert" style="border-color:var(--danger);margin:0 0 12px;padding:12px 14px">
         <h2 style="font-size:14px;margin:0 0 6px;color:var(--danger)">⚠ خطوة أخيرة ليعمل التعريب في فايرفوكس</h2>
         <p class="desc" style="margin:0 0 8px">
-          يعطّل فايرفوكس أذونَ المواقع افتراضيًّا عند تثبيت أي إضافة، ولذا <b>لن تعمل هذه
-          الإضافة على claude.ai</b> — لا ترجمة ولا اتجاه — حتى تمنحها الإذن بضغطة واحدة:
+          يعطّل فايرفوكس أذوناتِ المواقع افتراضيًّا عند تثبيت أي إضافة، ولذا <b>لن تعمل هذه
+          الإضافة على مواقع Claude</b> — لا ترجمة ولا اتجاه — حتى تمنحها الإذن بضغطة واحدة:
         </p>
         <div class="btnrow" style="margin-top:0">
-          <button class="primary" id="ffPermGrant">منح الإذن لموقع claude.ai</button>
+          <button class="primary" id="ffPermGrant">منح الإذن لمواقع Claude</button>
         </div>
       </div>
       <div class="status hidden" id="ffPermStatus" role="status" aria-live="polite" style="margin:0 0 8px"></div>
-      <h2>عام</h2>
+      <div class="sechead"><h2>التشغيل</h2><span class="scope gen">عام — لكل المواقع</span></div>
       <div class="row">
-        <label for="enabled">تفعيل التعريب</label>
-        <span class="switch"><input type="checkbox" id="enabled" aria-label="تفعيل التعريب"><span class="slider"></span></span>
+        <label for="enabled">تفعيل التعريب (المواقع كلها)</label>
+        <span class="switch"><input type="checkbox" id="enabled" aria-describedby="masterState"><span class="slider"></span></span>
+      </div>
+      <p class="desc" id="masterState" role="status" aria-live="polite" style="margin:-4px 0 6px"></p>
+      <div class="gate hidden" id="gateBar">
+        <span id="gateText">التعريب متوقّف في المواقع كلها، واختيارُ كل موقعٍ في جدول «المواقع» محفوظ، ويعود كما كان متى أعدت التشغيل.</span>
+      </div>
+      <div class="gate hidden" id="allOffBar">
+        <span id="allOffText">لا موقع مفعّل: المفتاح الرئيس مفعّل، لكن المواقع كلها متوقّفة في جدول «المواقع».</span>
+        <button id="enableAllSites" aria-describedby="allOffText">تفعيل المواقع كلها</button>
       </div>
       <div class="row">
         <label for="rtl">عكس اتجاه الصفحة (RTL)</label>
-        <span class="switch"><input type="checkbox" id="rtl" aria-label="عكس اتجاه الصفحة"><span class="slider"></span></span>
+        <span class="switch"><input type="checkbox" id="rtl"><span class="slider"></span></span>
       </div>
-      <div class="row">
-        <label for="chatrtl">ضبط اتجاه نص المحادثة</label>
-        <span class="switch"><input type="checkbox" id="chatrtl" aria-label="ضبط اتجاه نص المحادثة"><span class="slider"></span></span>
+      <div class="row" id="chatRow">
+        <label for="chatrtl" id="chatLabel">ضبط اتجاه نص المحادثة</label>
+        <span class="switch"><input type="checkbox" id="chatrtl" aria-describedby="chatWhy"><span class="slider"></span></span>
       </div>
+      <p class="why-off hidden" id="chatWhy"></p>
     </section>
 
-    <!-- قاموس التعريب: المصدر (قاموس الإضافة + ما يجلبه الفحص) وميزة التصحيح فوقه -->
-    <section class="card">
-      <h2>تحديث المصدر — فحص الموقع</h2>
+    <!-- ══ المواقع: صفٌّ لكل موقع — تشغيله وحاله الفعلية ══
+         ★ (ر8-د، ١ جمادى الأولى ١٤٤٨هـ — N3) بعد «التشغيل» مباشرةً (طلب المالك): الجدول كان يخلط أمرين، فمحرّك الاتجاه ومصدره انتقلا
+         جدولًا لكل موقع إلى قسم الاتجاه، وهنا التعريب وحاله وحدهما. ومساراتُ كل موقعٍ معزولةٌ اتجاهيًّا (options.js buildSites) -->
+    <section class="card" id="sitesSection" data-sec="sites">
+      <div class="sechead"><h2 id="sitesHead">المواقع</h2><span class="scope">كل موقعٍ على حدة</span></div>
       <p class="desc">
-        يتغيّر موقع claude.ai باستمرار وتُضاف إليه نصوص جديدة. يقرأ الفحص ملفات الموقع كلها
-        ويقارنها بالمصدر، فيقيس نسبة التغطية ويجلب <b>غير المترجَم</b> إلى «قاموس التعريب» أدناه —
-        حيث تجد النِّسَب والقائمة وأدوات الترجمة.
+        لكل موقعٍ مفتاحُ تعريبه. و«الحال» هي ما يجري فعلًا: المفتاح الرئيس أعلاه يوقف المواقع كلها
+        دون أن يمسّ اختيار كلٍّ منها.
       </p>
-      <p class="desc warn">
-        افتح تبويب <b>claude.ai</b> واتركه مفتوحًا، ثم اضغط «بدء الفحص». يستغرق دقيقة أو دقيقتين.
-      </p>
-      <div class="row" style="border:none;padding-top:2px">
-        <span class="count" id="scanCount">لم يُجرَ فحص بعد</span>
-        <span style="display:flex;gap:8px">
-          <button class="primary" id="startScan">بدء الفحص</button>
-          <button class="btn-danger hidden" id="cancelScan">إيقاف</button>
-        </span>
-      </div>
-      <div class="status" id="scanStatus" role="status" aria-live="polite"></div>
+      <!-- ★ (ر8-د2) اسمُ الجدول لقارئ الشاشة عنوانُ القسم (مراجعة ر8-د1، F7)، كجدول «لكل موقع» في قسم الاتجاه -->
+      <table class="grid" id="sitesTable" aria-labelledby="sitesHead">
+        <thead><tr><th scope="col">الموقع</th><th scope="col">التعريب</th><th scope="col">الحال</th></tr></thead>
+        <tbody id="sitesBody"></tbody>
+      </table>
+      <div class="status" id="sitesStatus" role="status" aria-live="polite"></div>
     </section>
 
-    <!-- الاتجاه (RTL): اختيار المحرّك + «فحص الاتجاه» نظير فحص الموقع أعلاه -->
-    <section class="card">
-      <h2>الاتجاه من اليمين إلى اليسار (RTL)</h2>
-      <p class="desc">
-        اختر كيف تُعكس الواجهة. يسري اختيارُك فورًا على تبويبات claude.ai المفتوحة،
-        ما دام «عكس اتجاه الصفحة (RTL)» مفعّلًا في «عام» أعلاه:
-      </p>
-      <div id="rtlEngineBox">
-        <label class="engopt">
-          <input type="radio" name="rtlEngine" id="rtlEngineV2" value="v2" aria-describedby="rtlEngineV2Why">
-          <span><b>الشامل — الموصى به</b>
-            <span class="why" id="rtlEngineV2Why">يعكس الواجهة كلها من اليمين إلى اليسار: القوائم والأزرار والأشرطة والمسافات. وتبقى التعليماتُ البرمجيةُ والمعادلاتُ من اليسار كما ينبغي. وكلما حدّث الموقعُ تصميمه أعادت الإضافة ضبط الاتجاه من ملفاته الجديدة تلقائيًّا، فلا يتخلّف الاتجاه عن الموقع.</span></span>
-        </label>
-        <label class="engopt">
-          <input type="radio" name="rtlEngine" id="rtlEngineV1" value="v1" aria-describedby="rtlEngineV1Why">
-          <span><b>المبسّط — للطوارئ</b>
-            <span class="why" id="rtlEngineV1Why">يصحّح المواضع الأساسية وحدها ويترك بقية الواجهة كما هي. لا تختره إلا إذا ظهر خللٌ في شاشةٍ ما ولم يزل بتحديث الإضافة.</span></span>
-        </label>
-      </div>
-      <div class="status" id="rtlEngineStatus" role="status" aria-live="polite"></div>
-      <p class="desc" id="rtlLiveInfo" style="margin-top:6px"></p>
-      <div class="btnrow">
-        <button id="rtlLiveRebuild" class="ghost">إعادة ضبط الاتجاه من الموقع</button>
-      </div>
+    <!-- ══ الخط العربي: خطٌّ واحدٌ للحروف العربية في المواقع كلها — عام (DESIGN-fonts §٣.٢، ق٣ أ) ══ -->
+    <section class="card" id="fontSection" data-sec="font">
+      <div class="sechead"><h2>الخط العربي</h2><span class="scope gen">عام — لكل المواقع</span></div>
+      <p class="desc">تُرسم الحروف العربية في مواقع Claude بالخط الذي تختاره هنا: الواجهةُ المعرَّبة والمقالات، وما يظهر بالعربية في محادثاتك وفي أجوبة مساعد وثائق Claude Code. وتبقى الحروف الإنجليزية والأرقام الغربية (0–9) والأيقونات بخطوط الموقع نفسه.</p>
+      <!-- ★ (ر8-ب) «لا يتطلّب أن تقرأ الإضافة…» لا «ولا تقرأ الإضافة نصّ محادثاتك»: الادّعاء نفسه الذي صحّحته مراجعة ر8-أ في «حول» (F1)
+           وفي PRIVACY.md ‏(F2) — مفتاح «ضبط اتجاه نص المحادثة» (مفعّلٌ افتراضيًّا) يقرأ نصّ الفقرة قراءةً عابرة ليحسم اتجاهها (setChatDir
+           في engine.js؛ القرار 16)، والخطُّ وحده لا يحتاج إلى قراءته -->
+      <p class="desc">والخطوط من مكتبة Google Fonts المفتوحة، محفوظةٌ داخل الإضافة نفسها: لا يُطلب شيءٌ من Google ولا من غيرها عند عرض الصفحات. ورسمُ محادثاتك بهذا الخط لا يتطلّب أن تقرأ الإضافة نصّها أو تحفظه؛ إنما يرسم متصفحك حروفه العربية بالخط المختار.</p>
+      <p class="why-off hidden" id="fontOffWhy">التعريب متوقّف في المواقع كلها، فلا يظهر الخط حتى تعيد تشغيله من قسم «التشغيل»، واختيارك محفوظ.</p>
+      <fieldset class="fs" id="fontFs" aria-describedby="fontOffWhy">
+        <legend class="vh">اختر الخط العربي</legend>
+        <div id="fontList"></div>
+      </fieldset>
+      <p class="desc" id="fontOrder">مرتّبةٌ بحسب طلبها في Google Fonts، وأكثرها طلبًا <bdi dir="ltr" id="fontDefaultName">Cairo</bdi>، فهو الافتراضي. وبعض أشهر الخطوط العربية ليس هنا لأنه بأوزانٍ ثابتة، فيضيع به العريض في claude.ai ووثائق المطوّرين.</p>
+      <p class="desc" id="fontSysNote">وإن اخترتَ «النظام» في «خط المحادثة» من إعدادات «المظهر» داخل claude.ai نفسه، بقي ما يرسمه الموقع بخطوط جهازك على حاله.</p>
+      <div class="status" id="fontStatus" role="status" aria-live="polite"></div>
+      <ul class="fontreach" id="fontReach" aria-label="حال الخط في المواقع المفتوحة"></ul>
+      <div class="btnrow hidden" id="fontRetryRow"><button id="fontRetry">إعادة المحاولة</button></div>
+    </section>
 
-      <h3 style="font-size:14px;margin:10px 0 4px;padding-top:12px;border-top:1px solid var(--line)">فحص الاتجاه</h3>
-      <p class="desc">
-        يقرأ ملفات تصميم الموقع ويُظهر ما استجدّ فيها ولم تعكسه الإضافة بعد — نظيرُ
-        «فحص الموقع» أعلاه، لكنه للاتجاه لا للترجمة.
+    <!-- ══ فحص الترجمة: لكل موقعٍ له ماسح، و«فحص المواقع كلها» بالتتابع ══ -->
+    <section class="card" id="scanSection" data-sec="scan">
+      <div class="sechead"><h2>فحص الترجمة — تحديث المصدر</h2><span class="scope" id="scanScope"></span></div>
+      <p class="desc" id="scanDesc">
+        تتغيّر المواقع وتُضاف إليها نصوص جديدة. يقرأ الفحص ملفات الموقع العامة ويقارنها بالقاموس،
+        فيقيس نسبة التغطية ويجلب <b>غير المترجَم</b> إلى «إدارة قاموس التعريب» أدناه لتترجمه.
       </p>
-      <p class="desc warn">
-        افتح تبويب <b>claude.ai</b> واتركه مفتوحًا، ثم اضغط «بدء فحص الاتجاه». يستغرق ثوانيَ معدودة.
-      </p>
-      <div class="row" style="border:none;padding-top:2px">
-        <span class="count" id="rtlDocCount">لم يُجرَ فحص بعد</span>
-        <button class="primary" id="startRtlDoc">بدء فحص الاتجاه</button>
-      </div>
-      <div class="status" id="rtlDocStatus" role="status" aria-live="polite"></div>
-      <div class="hidden" id="rtlDocBox">
-        <div class="doclist" id="rtlDocList"></div>
-        <p class="desc" style="margin-top:6px">
-          وجودُ هذه القائمة يعني أن الموقع غيّر شيئًا في تصميمه، وأن تحديثًا قادمًا للإضافة
-          سيشملها. وإلى حينه لا يتأثر إلا ما ذُكر هنا، وبقيةُ الواجهة تعمل كما ينبغي.
-          وإن أحببت الإسهام فأرسل هذه النتيجة إلى صاحب المشروع.
-        </p>
-        <div class="btnrow" style="margin-top:6px">
-          <button id="rtlDocExport">تنزيل النتيجة كاملة (JSON)</button>
+      <p class="why-off hidden" id="scanWhy"></p>
+      <p class="desc hidden" id="scanCover"></p>
+      <fieldset class="fs" id="scanFs" aria-describedby="scanWhy">
+        <legend class="vh">فحص الترجمة</legend>
+        <p class="desc warn" id="scanWarn"></p>
+        <table class="grid hidden" id="scanTable">
+          <thead><tr><th scope="col">الموقع</th><th scope="col">الفحص</th><th scope="col">النتيجة</th><th scope="col"><span class="vh">إجراء</span></th></tr></thead>
+          <tbody id="scanBody"></tbody>
+        </table>
+        <div class="row" style="border:none;padding-top:2px;flex-wrap:wrap">
+          <span class="count" id="scanCount">لم يُجرَ فحص بعد</span>
+          <span style="display:flex;gap:8px">
+            <button class="primary" id="startScan">بدء الفحص</button>
+            <button class="btn-danger hidden" id="cancelScan">إيقاف</button>
+          </span>
         </div>
-      </div>
+        <div class="status" id="scanStatus" role="status" aria-live="polite"></div>
+      </fieldset>
     </section>
 
-    <section class="card">
-      <h2>إدارة قاموس التعريب — المصدر وتحديثه</h2>
+    <!-- ══ الاتجاه: المحرّك الافتراضي (عام)، والورقة الحيّة وفحص الاتجاه لكل موقعٍ يملكهما ══ -->
+    <section class="card" id="rtlSection" data-sec="rtl">
+      <div class="sechead"><h2>الاتجاه من اليمين إلى اليسار (RTL)</h2><span class="scope" id="rtlScope"></span></div>
+      <p class="why-off hidden" id="rtlOffWhy">«عكس اتجاه الصفحة» متوقّف في قسم «التشغيل» أعلاه، فلا أثر لخيارات الاتجاه حتى تفعّله.</p>
+      <fieldset class="fs" id="rtlFs" aria-describedby="rtlOffWhy">
+        <legend class="vh">الاتجاه</legend>
+        <p class="desc">
+          المحرّك الافتراضي للمواقع كلها — يسري فورًا على تبويبات المواقع التي تتبعه،
+          ولكل موقعٍ أن يخالفه في جدول «لكل موقع» أدناه:
+        </p>
+        <div id="rtlEngineBox">
+          <label class="engopt">
+            <input type="radio" name="rtlEngine" id="rtlEngineV2" value="v2" aria-describedby="rtlEngineV2Why">
+            <span><b>الشامل — الموصى به</b>
+              <span class="why" id="rtlEngineV2Why">يعكس الواجهة كلها من اليمين إلى اليسار: القوائم والأزرار والأشرطة والمسافات، وتبقى التعليمات البرمجية والمعادلات من اليسار كما ينبغي.</span></span>
+          </label>
+          <label class="engopt">
+            <input type="radio" name="rtlEngine" id="rtlEngineV1" value="v1" aria-describedby="rtlEngineV1Why">
+            <span><b>المبسّط — للطوارئ</b>
+              <span class="why" id="rtlEngineV1Why">يصحّح المواضع الأساسية وحدها ويترك بقية الواجهة كما هي. لا تختره إلا إذا ظهر خللٌ ولم يزل بتحديث الإضافة؛ والأولى أن تختاره للموقع المعطوب وحده من جدول «لكل موقع» أدناه.</span></span>
+          </label>
+        </div>
+        <div class="status" id="rtlEngineStatus" role="status" aria-live="polite"></div>
+
+        <!-- ★ (ر8-د — N3) محرّك الاتجاه ومصدره لكل موقع (كانا عمودين في جدول «المواقع»): المعرّفات والمفاتيح كما كانت (siteEng_<موقع>
+             وcml_engine_site.<موقع>، وsiteDir_<موقع>)، وحقل القسم يعطّلها مع «عكس الاتجاه» -->
+        <h3 class="sub" id="rtlSitesHead">لكل موقع</h3>
+        <p class="desc">
+          «محرّك الاتجاه» يتبع الافتراضي أعلاه أو يخالفه في موقعٍ بعينه، و«الاتجاه من» مصدرُ ورقة العكس فيه:
+          ورقةٌ حيّة تُبنى من ملفات الموقع نفسه، أو لقطةٌ مشحونة مع الإضافة تُحدَّث مع كل إصدار.
+        </p>
+        <table class="grid" id="rtlSitesTable" aria-labelledby="rtlSitesHead">
+          <thead><tr><th scope="col">الموقع</th><th scope="col">محرّك الاتجاه</th><th scope="col">الاتجاه من</th></tr></thead>
+          <tbody id="rtlSitesBody"></tbody>
+        </table>
+        <div class="status" id="rtlSitesStatus" role="status" aria-live="polite"></div>
+
+        <h3 class="sub">ضبط الاتجاه من ملفات الموقع</h3>
+        <p class="why-off hidden" id="rtlLiveWhy"></p>
+        <div class="desc" id="rtlLiveInfo" style="line-height:1.9"></div>
+        <div class="btnrow" id="rtlLiveRow">
+          <button id="rtlLiveRebuild" class="ghost" aria-describedby="rtlLiveWhy">إعادة ضبط الاتجاه من الموقع</button>
+        </div>
+
+        <div id="rtlDocSection">
+          <h3 class="sub">فحص الاتجاه</h3>
+          <p class="desc">
+            يقرأ ملفات تصميم الموقع ويُظهر ما استجدّ فيها ولم تعكسه الإضافة بعد — نظيرُ
+            «فحص الترجمة»، لكنه للاتجاه لا للترجمة.
+          </p>
+          <p class="why-off hidden" id="rtlDocWhy"></p>
+          <fieldset class="fs" id="rtlDocFs" aria-describedby="rtlDocWhy">
+            <legend class="vh">فحص الاتجاه</legend>
+            <p class="desc warn" id="rtlDocWarn"></p>
+            <div class="row" style="border:none;padding-top:2px;flex-wrap:wrap">
+              <span class="count" id="rtlDocCount">لم يُجرَ فحص بعد</span>
+              <button class="primary" id="startRtlDoc">بدء فحص الاتجاه</button>
+            </div>
+            <div class="status" id="rtlDocStatus" role="status" aria-live="polite"></div>
+            <div class="hidden" id="rtlDocBox">
+              <div class="doclist" id="rtlDocList"></div>
+              <p class="desc" style="margin-top:6px">
+                وجودُ هذه القائمة يعني أن الموقع غيّر شيئًا في تصميمه، وأن تحديثًا قادمًا للإضافة
+                سيشملها. وإلى حينه لا يتأثر إلا ما ذُكر هنا، وبقيةُ الواجهة تعمل كما ينبغي.
+                وإن أحببت الإسهام فأرسل هذه النتيجة إلى صاحب المشروع.
+              </p>
+              <div class="btnrow" style="margin-top:6px">
+                <button id="rtlDocExport">تنزيل النتيجة كاملة (JSON)</button>
+              </div>
+            </div>
+          </fieldset>
+        </div>
+      </fieldset>
+    </section>
+
+    <!-- ══ قاموس التعريب: المصدر (قاموس الإضافة + ما يجلبه الفحص) وميزة التصحيح فوقه ══ -->
+    <section class="card" id="dictSection" data-sec="dict">
+      <div class="sechead"><h2>إدارة قاموس التعريب — المصدر وتحديثه</h2><span class="scope" id="dictScope"></span></div>
       <p class="desc">
         هذا مصدرُ التعريب كلُّه في مكان واحد، ويتكوّن من جزأين:
       </p>
       <ul class="desc" style="margin:6px 0 8px;padding-inline-start:20px;line-height:1.9">
-        <li><b>قاموس الإضافة</b> — بُني أثناء تطوير الإضافة بفحص ملفات الموقع وترجمتها، ويأتيك جاهزًا معها.</li>
-        <li><b>ما يجلبه الفحص عندك</b> — «تحديث المصدر» أعلاه يقرأ ملفات الموقع فيجد النصوص الجديدة <b>غير المترجَمة</b>، فتظهر هنا لتترجمها بالاستيراد أو مباشرةً سطرًا سطرًا.</li>
+        <li><b>قاموس الإضافة</b> — بُني أثناء تطويرها بقراءة ملفات المواقع وصفحاتها وترجمتها، ويأتيك جاهزًا معها.</li>
+        <li><b>ما يجلبه الفحص عندك</b> — «فحص الترجمة» أعلاه يجد النصوص الجديدة <b>غير المترجَمة</b> في المواقع التي لها فحص، فتظهر هنا لتترجمها بالاستيراد أو سطرًا سطرًا.</li>
       </ul>
       <p class="desc" style="margin-bottom:10px">
-        وفوق المصدر <b>ميزةُ التصحيح اليدوي</b>: عدّل أي ترجمة فيحلّ تعديلُك محلّها فورًا —
-        تصحيحُك ميزةٌ فوق المصدر، لا مصدرٌ ثالث.
+        وفوق المصدر <b>ميزةُ التصحيح اليدوي</b>: عدّل أي ترجمة فيحلّ تعديلُك محلّها فورًا،
+        فتصحيحُك طبقةٌ فوق المصدر لا مصدرٌ ثالث.
       </p>
 
-      <!-- نسبتا التغطية -->
+      <!-- نسبتا التغطية (في «الكل»: على المواقع المفحوصة وحدها)، وجدولُ كل موقع في «الكل» -->
+      <!-- (§٥-٤) الدائرتان لموقعٍ له فحص وحده؛ ولغيره سطرُ القاموس بلا دوائر فارغة -->
       <div class="stats" id="statsBox">
-        <div>
+        <div id="donutBoxT">
           <div class="donut">
             <svg width="76" height="76" viewBox="0 0 76 76" aria-hidden="true">
               <circle cx="38" cy="38" r="32" fill="none" stroke="var(--line)" stroke-width="9"/>
-              <circle id="donutT" cx="38" cy="38" r="32" fill="none" stroke="var(--brand)" stroke-width="9"
+              <circle id="donutT" class="zero" cx="38" cy="38" r="32" fill="none" stroke="var(--brand)" stroke-width="9"
                       stroke-linecap="round" stroke-dasharray="0 201.06"/>
             </svg>
             <div class="pct" id="pctT">؟</div>
           </div>
           <div class="cap">المترجَم</div>
         </div>
-        <div>
+        <div id="donutBoxU">
           <div class="donut">
             <svg width="76" height="76" viewBox="0 0 76 76" aria-hidden="true">
               <circle cx="38" cy="38" r="32" fill="none" stroke="var(--line)" stroke-width="9"/>
-              <circle id="donutU" cx="38" cy="38" r="32" fill="none" stroke="var(--danger)" stroke-width="9"
+              <circle id="donutU" class="zero" cx="38" cy="38" r="32" fill="none" stroke="var(--danger)" stroke-width="9"
                       stroke-linecap="round" stroke-dasharray="0 201.06"/>
             </svg>
             <div class="pct" id="pctU">؟</div>
@@ -276,13 +461,20 @@
         </div>
         <div class="statTxt" id="statLine">…</div>
       </div>
+      <table class="grid hidden" id="statsTable">
+        <caption>لكل موقع: حجم ترجمة الإضافة وتغطيتها، ثم ما صحّحته أنت فيه (تصحيحاتك وقواعدك وتصحيحات الفقرات).</caption>
+        <!-- ★ (ر8-د — N5) حجم الترجمة لكل موقع من البناء (dicts.<لغة>.counts): نصوص الواجهة وفقرات المقالات والكلمات العربية — كان «القاموس»
+             نصوصَ الواجهة وحدها فبدا claude.ai أكبرها. وأعمدة تصحيحاتك كما هي -->
+        <thead><tr><th scope="col">الموقع</th><th scope="col">نصوص الواجهة</th><th scope="col">فقرات المقالات</th><th scope="col">الكلمات</th><th scope="col">التغطية</th><th scope="col">تصحيحاتك</th><th scope="col">قواعدك</th><th scope="col">الفقرات</th></tr></thead>
+        <tbody id="statsBody"></tbody>
+      </table>
 
       <!-- مراجعة ما بعد التحديث: يظهر فقط متى صار لتصحيحاتك مقابلٌ في القاموس -->
       <div class="card hidden" id="reconBox" style="border-color:var(--brand);margin:0 0 12px;padding:12px 14px">
         <h2 style="font-size:14px;margin:0 0 6px">🔄 تصحيحاتك بعد تحديث الإضافة</h2>
         <p class="desc" style="margin:0 0 8px">
           <b>تصحيحاتك محفوظة ولم يمسّها التحديث</b> — فهي في تخزين متصفحك لا في ملفات الإضافة.
-          لكن بعضها صار له الآن مقابلٌ في قاموس الإضافة، وتصحيحُك يحلّ محلّه دائمًا. وهذه مراجعتك:
+          لكن بعضها أصبح له الآن مقابلٌ في قاموس الإضافة، وتصحيحُك يحلّ محلّه دائمًا. وإليك مراجعتها:
         </p>
         <div class="desc" id="reconLines" style="line-height:2"></div>
         <div class="btnrow" style="margin-top:8px">
@@ -290,7 +482,7 @@
           <button id="reconDropSame">حذف المطابقة</button>
           <button class="ghost" id="reconDismiss">إغلاق</button>
         </div>
-        <p class="desc" style="margin-top:8px;color:var(--mut)">
+        <p class="desc" style="margin-top:8px">
           لا يُحذف شيء إلا بضغطك. وقبل أي حذف، صدّر نسخةً من «تصدير تصحيحاتك فقط» أدناه.
         </p>
       </div>
@@ -298,12 +490,13 @@
       <!-- البحث والتصفية بالمصدر -->
       <div class="row" style="border:none;padding:0;gap:8px">
         <input id="termSearch" class="search" style="margin:0;flex:1" placeholder="ابحث بالعربية أو الإنجليزية…" aria-label="بحث في قاموس التعريب">
-        <select id="termFilter" aria-label="تصفية بحسب المصدر" style="flex:none">
+        <select id="termFilter" aria-label="تصفية بحسب المصدر" style="flex:0 1 auto;min-width:0;max-width:100%">
           <option value="all">الكل</option>
           <option value="dict">قاموس الإضافة (المترجَم)</option>
           <option value="missing">غير المترجَم (من الفحص)</option>
           <option value="mine">تصحيحاتك</option>
           <option value="diverged">تصحيحاتك المختلفة عن القاموس</option>
+          <option value="lex" id="termFilterLex" disabled>بحسب المعجم (غير متاح بعد)</option>
         </select>
       </div>
       <p class="desc" style="margin:6px 0 0">
@@ -314,18 +507,35 @@
       <div class="terms" id="termsList"></div>
       <div class="status" id="termsStatus" role="status" aria-live="polite"></div>
 
-      <!-- تصحيح يدوي سريع (ميزة، لا مصدر) -->
-      <div class="row" style="border:none;padding-top:8px;gap:8px">
+      <!-- تصحيح يدوي سريع (ميزة، لا مصدر) — في «الكل» يُختار الموقع صراحةً ولا يُفترض -->
+      <div class="row" style="border:none;padding-top:8px;gap:8px;flex-wrap:wrap">
+        <select id="newDomain" class="hidden" aria-label="الموقع الذي يُضاف إليه التصحيح" aria-describedby="newDomainNote"></select>
         <input id="newSrc" placeholder="النص الإنجليزي" aria-label="النص الإنجليزي" style="flex:1;direction:ltr;text-align:start">
         <input id="newDst" placeholder="ترجمتك" aria-label="ترجمتك" style="flex:1">
         <button class="primary" id="addTerm">إضافة تصحيح</button>
       </div>
+      <p class="desc hidden" id="newDomainNote" style="margin:0">في «المواقع كلها» اختر الموقع الذي يُضاف إليه التصحيح أولًا — فالتصحيح لموقعٍ بعينه.</p>
+
+      <!-- الملف بلا حقل موقع: يُسأل عن موقعه قبل الاستيراد (والافتراض الموقع المختار) -->
+      <div class="card hidden" id="importAsk" role="group" aria-labelledby="importAskT" style="border-color:var(--brand);margin:10px 0 0;padding:12px 14px">
+        <p id="importAskT" style="margin:0 0 8px;font-weight:600">هذا الملف لا يذكر موقعه. إلى أيّ موقعٍ يُستورد؟</p>
+        <div class="btnrow" style="margin-top:0">
+          <select id="importAskSel" aria-labelledby="importAskT"></select>
+          <button class="primary" id="importAskGo">متابعة</button>
+          <button class="ghost" id="importAskCancel">إلغاء</button>
+        </div>
+        <div class="status" id="importAskStatus" role="status" aria-live="polite"></div>
+      </div>
 
       <div class="btnrow" id="scanActions">
-        <button class="primary" id="scanExport">تنزيل أمر الترجمة</button>
+        <button class="primary" id="scanExport" aria-describedby="scanExportWhy">تنزيل أمر الترجمة</button>
         <button id="scanImportBtn">استيراد الترجمات</button>
         <input type="file" id="importTransFile" accept="application/json,.json" class="hidden" aria-hidden="true">
       </div>
+      <!-- أمرُ الترجمة يُبنى من نتيجة الفحص: في موقعٍ بلا فحص يُعطَّل زرُّه وسببُه هنا بجواره -->
+      <p class="why-off hidden" id="scanExportWhy" style="margin:6px 0 0"></p>
+      <!-- حالُ الاستيراد وأمر الترجمة بجوار زرّيهما (لا في بطاقة الفحص، وقد تكون معطّلة) -->
+      <div class="status" id="xferStatus" role="status" aria-live="polite" style="margin-top:4px"></div>
       <div class="btnrow">
         <button id="exportSrcBare">تصدير المصدر بلا ترجمة</button>
         <button id="exportSrcFull">تصدير المصدر مترجَمًا</button>
@@ -335,17 +545,18 @@
       <p class="desc" style="margin-top:8px">
         <b>تصدير المصدر بلا ترجمة</b>: كل النصوص الإنجليزية وحدها (حقل الترجمة فارغ) — لمن أراد
         <b>ترجمة المصدر من جديد</b> بأسلوبه، ثم يستورده هنا.<br>
-        <b>تصدير المصدر مترجَمًا</b>: النصوص مع ترجماتها كما هي عندك الآن (قاموس الإضافة + تصحيحاتك)
+        <b>تصدير المصدر مترجَمًا</b>: النصوص مع ترجماتها كما هي عندك الآن (قاموس الإضافة وتصحيحاتك)
         — للمراجعة، أو للنقل إلى جهاز آخر، أو للإسهام في مستودع المشروع.<br>
-        <b>تصدير تصحيحاتك فقط</b>: ما عدّلتَه أنت وحده، نسخةً احتياطية خفيفة.
-        <br><span style="color:var(--mut)">الملفات الثلاثة بصيغة واحدة يقبلها «استيراد الترجمات».</span>
+        <b>تصدير تصحيحاتك فقط</b>: ما عدّلتَه أنت وحده، ومعه تصحيحات الفقرات، نسخةً احتياطية خفيفة.<br>
+        <b>حذف كل تصحيحاتك</b>: تصحيحاتُ الواجهة والقواعد الذكية وتصحيحاتُ الفقرات معًا.
+        <br>والملفات كلها تحمل اسم موقعها (أو مواقعها في «المواقع كلها»)، بصيغةٍ واحدة يقبلها «استيراد الترجمات».
       </p>
       <details style="margin-top:10px">
         <summary class="desc" style="cursor:pointer">كيف أترجم ما جلبه الفحص؟</summary>
         <div class="desc" style="margin-top:6px">
-          ١) اضغط «تنزيل أمر الترجمة» فيُنزَّل ملف فيه <b>الأمر كاملًا</b> (التعليمات + النصوص غير المترجَمة).<br>
-          ٢) افتح محادثة في claude.ai وألصق محتوى الملف.<br>
-          ٣) احفظ ردّ كلود في ملف <code>.json</code> ثم اضغط «استيراد الترجمات».<br>
+          ١) اضغط «تنزيل أمر الترجمة» فيُنزَّل ملف فيه <b>الأمر كاملًا</b> (التعليمات والنصوص غير المترجَمة).<br>
+          ٢) افتح محادثة في Claude وألصق محتوى الملف.<br>
+          ٣) احفظ ردّ Claude في ملف <code>.json</code> ثم اضغط «استيراد الترجمات».<br>
           أو — للقليل منها — اختر «غير المترجَم» في التصفية أعلاه واكتب الترجمة في السطر نفسه.<br><br>
           <b>النصوص المتغيّرة</b> (مثل <code>Delete {count} chats?</code>) تُحوَّل عند الحفظ إلى
           <b>قواعد ذكية</b> تعمل مع كل القيم — فترجمة واحدة تكفي لكل الأعداد والأسماء.
@@ -354,17 +565,37 @@
       </details>
     </section>
 
-    <!-- تحديث المصدر: الفحص وحده -->
-    <!-- المزامنة الاختيارية (المرحلة ٦): تصحيحات المستخدم وقواعده فقط — الإعدادات محلية
-         لكل جهاز بقرار المشروع. المنطق كله في cml-sync.js يقوده sw.js؛ هذه الصفحة موافقةٌ
-         صريحة بلوحة شرح صادقة، وعرضُ حال cml_sync_state كما هي، وزرُّ مسحٍ مستقل. -->
-    <section class="card">
-      <h2>المزامنة بين أجهزتك (اختيارية)</h2>
+    <!-- ══ تصحيحات الفقرات (المرحلة ٢): للمواقع ذات المقالات — وفي غيرها معطّلةٌ بسببها ══ -->
+    <section class="card" id="blkSection" data-sec="blocks">
+      <div class="sechead"><h2>تصحيحات فقرات المقالات</h2><span class="scope" id="blkScope"></span></div>
+      <p class="desc">
+        لتصحيح فقرةٍ من مقالةٍ معرَّبة: حدّد نصًّا منها في الصفحة، ثم افتح قائمة الإضافة واضغط «جلب الفقرة المحدّدة».
+        وهنا ما صحّحته لتراجعه أو تحذفه. وإن فعّلت المزامنة انتقلت إلى أجهزتك <b>بأدنى أولوية</b>: تأخذ ما يبقى من السعة
+        بعد تصحيحات الواجهة، وما لا يسع يبقى على هذا الجهاز ويُرفع متى اتّسعت.
+      </p>
+      <p class="why-off hidden" id="blkWhy"></p>
+      <fieldset class="fs" id="blkFs" aria-describedby="blkWhy">
+        <legend class="vh">تصحيحات الفقرات</legend>
+        <div class="row" style="border:none;padding:0 0 8px">
+          <input id="blkSearch" placeholder="ابحث في نصّ تصحيحاتك" aria-label="ابحث في تصحيحات الفقرات" style="flex:1">
+        </div>
+        <div id="blkList"></div>
+        <p class="desc" id="blkCount" style="margin:8px 0 0"></p>
+        <div class="status" id="blkStatusO" role="status" aria-live="polite"></div>
+      </fieldset>
+    </section>
+
+    <!-- ══ المزامنة الاختيارية (المرحلة ٦): عامة بموافقةٍ واحدة، ولكل موقعٍ مساحته ══
+         تصحيحات المستخدم وقواعده فقط — الإعدادات محلية لكل جهاز بقرار المشروع. المنطق كله في
+         cml-sync.js يقوده sw.js؛ هذه الصفحة موافقةٌ صريحة بلوحة شرح صادقة، وعرضُ الحال كما هي،
+         وزرُّ مسحٍ مستقل. -->
+    <section class="card" id="syncSection" data-sec="sync">
+      <div class="sechead"><h2>المزامنة بين أجهزتك (اختيارية)</h2><span class="scope gen">عام — لكل المواقع</span></div>
 
       <div id="syncOff">
         <p class="desc">
           متوقّفة افتراضيًّا، ولا شيء يغادر جهازك ما دامت كذلك. إن فعّلتها انتقلت
-          <b>تصحيحاتُك وقواعدُك الذكية</b> — لا غير — بين أجهزتك عبر مزامنة كروم،
+          <b>تصحيحاتُك وقواعدُك الذكية وتصحيحاتُ الفقرات</b> في المواقع كلها — لا غير — بين أجهزتك عبر مزامنة كروم،
           فما صحّحته هنا ظهر هناك. أما إعداداتك (التفعيل والاتجاه ونحوهما) فتبقى
           لكل جهاز على حدة ولا تُرفع.
         </p>
@@ -376,7 +607,7 @@
         <div class="card hidden" id="syncConsent" style="border-color:var(--brand);margin:10px 0 4px;padding:12px 14px">
           <h2 style="font-size:14px;margin:0 0 8px">قبل التفعيل — هذا ما سيحدث بالضبط</h2>
           <ul class="desc" style="margin:0 0 10px;padding-inline-start:20px;line-height:1.9">
-            <li><b>ما الذي يُرفع:</b> تصحيحاتُك التي كتبتها بنفسك وقواعدُك الذكية — لا غير.</li>
+            <li><b>ما الذي يُرفع:</b> تصحيحاتُك التي كتبتها بنفسك وقواعدُك الذكية وتصحيحاتُ الفقرات — لا غير.</li>
             <li><b>إلى أين:</b> مساحة مزامنة كروم المرتبطة بحسابك في جوجل؛ وجوجل قد تطّلع
               عليه ما لم تفعّل عبارة مرور المزامنة في كروم نفسه.</li>
             <li><b>ما لا يُرفع أبدًا:</b> إعداداتك — تبقى لكل جهاز، ولا نتائج الفحص،
@@ -403,17 +634,16 @@
         <div class="btnrow">
           <button id="syncDisableBtn">إيقاف المزامنة</button>
         </div>
-        <p class="desc" style="margin-top:8px;color:var(--mut)">
+        <p class="desc" style="margin-top:8px">
           «إيقاف المزامنة» يوقف الرفع من هذا الجهاز <b>ولا يمسح ما رُفع سابقًا</b> إلى حسابك —
           فمسحُه بزرّ المسح أدناه، وهو يبقى لك بعد الإيقاف كما هو الآن.
         </p>
       </div>
+      <!-- حالُ مساحة كل موقع (الواجهة والفقرات)، والتطبيق منها — يُبرَز صفُّ الموقع المختار -->
+      <div id="syncDomainsLine"></div>
 
-      <!-- زرُّ المسح قسميٌّ عمدًا، خارج #syncOn و#syncOff جميعًا: كان داخل #syncOn وحده
-           فمن أوقف المزامنة اختفى عنه الزرُّ ولم يبقَ له سبيلٌ إلى محو ما رُفع —
-           وPRIVACY.md تأمره بضغطه، ولوحةُ الموافقة تَعِده باستقلاله عن زرّ الإيقاف.
-           فصار يُرى في الحالين، وحالُه (مفعَّل أو معطَّل) من سؤال مساحة المزامنة نفسها
-           عند كل رسم، لا من الحال المحلية التي قد تكذب. -->
+      <!-- زرُّ المسح قسميٌّ عمدًا، خارج #syncOn و#syncOff جميعًا: من أوقف المزامنة يبقى له
+           سبيلٌ إلى محو ما رُفع، وحالُه من سؤال مساحة المزامنة نفسها عند كل رسم. -->
       <div id="syncWipeBox" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
         <div class="btnrow" style="margin-top:0">
           <button class="btn-danger" id="syncWipeBtn">مسح ما رُفع من حسابك</button>
@@ -423,49 +653,177 @@
       <div class="status" id="syncStatus" role="status" aria-live="polite"></div>
     </section>
 
-    <section class="card danger">
-      <h2>إعادة الضبط</h2>
-      <!-- الصدق في حدّ الأثر: إعادة الضبط محليةٌ وحدها (RESET_KEYS مفاتيح local لا غير)،
-           فوعدُ «يعيد كل شيء لحالته الأولى» كان أوسعَ من فعلها — المرفوع إلى الحساب يبقى
-           ويعود كاملًا بمجرّد إعادة تفعيل المزامنة. فالنصّ يقول حدَّها، والخيارُ يوسّعها. -->
+    <!-- ══ إعادة الضبط: بنطاقين — موقعٌ واحد، أو كل شيء ══ -->
+    <section class="card danger" id="resetSection" data-sec="reset">
+      <div class="sechead"><h2>إعادة الضبط</h2><span class="scope" id="resetScope">لموقعٍ واحد أو للكل</span></div>
+      <!-- الصدق في حدّ الأثر: إعادة الضبط محليةٌ وحدها، والمرفوع إلى الحساب يبقى ويعود بإعادة
+           تفعيل المزامنة. فالنصّ يقول حدَّها، والخيارُ يوسّعها. -->
       <p class="desc">
-        يحذف من <b>هذا الجهاز</b> كل إعداداتك وتصحيحاتك والقواعد الذكية ونتيجة الفحص،
-        ويعيدها إلى حالتها الأولى، ولا يمكن التراجع عنه.
+        يحذف من <b>هذا الجهاز</b> ما تختاره ويعيده إلى حالته الأولى، ولا يمكن التراجع عنه.
         وهو <b>محليٌّ وحده</b>: لا يمسّ ما رُفع إلى مساحة مزامنة حسابك في جوجل — فإن كنت
-        فعّلت المزامنة يومًا عاد المرفوع كاملًا بمجرّد إعادة تفعيلها. ولمحوه معه علّم هذا الخيار:
+        فعّلت المزامنة يومًا عاد المرفوع بمجرّد تفعيلها. ولمحوه معه علّم هذا الخيار:
       </p>
       <label class="engopt" style="border-top:none;padding-top:2px">
         <input type="checkbox" id="resetWipeSync">
         <span><b>وامسح أيضًا ما رُفع إلى حسابك في جوجل</b>
-          <span class="why">يُمحى المرفوع أولًا بالطريقة نفسها التي يعمل بها زرّ «مسح ما رُفع من حسابك»؛ فإن تعذّر لم تُعَد الضبط ولم يُحذف من جهازك شيء. ونسخُ أجهزتك الأخرى المحلية لا تُمسّ.</span></span>
+          <span class="why">يُمحى المرفوع أولًا — لموقعٍ واحد: مساحتُه وحدها — بالطريقة نفسها التي يعمل بها زرّ «مسح ما رُفع من حسابك»؛ فإن تعذّر لم يُعَد الضبط ولم يُحذف من جهازك شيء. ونسخُ أجهزتك الأخرى المحلية لا تُمسّ.</span></span>
       </label>
-      <div class="row" style="border:none">
-        <label>إعادة ضبط كل الإعدادات</label>
-        <button class="btn-danger" id="resetAll">إعادة الضبط</button>
+      <div class="row" style="flex-wrap:wrap">
+        <label for="resetSiteSel" id="resetSiteLabel">إعادة ضبط موقعٍ واحد</label>
+        <span style="display:flex;gap:8px;flex-wrap:wrap">
+          <select id="resetSiteSel" aria-describedby="resetSiteNote"></select>
+          <button class="btn-danger" id="resetSite" aria-describedby="resetSiteNote">إعادة ضبط هذا الموقع</button>
+        </span>
+      </div>
+      <p class="desc" id="resetSiteNote" style="margin:0">
+        يحذف ما يخصّ الموقع المختار وحده: مفتاح تشغيله واختيار محرّكه، وتصحيحاتك وقواعدك وتصحيحات الفقرات فيه،
+        ونتائج فحصه وورقة اتجاهه. وتبقى المواقع الأخرى والإعدادات العامة كما هي.
+      </p>
+      <div class="row">
+        <label for="resetAll" id="resetAllLabel">إعادة ضبط كل شيء: المواقع كلها والإعدادات العامة</label>
+        <button class="btn-danger" id="resetAll">إعادة ضبط كل شيء</button>
       </div>
       <div class="status" id="dangerStatus" role="status" aria-live="polite" style="color:var(--danger)"></div>
     </section>
 
-    <!-- About + privacy -->
-    <section class="card about">
-      <h2>حول الإضافة والخصوصية</h2>
-      <p><strong id="aboutName">تعريب كلود للويب</strong> · <span id="aboutVersion">v—</span></p>
-      <p class="privacy"><b>كيف تعمل بالضبط:</b> تطابق الإضافة نصوص الواجهة بقاموس مضمَّن داخلها، فإن وجدت للنصّ ترجمةً كتبتها مكانه، وإلّا تركته كما هو. فهي تكتب <b>داخل</b> الصفحة ولا تأخذ منها شيئًا.</p>
-      <p class="privacy"><b>ولا تخزّن شيئًا مما يظهر على شاشتك ولا ترسله إلى أي جهة</b> — لا عناوين محادثاتك، ولا أسماء مشاريعك، ولا نصوص رسائلك. ونصّ المحادثات مستثنًى من الترجمة أصلًا فلا تلمسه. ولا تجمع بياناتٍ عنك ولا عن استعمالك؛ والطلبات الشبكية التي تفتحها الإضافة ثلاثة، كلها تقصد ملفات الموقع العامة وحدها (على claude.ai وanthropic.com حيث يقدّم الموقع ملفاته) ولا يُرسَل فيها شيءٌ من عندك: قراءةُ محرّك الاتجاه لملفات التنسيق تلقائيًّا (الفقرة الثالثة أدناه)، و«فحص الموقع» و«فحص الاتجاه» بضغطةٍ منك وحدك. والاستثناء الوحيد لمغادرة بياناتك جهازك: إن فعّلتَ المزامنة الاختيارية — وهي متوقّفة ما لم تُفعّلها أنت — حمل <b>كرومُ نفسُه</b> تصحيحاتِك وقواعدَك — دون إعداداتك ودون شيءٍ من محتواك أو محادثاتك — إلى حسابك في جوجل بمزامنته المعتادة، <b>وجوجل قد تطّلع عليها ما لم تفعّل عبارة مرور المزامنة في كروم نفسه</b>؛ وتبقى لك أزرار إيقافها ومسح ما رُفع.</p>
-      <p class="privacy">«تحديث المصدر — فحص الموقع» يجري <b>بضغطة منك وحدك</b>، ولا يقرأ إلا <b>ملفات claude.ai العامة</b> — وهي نفسها التي ينزّلها متصفحك لعرض الصفحة — ليستخرج منها نصوص الواجهة ويعرف ما لم يُترجَم. يقرأ الملفات نصًّا ولا يُنفَّذ منها شيء، ولا يمسّ صفحتك ولا محتواك، ولا يتصل بغير claude.ai وanthropic.com (حيث يقدّم الموقع ملفاته)، والنتيجة تبقى على جهازك.</p>
-      <p class="privacy"><b>عكسُ الاتجاه</b> يجري بملفّ تنسيقٍ داخل الإضافة. والمحرّك «الشامل» (الافتراضي) يعيد بناءه <b>تلقائيًّا</b> من ملفات تصميم الموقع العامة التي حمّلها متصفحك للصفحة نفسها — عند أول تشغيل وعند كل تغيّر في نسخة الموقع — ويحفظه على جهازك؛ واختيارُ المحرّك «المبسّط» أعلاه يوقف هذه القراءة التلقائية. و«فحص الاتجاه» يجري بضغطة منك وحدك فيقرأ <b>ملفات التصميم العامة نفسها</b> ليُظهر ما استجدّ ولم يُعكس بعد. ولا شيء من ذلك يقرأ محتوى محادثاتك ولا يرسله إلى أي جهة — فالأمر كله تنسيقُ عرضٍ يُطبَّق داخل صفحتك، ونتيجةُ الفحص تبقى على جهازك.</p>
-      <p class="privacy">الإذن الوحيد الذي تطلبه الإضافة هو <code>storage</code>، ووظيفته حفظ إعداداتك وتصحيحاتك على جهازك — وهي نفسها بابُ «المزامنة بين أجهزتك» الاختيارية أعلاه إن فعّلتها. ولا تطلب الوصول إلى أي موقع غير claude.ai؛ وعبارةُ كروم عند التثبيت «قراءة بياناتك وتغييرها على claude.ai» هي صيغتها المعيارية لكل إضافة تعمل داخل صفحة، ومعناها هنا أن الإضافة تكتب الترجمة داخل الصفحة.</p>
-      <p class="privacy"><b>🛡 ماذا يحدث لترجماتك عند تحديث الإضافة؟</b> <b>لا شيء — تبقى كما هي.</b> تصحيحاتك وترجماتك محفوظة في تخزين متصفحك لا في ملفات الإضافة، والتحديث يستبدل الملفات ولا يمسّ التخزين. ولا يوجد في هذه الإضافة سطرٌ واحد يحذف تصحيحًا إلا بضغطة صريحة منك («حذف كل تصحيحاتك» أو «إعادة الضبط»).<br>
-        وتصحيحك <b>يحلّ محلّ القاموس دائمًا</b> — فلو ترجمتَ نصًّا ثم جاء التحديث بترجمة له، بقيت ترجمتُك أنت هي الظاهرة. ولئلا يظلّ تصحيحك يحجب تحسينًا لاحقًا وأنت لا تدري، تظهر لك بعد التحديث لوحةُ <b>«تصحيحاتك بعد تحديث الإضافة»</b> في «قاموس التعريب» أعلاه: تعرض ما صار مطابقًا للقاموس (فلا فائدة منه) وما يخالفه (فالقرار قرارك)، ولا تحذف شيئًا إلا بأمرك.<br>
-        <span style="color:var(--mut)">وللاطمئنان التامّ قبل أي تحديث: «تصدير تصحيحاتك فقط» يحفظ جهدك في ملف تستعيده متى شئت.</span></p>
-      <p class="privacy"><b>كيف أُنجز التعريب:</b> مصدرُه جزآن — <b>قاموس الإضافة</b> الذي بُني أثناء تطويرها بفحص ملفات الموقع وترجمتها بمساعدة <b>Claude Code</b> (أداة Anthropic للبرمجة بالذكاء الاصطناعي) على قواعد مصطلحية ثابتة وضعها صاحب المشروع، ومصطلحاتُه مُسنَدة إلى <b>معجم البيانات والذكاء الاصطناعي</b> (مجمع الملك سلمان العالمي للغة العربية وسدايا، الإصدار الثالث) حيث وافق سياقَ الواجهة، مع تدقيق آلي ومراجعة لكل نصّ، و<b>ما يجلبه الفحص عندك</b> من نصوص الموقع الجديدة فتترجمها أنت. ومع ذلك تبقى في الترجمة أخطاء ولا بدّ — <b>ولهذا صُنعت ميزة التصحيح</b> في «قاموس التعريب»: ما استُشكل عليك صحّحه لنفسك في أي وقت، أو اقترحه للجميع في مستودع المشروع.</p>
-      <p class="privacy"><b>📖 مفتوحة المصدر — التعليمات البرمجية والقاموس كاملين:</b><br>
-        <a href="https://github.com/al-ashalash/claude-ai-arabic-chrome" target="_blank" rel="noopener" dir="ltr">github.com/al-ashalash/claude-ai-arabic-chrome</a><br>
-        وصفحتها في <a href="https://chromewebstore.google.com/detail/ilebkilcahbijffokjmlakbocdjkojbe" target="_blank" rel="noopener">متجر Chrome</a> (التحديثات تصلك منه تلقائيًّا).<br>
-        كلُّ سطر من هذه الإضافة معروض للقراءة والتدقيق — فما قلناه عن الخصوصية يمكنك التحقق منه بنفسك لا أن تأخذه تصديقًا.
-        هل وجدتَ ترجمةً خاطئة أو أردتَ اقتراح تحسين؟ صحّحه لنفسك من «إدارة قاموس التعريب» أعلاه،
-        أو اقترحه للجميع من <a href="https://github.com/al-ashalash/claude-ai-arabic-chrome/issues/new/choose" target="_blank" rel="noopener">صفحة البلاغات والاقتراحات</a> — بنموذجٍ جاهز لتصحيح الترجمة أو الإبلاغ عن خلل.</p>
+    <!-- ══ حول الإضافة والخصوصية — نصٌّ صادق: المواقع والمضيفات تُملأ من جدول النطاقات ══
+         ★ (ر8-د2، ٢ جمادى الأولى ١٤٤٨هـ — N7) أقسامٌ قصيرة معنونة بدل الفقرات الطويلة المتتابعة، ولم يُحذف منها خبرٌ ولا مصدرٌ ولا رخصة:
+         ما تفعله الإضافة، والخصوصية، وما لا تعرّبه، وتصحيحاتك عند التحديث، والمصادر، والخطوط وتراخيصها، والإصدار والرخصة، والتواصل.
+         وقائمتا المصادر في ‎#lexSources‎ كما كانتا حرفًا (يفحصهما check-sources.mjs، ويعدّ _optionstest العناوين بترتيبها) -->
+    <section class="card about" id="aboutSection" data-sec="about">
+      <div class="sechead"><h2>حول الإضافة والخصوصية</h2><span class="scope gen">عام</span></div>
+
+      <h3 class="sub" id="aboutH_does">ما تفعله الإضافة</h3>
+      <dl class="facts">
+        <dt>أين تعمل</dt>
+        <dd>في هذه المواقع وحدها، ولا تعمل في غيرها: <span id="privSites">مواقع Claude المدرجة في قائمة «الموقع» أعلاه</span>.</dd>
+        <dt>كيف تعمل</dt>
+        <dd>تطابق نصوص الصفحة بقاموسٍ مضمَّن داخل الإضافة نفسها، فإن وجدت للنصّ ترجمةً كتبتها مكانه، وإلّا تركته كما هو. فهي تكتب <b>داخل</b> الصفحة ولا تأخذ منها شيئًا.</dd>
+        <dt>عكس الاتجاه</dt>
+        <dd>يجري بملفّات تنسيقٍ داخل الإضافة. ويعيد المحرّك «الشامل» (الافتراضي) بناءَ ورقة العكس <b>تلقائيًّا</b> في المواقع ذات الورقة الحيّة، من ملفات تصميمها العامة التي حمّلها متصفحك للصفحة نفسها، عند أول تشغيل وعند كل تغيّر في نسخة الموقع، ويحفظها على جهازك؛ وفي سائر المواقع يأتي الاتجاه من لقطةٍ مشحونة مع الإضافة. واختيارُ المحرّك «المبسّط» يوقف القراءة التلقائية في الموقع الذي يسري عليه.</dd>
+        <dt>فحص الترجمة</dt>
+        <dd>يجري <b>بضغطة منك وحدك</b> في تبويب الموقع المفتوح، ولا يقرأ إلا ملفات ذلك الموقع العامة: <span id="privScanKinds">…</span>. يقرأ الملفات نصًّا ولا يُنفَّذ منها شيء، ولا يمسّ صفحتك ولا محتواك، والنتيجة تبقى على جهازك. أما سائر المواقع فتُحصد صفحاتها وتُترجم وقت إصدار الإضافة، فلا فحص لها في متصفحك.</dd>
+        <dt>فحص الاتجاه</dt>
+        <dd>يجري بضغطة منك وحدك، فيقرأ <b>ملفات التصميم العامة نفسها</b> ليُظهر ما استجدّ ولم يُعكس بعد. ولا يقرأ هذا الفحصُ ولا عكسُ الاتجاه محتوى محادثاتك، ولا يرسلانه إلى أي جهة.</dd>
+      </dl>
+
+      <h3 class="sub" id="aboutH_privacy">الخصوصية: ما لا تفعله الإضافة أبدًا</h3>
+      <!-- ★ (ر8-أ، المراجعة المستقلة) «لا تلمسه الترجمة» لا «لا تقرؤه الإضافة»: مفتاح «ضبط اتجاه نص المحادثة» (مفعّلٌ افتراضيًّا) يقرأ نصّ الفقرة
+           قراءةً عابرة ليحسم اتجاهها (setChatDir في engine.js؛ مراجعة كودكس، البند ١؛ القرار 16)، ولا يحفظه ولا يرسله -->
+      <dl class="facts">
+        <dt>ما يظهر على شاشتك</dt>
+        <dd><b>لا تخزّن شيئًا منه ولا ترسله إلى أي جهة</b>: لا عناوين محادثاتك، ولا أسماء مشاريعك، ولا نصوص رسائلك. ولا تجمع بيانات عنك ولا عن استعمالك.</dd>
+        <dt>نصّ المحادثات</dt>
+        <dd>مستثنًى من الترجمة أصلًا، ومعه أجوبة مساعد وثائق Claude Code: لا تلمسه الترجمة ولا تغيّر منه حرفًا، وإنما يرسم متصفحك حروفه العربية بالخط الذي تختاره في «الخط العربي».</dd>
+        <dt>ما تقرؤه من الشبكة</dt>
+        <dd><b>كلُّه ملفاتٌ عامة تقدّمها المواقع المدرجة نفسها</b>، من مضيفاتها أو من مضيفات Claude وAnthropic التي تحمّل منها صفحاتُها ملفاتها، وهي ملفاتٌ ينزّلها متصفحك أصلًا لعرض الصفحة أو ينشرها الموقع للعموم. ولا يُرسَل فيها شيءٌ من عندك: قراءةُ محرّك الاتجاه لملفات التنسيق تلقائيًّا في المواقع ذات الورقة الحيّة (<span id="privLiveSites">…</span>)، و«فحص الترجمة» و«فحص الاتجاه» بضغطةٍ منك وحدك.</dd>
+        <dt>المزامنة الاختيارية</dt>
+        <dd>هي <b>الاستثناء الوحيد</b> لمغادرة بياناتك جهازك، وهي متوقّفة ما لم تُفعّلها أنت: إن فعّلتها حمل <b>كرومُ نفسُه</b> تصحيحاتِك وقواعدَك وتصحيحاتِ الفقرات، دون إعداداتك ودون شيءٍ من محتواك أو محادثاتك، إلى حسابك في جوجل بمزامنته المعتادة. <b>وجوجل قد تطّلع عليها ما لم تفعّل عبارة مرور المزامنة في كروم نفسه</b>، وتبقى لك أزرار إيقافها ومسح ما رُفع.</dd>
+        <dt>الأذونات</dt>
+        <dd>الإذن الوحيد الذي تطلبه الإضافة هو <code>storage</code>، ووظيفته حفظ إعداداتك وتصحيحاتك على جهازك، ونسخةٍ من ملف الخط الذي تختاره ليُرسم مع الصفحة من أول لحظة، وهو نفسه بابُ «المزامنة بين أجهزتك» الاختيارية أعلاه إن فعّلتها. ووصولُها إلى المواقع مقصورٌ على المواقع المدرجة أعلاه، وعبارةُ كروم عند التثبيت «قراءة بياناتك وتغييرها» على هذه المواقع هي صيغتُه المعيارية لكل إضافةٍ تعمل داخل صفحة، ومعناها هنا أن الإضافة تكتب الترجمة داخل الصفحة.</dd>
+      </dl>
+
+      <!-- ★ (ر8-د2) «ما لا تعرّبه» نصُّ بطاقة الترحيب نفسه (#welcomeKeep بلا صدره): جملته الثانية يكتبها fillKeep في options.js من حال المواقع
+           في جدول النطاقات (status.en)، والنصّ هنا احتياطٌ مطابقٌ لها اليوم؛ ويفحص _optionstest تطابق الفقرتين -->
+      <h3 class="sub" id="aboutH_keep">ما لا تعرّبه</h3>
+      <p class="privacy" id="aboutKeep">نصّ محادثاتك ومُخرَجاتها، والملفات المرفقة والمنزَّلة، والتعليمات البرمجية والأوامر، والصور والفيديو،
+        والصفحات خارج هذه المواقع، والخصائص والنماذج في مرجع الواجهة البرمجية.
+        <span id="aboutKeepEn">وتبقى بالإنجليزية في هذا الإصدار سياسة الاستخدام في الوثائق القانونية، ومحتوى أكاديمية Claude عدا واجهتها
+        وعناوين الدورات والدروس، ومقالات وثائق Claude Code، وما غيّرته المواقع أو أضافته بعد إعداده.</span></p>
+
+      <h3 class="sub" id="aboutH_update">ماذا يحدث لترجماتك عند تحديث الإضافة؟</h3>
+      <p class="privacy"><b>🛡 لا شيء، تبقى كما هي.</b> تصحيحاتك وترجماتك محفوظة في تخزين متصفحك لا في ملفات الإضافة، والتحديث يستبدل الملفات ولا يمسّ التخزين. وليس في هذه الإضافة سطرٌ واحد يحذف تصحيحًا إلا بضغطةٍ صريحة منك («حذف كل تصحيحاتك» أو «إعادة الضبط»).</p>
+      <p class="privacy">وتصحيحك <b>يحلّ محلّ القاموس دائمًا</b>: لو ترجمتَ نصًّا ثم جاء التحديث بترجمةٍ له، بقيت ترجمتُك أنت هي الظاهرة. ولئلا يظلّ تصحيحك يحجب تحسينًا لاحقًا وأنت لا تدري، تظهر لك بعد التحديث لوحةُ <b>«تصحيحاتك بعد تحديث الإضافة»</b> في «إدارة قاموس التعريب» أعلاه: تعرض ما أصبح مطابقًا للقاموس (فلا فائدة منه) وما يخالفه (فالقرار قرارك)، ولا تحذف شيئًا إلا بأمرك.</p>
+      <p class="privacy">وللاطمئنان التامّ قبل أي تحديث: «تصدير تصحيحاتك فقط» يحفظ جهدك في ملفٍّ تستعيده متى شئت.</p>
+
+      <!-- ★ (ر8-أ) «كيف أُنجز التعريب» لـ2.0.0: القواميس وترجمات المقالات معًا، والمراجعة المنفصلة لكل دفعة، والمعاجم في القائمة بعده -->
+      <h3 class="sub" id="aboutH_sources">كيف أُنجز التعريب، ومصادر مصطلحاته</h3>
+      <p class="privacy">مصدرُ التعريب جزآن: <b>ما يأتي مع الإضافة</b>، و<b>ما يجلبه الفحص عندك</b> من نصوص المواقع الجديدة فتترجمه أنت.</p>
+      <p class="privacy">وما يأتي معها قواميسُ الواجهات وترجماتُ المقالات، بُنيت أثناء تطويرها بقراءة ملفات المواقع وصفحاتها وترجمتها بمساعدة <b>Claude Code</b> (أداة Anthropic للبرمجة بالذكاء الاصطناعي)، على قواعد مصطلحية ثابتة وضعها صاحب المشروع، مع تدقيقٍ آلي ومراجعةٍ لكل نصّ. وتُرجمت المقالات دفعةً دفعة: لكل دفعةٍ مترجمٌ ثم مراجعٌ منفصلٌ عنه.</p>
+      <p class="privacy">ومصطلحاتُها مُسنَدة إلى المعاجم والمصادر المذكورة أدناه حيث وافق المقابلُ سياقَ الواجهة، وفي مقدّمتها <b>معجم الرياض للغة العربية المعاصرة</b> و<b>معجم البيانات والذكاء الاصطناعي</b>.</p>
+      <p class="privacy">ومع ذلك تبقى في الترجمة أخطاء ولا بدّ، <b>ولهذا صُنعت ميزة التصحيح</b> في «إدارة قاموس التعريب» و«تصحيحات فقرات المقالات»: ما رأيتَه خطأً فصحّحه لنفسك في أي وقت، أو اقترح تصحيحه للجميع في مستودع المشروع.</p>
+      <!-- ★ (ر8-أ) المعاجم والمصادر بجهاتها (طلب المالك، القرار 48): قائمة project/decisions/SOURCES-lexicons.md بترتيبها، وهي ‹_meta.sources›
+           في web/code/glossary/terms-base.json بلا «عرف الواجهة» (33 مصدرًا: 27 سعوديًّا و6 مساندة). ثابتةٌ هنا لأن قاعدة المصطلحات لا تُشحن
+           مع الإضافة، فإن تغيّرت القاعدة أُعيد توليد ذلك الملف ثم هذه القائمة. وكل عددٍ بين قوسين عددُ بنود قائمته (يفحصه _optionstest).
+           ومطويّةٌ افتراضيًّا لتبقى «حول» قصيرة.
+           ★ (ر8-ب) ومطابقتُها لذلك الملف بندًا بندًا (القسم والترتيب والاسم والجهة ووسم «سوار» والأعداد)، ومعها قائمة README، يفحصها
+           web/code/toolchain/check-sources.mjs، ويشغّله verify-package -->
+      <details class="privacy srcs" id="lexSources">
+        <summary><b>المعاجم والمصادر التي أُسندت إليها المصطلحات (<span class="n">33</span>)</b></summary>
+        <p>يحكم في المصطلح مصدرُ الجهة السعودية المختصة في مجاله، والنظامُ مقدَّمٌ على المسرد، والأحدثُ على الأقدم؛ وتُستأنس بالمصادر غير السعودية ولا تحكم.</p>
+        <p class="srch">المصادر السعودية (<span class="n">27</span>)</p>
+        <ul class="srclist" id="lexSaudi">
+          <li>معجم الرياض للغة العربية المعاصرة — مجمع الملك سلمان العالمي للغة العربية <span class="tag">سوار</span></li>
+          <li>معجم البيانات والذكاء الاصطناعي (الإصدار الثالث) — الهيئة السعودية للبيانات والذكاء الاصطناعي (سدايا) ومجمع الملك سلمان العالمي للغة العربية <span class="tag">سوار</span></li>
+          <li>معجم المصطلحات المالية والاقتصادية — مجمع الملك سلمان العالمي للغة العربية مع وزارة المالية وجهات مالية حكومية (منها هيئة السوق المالية وهيئة الزكاة والضريبة والجمارك) <span class="tag">سوار</span></li>
+          <li>نظام حماية البيانات الشخصية ولائحته التنفيذية ولائحة نقل البيانات الشخصية خارج المملكة — الهيئة السعودية للبيانات والذكاء الاصطناعي (سدايا)</li>
+          <li>ملاحق «مصطلحات وتعريفات» و«قائمة الاختصارات» في الوثائق التنظيمية للهيئة (ECC-2:2024، CCC-2:2024، DCC-1:2022، OTCC-1:2022، وغيرها) — الهيئة الوطنية للأمن السيبراني</li>
+          <li>معجم المصطلحات القانونية — مجمع الملك سلمان العالمي للغة العربية والمركز السعودي للتنافسية والأعمال، مع أكثر من ثلاثين جهة حكومية <span class="tag">سوار</span></li>
+          <li>معجم البيانات والذكاء الاصطناعي (الطبعة الأولى، 2022) — الهيئة السعودية للبيانات والذكاء الاصطناعي (سدايا) ومجمع الملك سلمان العالمي للغة العربية</li>
+          <li>معجم مصطلحات الحكومة الرقمية — هيئة الحكومة الرقمية <span class="tag">سوار</span></li>
+          <li>معجم مصطلحات الخطوط الحديدية — مجمع الملك سلمان العالمي للغة العربية <span class="tag">سوار</span></li>
+          <li>مسرد المصطلحات القانونية — هيئة الخبراء بمجلس الوزراء (شعبة الترجمة الرسمية) <span class="tag">سوار</span></li>
+          <li>قاموس مصطلحات الحكومة الرقمية، الإصدار ٣٫٠ — هيئة الحكومة الرقمية (بمراجعة لغوية من مجمع الملك سلمان العالمي للغة العربية)</li>
+          <li>قاموس العقود والمشتريات وسلاسل الإمداد — عبدالمجيد بن صالح الغامدي <span class="tag">سوار</span></li>
+          <li>معجم مصطلحات مركز قياس أداء الأجهزة العامة — المركز الوطني لقياس أداء الأجهزة العامة (أداء) <span class="tag">سوار</span></li>
+          <li>دليل الأنظمة (Rulebook): نظام المدفوعات وخدماتها ولائحته التنفيذية، ومسارد الصمود السيبراني — البنك المركزي السعودي</li>
+          <li>التعريفات في نظام الاتصالات وتقنية المعلومات (١٤٤٣هـ) ولائحته التنفيذية والوثائق التنظيمية للهيئة — هيئة الاتصالات والفضاء والتقنية</li>
+          <li>معجم زاتكا للمصطلحات الزكوية والضريبية والجمركية، طبعة ١٤٤٨هـ — هيئة الزكاة والضريبة والجمارك</li>
+          <li>معجم المصطلحات الإحصائية — الهيئة العامة للإحصاء <span class="tag">سوار</span></li>
+          <li>ضوابط ومواصفات إدارة البيانات الوطنية وحماية البيانات الشخصية — مكتب إدارة البيانات الوطنية، الهيئة السعودية للبيانات والذكاء الاصطناعي (سدايا)</li>
+          <li>مسرد مصطلحات مدينة الملك عبدالله للطاقة الذرية والمتجددة (الإصدار الثاني) — مدينة الملك عبدالله للطاقة الذرية والمتجددة</li>
+          <li>معجم المصطلحات العدلية (إنجليزي-عربي)، الإصدار الأول — وزارة العدل، مركز البحوث</li>
+          <li>البوابة النظامية: نصوص الأنظمة وترجماتها الرسمية (المادة الأولى في كل نظام) — هيئة الخبراء بمجلس الوزراء</li>
+          <li>معجم المصطلحات الإحصائية وتبويب «الاختصارات» — الهيئة العامة للإحصاء</li>
+          <li>معجم مصطلحات الإعلام — مجمع الملك سلمان العالمي للغة العربية <span class="tag">سوار</span></li>
+          <li>كود المنصات: نظام التصميم الموحد (الإصدار ٤٫٠) — هيئة الحكومة الرقمية</li>
+          <li>المعجم الريادي — الهيئة العامة للمنشآت الصغيرة والمتوسطة (منشآت)</li>
+          <li>مصطلحات التعليم الإلكتروني — المركز الوطني للتعليم الإلكتروني</li>
+          <li>وثائق «الأنظمة والسياسات» في موقع سدايا — الهيئة السعودية للبيانات والذكاء الاصطناعي (سدايا)</li>
+        </ul>
+        <p class="srch">المصادر المساندة، غير السعودية (<span class="n">6</span>)</p>
+        <ul class="srclist" id="lexOther">
+          <li>معجم المصطلحات العربية الموحدة — المنظمة العربية للتربية والثقافة والعلوم (مكتب تنسيق التعريب) <span class="tag">سوار</span></li>
+          <li>ويبو بورل (WIPO Pearl) — المنظمة العالمية للملكية الفكرية</li>
+          <li>ARABTERM، معجم تقانة المعلومات — المنظمة العربية للتربية والثقافة والعلوم (مكتب تنسيق التعريب)</li>
+          <li>قاعدة مصطلحات الاتحاد الدولي للاتصالات — الاتحاد الدولي للاتصالات</li>
+          <li>دليل المصطلحات الحاسوبية العربية (الطبعة الأولى) — مجمع اللغة العربية الأردني</li>
+          <li>قاعدة مصطلحات الأمم المتحدة (UNTERM) — الأمم المتحدة</li>
+        </ul>
+        <p>والموسومة «سوار» من معاجم منصة سوار (<a href="https://siwar.ksaa.gov.sa" target="_blank" rel="noopener" dir="ltr">siwar.ksaa.gov.sa</a>)، ومقابلاتها منسوبةٌ إلى معجمها وإلى المنصة وإلى مجمع الملك سلمان العالمي للغة العربية. وإلى جانب هذه المصادر عرفُ الواجهة في قواميس المشروع، و17 مصطلحًا حسمها صاحب المشروع.</p>
+      </details>
+
+      <h3 class="sub" id="aboutH_fonts">الخطوط العربية وتراخيصها</h3>
+      <!-- النسبة (DESIGN-fonts §٣.٤، §٦): الأسماء وروابط التراخيص يولّدها fillAbout من الفهرس CMLConst.FONTS فلا تنحرف عنه -->
+      <p class="privacy" id="fontCredits"><b>الخطوط العربية المضمَّنة:</b> <span id="fontCreditNames">…</span>، من مكتبة Google Fonts. وهي داخل الإضافة، فلا يُحمَّل شيءٌ منها من الشبكة، ويُنسخ الخط المختار وحده إلى تخزين متصفحك ليُرسم مع الصفحة من أول لحظة. وهي مرخّصةٌ برخصة SIL للخطوط المفتوحة (OFL 1.1) لا برخصة الإضافة، وحقوقُ كلٍّ منها لأصحابه كما في ملف ترخيصه (<a href="fonts/CREDITS.txt" target="_blank" rel="noopener" id="fontCreditsLink">ملف النسبة والتراخيص</a>).</p>
+      <!-- ★ (ر8-أ) أصحاب الحقوق كما في fonts/CREDITS.txt حرفًا (يولّده «fonts.mjs credits» من القفل): صفٌّ لكل خطٍّ في الفهرس بمعرّفه في data-font،
+           والاسم وسطر الحقوق لاتينيّان معزولان فلا يتقطّع ترتيبهما إن التفّا على عرض الهاتف. ويفحص _optionstest أنها خطوط الفهرس كلها، وأن كل سطر
+           حقوقٍ في سطر خطّه من CREDITS.txt. ★ (ر8-د2) جدولٌ بعمودين بدل القائمة (N7) -->
+      <table class="grid" id="fontHolders" aria-labelledby="aboutH_fonts">
+        <thead><tr><th scope="col">الخط</th><th scope="col">أصحاب الحقوق</th></tr></thead>
+        <tbody>
+          <tr data-font="cairo"><td data-label="الخط"><bdi dir="ltr" class="fam">Cairo</bdi></td><td data-label="أصحاب الحقوق"><bdi dir="ltr" class="cr">Copyright 2009 The Cairo Project Authors</bdi></td></tr>
+          <tr data-font="noto-naskh-arabic"><td data-label="الخط"><bdi dir="ltr" class="fam">Noto Naskh Arabic</bdi></td><td data-label="أصحاب الحقوق"><bdi dir="ltr" class="cr">Copyright 2022 The Noto Project Authors</bdi></td></tr>
+          <tr data-font="markazi-text"><td data-label="الخط"><bdi dir="ltr" class="fam">Markazi Text</bdi></td><td data-label="أصحاب الحقوق"><bdi dir="ltr" class="cr">Copyright 2017 The Markazi Text Project Authors</bdi></td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="sub" id="aboutH_license">الإصدار والرخصة</h3>
+      <p><strong id="aboutName">تعريب كلود</strong> · <span id="aboutVersion">v—</span></p>
+      <!-- ★ (ر8-أ) رخصة الإضافة نفسها، والخطوط مستثناةٌ منها (LICENSE وNOTICE في المستودع العام) -->
+      <!-- ★ (ر8-ب) حدُّ MIT ما أنشأه المشروع: تعليماته البرمجية وترجمته العربية، كما في NOTICE («this project's own code and data»)
+           وREADME؛ والخطوط برخصة OFL؛ والنصوص الإنجليزية التي تطابقها الإضافة (مفاتيح قواميس الواجهات) لـ Anthropic — كان السطر يوهم
+           أن MIT تشمل الحزمة كلها بما فيها نصوص المواقع (مراجعة ر8-أ، F12) -->
+      <p class="privacy" id="licenseLine">والإضافة مفتوحة المصدر: تعليماتها البرمجية وترجمتها العربية برخصة MIT، والخطوط العربية برخصة SIL للخطوط المفتوحة كما سبق؛ أما نصوص المواقع الإنجليزية التي تطابقها الإضافة فحقوقها لشركة Anthropic.</p>
       <p class="privacy">إضافةٌ مستقلة غير رسمية، ليست من إنتاج شركة Anthropic ولا تابعةً لها.</p>
+
+      <h3 class="sub" id="aboutH_contact">المصدر المفتوح والتواصل</h3>
+      <p class="privacy"><b>📖 مفتوحة المصدر — التعليمات البرمجية والقاموس كاملين:</b><br>
+        <a href="https://github.com/al-ashalash/claude-arabic-chrome" target="_blank" rel="noopener" dir="ltr">github.com/al-ashalash/claude-arabic-chrome</a><br>
+        وصفحتها في <a href="https://chromewebstore.google.com/detail/ilebkilcahbijffokjmlakbocdjkojbe" target="_blank" rel="noopener">متجر Chrome</a> (التحديثات تصلك منه تلقائيًّا).</p>
+      <p class="privacy">كلُّ سطرٍ من هذه الإضافة معروضٌ للقراءة والتدقيق، فما قلناه عن الخصوصية تستطيع أن تتحقّق منه بنفسك، لا أن تصدّقه وحسب.</p>
+      <p class="privacy">هل وجدتَ ترجمةً خاطئة أو أردتَ اقتراح تحسين؟ صحّح ذلك لنفسك من «إدارة قاموس التعريب» أعلاه، أو اقترحه للجميع من
+        <a href="https://github.com/al-ashalash/claude-arabic-chrome/issues/new/choose" target="_blank" rel="noopener">صفحة البلاغات والاقتراحات</a>، بنموذجٍ جاهز لتصحيح الترجمة أو الإبلاغ عن خلل.</p>
     </section>
   </div>
 

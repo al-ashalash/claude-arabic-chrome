@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>route test</title>
+<!--
+  اختبار حارس المسار (مراجعة كودكس ١٥): موقعٌ يتقاسم تطبيقًا واحدًا مع ما لا نعرّبه
+  (وثائق المطوّرين ولوحة المطوّرين). المسار المسموح يُعرَّب، والتنقّل داخل المستند إلى
+  مسارٍ آخر يُخمد المحرّك ويعيد الصفحة إلى أصلها، والعودة تعيده.
+  يحاكي الاختبارُ المواقعَ ذات الصفحة الواحدة: pushState ثم رسمٌ جديد في الصفحة.
+  ومسار «هيكل فقط» (routes.shell — سجلّ إصدارات Claude Code، وكان مرجع الوثائق قبل S7-B): محتوى meta.shellSel يبقى على أصله LTR،
+  وما حوله يُعرَّب، والجذر يحمل data-cml-route="shell".
+  ومسارٌ بعينه (routes.exact — ‎/docs‎ في وثائق Claude Code): كاملٌ بالمساواة، وما تحته خامل.
+  العقد: document.title = "routetest N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<h1>اختبار حارس المسار</h1>
+<link rel="stylesheet" href="../extension/docs-point.css">
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<div id="host"><p id="a">Hello</p></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };
+var HOME = location.pathname;</script>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+// المسار المسموح: مجلد الاختبارات نفسه؛ وما سواه (مثل /console/) خامل
+window.CLAUDE_L10N = { domain: "docs", meta: { scan: "none", live: false, chat: false, hydrate: "none",
+    routes: { exact: ["/zq-root"], full: [HOME.replace(/[^\/]*$/, "")], shell: [HOME.replace(/[^\/]*$/, "") + "api/"] }, shellSel: ".stldocs-root" },
+  default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Hello": "مرحبا", "Later": "لاحقًا" }, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g"), ""); }
+var H = document.documentElement;
+function render(txt) { var p = document.createElement("p"); p.textContent = txt; document.getElementById("host").appendChild(p); return p; }
+
+(async function () {
+  await wait(500);
+  check("المسار المسموح: مُعرَّب والسمات قائمة", "مرحبا/rtl/on",
+        noBidi(document.getElementById("a").textContent) + "/" + H.getAttribute("dir") + "/" + H.getAttribute("data-cml"));
+  // تنقّلٌ داخل المستند إلى مسارٍ غير مسموح، ثم رسمٌ جديد
+  history.pushState({}, "", "/console/settings");
+  var p1 = render("Later");
+  await wait(700);
+  check("★ مسارٌ غير مسموح: خامل — عاد الأصل ورُفعت السمات", "Hello/null/null",
+        noBidi(document.getElementById("a").textContent) + "/" + H.getAttribute("dir") + "/" + H.getAttribute("data-cml"));
+  check("★ وما رُسم فيه لا يُعرَّب", "Later", noBidi(p1.textContent));
+  // العودة
+  history.pushState({}, "", HOME);
+  var p2 = render("Later");
+  await wait(700);
+  check("★ العودة إلى المسار المسموح تعيد التعريب", "مرحبا/لاحقًا/rtl",
+        noBidi(document.getElementById("a").textContent) + "/" + noBidi(p2.textContent) + "/" + H.getAttribute("dir"));
+  // مسار «هيكل فقط»: المرجع على أصله، والهيكل حوله مُعرَّب
+  history.pushState({}, "", HOME.replace(/[^\/]*$/, "") + "api/messages");
+  var ref = document.createElement("div"); ref.className = "stldocs-root"; ref.innerHTML = "<p>Hello</p><button title='Later'>x</button>";
+  document.getElementById("host").appendChild(ref);
+  var chrome3 = render("Later");
+  await wait(700);
+  check("★ مسار shell: المرجع على أصله (نصًّا وسمة) وما حوله مُعرَّب", "Hello/Later/لاحقًا",
+        noBidi(ref.querySelector("p").textContent) + "/" + ref.querySelector("button").getAttribute("title") + "/" + noBidi(chrome3.textContent));
+  check("★ مسار shell: الجذر يحمل البوابة والمرجع LTR داخل صفحةٍ RTL", "shell/rtl/ltr",
+        H.getAttribute("data-cml-route") + "/" + H.getAttribute("dir") + "/" + getComputedStyle(ref).direction);
+  // ★ (وثائق Claude Code) routes.exact: المسار بعينه كامل (‎/docs‎ يعرض overview)، ولا يمتدّ بادئةً إلى ما تحته
+  history.pushState({}, "", "/zq-root");
+  var p3 = render("Later");
+  await wait(700);
+  check("★ exact: المسار بعينه كامل — مُعرَّب والسمات قائمة", "لاحقًا/on/full",
+        noBidi(p3.textContent) + "/" + H.getAttribute("data-cml") + "/" + H.getAttribute("data-cml-route"));
+  history.pushState({}, "", "/zq-root/xx/page");
+  var p4 = render("Later");
+  await wait(700);
+  check("★ exact لا يمتدّ بادئةً: ما تحته خامل والأصل يعود", "Later/Later/null",
+        noBidi(p4.textContent) + "/" + noBidi(p3.textContent) + "/" + H.getAttribute("data-cml"));
+  var RM = CMLShared.routeMode, RT = { exact: ["/docs"], full: ["/docs/en/"], shell: ["/docs/en/changelog/"] };
+  // (بادئة shell بشرطتها الختامية — مراجعة المحرّك ٤: ‎/docs/en/changelog‎ وما تحته هيكل، و‎changelog-archive‎ صفحةٌ أخرى كاملة)
+  check("★ routeMode: exact بالمساواة بعد نزع الشرطة الختامية، والبادئات كما هي",
+        "full/full/inactive/inactive/full/full/shell/shell/full/inactive",
+        [RM(RT, "/docs"), RM(RT, "/docs/"), RM(RT, "/docs/xx/overview"), RM(RT, "/docsx"), RM(RT, "/docs/en"),
+         RM(RT, "/docs/en/hooks"), RM(RT, "/docs/en/changelog"), RM(RT, "/docs/en/changelog/"), RM(RT, "/docs/en/changelog-archive"), RM(RT, "/")].join("/"));
+  history.pushState({}, "", HOME);
+  await wait(500);
+  check("والعودة إلى المسار الكامل تعيد البوابة", "full", H.getAttribute("data-cml-route"));
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "routetest " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "ROUTETEST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

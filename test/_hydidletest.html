@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>hydidle test</title>
+<!--
+  اختبار الإشارة الأقوى للترطيب (meta.hydrateSignal = "idle"، وثائق المطوّرين — S6-C، ٢١ ربيع الآخر ١٤٤٨هـ):
+  next-route-announcer يُدرَج بعد إيداع الجذر، وأجزاء الصفحة المؤجَّلة تترطّب بعده؛ فكتابتنا عند ظهوره كانت تسبق ترطيبها
+  فيقع خطأ React ‎#418‎. بعد الإشارة: حدث load ثم فترتا خمول — ومُجدوِل React يُبقي الطابور مشغولًا ما بقي عمل.
+   ١) الإشارة والخيط مشغولٌ بمهامّ متتابعة (محاكاة مُجدوِل React بـMessageChannel): النصوص لا تُمسّ.
+   ٢) انتهى العمل ⇒ خمول ⇒ تُعرَّب، والبوابة «open:hydrated+idle».
+   ٣) الإطار ?frame=cap: صفحةٌ لا تخمل أبدًا (requestIdleCallback لا يُنادى) ⇒ سقف HYDRATE_MAX يفتح البوابة كما كان،
+      والإمساك ينتهي عند سقفه HOLD_MAX لا بعده (الإشارة الأقوى لا تطيل الإمساك).
+  العقد: document.title = "hydidle N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+iframe{width:600px;height:120px;border:1px solid #999}</style>
+<link rel="stylesheet" href="../extension/base.css">
+<div id="__next"><div dir="ltr"><p id="t">Contact Support</p></div></div>
+<script>
+var FRAME = /[?&]frame=cap/.test(location.search);
+var T0 = performance.now(), jsErrors = 0;
+window.onerror = function () { jsErrors++; };
+if (FRAME) {
+  // صفحةٌ لا تخمل: نداءات الخمول بلا مهلة تُبتلع — فلا يفتح البوابةَ إلا السقف (وما طلب مهلةً يُنادى عندها كالمتصفح)
+  window.requestIdleCallback = function (cb, o) {
+    if (o && o.timeout) return setTimeout(function () { cb({ didTimeout: true, timeRemaining: function () { return 0; } }); }, o.timeout);
+    return 0;
+  };
+  window.__res = { hold: null, tr: null };
+  new MutationObserver(function () {
+    if (window.__res.hold === null && !document.documentElement.hasAttribute("data-cml-hold") && window.__holdSeen) window.__res.hold = performance.now() - T0;
+    if (document.documentElement.hasAttribute("data-cml-hold")) window.__holdSeen = true;
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-cml-hold"] });
+  new MutationObserver(function () {
+    if (window.__res.tr === null && document.getElementById("t").textContent !== "Contact Support") window.__res.tr = performance.now() - T0;
+  }).observe(document.getElementById("t"), { childList: true, characterData: true, subtree: true });
+}
+</script>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+// المحرّك يجيب «cml-hello» على runtime.onMessage — قشرةٌ تلتقط مستمعه فنسأله عن البوابة
+var HELLO = [];
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { HELLO.push(fn); } };
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "docs",
+  meta: { scan: "none", live: false, chat: false, hydrate: "defer", hydrateSignal: "idle" },
+  default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Contact Support": "التواصل مع الدعم" }, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-const.js"></script>
+<script>
+if (FRAME) { CMLConst.HOLD_MAX_MS = 300; CMLConst.HOLD_ABS_MS = 4000; CMLConst.HYDRATE_MAX_MS = 1500; }
+else { CMLConst.HOLD_MAX_MS = 60000; CMLConst.HOLD_ABS_MS = 60000; CMLConst.HYDRATE_MAX_MS = 60000; }
+</script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g"), ""); }
+function hello() { var out = null; HELLO.forEach(function (fn) { fn({ type: "cml-hello" }, {}, function (r) { out = r; }); }); return out; }
+// مُجدوِلٌ مشغول كمُجدوِل React: مهمّةٌ تعمل ~4 مث ثم تنشر التالية عبر MessageChannel حتى «until» — فلا فترة خمولٍ بينها
+function busyUntil(until) {
+  return new Promise(function (done) {
+    var ch = new MessageChannel();
+    ch.port1.onmessage = function () {
+      var s = performance.now(); while (performance.now() - s < 4) {}
+      if (performance.now() < until) ch.port2.postMessage(0); else { ch.port1.close(); done(); }
+    };
+    ch.port2.postMessage(0);
+  });
+}
+var H = document.documentElement;
+function loaded() { return new Promise(function (r) { if (document.readyState === "complete") r(); else window.addEventListener("load", r, { once: true }); }); }
+
+if (FRAME) {
+  // الإطار: الإشارة بعد 150 مث ثم لا خمول أبدًا
+  setTimeout(function () { document.body.appendChild(document.createElement("next-route-announcer")); }, 150);
+} else (async function () {
+  await loaded();
+  await wait(150);
+  check("★ قبل الإشارة: الصفحة ممسوكةٌ والنص لم يُمسّ", "1/Contact Support/wait", H.getAttribute("data-cml-hold") + "/" + document.getElementById("t").textContent + "/" + (hello() || {}).text);
+  // ١) الإشارة والخيط مشغول (ترطيبٌ انتقائيٌّ لم يكتمل)
+  var busy = busyUntil(performance.now() + 900);
+  document.body.appendChild(document.createElement("next-route-announcer"));
+  await wait(450);
+  var mid = noBidi(document.getElementById("t").textContent) + "/" + (hello() || {}).text;
+  await busy;
+  check("★ الإشارة وحدها والخيط مشغول: النص لم يُمسّ بعد (لا كتابة أثناء الترطيب)", "Contact Support/wait", mid);
+  // ٢) انتهى العمل: خمولٌ ثم التعريب
+  await wait(400);
+  check("★ بعد اكتمال العمل وفترتَي خمول: تُعرَّب، والبوابة بإشارة الخمول", "التواصل مع الدعم/open:hydrated+idle",
+        noBidi(document.getElementById("t").textContent) + "/" + (hello() || {}).text);
+  check("والإمساك انتهى مع أول ظهورٍ عربي", "null/visible", H.getAttribute("data-cml-hold") + "/" + getComputedStyle(H).visibility);
+  // ٣) الإطار: صفحةٌ لا تخمل
+  var fr = document.createElement("iframe");
+  fr.src = location.pathname + "?frame=cap&cdp";
+  document.body.appendChild(fr);
+  var t0 = performance.now(), R = null;
+  while (performance.now() - t0 < 8000) {
+    await wait(100);
+    try { R = fr.contentWindow.__res; if (R && R.tr !== null && R.hold !== null) break; } catch (e) {}
+  }
+  R = R || {};
+  check("★ صفحةٌ لا تخمل أبدًا: سقف HYDRATE_MAX يفتح البوابة كما كان (1500 مث، لا انتظار بلا حد)", "true",
+        R.tr !== null && R.tr !== undefined && R.tr >= 1400 && R.tr < 4000);
+  check("★ والإمساك ينتهي عند سقفه لا بعد الإشارة الأقوى (قبل التعريب)", "true",
+        R.hold !== null && R.hold !== undefined && R.hold < 1400 && R.hold < R.tr);
+  try { check("والإطار عُرِّب في النهاية", "التواصل مع الدعم", noBidi(fr.contentDocument.getElementById("t").textContent)); }
+  catch (e) { check("والإطار عُرِّب في النهاية", "التواصل مع الدعم", "err"); }
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors + (function () { try { return fr.contentWindow.jsErrors; } catch (e) { return 1; } })());
+  document.title = "hydidle " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "HYDIDLE: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

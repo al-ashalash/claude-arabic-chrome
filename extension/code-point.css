@@ -1,0 +1,354 @@
+/* code-point.css — إصلاحاتٌ نقطية لوثائق Claude Code (code.claude.com/docs — Mintlify فوق Next.js).
+   تُحقن بعد base.css وrtl-code.css. أصلُها مسودة الدراسة (code-claude-docs.md §٦-٢) ومراجعتُها المستقلة (ج-١)،
+   وكلُّ قاعدةٍ هنا مقيسةٌ على الموقع الحيّ (١٣–١٦ ربيع الآخر ١٤٤٨هـ). والمحدِّدات على المعرّفات وخُطّافات
+   data-component-part وشكل الرمز لا على أصناف Tailwind: Mintlify ينشر كثيرًا وأصنافه تتبدّل.
+
+   ما يُحسم بـ!important (يغلب الأنماط السطرية) في @layer cml-point: المعلَنة أولًا في base.css، فتغلب مهمّات
+   الموقع المطبَّقة وغير المطبَّقة وما يعيد المحرّك بثّه في cml-imp. وما لا يحتاج !important خارج الطبقات.
+   وما يحتاج ميزةً أحدث من أدنى كروم في المانيفست (:has في 105، وscale في 104، و:dir في 120) في قاعدةٍ وحده: محدِّدٌ
+   لا يفهمه المتصفح يُسقط القاعدة كلّها، فلا يُسقط معه ما يفهمه (مراجعة القيود ٨، ١٦ ربيع الآخر ١٤٤٨هـ). */
+
+/* ١) كتل الشيفرة جزيرةُ LTR كاملة: في RTL يبدأ تمرير سطر الشيفرة من آخره، وتغطّي الأزرار العائمة الثلاثة
+   (الإبلاغ عن شيفرةٍ خاطئة، والنسخ، واسأل المساعد) أولَ الأمر («ttps://claude.ai/install.sh»). base.css يقفل
+   pre وcode وحدهما؛ والكتلة كلّها — بشريط أزرارها ورأس اسم الملف — تبقى على هيئتها الأصلية */
+html[data-cml="on"][dir="rtl"] #content .code-block,
+html[data-cml="on"][dir="rtl"] #content [data-component-part="code-block-root"] {
+  direction: ltr;
+}
+
+/* ٢) مسار «هيكل فقط» (سجلّ الإصدارات ‎/docs/en/changelog‎ — routes.shell): المحرّك لا يعرّب محتوى #content
+   ولا يقلبه، وهذه تُبقي اتجاهه LTR داخل الصفحة RTL (كمرجع الوثائق في docs-point.css). البوابة data-cml-route
+   يكتبها المحرّك على html بحسب حارس المسار؛ والرأس (العنوان والوصف) خارج #content فيُعرَّب */
+html[data-cml="on"][data-cml-route="shell"] #content {
+  direction: ltr;
+}
+
+/* ٣) الرموز الاتجاهية — بخاصية scale لا transform: تتركّب مع rotate/transform التي يضعها الموقع فيبقى المعنى
+   معكوسًا في كل حال (السهم «التالي» rotate-180، وسهم الفهرس المطويّ rotate(180deg)).
+   - سهما التنقّل بين الصفحات، وزرّ طيّ الفهرس (السهم ورمز القائمة).
+   - رمز «›» غير المُدار في الشريط العلوي (path يبدأ M6.5 2.75L12.75 9L6.5 15.25): سهم «Open Claude Code»، وفاصل
+     مسار التنقّل على الجوال («Getting started ›»). والمُدار منه (rotate-90) سهمُ قائمةٍ منسدلة لأسفل: لا اتجاه له.
+     (بـ:has في قاعدةٍ وحدها) */
+html[data-cml="on"][dir="rtl"] [data-component-part="pagination-chevron"],
+html[data-cml="on"][dir="rtl"] #toc-collapse-toggle svg {
+  scale: -1 1;
+}
+html[data-cml="on"][dir="rtl"] #navbar svg:not([class*="rotate"]):has(> path[d^="M6.5 2.75L12.75 9L6.5 15.25"]) {
+  scale: -1 1;
+}
+/* ★ والرمز الذي يُدار حين يُفتح يُعكس **حاويتُه** لا هو: العكس على الحاوية يقع بعد الدوران. مثلث الأكورديون
+   ▾ يُدار -90° مطويًّا فيصير ▸، ومعكوسًا ◂، ومفتوحًا ▾ كما هو؛ وعلى الرمز نفسه كان المفتوح سيشير إلى أعلى.
+   ومثله سهم مجموعات التنقّل (›) في حاويةٍ لا شيء فيها غيره، يُدار حين تنفتح المجموعة — في الشريط الجانبي وفي درج
+   التنقّل على الجوال معًا: الدرج يرسم #navigation-items نفسها خارج #sidebar (فحص الاتجاه ٣) */
+html[data-cml="on"][dir="rtl"] [data-component-part="accordion-caret-right"] {
+  scale: -1 1;
+}
+html[data-cml="on"][dir="rtl"] :is(#sidebar, #navigation-items) div:has(> svg:only-child > path[d^="M6.5 2.75L12.75 9L6.5 15.25"]) {
+  scale: -1 1;
+}
+
+/* ٤) مرساة العناوين («Navigate to header»: <div> أولُ العنوان فيه رابطٌ إلى ‎#…‎ بصنف ‎-ml-10‎) داخل عنوانٍ إنجليزي LTR في
+   صفحةٍ RTL تتدلّى خارج الحافة اليسرى فتُحدث تمريرًا أفقيًّا مقداره 20px على عرض 390 (حُدِّد السبب بالتنصيف في الدراسة).
+   كان العلاج قصَّ منطقة المحتوى (overflow-x:clip) فقُصّت معه الجداول العريضة القابلة للتمرير (غلاف Mintlify يتجاوز عمود
+   النص 20px من كل جهة): 16px من الجهتين على عرض 390، ومن اليسار على 1366 (فحص الاتجاه ٦). والآن يُخفى سببُ الفيض وحده:
+   المرساة تظهر عند التحويم وحده، وعلى الشاشات دون 1024 لا تحويم؛ والعنوان رابطٌ إلى نفسه على حاله. (:dir في قاعدةٍ وحدها)
+   ★ (التحقق النهائي، ١٧ ربيع الآخر ١٤٤٨هـ) ومثلها مرساة كل إصدارٍ في سجلّ الإصدارات (مكوّن ‎.update‎: ‎div > div > a‎ بالصنف نفسه
+   «Navigate to changelog»): بعد رفع القصّ عاد فيضُ 20px على عرض 390 في ‎/docs/en/changelog‎ (405 مرساة؛ فحص الاتجاه: 5 عالية) */
+@media (max-width: 1023.98px) {
+  html[data-cml="on"][dir="rtl"] #content :is(h1, h2, h3, h4, h5, h6):dir(ltr) > div:first-child > a[href^="#"],
+  html[data-cml="on"][dir="rtl"] #content .update:dir(ltr) > div:first-child > div > a[href^="#"] {
+    display: none;
+  }
+}
+
+/* ٥) رابط «ما الجديد» (a.digest-feature-link في صفحات الأسابيع): الموقع يضع بعده سهم «→» (‎::after‎) ويزيحه يمينًا عند
+   التحويم. الرابط المعرَّب اتجاهه RTL (dirSel)، فسهمه ← في آخره ويُزاح يسارًا؛ والإنجليزي بجواره على حاله LTR —
+   وإزاحتُه يمينًا ولو قلبتها الورقة المولَّدة (القلب بسمة الصفحة لا باتجاه العنصر). (:dir في قواعدها وحدها) */
+html[data-cml="on"][dir="rtl"] #content .digest-feature-link:dir(rtl)::after {
+  content: "\2190";
+}
+
+/* ٦) أوراق المكوّنات التفاعلية (<style> في المتن: إعدادات settings، ومكتبة الأوامر prompt-library): إعلاناتُها الفيزيائية
+   الأربعة غير المتناظرة منطقيةً (رُصدت ١٦ ربيع الآخر ١٤٤٨هـ). احتياطٌ لا غير: الورقة الحيّة تحملها وتقلبها (meta.liveInline
+   ‎#content style‎ — التحقق النهائي ١٧ ربيع الآخر ١٤٤٨هـ)، واللقطة المشحونة تقلبها كذلك؛ وكلتاهما أخصّ من هذه فتغلبها.
+   في جزيرةٍ LTR تساوي أصلها، وفي RTL تنقلب */
+html[data-cml-rtl] .ssc-machine-filemark { margin-left: 0; margin-inline-start: 10px; }
+html[data-cml-rtl] .pl-count { margin-left: 0; margin-inline-start: auto; }
+html[data-cml-rtl] .pl-head { text-align: start; }
+html[data-cml-rtl] .pl-needs-label { margin-right: 0; margin-inline-end: 6px; }
+
+@layer cml-point {
+  /* ٧) حشوة بنود التنقّل السطرية: Mintlify يكتب padding-left في style كل رابطٍ وزرّ (بالجافاسكربت) ومعها الصنف pr-3:
+     1rem للبنود العليا و1.75rem لبنود المجموعة المتداخلة المفتوحة (فحص الاتجاه ٢). القلب لا يمسّ السطري عمدًا، فكان
+     المجموع 16px بدل 28 ويلتصق النص بالحافة، والمتداخلة تبرز 16px خارج العليا. تُنقل الحشوة إلى جهتها: البداية
+     (اليمين) بقيمتها والنهاية .75rem. في الشريط الجانبي وفي درج التنقّل على الجوال (#navigation-items خارج #sidebar).
+     البوابة data-cml-rtl بلا قيمة (اللقطة v2 والورقة الحيّة live معًا). والصيغتان: نصّ الخادم «padding-left:1rem»
+     وما يكتبه React عند التنقّل من العميل «padding-left: 1rem;» */
+  html[data-cml-rtl][dir="rtl"] :is(#sidebar, #navigation-items) :is([style*="padding-left:1rem"], [style*="padding-left: 1rem"]) {
+    padding-left: 0.75rem !important;
+    padding-right: 1rem !important;
+  }
+  html[data-cml-rtl][dir="rtl"] :is(#sidebar, #navigation-items) :is([style*="padding-left:1.75rem"], [style*="padding-left: 1.75rem"]) {
+    padding-left: 0.75rem !important;
+    padding-right: 1.75rem !important;
+  }
+
+  /* ٨) تداخل بنود الفهرس «في هذه الصفحة» (المراجعة ج-١): عمقُ كل بندٍ قيمةٌ سطرية --toc-padding-left (رُصد منها
+     0rem و1rem و2rem؛ في hooks وحدها 10 و58 و75 بندًا) يقرؤها الصنف pl-[calc(var(--toc-padding-left)+…)].
+     القاعدة هنا **لكل قيمةٍ مرصودة** بقراءة المتغيّر نفسه، ولا تتوقف على بقاء الصنف كما هو — وبالخصائص المنطقية:
+     العمق من بداية البند بحسب اتجاهه هو (dirSel)، فالبند العربي من اليمين والإنجليزي من اليسار. كانت padding-right
+     للجميع فبدأت البنود الإنجليزية كلها من الحافة اليسرى بلا تداخل (143 بندًا في hooks — فحص الاتجاه ١) */
+  html[data-cml-rtl][dir="rtl"] #table-of-contents a[style*="--toc-padding-left"] {
+    padding-inline-end: 0 !important;
+    padding-inline-start: calc(var(--toc-padding-left, 0rem) + var(--toc-focus-padding, 0rem)) !important;
+  }
+
+  /* ٩) روابط التذييل: Mintlify يقصّها سطرًا واحدًا (عرضٌ أقصى 144px) فكان «المستقبل الاقتصادي (Economic Futures)» يُعرض
+     «المستقبل الاقتصادي (…» (فحص الاتجاه ٨). والترجمة نفسها في قاموسَي التطبيق والوثائق بقاعدة القاموس، فيلتفّ النص
+     سطرين بدل القصّ (والالتفاف وحده يكفي: علامة القصّ لا تقع إلا في سطرٍ واحد، والصندوق يطول بسطره الثاني فلا يُقصّ شيء) */
+  html[data-cml="on"] #footer a[href] {
+    white-space: normal !important;
+  }
+}
+
+@layer cml-point {
+  /* ١٠) محاذاة خلايا الجداول السطرية في المتن (text-align:left في style — من صيغة Markdown ‎:---‎): خليّةٌ عُرِّبت
+     فاتجاهها الفعلي RTL (المحرّك يضع dir لكل كتلة) تُحاذى إلى بدايتها؛ والإنجليزية LTR تبقى يسارًا. (:dir وحده) */
+  html[data-cml="on"] #content :is([style*="text-align:left"], [style*="text-align: left"]):dir(rtl) {
+    text-align: start !important;
+  }
+  /* وإزاحة سهم رابط «ما الجديد» عند التحويم بحسب اتجاه الرابط نفسه (انظر ٥) */
+  html[data-cml="on"][dir="rtl"] #content .digest-feature-link:dir(rtl):hover::after {
+    transform: translateX(-3px) !important;
+  }
+  html[data-cml="on"][dir="rtl"] #content .digest-feature-link:dir(ltr):hover::after {
+    transform: translateX(3px) !important;
+  }
+}
+
+/* ١١) مخطط نطاقات الإعدادات في صفحة settings (.ssc-canvas): سكربت الصفحة يضع المجلدات والحلقة والتسميات بإحداثياتٍ
+   مطلقة يكتبها left في style، فلا يقلبها شيء، وكانت تحت حاويةٍ RTL منذ عُرّب المتن (فحص الاتجاه، ر5: 24 عنصرًا).
+   والمخطط صورةٌ لشجرة ملفاتٍ بأسماء ومسارات إنجليزية تُقرأ من اليسار؛ فيبقى كله على هيئته الأصلية جزيرةً LTR
+   ككتل الشيفرة في ١). والنصّ المعرَّب الوحيد فيه تسمية الجهاز («جهازك» وأيقونتها): تأخذ اتجاه العربية، وموضعُها كما هو */
+html[data-cml="on"][dir="rtl"] #content .ssc-canvas {
+  direction: ltr;
+}
+html[data-cml="on"][dir="rtl"] #content .ssc-canvas .ssc-machine-label {
+  direction: rtl;
+}
+
+/* ★ العلاج النقطي للقصّ مع الخط العربي المضاف (DESIGN-fonts §٤.٦؛ قرار المالك — الخيار ٢، ١٩ ربيع الآخر ١٤٤٨هـ).
+   الخطوط العربية المحزومة أعمقُ ذيولًا تحت خط الأساس (ي ن ر و ع ج) من Segoe UI، ووثائق Claude Code يقطع السطر الواحد بـ
+   overflow: hidden عند ارتفاعٍ ثابت، فيُقصّ من الذيل أكثر مما يُقصّ اليوم. فيصير القطع clip بهامشٍ حول صندوق الحشوة
+   بوحدة em لأن زيادة الذيل تتبع حجم الخط (0.16em أصغر هامشٍ يجتاز به Cairo وNoto Naskh Arabic القاعدة؛ 2px لا يكفي فوق 20px):
+   - لا يتغيّر صندوقٌ ولا موضع، وعلامة الحذف (text-overflow) تعمل مع clip كما مع hidden، ولا يُرسم بعدها شيء؛
+   - hidden يجعل العنصر حاويةَ تمرير فيصير أدنى حجمه في الصفّ المرن والشبكة صفرًا، وclip لا يفعل؛ فيُعاد الصفر بإعلانٍ
+     عاديٍّ في أدنى طبقات الصفحة (cml-point أولُ الطبقات المعلنة)، فيغلبه كل حدٍّ يضعه الموقع بنفسه؛
+   - وخطُّ أساس inline-block تحت hidden حافته السفلى وتحت clip سطره الأخير، فيُستثنى المعروض سطريًّا بأصنافه (inline-*).
+   - ويُستثنى ما عليه أداة overflow-auto/scroll/visible أو overflow-x-… وoverflow-y-…: أدوات Tailwind تأتي بعد truncate فتغلبه في
+     الموقع، وclip المهمّ كان سيوقف تمريرَ حاويةِ تمرير أو يُحدث قصًّا لم يكن (المراجعة العدائية، ٢٠ ربيع الآخر ١٤٤٨هـ).
+   - ويُستثنى ما عليه صنف line-clamp-: إن قطع الموقع به بعد سطرين أظهر الهامشُ أعالي السطر التالي، فيعالجه علاج القطع بعدد الأسطر أدناه.
+   معلَّقٌ على data-cml-font (C.FONT_ATTR) وحدها، فبلا خطٍّ مضاف — «خط الموقع» أو الإطفاء — تبقى المواقع كما هي حرفًا.
+   و«fonts.mjs measure» يقرأ المحدِّدات داخل :is() والهامش من هذه القاعدة نفسها (لا نسخة)، والقفل يحفظ بصمتها:
+   فكل تعديلٍ هنا يُسقط «fonts.mjs verify» حتى تُعاد المعايرة. */
+@layer cml-point {
+  html[data-cml="on"][data-cml-font] :is(
+    .truncate, /* Tailwind: الصفوف المقطوعة */
+    .ssc-filemark, /* وسم الملف في الرسم (8.5/12.75) */
+    .pl-title, /* مكتبة الأوامر: العنوان (17/25.5) */
+    .pl-prompt-preview, /* مكتبة الأوامر: معاينة الأمر (13.5/20.25) */
+    .pl-match, /* مكتبة الأوامر: موضع المطابقة (13.5/20.25) */
+    /* قواعد القطع بلا حجم خط (يرث حجمه، فيمثّله «fonts.mjs measure» بأحجام الأدوات؛ مراجعة S5-B): */
+    .\[\&_a\]\:truncate a, .\[\&_button\]\:truncate button /* truncate على الروابط والأزرار من الأب */
+  ):not([class*="inline-"], [class*="overflow-auto"], [class*="overflow-scroll"], [class*="overflow-visible"], [class*="overflow-x-"], [class*="overflow-y-"], [class*="line-clamp-"]) {
+    overflow: clip !important;
+    overflow-clip-margin: 0.16em !important;
+    min-width: 0;
+    min-height: 0;
+  }
+  /* صيغ md: بشرط الموقع نفسه (من 768px)، فتحتها تلتفّ روابط التذييل بلا قصّ فلا علاج */
+  @media (width>=768px) {
+    html[data-cml="on"][data-cml-font] :is(.md\:truncate, .md\:\[\&\>\*\]\:truncate>*):not([class*="inline-"], [class*="overflow-auto"], [class*="overflow-scroll"], [class*="overflow-visible"], [class*="overflow-x-"], [class*="overflow-y-"], [class*="line-clamp-"]) {
+      overflow: clip !important;
+      overflow-clip-margin: 0.16em !important;
+      min-width: 0;
+      min-height: 0;
+    }
+  }
+} /* نهاية العلاج النقطي للقصّ */
+
+/* ★ علاج القطع بعدد الأسطر (line-clamp) مع الخط العربي المضاف (S5d-B، ٢٠ ربيع الآخر ١٤٤٨هـ؛ «طبّقها حسب المتاح دون حصول خلل»).
+   وثائق Claude Code تقطع بعض النصوص بعد عددٍ من الأسطر فيُخفي ما بعد السطر الأخير بـ overflow: hidden، وهامش القصّ لا يصلح هنا
+   لأنه يُظهر أعالي السطر التالي للحدّ. فتُرسم العربية داخل عنصر القطع وكل ما تحته بعائلةٍ تُلحق أولَ قائمة خطه:
+   - «cml-ar-compact»: تسجّلها الوحدة من بايتات الخط المختار نفسه بحجمٍ أصغر (size-adjust = s_c، ولا يقلّ عن 0.85) وتجاوزاتٍ
+     B.asc/s_c وB.desc/s_c ومدًى عربي، متى اجتاز بها الخطُّ ارتفاعاتِ القطع الحقيقية في هذا الموقع (web/code/fonts.clamp.json)؛
+   - فإن لم تسجّلها وقعت العربية على «cml-ar-today»: أوجهٌ محلية بمدًى عربي وبلا تجاوز، لكلٍّ مدى وزنٍ يطابق ما يختاره ويندوز
+     لـ "Segoe UI" عند ذلك الوزن (قيس كل وزنٍ من 1 إلى 1000: الخفيف حتى 325، ونصف الخفيف حتى 375، والعادي حتى 499، ونصف العريض
+     حتى 649، والعريض حتى 799، وفوقه لا عربية في Segoe UI Black فيرسمها النظام بـ Times New Roman العريض)، والمائل وجهٌ عادي
+     قائمٌ واحد يعرّضه المتصفح من 600 كما يفعل اليوم (بلا ميلٍ مصطنع في العربية، كالوجه الرئيس) — فترسم كالمرجع «Segoe UI» في القياس عند كل وزنٍ وميل، ولا يزيد القصّ عليه؛
+   - ثم var(--cml-ff): قائمة خط العنصر نفسها كما يعلنها الموقع (المرآة المولَّدة آخر الملف، بترتيب أوراقه وطبقاته)، فلا يتغيّر حرفٌ إنجليزي.
+   هذه القاعدة للجذور (عنصر القطع نفسه)، وما تحتها يرثها؛ وما يعلن له الموقع خطًّا قد يحمل وجهنا الرئيس (عائلةٌ معكوسة أو متغيّر)
+   تشمله قاعدةٌ مولَّدة آخر المرآة على أي عمق، وما يعلن له خطَّ نظامٍ صريحًا (monospace المجرّد …) يبقى كما هو فعربيته كاليوم.
+   ولا يتغيّر صندوقٌ ولا موضع: المسافة خارج المدى العربي، فأول خطٍّ متاح يبقى خط الموقع، وخط الأساس خطه.
+   معلَّقٌ على data-cml-font كالعلاج النقطي؛ و«fonts.mjs measure» يقرأ الجذور والمحدِّدات وأوجه اليوم من هنا (لا نسخة)،
+   والقفل يحفظ بصمتها فيسقط «fonts.mjs verify» إن تغيّرت بعد المعايرة. */
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI Light"), local("SegoeUI-Light"); font-weight: 1 325; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI Semilight"), local("SegoeUI-Semilight"); font-weight: 326 375; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI"), local("SegoeUI"); font-weight: 376 499; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI Semibold"), local("SegoeUI-Semibold"); font-weight: 500 649; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI Bold"), local("SegoeUI-Bold"); font-weight: 650 799; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Times New Roman Bold"), local("TimesNewRomanPS-BoldMT"); font-weight: 800 1000; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@font-face { font-family: "cml-ar-today"; src: local("Segoe UI"), local("SegoeUI"); font-weight: 400; font-style: italic; unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1; }
+@layer cml-point {
+  html[data-cml="on"][data-cml-font] :is(
+    [class*="line-clamp-"], /* أصناف line-clamp كلها وصيغها المشروطة */
+    [style*="line-clamp"] /* القطع بنمطٍ مضمَّن */
+  ) {
+    font-family: "cml-ar-compact", "cml-ar-today", var(--cml-ff) !important;
+  }
+} /* نهاية علاج القطع بعدد الأسطر */
+
+/* ── مرآة --cml-ff: مولَّدة من لقطة sitecss-code/ بـ «node web/code/toolchain/fonts.mjs clamp-css»، فلا تُحرَّر باليد. ──
+   تعريف متغيّرٍ لا يقرؤه إلا علاج القطع (المعلَّق على السمة)، فلا أثر له في الرسم: 78 قاعدة بترتيب أوراق الموقع وطبقاته (properties، theme، base، components، utilities)؛ ثم 48 محدِّدًا لما تحت الجذور يعلن له الموقع خطًّا قد يحمل وجهنا. */
+@layer cml-point {
+@layer cml-ua, properties, theme, base, components, utilities;
+@layer components{@layer components;}
+@layer cml-ua{:where(code,kbd,samp,pre,tt,xmp,listing,plaintext,textarea){--cml-ff:monospace}:where(math){--cml-ff:math}}
+.papermono_89c757f2-module__6aS5zq__className{--cml-ff:paperMono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace}
+.inter_1d81deff-module__CYM0aG__className{--cml-ff:Inter, -apple-system, BlinkMacSystemFont, Segoe UI, system-ui, sans-serif}
+@layer base{
+ html,:host{--cml-ff:var(--default-font-family,ui-sans-serif,system-ui,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji")}
+ code,kbd,samp,pre{--cml-ff:var(--default-mono-font-family,ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace)}
+ button,input,select,optgroup,textarea{--cml-ff:inherit}
+ h1,h2,h3,h4,h5,h6{--cml-ff:var(--font-family-headings-custom,var(--font-inter)), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif}
+ body{--cml-ff:var(--font-family-body-custom,var(--font-inter)), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif}
+ .latex-style input,.latex-style button{--cml-ff:inherit}
+ .latex-style textarea{--cml-ff:inherit}
+ .latex-style select{--cml-ff:inherit}
+ .latex-style code{--cml-ff:CMU Typewriter Text!important}
+ .latex-style pre{--cml-ff:CMU Typewriter Text!important}
+}
+@layer components{
+ .prose :where(kbd):not(:where([class~=not-prose],[class~=not-prose] *)){--cml-ff:inherit}
+ .prose :where(pre code):not(:where([class~=not-prose],[class~=not-prose] *)){--cml-ff:inherit}
+ .prose :where(h1 small,h2 small,h3 small,h4 small):not(:where([class~=not-prose],[class~=not-prose] *)){--cml-ff:var(--font-paper-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+ @layer components{
+  .c15t-ui-button-Lo5cc{--cml-ff:var(--button-font)}
+  .c15t-ui-title-D6JTo{--cml-ff:inherit}
+  .c15t-ui-meta-G2S5Z{--cml-ff:inherit}
+  .c15t-ui-root-Pd0rf{--cml-ff:inherit}
+  .c15t-ui-trigger-U8k4E{--cml-ff:inherit}
+  .c15t-ui-root-hE9Kz{--cml-ff:var(--consent-banner-font-family)}
+  .c15t-ui-root-SIREQ{--cml-ff:var(--consent-dialog-font-family)}
+  .c15t-ui-text-Q2Rdp{--cml-ff:var(--c15t-font-family,system-ui,sans-serif)}
+  .c15t-ui-widget-tTKyY{--cml-ff:var(--consent-widget-font-family)}
+  .c15t-ui-accordionTitle-oVDJ5{--cml-ff:inherit}
+  .c15t-ui-placeholder-eDKsb{--cml-ff:var(--frame-font-family)}
+ }
+}
+@layer utilities{
+ .latex-style{--cml-ff:Latin Modern}
+ .font-\[inherit\]{--cml-ff:inherit}
+ .font-headingsFamily{--cml-ff:var(--font-family-headings-custom,var(--font-inter)), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif}
+ .font-mono{--cml-ff:var(--font-paper-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+ .font-sans{--cml-ff:var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"}
+ .\[\&\]\:font-\[inherit\]{--cml-ff:inherit}
+}
+.mint-twoslash-popover-pre{--cml-ff:var(--twoslash-code-font)}
+.mint-twoslash-popover .twoslash-popup-docs-tag-name{--cml-ff:var(--twoslash-code-font)}
+code[data-symbols=true]{--cml-ff:inherit}
+.font-family-mono{--cml-ff:var(--font-family-mono-custom,var(--font-paper-mono)), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+.katex{--cml-ff:KaTeX_Main, Times New Roman, serif}
+.katex .textrm{--cml-ff:KaTeX_Main}
+.katex .textsf{--cml-ff:KaTeX_SansSerif}
+.katex .texttt{--cml-ff:KaTeX_Typewriter}
+.katex .mathnormal{--cml-ff:KaTeX_Math}
+.katex .mathit{--cml-ff:KaTeX_Main}
+.katex .mathbf{--cml-ff:KaTeX_Main}
+.katex .boldsymbol{--cml-ff:KaTeX_Math}
+.katex .amsrm,.katex .mathbb,.katex .textbb{--cml-ff:KaTeX_AMS}
+.katex .mathcal{--cml-ff:KaTeX_Caligraphic}
+.katex .mathfrak,.katex .textfrak{--cml-ff:KaTeX_Fraktur}
+.katex .mathtt{--cml-ff:KaTeX_Typewriter}
+.katex .mathscr,.katex .textscr{--cml-ff:KaTeX_Script}
+.katex .mathsf,.katex .textsf{--cml-ff:KaTeX_SansSerif}
+.katex .mathboldsf,.katex .textboldsf{--cml-ff:KaTeX_SansSerif}
+.katex .mathitsf,.katex .textitsf{--cml-ff:KaTeX_SansSerif}
+.katex .mainrm{--cml-ff:KaTeX_Main}
+.katex .delimsizing.size1{--cml-ff:KaTeX_Size1}
+.katex .delimsizing.size2{--cml-ff:KaTeX_Size2}
+.katex .delimsizing.size3{--cml-ff:KaTeX_Size3}
+.katex .delimsizing.size4{--cml-ff:KaTeX_Size4}
+.katex .delimsizing.mult .delim-size1>span{--cml-ff:KaTeX_Size1}
+.katex .delimsizing.mult .delim-size4>span{--cml-ff:KaTeX_Size4}
+.katex .op-symbol.small-op{--cml-ff:KaTeX_Size1}
+.katex .op-symbol.large-op{--cml-ff:KaTeX_Size2}
+#home-header{--cml-ff:"Anthropic Sans", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif}
+.build-with{--cml-ff:"Anthropic Sans", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif}
+body,input,#category-select,.dropdown-item,#table-of-contents{--cml-ff:"Anthropic Sans", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif}
+.eyebrow{--cml-ff:"Anthropic Sans", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif}
+#content-container{--cml-ff:"Anthropic Sans", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif}
+#content-container h1,#content-container h2,#content-container h3,#content-container h4,#content-container h5,#content-container h6{--cml-ff:"Anthropic Serif Display", Georgia, "Times New Roman", Times, serif}
+#content-container .digest-feature-title{--cml-ff:"Anthropic Serif Display", Georgia, serif}
+#content-container .digest-feature-pill{--cml-ff:ui-monospace, "SF Mono", Menlo, Consolas, monospace}
+#content-container .digest-wins-title{--cml-ff:"Anthropic Serif Display", Georgia, serif}
+.ssc-root{--cml-ff:var(--font-sans, system-ui, -apple-system, sans-serif)}
+.ssc-mono{--cml-ff:var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)}
+.pl{--cml-ff:'Anthropic Sans', -apple-system, BlinkMacSystemFont, sans-serif}
+.pl button{--cml-ff:inherit}
+.pl-prompt-preview{--cml-ff:var(--pl-mono)}
+.pl-prompt-box{--cml-ff:var(--pl-mono)}
+.pl-slot{--cml-ff:var(--pl-mono)}
+.pl-hint-chip{--cml-ff:var(--pl-mono)}
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .papermono_89c757f2-module__6aS5zq__className,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .inter_1d81deff-module__CYM0aG__className,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) code,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) kbd,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) samp,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) pre,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h1,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h2,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h3,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h4,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h5,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h6,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) :where(h1 small,h2 small,h3 small,h4 small):not(:where([class~=not-prose],[class~=not-prose] *)):is(.prose :where(h1 small,h2 small,h3 small,h4 small):not(:where([class~=not-prose],[class~=not-prose] *))),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .c15t-ui-button-Lo5cc,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .c15t-ui-root-hE9Kz,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .c15t-ui-root-SIREQ,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .c15t-ui-text-Q2Rdp,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .c15t-ui-widget-tTKyY,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .c15t-ui-placeholder-eDKsb,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-headingsFamily,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-mono,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-sans,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .mint-twoslash-popover-pre,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .twoslash-popup-docs-tag-name:is(.mint-twoslash-popover .twoslash-popup-docs-tag-name),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-family-mono,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) #home-header,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .build-with,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) input,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) #category-select,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .dropdown-item,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) #table-of-contents,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .eyebrow,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) #content-container,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h1:is(#content-container h1),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h2:is(#content-container h2),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h3:is(#content-container h3),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h4:is(#content-container h4),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h5:is(#content-container h5),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) h6:is(#content-container h6),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .digest-feature-title:is(#content-container .digest-feature-title),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .digest-wins-title:is(#content-container .digest-wins-title),
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .ssc-root,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .ssc-mono,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .pl,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .pl-prompt-preview,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .pl-prompt-box,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .pl-slot,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .pl-hint-chip {
+  font-family: "cml-ar-compact", "cml-ar-today", var(--cml-ff) !important;
+}
+}
+/* ── نهاية مرآة --cml-ff ── */

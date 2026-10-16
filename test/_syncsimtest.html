@@ -1,0 +1,748 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>syncsim test</title>
+<!--
+  محاكاة المزامنة بأجهزةٍ متعددة (المراجعة المستقلة ١٢ ربيع الآخر ١٤٤٨هـ).
+
+  كل جهازٍ إطارٌ مستقل بنسخته من cml-sync.js (قفلُه ودفاتره في ذاكرته)، ومخزنٌ محلي، ونسخةٌ
+  محلية من مساحة المزامنة. وخادمٌ بنموذج «آخرُ واصلٍ يغلب» لكل مفتاح: كتابةُ الجهاز تقع في
+  نسخته فورًا، وتصل الخادمَ حين «يتصل»، ثم تُبثّ إلى البقية دفعةً دفعة — فتقع التمزّقات
+  (شرائحُ جهازٍ تحت ميتا غيره) والتعارضات (دفعتان متزامنتان يغلب آخرهما وصولًا) والغياب
+  (جهازٌ غير متصل يدفع إلى نسخته ثم تغلبه لقطةُ غيره) كما في المتصفح.
+
+  وسلوك العامل مُحاكى: كتابةُ التصحيحات (من المستخدم أو من الدمج) تسجّل شواهدَ ما حُذف وتُجدول
+  جولةً محلية، وحدثُ السحابة يمرّ بـhandleSyncChange، ومواعيدُ الإعادة (retryAt) تُحترم بساعةٍ منطقية.
+
+  الثوابت المفحوصة بعد السكون:
+   (ث١) التقارب: الأجهزة كلها متطابقة، ولقطة الخادم صالحةٌ ومطابقة لها.
+   (ث٢) لا فقد: كل عنصرٍ أُضيف ولم يحذفه أحدٌ قط موجودٌ في النهاية بإحدى قيمه المكتوبة.
+  ثم حالاتٌ مسمّاة لما كشفته المراجعة: الإضافة دون اتصال، والمسح ثم جهازٌ جديد، والتمزّق
+  المتشابك، والشاهد المتقادم، والحذف المتسلسل.
+  العقد: document.title = "syncsim N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1000px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vertical-align:top}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<h1>محاكاة المزامنة بأجهزةٍ متعددة</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>
+var jsErrors = 0; window.onerror = function () { jsErrors++; };
+document.title = "syncsim …";
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function cp(v) { return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// ===== إطارات الأجهزة: كلٌّ بنسخته من الوحدة =====
+// v1: نواة 1.0.0 المجمَّدة (assets/v1core — مطابقةٌ بايتًا لحزمة المتجر) لاختبار الترقية والخلط
+function makeFrame(version) {
+  return new Promise(function (res, rej) {
+    var f = document.createElement("iframe");
+    f.style.display = "none";
+    var base = version === "v1" ? "assets/v1core/" : "../extension/";
+    f.srcdoc = '<script src="' + base + 'cml-const.js"><\/script>' +
+      '<script src="' + base + 'cml-shared.js"><\/script>' +
+      '<script src="' + base + 'cml-sync.js"><\/script>';
+    f.onload = function () {
+      if (!f.contentWindow.CMLSync) { rej(new Error("لم تُحمَّل الوحدة في الإطار")); return; }
+      res(f);
+    };
+    document.body.appendChild(f);
+  });
+}
+
+// ===== العالم: خادم وأجهزة وساعة =====
+function World(n, frames, seed) {
+  var W = this;
+  W.clock = 1700000000000;
+  W.server = {};                    // مفتاح ← قيمة
+  W.rng = mulberry32(seed || 1);
+  W.devs = [];
+  W.ops = [];                       // سجلّ عمليات المستخدم: {dev, kind, key, value, seq}
+  W.seq = 0;
+  var Kc = frames[0].contentWindow.CMLConst.K;
+  W.K = Kc;
+  for (var i = 0; i < n; i++) W.devs.push(new Device(W, i, frames[i]));
+}
+function Device(W, id, frame) {
+  var D = this;
+  D.W = W; D.id = id; D.name = "D" + id;
+  D.S = frame.contentWindow.CMLSync;
+  D.local = {}; D.replica = {};
+  D.outbox = []; D.inbox = [];
+  D.online = true;
+  D.localTask = null;               // جولة محلية مجدولة (طابور العامل)
+  D.retry = null;                   // {kind, at}
+  var K = W.K;
+  D.env = {
+    getLocal: function (keys, cb) {
+      var o = {};
+      for (var i = 0; i < keys.length; i++) if (D.local[keys[i]] !== undefined) o[keys[i]] = cp(D.local[keys[i]]);
+      cb(o);
+    },
+    setLocal: function (obj, cb) {
+      var ch = {};
+      for (var k in obj) { ch[k] = { oldValue: cp(D.local[k]), newValue: cp(obj[k]) }; D.local[k] = cp(obj[k]); }
+      cb(null);
+      D.onLocalChanged(ch);
+    },
+    removeLocal: function (keys, cb) {
+      var ch = {};
+      for (var i = 0; i < keys.length; i++) {
+        if (D.local[keys[i]] !== undefined) ch[keys[i]] = { oldValue: cp(D.local[keys[i]]) };
+        delete D.local[keys[i]];
+      }
+      cb(null);
+      D.onLocalChanged(ch);
+    },
+    getSyncAll: function (cb) { cb(cp(D.replica)); },
+    setSync: function (obj, cb) {
+      // حصص كروم على النسخة المحلية نفسها
+      var bytes = 0, k, next = cp(D.replica);
+      for (k in obj) next[k] = cp(obj[k]);
+      for (k in next) bytes += D.S.byteLen(k) + D.S.jsonBytes(next[k]);
+      if (bytes > 102400) { cb("QUOTA_BYTES quota exceeded"); return; }
+      var ch = {}, batch = [];
+      for (k in obj) { ch[k] = { oldValue: cp(D.replica[k]), newValue: cp(obj[k]) }; D.replica[k] = cp(obj[k]); batch.push({ k: k, v: cp(obj[k]) }); }
+      D.outbox.push(batch);
+      cb(null);
+      D.queueSyncEvent(ch);
+    },
+    removeSync: function (keys, cb) {
+      var ch = {}, batch = [];
+      for (var i = 0; i < keys.length; i++) {
+        ch[keys[i]] = { oldValue: cp(D.replica[keys[i]]) };
+        delete D.replica[keys[i]];
+        batch.push({ k: keys[i], del: true });
+      }
+      D.outbox.push(batch);
+      cb(null);
+      D.queueSyncEvent(ch);
+    },
+    now: function () { return W.clock + (D.skew || 0); },
+  };
+  D.syncEvents = [];
+}
+Device.prototype.onLocalChanged = function (ch) {
+  // كما يفعل العامل: تغيّرُ التصحيحات أو القواعد ⇒ شواهدُ ما حُذف + جولةٌ محلية مجدولة
+  var K = this.W.K, S = this.S;
+  if (!ch[K.OVERRIDES] && !ch[K.USER_PATTERNS]) return;
+  if (this.local[K.SYNC_ENABLED] !== true) return;
+  var removed = [];
+  if (ch[K.OVERRIDES]) removed = S.diffRemovedKeys(ch[K.OVERRIDES].oldValue, ch[K.OVERRIDES].newValue);
+  if (ch[K.USER_PATTERNS]) removed = removed.concat(S.diffRemovedRules(ch[K.USER_PATTERNS].oldValue, ch[K.USER_PATTERNS].newValue));
+  var stamp = this.W.clock;
+  if (removed.length) this.pendingTombs = (this.pendingTombs || []).concat([{ r: removed, at: stamp }]);
+  else this.local[K.SYNC_PENDING] = stamp;
+  var acc = this.localTask || {};
+  for (var k in ch) {
+    if (k !== K.OVERRIDES && k !== K.USER_PATTERNS) continue;
+    if (!acc[k]) acc[k] = { oldValue: ch[k].oldValue, newValue: ch[k].newValue };
+    else acc[k].newValue = ch[k].newValue;
+  }
+  this.localTask = acc;
+};
+Device.prototype.queueSyncEvent = function (ch) { this.syncEvents.push(ch); };
+Device.prototype.flushTombs = function () {
+  var D = this, p = D.pendingTombs || [], K = D.W.K;
+  D.pendingTombs = null;
+  var chain = Promise.resolve();
+  p.forEach(function (x) {
+    chain = chain.then(function () {
+      if (typeof D.S.recordTombs === "function") return D.S.recordTombs(D.env, x.r, x.at);
+      // عامل 1.0.0: يكتب الشاهد والطابع مباشرةً
+      var t = cp(D.local[K.SYNC_TOMBS] || {});
+      x.r.forEach(function (k) { t[k] = x.at; });
+      D.local[K.SYNC_TOMBS] = D.S.pruneTombs(t, x.at);
+      D.local[K.SYNC_PENDING] = x.at;
+    });
+  });
+  return chain;
+};
+// ترقيةٌ في مكانها: الجهاز نفسه (مخزنه ونسخته) بنواةٍ أخرى — كما يفعل تحديث المتجر
+Device.prototype.swapCore = function (frame) { this.S = frame.contentWindow.CMLSync; };
+Device.prototype.runLocal = function () {
+  var D = this, acc = D.localTask;
+  D.localTask = null;
+  return D.flushTombs().then(function () { return D.S.handleLocalChange(D.env, acc); }).then(function (r) { D.noteRetry(r); return r; });
+};
+Device.prototype.runSyncEvent = function () {
+  var D = this, ch = D.syncEvents.shift();
+  if (!ch) return Promise.resolve(null);
+  return D.S.handleSyncChange(D.env, ch).then(function (r) { D.noteRetry(r); return r; });
+};
+Device.prototype.noteRetry = function (r) {
+  if (r && r.retryAt && (!this.retry || r.retryAt < this.retry.at)) this.retry = { kind: r.retry, at: r.retryAt };
+};
+Device.prototype.runRetry = function () {
+  var D = this, rt = D.retry;
+  D.retry = null;
+  var K = D.W.K;
+  var synth = {}; synth[K.SYNC_META] = {};
+  var p = rt.kind === "sync" ? D.S.handleSyncChange(D.env, synth) : D.flushTombs().then(function () { return D.S.handleLocalChange(D.env, null); });
+  return p.then(function (r) { D.noteRetry(r); return r; });
+};
+// الاتصال: دفعةٌ من صندوق الجهاز تصل الخادم، فتُبثّ إلى كل نسخةٍ تخالفه
+Device.prototype.deliverOut = function () {
+  var W = this.W, batch = this.outbox.shift();
+  if (!batch) return;
+  for (var i = 0; i < batch.length; i++) {
+    var op = batch[i];
+    if (op.del) delete W.server[op.k]; else W.server[op.k] = cp(op.v);
+  }
+  var keys = batch.map(function (o) { return o.k; });
+  W.devs.forEach(function (d) { d.inbox.push(keys); });
+};
+// وصولُ ما في الخادم إلى نسخة الجهاز (دفعةً بمفاتيحها): ما خالف نسختَه يُطبَّق ويولّد حدثًا
+Device.prototype.deliverIn = function () {
+  var W = this.W, keys = this.inbox.shift();
+  if (!keys) return;
+  var ch = {}, any = false;
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i], sv = W.server[k], lv = this.replica[k];
+    if (JSON.stringify(sv) === JSON.stringify(lv)) continue;
+    // كتابةٌ محلية لم تصل الخادم بعد لهذا المفتاح تبقى (تصل لاحقًا فتغلب إن وصلت آخِرًا)
+    var pendingLocal = this.outbox.some(function (b) { return b.some(function (o) { return o.k === k; }); });
+    if (pendingLocal) continue;
+    ch[k] = { oldValue: cp(lv), newValue: cp(sv) };
+    if (sv === undefined) delete this.replica[k]; else this.replica[k] = cp(sv);
+    any = true;
+  }
+  if (any) this.syncEvents.push(ch);
+};
+// تعديلات المستخدم
+Device.prototype.userSet = function (key, value) {
+  var K = this.W.K;
+  var ov = cp(this.local[K.OVERRIDES] || {});
+  ov.ar = ov.ar || {};
+  var old = cp(this.local[K.OVERRIDES] || {});
+  ov.ar[key] = value;
+  this.local[K.OVERRIDES] = ov;
+  this.W.ops.push({ dev: this.id, kind: "set", key: key, value: value, seq: this.W.seq++ });
+  this.onLocalChanged(kvCh(K.OVERRIDES, old, ov));
+};
+Device.prototype.userDel = function (key) {
+  var K = this.W.K;
+  var ov = cp(this.local[K.OVERRIDES] || {});
+  if (!ov.ar || ov.ar[key] === undefined) return false;
+  var old = cp(this.local[K.OVERRIDES]);
+  delete ov.ar[key];
+  this.local[K.OVERRIDES] = ov;
+  this.W.ops.push({ dev: this.id, kind: "del", key: key, seq: this.W.seq++ });
+  this.onLocalChanged(kvCh(K.OVERRIDES, old, ov));
+  return true;
+};
+function kvCh(k, o, n) { var c = {}; c[k] = { oldValue: o, newValue: n }; return c; }
+// القواعد الذكية بترتيب صفحة الإعدادات (ترتيبها كما يكتبه المستخدم)
+Device.prototype.userRules = function (list) {
+  var K = this.W.K, old = cp(this.local[K.USER_PATTERNS] || []);
+  this.local[K.USER_PATTERNS] = cp(list);
+  this.onLocalChanged(kvCh(K.USER_PATTERNS, old, list));
+};
+Device.prototype.keys = function () { return Object.keys(((this.local[this.W.K.OVERRIDES] || {}).ar) || {}).sort(); };
+Device.prototype.ov = function () { return ((this.local[this.W.K.OVERRIDES] || {}).ar) || {}; };
+
+World.prototype.step = function () {
+  // خطوةٌ عشوائية واحدة؛ تُعاد وعدًا يكتمل حين تسكن سلاسلها
+  var W = this, r = W.rng(), d = W.devs[Math.floor(W.rng() * W.devs.length)];
+  W.clock += Math.floor(W.rng() * 4000);
+  var acts = [];
+  if (r < 0.22) {
+    var key = "k" + Math.floor(W.rng() * 12);
+    d.userSet(key, key + "@" + d.name + "#" + W.seq);
+  } else if (r < 0.30) {
+    var ks = d.keys(); if (ks.length) d.userDel(ks[Math.floor(W.rng() * ks.length)]);
+  } else if (r < 0.40) {
+    d.online = !d.online || W.rng() < 0.3;
+  } else if (r < 0.55) {
+    if (d.localTask) acts.push(d.runLocal());
+  } else if (r < 0.70) {
+    if (d.online && d.outbox.length) d.deliverOut();
+  } else if (r < 0.82) {
+    if (d.online && d.inbox.length) d.deliverIn();
+  } else if (r < 0.95) {
+    if (d.syncEvents.length) acts.push(d.runSyncEvent());
+    // أحيانًا جولتان معًا على الجهاز نفسه (فيُمتحن التأجيل والتصريف)
+    if (W.rng() < 0.3 && d.localTask) acts.push(d.runLocal());
+  } else {
+    if (d.retry && d.retry.at <= W.clock) acts.push(d.runRetry());
+  }
+  return Promise.all(acts);
+};
+World.prototype.quiesce = function () {
+  var W = this, rounds = 0;
+  W.devs.forEach(function (d) { d.online = true; });
+  function busy() {
+    return W.devs.some(function (d) {
+      return d.localTask || d.outbox.length || d.inbox.length || d.syncEvents.length || d.retry || (d.pendingTombs && d.pendingTombs.length) ||
+        (d.local[W.K.SYNC_PENDING] && !d.localTask);
+    });
+  }
+  function once() {
+    rounds++;
+    if (rounds > 400 || !busy()) return Promise.resolve(rounds);
+    var acts = [];
+    W.clock += 3000;
+    W.devs.forEach(function (d) {
+      while (d.outbox.length) d.deliverOut();
+    });
+    W.devs.forEach(function (d) { while (d.inbox.length) d.deliverIn(); });
+    var chain = Promise.resolve();
+    W.devs.forEach(function (d) {
+      chain = chain.then(function () {
+        // عددٌ مُثبَّت: الطابور لا ينقص إلا حين تجري الوعود، فالشرط عليه حلقةٌ لا تنتهي
+        var c = Promise.resolve(), n = d.syncEvents.length;
+        for (var q = 0; q < n; q++) c = c.then(function () { return d.runSyncEvent(); });
+        return c;
+      }).then(function () {
+        if (d.localTask) return d.runLocal();
+        if (d.local[W.K.SYNC_PENDING]) return d.flushTombs().then(function () { return d.S.handleLocalChange(d.env, null); }).then(function (r) { d.noteRetry(r); });
+      }).then(function () {
+        if (d.retry) {
+          if (d.retry.at > W.clock) W.clock = d.retry.at + 1;
+          return d.runRetry();
+        }
+      });
+    });
+    return chain.then(once);
+  }
+  return once();
+};
+World.prototype.enableAll = function () {
+  var W = this;
+  W.devs.forEach(function (d) { d.local[W.K.SYNC_ENABLED] = true; d.local[W.K.SYNC_DEVICE] = "dev" + d.id; });
+};
+// الثوابت
+World.prototype.verdict = function () {
+  var W = this, S = W.devs[0].S, K = W.K;
+  var hashes = W.devs.map(function (d) { return S.hashPayload(S.sanitizePayload({ overrides: d.local[K.OVERRIDES] || {}, patterns: d.local[K.USER_PATTERNS] || [] })); });
+  var converged = hashes.every(function (h) { return h === hashes[0]; });
+  var snap = S.unpack(cp(W.server));
+  var cloudOk = !!snap && S.hashPayload(S.sanitizePayload(snap.payload)) === hashes[0];
+  // لا فقد: عنصرٌ لم يحذفه أحدٌ قط موجودٌ بإحدى قيمه
+  var deleted = {}, values = {};
+  W.ops.forEach(function (o) {
+    if (o.kind === "del") deleted[o.key] = 1;
+    else (values[o.key] = values[o.key] || {})[o.value] = 1;
+  });
+  var lost = [], d0 = W.devs[0].ov();
+  Object.keys(values).forEach(function (k) {
+    if (deleted[k]) return;
+    if (d0[k] === undefined || !values[k][d0[k]]) lost.push(k);
+  });
+  return { converged: converged, cloudOk: cloudOk, lost: lost };
+};
+
+// ===== الحالات =====
+async function frames(n) { var out = []; for (var i = 0; i < n; i++) out.push(await makeFrame()); return out; }
+function freshFramesEach(n) { return frames(n); }
+
+async function namedCases() {
+  var K;
+  // (أ) إضافةٌ دون اتصال تغلبها لقطةُ جهازٍ لم يرها (الخادم يأخذ آخر واصل): لا تضيع
+  {
+    var W = new World(2, await freshFramesEach(2), 11); K = W.K; W.enableAll();
+    var A = W.devs[0], B = W.devs[1];
+    A.userSet("x", "إكس"); await W.quiesce();
+    A.online = false;
+    A.userSet("a", "أ"); await A.runLocal();           // يدفع إلى نسخته وحدها
+    B.userSet("b", "ب"); await B.runLocal(); B.deliverOut(); // يصل الخادمَ أولًا
+    A.online = true; A.deliverOut();                    // يصل بعده فيغلبه
+    // ثم عكسُ الترتيب في جولةٍ ثانية: لقطةُ B تصل آخِرًا فتغلب لقطةَ A
+    A.userSet("a2", "أ٢"); await A.runLocal();
+    B.userSet("b2", "ب٢"); await B.runLocal();
+    A.deliverOut(); B.deliverOut();
+    await W.quiesce();
+    var v = W.verdict();
+    check("★ (أ) الإضافة دون اتصال والتعارض بالترتيبين: تقارب ولا فقد", "true/true/-",
+      v.converged + "/" + v.cloudOk + "/" + (v.lost.join(",") || "-"));
+  }
+  // (ب) المسح ثم جهازٌ جديد بلا تصحيحات يفعّل المزامنة: تصحيحات البقية لا تُمحى
+  {
+    var W2 = new World(3, await freshFramesEach(3), 12); K = W2.K;
+    var A2 = W2.devs[0], B2 = W2.devs[1], N2 = W2.devs[2];
+    [A2, B2].forEach(function (d) { d.local[K.SYNC_ENABLED] = true; d.local[K.SYNC_DEVICE] = "dev" + d.id; });
+    A2.userSet("x", "إكس"); A2.userSet("y", "واي");
+    await W2.quiesce();
+    var wr = await A2.S.admin(A2.env, "reset", { wipe: true });
+    A2.deliverOut(); await W2.quiesce();
+    N2.local[K.SYNC_ENABLED] = true; N2.local[K.SYNC_DEVICE] = "devN";
+    N2.localTask = {}; await W2.quiesce();
+    A2.local[K.SYNC_ENABLED] = true; A2.local[K.SYNC_DEVICE] = "devA2"; A2.localTask = {}; await W2.quiesce();
+    var bk = B2.keys().join(",");
+    check("★ (ب) ضبطٌ مع مسح ثم أجهزةٌ فارغة تفعّل: B يبقى بـx,y وتعود السحابة بهما", "true/x,y/x,y",
+      !!(wr && wr.reset) + "/" + bk + "/" + Object.keys((W2.devs[0].S.unpack(cp(W2.server)) || { payload: { overrides: {} } }).payload.overrides.ar || {}).sort().join(","));
+  }
+  // (ج) تمزّقٌ متشابك: شرائح A، شرائح B، ميتا B، ميتا A — ولا يضيع شيءٌ من الطرفين
+  {
+    var W3 = new World(2, await freshFramesEach(2), 13); K = W3.K; W3.enableAll();
+    var A3 = W3.devs[0], B3 = W3.devs[1];
+    A3.userSet("x", "إكس"); await W3.quiesce();
+    A3.userSet("a", "أ"); B3.userSet("b", "ب");
+    await A3.runLocal(); await B3.runLocal();
+    // كلٌّ دفع شرائحه ثم ميتاه (دفعتان في صندوقه): نشبّكها
+    var a1 = A3.outbox.shift(), a2 = A3.outbox.shift(), b1 = B3.outbox.shift(), b2 = B3.outbox.shift();
+    A3.outbox.unshift(a1); A3.deliverOut(); B3.outbox.unshift(b1); B3.deliverOut();
+    B3.outbox.unshift(b2); B3.deliverOut(); A3.outbox.unshift(a2); A3.deliverOut();
+    await W3.quiesce();
+    var v3 = W3.verdict();
+    check("★ (ج) التمزّق المتشابك: تقارب ولا فقد (a وb كلاهما)", "true/true/-/a,b,x",
+      v3.converged + "/" + v3.cloudOk + "/" + (v3.lost.join(",") || "-") + "/" + A3.keys().join(","));
+  }
+  // (د) شاهدُ تمزّقٍ قديم لا يختصر الانتظار في تمزّقٍ جديد
+  {
+    var W4 = new World(2, await freshFramesEach(2), 14); K = W4.K; W4.enableAll();
+    var A4 = W4.devs[0], B4 = W4.devs[1];
+    A4.userSet("x", "إكس"); await W4.quiesce();
+    // الحلقة الأولى: شرائح B تصل A قبل ميتاه
+    B4.userSet("y", "واي"); await B4.runLocal();
+    B4.deliverOut(); A4.deliverIn(); await A4.runSyncEvent();
+    B4.deliverOut(); await W4.quiesce();
+    var st1 = A4.local[K.SYNC_STATE] || {};
+    check("★ (د) قراءةٌ متّسقة بعد التمزّق تمحو شاهده", "undefined/undefined", String(st1.tornAt) + "/" + String(st1.tornSig));
+    // بعد ساعة: تمزّقٌ جديد — يجب أن ينتظر لا أن يُصلح فورًا
+    W4.clock += 3600 * 1000;
+    B4.userSet("z", "زد"); await B4.runLocal();
+    B4.deliverOut(); A4.deliverIn();
+    var r4 = await A4.runSyncEvent();
+    check("★ (د) تمزّقٌ جديدٌ بعد ساعة يُنتظر (torn) لا يُصلح فورًا", "torn", r4 && r4.done);
+    B4.deliverOut(); await W4.quiesce();
+    var v4 = W4.verdict();
+    check("★ (د) ثم تقاربٌ بلا فقد", "true/-", v4.converged + "/" + (v4.lost.join(",") || "-"));
+  }
+  // (هـ) الحذف ينتشر ويثبت حين لا تزامن متعارض
+  {
+    var W5 = new World(3, await freshFramesEach(3), 15); K = W5.K; W5.enableAll();
+    var A5 = W5.devs[0], B5 = W5.devs[1], C5 = W5.devs[2];
+    A5.userSet("x", "إكس"); A5.userSet("y", "واي"); await W5.quiesce();
+    B5.userDel("y"); await W5.quiesce();
+    C5.userSet("z", "زد"); await W5.quiesce();
+    check("(هـ) حذفٌ على جهاز ينتشر إلى الجميع ولا يعود", "x,z/x,z/x,z",
+      A5.keys().join(",") + "/" + B5.keys().join(",") + "/" + C5.keys().join(","));
+  }
+  // (و) تعديلٌ بعيد لعنصرٍ لم نعدّله يُتبنّى ولو كان طابعُ مجموعتنا أحدث (دمجٌ ثلاثي)
+  {
+    var W6 = new World(2, await freshFramesEach(2), 16); K = W6.K; W6.enableAll();
+    var A6 = W6.devs[0], B6 = W6.devs[1];
+    A6.userSet("x", "إكس"); A6.userSet("y", "واي"); await W6.quiesce();
+    B6.userSet("y", "واي-معدَّل"); await B6.runLocal();
+    A6.userSet("w", "دبليو"); await A6.runLocal();     // تعديلٌ محلي لاحق على مفتاحٍ آخر
+    await W6.quiesce();
+    check("★ (و) التعديل البعيد لـy يبقى رغم أن طابع A أحدث", "واي-معدَّل/واي-معدَّل",
+      A6.ov().y + "/" + B6.ov().y);
+  }
+}
+
+// ===== حالاتٌ من المراجعة المستقلة الثانية: «آخر عمليةٍ تحكم» في تاريخٍ غير متزامن =====
+function oracleOf(ops) {
+  var m = {};
+  ops.forEach(function (o) { if (o.kind === "del") delete m[o.key]; else m[o.key] = o.value; });
+  return m;
+}
+function stateStr(obj) { return JSON.stringify(Object.keys(obj).sort().map(function (k) { return [k, obj[k]]; })); }
+function oracleOk(W) {
+  var want = stateStr(oracleOf(W.ops));
+  return W.devs.every(function (d) { return stateStr(d.ov()) === want; });
+}
+async function causalCases() {
+  var K;
+  // (ز) حذفٌ دُمج ثم إعادةُ إضافة — على جهازين ثم ثلاثة
+  {
+    var W = new World(3, await frames(3), 21); K = W.K; W.enableAll();
+    var A = W.devs[0], B = W.devs[1], C = W.devs[2];
+    A.userSet("x", "إكس"); A.userSet("i", "آي"); await W.quiesce();
+    B.userDel("i"); await W.quiesce();
+    W.clock += 3600 * 1000;
+    B.userSet("i", "آي-ثانية"); await W.quiesce();
+    var ok1 = oracleOk(W);
+    C.userDel("i"); await W.quiesce();
+    W.clock += 3600 * 1000;
+    A.userSet("i", "آي-ثالثة"); await W.quiesce();
+    check("★ (ز) حذفٌ دُمج ثم إعادةُ إضافة (مرتين، على أجهزةٍ مختلفة): آخر عمليةٍ تحكم", "true/true", ok1 + "/" + oracleOk(W));
+  }
+  // (ح) جهازٌ نائم بينما يدفع غيرُه أكثر من عشر مرات بعد حذف
+  {
+    var W2 = new World(2, await frames(2), 22); K = W2.K; W2.enableAll();
+    var A2 = W2.devs[0], B2 = W2.devs[1];
+    A2.userSet("x", "إكس"); A2.userSet("d", "دي"); await W2.quiesce();
+    A2.online = false;
+    B2.userDel("d"); await B2.runLocal(); while (B2.outbox.length) B2.deliverOut();
+    for (var n = 0; n < 14; n++) {
+      W2.clock += 5000;
+      B2.userSet("n" + n, "ن" + n); await B2.runLocal(); while (B2.outbox.length) B2.deliverOut();
+    }
+    B2.inbox.length = 0; B2.syncEvents.length = 0;
+    await W2.quiesce();
+    check("★ (ح) جهازٌ فاته أربعَ عشرةَ دفعةً بعد حذف: الحذف يثبت ولا يعود", "false/true", A2.keys().indexOf("d") >= 0 ? "true/-" : "false/" + oracleOk(W2));
+  }
+  // (ط) ساعةٌ منحرفة عشر دقائق: الحكم بالنقاط لا بالساعة
+  {
+    var W3 = new World(2, await frames(2), 23); K = W3.K; W3.enableAll();
+    var A3 = W3.devs[0], B3 = W3.devs[1];
+    B3.skew = 10 * 60 * 1000;
+    A3.userSet("x", "إكس"); A3.userSet("d", "دي"); await W3.quiesce();
+    B3.userDel("d"); await W3.quiesce();
+    A3.userSet("y", "واي"); await W3.quiesce();
+    B3.skew = -10 * 60 * 1000;
+    A3.userDel("x"); await W3.quiesce();
+    check("★ (ط) ساعةٌ منحرفة ±١٠ دقائق: الحذف في الاتجاهين يثبت", "true", oracleOk(W3));
+  }
+  // (ي) الترقية من 1.0.0: جهازان متزامنان على النواة القديمة ثم تُحدَّث الإضافة فيهما
+  {
+    var fv1 = await frames(2).then(function () { return Promise.all([makeFrame("v1"), makeFrame("v1")]); });
+    var W4 = new World(2, fv1, 24); K = W4.K; W4.enableAll();
+    var A4 = W4.devs[0], B4 = W4.devs[1];
+    A4.userSet("x", "إكس"); A4.userSet("d", "دي"); A4.userSet("k", "كي"); await W4.quiesce();
+    var v2 = await frames(2);
+    A4.swapCore(v2[0]); B4.swapCore(v2[1]);
+    B4.userDel("d"); await W4.quiesce();
+    var afterFirst = A4.keys().join(",") + "|" + B4.keys().join(",");
+    A4.userDel("k"); await W4.quiesce();
+    check("★ (ي) بعد الترقية: أول حذفٍ ينتشر ولا يعود (جسر النقطة المشتركة)، والثاني كذلك", "x|x/true",
+          afterFirst.replace(/,k/g, "").replace(/k,/g, "") === "x|x" ? "x|x/" + oracleOk(W4) : afterFirst + "/" + oracleOk(W4));
+  }
+  // (ك) الخلط: جهازٌ على 1.0.0 وآخر على 2.0.0 — حذفٌ وإعادةُ إضافةٍ في الاتجاهين
+  {
+    var fm = [await makeFrame("v1")].concat(await frames(1));
+    var W5 = new World(2, fm, 25); K = W5.K; W5.enableAll();
+    var A5 = W5.devs[0], B5 = W5.devs[1];            // A على 1.0.0، B على 2.0.0
+    A5.userSet("x", "إكس"); A5.userSet("k", "كي"); await W5.quiesce();
+    A5.userDel("k"); await W5.quiesce();
+    var s1 = oracleOk(W5);
+    W5.clock += 3600 * 1000;
+    A5.userSet("k", "كي-ثانية"); await W5.quiesce();
+    var s2 = oracleOk(W5);
+    B5.userDel("x"); await W5.quiesce();
+    var s3 = oracleOk(W5);
+    W5.clock += 3600 * 1000;
+    B5.userSet("x", "إكس-ثانية"); await W5.quiesce();
+    check("★ (ك) خلط 1.0.0 و2.0.0: حذفٌ وإعادةُ إضافةٍ من الطرفين", "true/true/true/true", [s1, s2, s3, oracleOk(W5)].join("/"));
+  }
+}
+// محاكاةٌ تسلسلية بمقارنةٍ بالمتوقَّع: كاتبٌ واحد في كل طور، وسكونٌ تام بين الأطوار، وأجهزةٌ
+// خاملة قد تغيب عن طورٍ كامل، وساعاتٌ منحرفة — والناتج يجب أن يساوي العمليات بترتيبها
+async function seqFuzz() {
+  var runs = 14, phases = 12, bad = [], dels = 0;
+  var fr = null;
+  for (var s = 1; s <= runs; s++) {
+    if (fr) fr.forEach(function (f) { f.remove(); });
+    fr = await frames(3);
+    var W = new World(3, fr, 3000 + s);
+    W.enableAll();
+    W.devs.forEach(function (d, i) { d.skew = (i - 1) * 7 * 60 * 1000 * (s % 2 ? 1 : 0); });
+    for (var ph = 0; ph < phases; ph++) {
+      var w = W.devs[Math.floor(W.rng() * 3)];
+      W.devs.forEach(function (d) { d.online = d === w ? true : W.rng() < 0.6; });
+      var nops = 1 + Math.floor(W.rng() * 5);
+      for (var i = 0; i < nops; i++) {
+        W.clock += 3000 + Math.floor(W.rng() * 60000);
+        var ks = w.keys();
+        if (ks.length && W.rng() < 0.35) { w.userDel(ks[Math.floor(W.rng() * ks.length)]); dels++; }
+        else { var k = "k" + Math.floor(W.rng() * 8); w.userSet(k, k + "@" + w.name + "#" + W.seq); }
+        await w.runLocal();
+        while (w.online && w.outbox.length) w.deliverOut();
+      }
+      await W.quiesce();
+    }
+    if (!oracleOk(W)) bad.push("seed " + (3000 + s) + ": " + W.devs.map(function (d) { return stateStr(d.ov()); }).join(" | ") + " ≠ " + stateStr(oracleOf(W.ops)));
+  }
+  check("★ محاكاةٌ تسلسلية (" + runs + " جولة × " + phases + " طورًا، غيابٌ وساعاتٌ منحرفة): آخر عمليةٍ تحكم دائمًا", "0",
+        bad.length + (bad.length ? " | " + bad.slice(0, 2).join(" ; ") : ""));
+  check("والتسلسلية امتحنت الحذف فعلًا", "true", dels > 20);
+}
+
+// ===== المراجعة الثالثة: أسطولٌ مختلط (1.0.0 و2.0.0) وترقيةٌ في المكان وحالاتُ الحدود =====
+// جهازٌ نائم: يسكن العالم بغيره، ثم يستيقظ فيرى ما في الخادم كلّه
+async function quiesceOnly(W, subset) { var all = W.devs; W.devs = subset; try { return await W.quiesce(); } finally { W.devs = all; } }
+function wake(W, d) { d.inbox.push(Object.keys(W.server).concat(Object.keys(d.replica))); }
+async function mixed(vers, seed) {
+  var fr = [];
+  for (var i = 0; i < vers.length; i++) fr.push(await makeFrame(vers[i] === "v1" ? "v1" : undefined));
+  var W = new World(vers.length, fr, seed); W.enableAll();
+  return W;
+}
+async function review3Cases() {
+  var v2f = function () { return makeFrame(); };
+  // (ل) جهازٌ ترقّى ونام بينما أضاف جهازُ 1.0.0 عنصرًا ثم ترقّى: النقطة القديمة ليست دليلَ رؤية
+  {
+    var W = await mixed(["v1", "v1", "v1"], 31), A = W.devs[0], B = W.devs[1], D = W.devs[2];
+    A.userSet("x", "إكس"); await W.quiesce();
+    B.swapCore(await v2f()); D.swapCore(await v2f());
+    B.userSet("b", "بي"); await W.quiesce();
+    A.userSet("m", "إم"); await quiesceOnly(W, [A, B]);
+    A.swapCore(await v2f());
+    A.userSet("y", "واي"); await quiesceOnly(W, [A, B]);
+    wake(W, D); await W.quiesce();
+    check("★ (ل) إضافةٌ من عهد 1.0.0 فاتت جهازًا نائمًا تبقى على الكل (لا «رأيتُه فحذفتُه»)", "b,m,x,y|b,m,x,y|b,m,x,y",
+          [A, B, D].map(function (d) { return d.keys().join(","); }).join("|"));
+  }
+  // (م) والتعديلُ كذلك: قيمةٌ من عهد 1.0.0 أحدثُ من قيمة 2.0.0 عند النائم
+  {
+    var W2 = await mixed(["v1", "v1", "v1"], 32), A2 = W2.devs[0], B2 = W2.devs[1], D2 = W2.devs[2];
+    A2.userSet("x", "X0"); await W2.quiesce();
+    B2.swapCore(await v2f()); D2.swapCore(await v2f());
+    B2.userSet("x", "X1"); await W2.quiesce();
+    W2.clock += 60000;
+    A2.userSet("x", "X2"); await quiesceOnly(W2, [A2, B2]);
+    A2.swapCore(await v2f());
+    A2.userSet("y", "Y"); await quiesceOnly(W2, [A2, B2]);
+    wake(W2, D2); await W2.quiesce();
+    check("★ (م) تعديلٌ من عهد 1.0.0 لا تُرجعه قيمةُ 2.0.0 الأقدم عند جهازٍ نائم", "X2|X2|X2",
+          [A2, B2, D2].map(function (d) { return d.ov().x; }).join("|"));
+  }
+  // (ن) لقطةٌ حمولتُها ما رأيناه وفيها كتابةٌ لم نضمّها (تعديلٌ ثم رجوع): لا يضيع تعديلُنا اللاحق
+  {
+    var W3 = await mixed(["v2", "v2"], 33), A3 = W3.devs[0], C3 = W3.devs[1];
+    A3.userSet("k", "v1"); A3.userSet("x", "X"); await W3.quiesce();
+    A3.userSet("k", "v2"); await quiesceOnly(W3, [A3]);
+    W3.clock += 60000;
+    A3.userSet("k", "v1"); await quiesceOnly(W3, [A3]);
+    wake(W3, C3); await W3.quiesce();
+    W3.clock += 60000;
+    C3.userSet("k", "v3"); await W3.quiesce();
+    var afterEdit = A3.ov().k + "|" + C3.ov().k;
+    C3.userDel("k"); await W3.quiesce();
+    check("★ (ن) بعد «تعديلٍ ثم رجوع» على جهازٍ آخر: تعديلُنا يثبت وحذفُنا يثبت", "v3|v3/-|-",
+          afterEdit + "/" + (A3.ov().k || "-") + "|" + (C3.ov().k || "-"));
+  }
+  // (س) أسطولٌ مختلط: ما أُخذ من لقطة 1.0.0 ليس كتابةً محلية — الحذفُ اللاحق والتعديلُ اللاحق يثبتان
+  {
+    var W4 = await mixed(["v1", "v2", "v2"], 34), O4 = W4.devs[0], B4 = W4.devs[1], C4 = W4.devs[2];
+    O4.userSet("x", "X"); O4.userSet("j", "J"); O4.userSet("k", "K0"); await W4.quiesce();
+    W4.clock += 60000;
+    C4.userDel("j"); await W4.quiesce();
+    W4.clock += 60000;
+    B4.userSet("k", "K1"); await W4.quiesce();
+    check("★ (س) مختلط: حذفٌ وتعديلٌ من 2.0.0 على ما جاء من 1.0.0 يثبتان على الكل", "k,x=K1|k,x=K1|k,x=K1",
+          [O4, B4, C4].map(function (d) { return d.keys().join(",") + "=" + d.ov().k; }).join("|"));
+  }
+  // (ع) قاعدتان متساويتا طول النص الثابت بترتيب إدراجٍ معاكس: يتفق الجهازان ولا يتقاذفان الدفع
+  {
+    var fr5 = [await makeFrame(), await makeFrame()];
+    var W5 = new World(2, fr5, 35); W5.enableAll();
+    var A5 = W5.devs[0], B5 = W5.devs[1], SH = fr5[0].contentWindow.CMLShared;
+    var r1 = SH.makePattern("Remove {n} files", "إزالة {n} ملفات"), r2 = SH.makePattern("Delete {n} items", "حذف {n} عناصر");
+    A5.userRules([r1, r2]);
+    var rounds = await W5.quiesce();
+    var ord = function (d) { return (d.local[W5.K.USER_PATTERNS] || []).map(function (p) { return p.en.split(" ")[0]; }).join(","); };
+    check("★ (ع) ترتيبٌ قانوني للقواعد: اتفاقٌ في جولاتٍ قليلة لا دفعٌ بلا نهاية", "true/true",
+          (rounds < 10) + "/" + (ord(A5) === ord(B5)));
+    check("وترتيبُ صفحة الإعدادات هو القانوني نفسه (sortUserRules = sortRules)", ord(A5),
+          SH.sortUserRules([r1, r2]).map(function (p) { return p.en.split(" ")[0]; }).join(","));
+  }
+  // (ف) أسطولٌ مختلط وساعاتٌ منحرفة ثوانيَ: إضافةٌ وحذفٌ متزامنان لا يدخلان حلقة دفع
+  {
+    var W6 = await mixed(["v1", "v2", "v2"], 36), D0 = W6.devs[0], D1 = W6.devs[1], D6 = W6.devs[2];
+    D0.skew = -1000; D1.skew = 16000; D6.skew = -9000;
+    D6.userSet("k8", "8"); D6.userSet("k11", "11"); await quiesceOnly(W6, [D6, D1]);
+    D6.userDel("k8"); D6.userDel("k11"); await quiesceOnly(W6, [D6, D1]);
+    D0.userSet("k11", "11-من-القديم");
+    wake(W6, D0);
+    var rounds6 = await W6.quiesce();
+    check("★ (ف) مختلط بساعاتٍ منحرفة: يسكن ويتفق (لا حلقة)", "true/true", (rounds6 < 60) + "/" + W6.devs.every(function (d) { return stateStr(d.ov()) === stateStr(D1.ov()); }));
+  }
+  // (ص) حذفٌ في 1.0.0 لم يُنشر ثم ترقية والسحابةُ تحرّكت: الشاهد المحلي يُحترم
+  {
+    var W7 = await mixed(["v1", "v2"], 37), A7 = W7.devs[0], B7 = W7.devs[1];
+    A7.userSet("d", "D"); A7.userSet("k", "K"); A7.userSet("x", "X"); await W7.quiesce();
+    W7.clock += 60000;
+    B7.userSet("n", "N"); await quiesceOnly(W7, [B7]);
+    W7.clock += 60000;
+    A7.userDel("k");
+    await A7.flushTombs();
+    A7.localTask = null;                     // مات العامل قبل مهلة التجميع (الطابع باقٍ)
+    A7.swapCore(await v2f());
+    wake(W7, A7); await W7.quiesce();
+    check("★ (ص) حذفٌ لم يُنشر قبل الترقية يثبت ولو تحرّكت السحابة", "d,n,x|d,n,x",
+          A7.keys().join(",") + "|" + B7.keys().join(","));
+  }
+  // (ق) ترقيةٌ في المكان ثم أول كتابة: لا يغلبها عدّادٌ أكبر لكتابةٍ أقدم من جهازٍ كثير الدفع
+  {
+    var W8 = await mixed(["v1", "v1", "v1"], 38), A8 = W8.devs[0], B8 = W8.devs[1], C8 = W8.devs[2];
+    A8.userSet("x", "X"); await W8.quiesce();
+    B8.swapCore(await v2f()); C8.swapCore(await v2f());
+    for (var q = 0; q < 6; q++) { W8.clock += 30000; B8.userSet("k", "B" + q); await W8.quiesce(); }
+    W8.clock += 60000;
+    A8.userSet("z", "Z"); await W8.quiesce();          // آخرُ دفعةٍ من A وهو على 1.0.0 (بلا x)
+    A8.swapCore(await v2f());
+    W8.clock += 60000;
+    A8.userSet("k", "A-بعد-الترقية"); await W8.quiesce();
+    check("★ (ق) أول كتابةٍ بعد الترقية في المكان تغلب الأقدم منها", "A-بعد-الترقية|A-بعد-الترقية|A-بعد-الترقية",
+          [A8, B8, C8].map(function (d) { return d.ov().k; }).join("|"));
+  }
+  // (ر) مجموعةٌ تسعها المساحة بلا x ولا تسعها معه: تُدفع بلا x ولا «فيض»
+  {
+    var fr9 = [await makeFrame(), await makeFrame()];
+    var W9 = new World(2, fr9, 39); W9.enableAll();
+    var A9 = W9.devs[0], B9 = W9.devs[1], S9 = A9.S, n = 0, ov = { ar: {} };
+    // نملأ حتى تفيض مع x وتسع بدونها (قياسٌ لا تخمين)
+    while (true) {
+      ov.ar["Key number " + n + " with some text"] = "قيمة عربية للمفتاح رقم " + n;
+      var bare = S9.pack({ overrides: ov, patterns: [] }, { cap: 92000 });
+      if (!bare.fits) { delete ov.ar["Key number " + n + " with some text"]; break; }
+      n++;
+    }
+    var dots = {}, vvx = {}; vvx["dev0"] = 3000000;
+    Object.keys(ov.ar).forEach(function (k) { dots["ar|" + k] = ["dev0", 3000000]; });
+    var withX = S9.pack({ overrides: ov, patterns: [] }, { cap: 92000, x: S9.encodeX({ overrides: ov, patterns: [] }, dots, vvx) });
+    A9.local[W9.K.OVERRIDES] = ov;
+    A9.onLocalChanged(kvCh(W9.K.OVERRIDES, {}, ov));
+    await W9.quiesce();
+    var st = A9.local[W9.K.SYNC_STATE] || {};
+    check("★ (ر) قرب السقف: ما يسعه 1.0.0 يُدفع بلا x بدل «فيض» ويصل الآخر", "false/ok/" + Object.keys(ov.ar).length,
+          withX.fits + "/" + st.status + "/" + B9.keys().length);
+  }
+}
+
+async function fuzz() {
+  var runs = 24, steps = 60, bad = [], dels = 0;
+  var fr = null;
+  for (var s = 1; s <= runs; s++) {
+    // إطاراتٌ جديدة لكل جولة: حالة الوحدة (القفل والعلامات) في ذاكرة كل جهاز
+    if (fr) fr.forEach(function (f) { f.remove(); });
+    fr = await frames(3);
+    var W = new World(3, fr, 1000 + s);
+    W.enableAll();
+    for (var i = 0; i < steps; i++) await W.step();
+    await W.quiesce();
+    var v = W.verdict();
+    dels += W.ops.filter(function (o) { return o.kind === "del"; }).length;
+    if (!v.converged || !v.cloudOk || v.lost.length) bad.push("seed " + (1000 + s) + ": " + JSON.stringify(v));
+  }
+  check("★ (ث١+ث٢) محاكاة عشوائية: " + runs + " جولة × " + steps + " خطوة بثلاثة أجهزة — تقارب ولا فقد", "0",
+    bad.length + (bad.length ? " | " + bad.slice(0, 3).join(" ; ") : ""));
+  check("والمحاكاة امتحنت الحذف فعلًا", "true", dels > 10);
+}
+
+(async function () {
+  try {
+    await namedCases();
+    await causalCases();
+    await review3Cases();
+    await seqFuzz();
+    await fuzz();
+  } catch (e) {
+    check("استثناء غير متوقع", "(لا شيء)", String(e && e.stack || e).slice(0, 400));
+  }
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "syncsim " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "SYNCSIM: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

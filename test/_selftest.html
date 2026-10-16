@@ -31,7 +31,7 @@
 
   <h2 style="font-size:16px;margin-top:24px">pattern &amp; plural tests</h2>
   <div class="sidebar" id="pat">
-    <div class="item" data-expect="مرحبًا يا عبدالسلام">Hey there, عبدالسلام</div>
+    <div class="item" data-expect="مرحبًا يا أحمد">Hey there, أحمد</div>
     <div class="item" data-expect="صباح الخير يا سارة">Good morning, سارة</div>
     <div class="item" data-expect="21 يوليو 2026، 2:23 مساءً">Jul 21, 2026, 2:23 PM</div>
     <div class="item" data-expect="5 أغسطس 2026">Aug 5, 2026</div>
@@ -52,17 +52,35 @@
     <div class="item" data-expect="Ctrl+B">Ctrl+B</div>
     <div class="item" data-expect="سياسة الاستخدام">Usage Policy</div>
     <div class="item" data-expect="Chrome (ويندوز)">Chrome (Windows)</div>
+    <!-- ★ (ت6-ب، المراجعة، ٥ جمادى الأولى ١٤٤٨هـ — القرار 99) «Created {date}» مقصورٌ على التواريخ بأسماء الشهور فيُعرَّب الشهر،
+         وما ليس تاريخًا يبقى بالإنجليزية كاملًا؛ و«{activeCount} running» العام محذوف: شقيقه الرقمي يُعرّب العدد، والنص الحرّ لا يُمسّ -->
+    <div class="item" data-expect="أُنشئ في 16 أكتوبر 2026">Created Oct 16, 2026</div>
+    <div class="item" data-expect="أُنشئ في 16 أكتوبر">Created Oct 16</div>
+    <div class="item" data-expect="Created folder X">Created folder X</div>
+    <div class="item" data-expect="12 قيد التشغيل">12 running</div>
+    <div class="item" data-expect="Trail running">Trail running</div>
+    <!-- ★ (ت6-ج، المراجعة، ٥ جمادى الأولى ١٤٤٨هـ) «Out of free messages (again) until …»: اليوم والوقت يُعرَّبان بالصيغ الصارمة لا خامًا،
+         والأخير بمسافةٍ ضيقة غير فاصلة قبل PM كما يكتبها Intl في كروم -->
+    <div class="item" data-expect="نفدت الرسائل المجانية حتى يوم الاثنين في 9:00 مساءً">Out of free messages until Monday at 9:00 PM</div>
+    <div class="item" data-expect="نفدت الرسائل المجانية حتى 9:00 مساءً">Out of free messages until 9:00 PM</div>
+    <div class="item" data-expect="نفدت الرسائل المجانية مرة أخرى حتى الغد في 9:00 صباحًا">Out of free messages again until tomorrow at 9:00 AM</div>
+    <div class="item" data-expect="نفدت الرسائل المجانية حتى يوم الاثنين في 9:00 مساءً">Out of free messages until Mon at 9:00&#8239;PM</div>
   </div>
   <div id="patResult" style="margin-top:12px;font-weight:bold"></div>
 
   <h2 style="font-size:16px;margin-top:24px">smart-rule tests (patterns generated from imports)</h2>
   <div class="sidebar" id="rules">
-    <div class="item" data-expect="حذف 5 محادثات؟">Delete 5 chats?</div>
-    <div class="item" data-expect="حذف 1 محادثات؟">Delete 1 chats?</div>
+    <!-- عبارةٌ مخترعة (zqchats): «Delete {count} chats?» صار في القاموس المشحون جمعًا حقيقيًّا («Delete %d chat?»، ٢١ ربيع الآخر
+         ١٤٤٨هـ) والجموع تسبق الأنماط — وقاعدة المستخدم نمطٌ — فلا يُمتحن بها تطبيق القاعدة المستوردة -->
+    <div class="item" data-expect="حذف 5 محادثات؟">Purge 5 zqchats?</div>
+    <div class="item" data-expect="حذف 1 محادثات؟">Purge 1 zqchats?</div>
     <!-- القيم الملتقطة تُمرَّر كما هي عمدًا: هي محتوى متغيّر (اسم ملف/مجلد) لا نصّ واجهة -->
     <div class="item" data-expect="نُقل «report» إلى «Archive»">Moved report to Archive folder</div>
     <!-- لا قاعدة تطابقه: يثبت أن الأنماط لا تبتلع نصًّا عشوائيًّا -->
     <div class="item" data-expect="Zzq unsafe rule must not apply">Zzq unsafe rule must not apply</div>
+    <!-- ★ (مراجعة كودكس ٢٥) مفتاحُ فهرسٍ باسم عضوٍ موروث كان يوقف بناء الفهرس كله -->
+    <div class="item" data-expect="المنشئ abc هنا">constructor abc here</div>
+    <div class="item" data-expect="نصّ 7 مُحوَّل">toString 7 converted</div>
   </div>
   <div id="ruleResult" style="margin-top:12px;font-weight:bold"></div>
 
@@ -96,7 +114,7 @@
     // score the pattern tests once the engine has done its first pass
     // العزل الاتجاهي (FSI/PDI) يلفّ المخرجات المختلطة — يُجرَّد قبل مقارنة الترجمة
     // (صحةُ العزل نفسه لها تحققاتها في _dirtest؛ هنا نقيس نصَّ الترجمة وحده)
-    function noBidi(s) { return String(s).replace(new RegExp("[\\u2068\\u2069]", "g"), ""); }
+    function noBidi(s) { return String(s).replace(new RegExp("[\\u2066-\\u2069]", "g"), ""); }
     setTimeout(function(){
       var rows = document.querySelectorAll('#pat .item'); var pass = 0, fails = [];
       rows.forEach(function(r){
@@ -129,8 +147,10 @@
       // ===== القواعد الذكية: أنماط وَلّدها الاستيراد من نصوص فيها متغيّرات =====
       // هذه بالضبط ما تنتجه makePattern في options.js
       window.__applyPatterns([
-        { en: 'Delete {count} chats?', re: '^Delete (.+?) chats\\?$', ar: 'حذف $1 محادثات؟' },
-        { en: 'Moved {file} to {folder} folder', re: '^Moved (.+?) to (.+?) folder$', ar: 'نُقل «$1» إلى «$2»' }
+        { en: 'Purge {count} zqchats?', re: '^Purge (.+?) zqchats\\?$', ar: 'حذف $1 محادثات؟' },
+        { en: 'Moved {file} to {folder} folder', re: '^Moved (.+?) to (.+?) folder$', ar: 'نُقل «$1» إلى «$2»' },
+        { en: 'constructor {x} here', re: '^constructor (.+?) here$', ar: 'المنشئ $1 هنا' },
+        { en: 'toString {n} converted', re: '^toString (.+?) converted$', ar: 'نصّ $1 مُحوَّل' }
       ]);
 
       setTimeout(function () {

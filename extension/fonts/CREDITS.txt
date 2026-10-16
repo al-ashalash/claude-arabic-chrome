@@ -1,0 +1,10 @@
+Arabic fonts bundled with this extension
+These font files are NOT covered by the extension's MIT licence. Each is licensed under the
+SIL Open Font License, Version 1.1; its full text, with its copyright notice, is in the file named below.
+They are the Arabic-subset WOFF2 files served by Google Fonts (https://fonts.google.com), downloaded on 2026-09-30.
+Subsetting makes them Modified Versions under the OFL; they remain under the OFL and keep their names,
+because none of these names is a Reserved Font Name. They are not sold separately.
+
+cairo.woff2               Cairo               Copyright 2009 The Cairo Project Authors (https://github.com/Gue3bara/Cairo)               cairo.OFL.txt
+noto-naskh-arabic.woff2   Noto Naskh Arabic   Copyright 2022 The Noto Project Authors (https://github.com/notofonts/arabic)              noto-naskh-arabic.OFL.txt
+markazi-text.woff2        Markazi Text        Copyright 2017 The Markazi Text Project Authors (https://github.com/BornaIz/markazitext)   markazi-text.OFL.txt
