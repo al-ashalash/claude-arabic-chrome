@@ -6,9 +6,15 @@
 
 مشروع مستقل غير رسمي · محليّ بالكامل · إذن واحد (`storage`) · مفتوح المصدر
 
-<img src="docs/screenshots/arabic-ui.png" alt="واجهة claude.ai بالعربية بعد تفعيل الإضافة" width="100%">
+<img src="docs/screenshots/sites-1.png" alt="تطبيق Claude على الويب قبل الإضافة وبعدها" width="100%">
 
-<img src="docs/screenshots/before-after.png" alt="الشاشة نفسها قبل التعريب وبعده" width="100%">
+<img src="docs/screenshots/sites-2.png" alt="مركز المساعدة ومركز الخصوصية قبل الإضافة وبعدها" width="100%">
+
+<img src="docs/screenshots/sites-3.png" alt="الوثائق القانونية وأكاديمية Claude قبل الإضافة وبعدها" width="100%">
+
+<img src="docs/screenshots/sites-4.png" alt="وثائق المطوّرين ووثائق Claude Code قبل الإضافة وبعدها" width="100%">
+
+<img src="docs/screenshots/features.png" alt="مزايا الإضافة وخياراتها: المواقع السبعة، والخط العربي، والمقالات، والاتجاه، والتصحيح، والخصوصية، وفحص الترجمة، والإطفاء" width="100%">
 
 ---
 
@@ -19,6 +25,8 @@
 معًا: **تترجم الصفحات، وتعكس اتجاهها**.
 
 ## أين تعمل
+
+<img src="docs/screenshots/coverage.png" alt="حال التعريب في مواقع Claude: المكتمل، وما يُستكمل قريبًا" width="100%">
 
 | الموقع | الحال | ما يُعرَّب |
 |---|---|---|
@@ -114,6 +122,8 @@
 ---
 
 ## كيف أُنجزت الترجمة — إفصاح
+
+<img src="docs/screenshots/sources.png" alt="المعاجم والمصادر التي أُسندت إليها المصطلحات وجهاتها" width="100%">
 
 بُنيت القواميس وتُرجمت المقالات **بمعونة [Claude Code](https://claude.com/claude-code)** (أداة Anthropic للبرمجة بالذكاء
 الاصطناعي)، على قواعد مصطلحية ثابتة وضعها صاحب المشروع:
@@ -289,9 +299,15 @@ Claude Code documentation.
 
 Independent and unofficial · fully local · one permission (`storage`) · open source
 
-<img src="docs/screenshots/arabic-ui-en.png" alt="The claude.ai interface in Arabic with the extension on" width="100%">
+<img src="docs/screenshots/sites-1-en.png" alt="The Claude web app before and after the extension" width="100%">
 
-<img src="docs/screenshots/before-after-en.png" alt="The same screen before and after" width="100%">
+<img src="docs/screenshots/sites-2-en.png" alt="The Help Center and Privacy Center before and after" width="100%">
+
+<img src="docs/screenshots/sites-3-en.png" alt="The legal documents and Claude Academy before and after" width="100%">
+
+<img src="docs/screenshots/sites-4-en.png" alt="The developer docs and Claude Code docs before and after" width="100%">
+
+<img src="docs/screenshots/features-en.png" alt="Features and options: seven sites, Arabic font, articles, direction, corrections, privacy, translation scan, switching off" width="100%">
 
 ## Why
 
@@ -300,6 +316,8 @@ support is also incomplete: Arabic text is left-aligned, and its order breaks wh
 extension addresses both: **it translates the pages and mirrors their direction.**
 
 ## Where it works
+
+<img src="docs/screenshots/coverage-en.png" alt="Arabic coverage across Claude's sites: complete, and what is being completed" width="100%">
 
 | Site | Status | What is translated |
 |---|---|---|
@@ -404,6 +422,8 @@ the sites 2.0.0 adds.
 ---
 
 ## How the translation was made — disclosure
+
+<img src="docs/screenshots/sources-en.png" alt="The dictionaries and sources the terminology rests on, and their authorities" width="100%">
 
 The dictionaries were built and the articles translated **with the help of [Claude Code](https://claude.com/claude-code)**
 (Anthropic's AI coding tool), following a fixed terminology rulebook set by the project's author:
