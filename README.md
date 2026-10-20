@@ -6,6 +6,10 @@
 
 مشروع مستقل غير رسمي · محليّ بالكامل · إذن واحد (`storage`) · مفتوح المصدر
 
+<img src="docs/screenshots/features.png" alt="مزايا الإضافة وخياراتها: المواقع السبعة، والخط العربي، والمقالات، والاتجاه، والتصحيح، والخصوصية، وفحص الترجمة، والإطفاء" width="100%">
+
+<img src="docs/screenshots/coverage.png" alt="حال التعريب في مواقع Claude: المكتمل، وما يُستكمل قريبًا" width="100%">
+
 <img src="docs/screenshots/sites-1.png" alt="تطبيق Claude على الويب قبل الإضافة وبعدها" width="100%">
 
 <img src="docs/screenshots/sites-2.png" alt="مركز المساعدة ومركز الخصوصية قبل الإضافة وبعدها" width="100%">
@@ -13,8 +17,6 @@
 <img src="docs/screenshots/sites-3.png" alt="الوثائق القانونية وأكاديمية Claude قبل الإضافة وبعدها" width="100%">
 
 <img src="docs/screenshots/sites-4.png" alt="وثائق المطوّرين ووثائق Claude Code قبل الإضافة وبعدها" width="100%">
-
-<img src="docs/screenshots/features.png" alt="مزايا الإضافة وخياراتها: المواقع السبعة، والخط العربي، والمقالات، والاتجاه، والتصحيح، والخصوصية، وفحص الترجمة، والإطفاء" width="100%">
 
 ---
 
@@ -25,8 +27,6 @@
 معًا: **تترجم الصفحات، وتعكس اتجاهها**.
 
 ## أين تعمل
-
-<img src="docs/screenshots/coverage.png" alt="حال التعريب في مواقع Claude: المكتمل، وما يُستكمل قريبًا" width="100%">
 
 | الموقع | الحال | ما يُعرَّب |
 |---|---|---|
@@ -299,6 +299,10 @@ Claude Code documentation.
 
 Independent and unofficial · fully local · one permission (`storage`) · open source
 
+<img src="docs/screenshots/features-en.png" alt="Features and options: seven sites, Arabic font, articles, direction, corrections, privacy, translation scan, switching off" width="100%">
+
+<img src="docs/screenshots/coverage-en.png" alt="Arabic coverage across Claude's sites: complete, and what is being completed" width="100%">
+
 <img src="docs/screenshots/sites-1-en.png" alt="The Claude web app before and after the extension" width="100%">
 
 <img src="docs/screenshots/sites-2-en.png" alt="The Help Center and Privacy Center before and after" width="100%">
@@ -307,8 +311,6 @@ Independent and unofficial · fully local · one permission (`storage`) · open 
 
 <img src="docs/screenshots/sites-4-en.png" alt="The developer docs and Claude Code docs before and after" width="100%">
 
-<img src="docs/screenshots/features-en.png" alt="Features and options: seven sites, Arabic font, articles, direction, corrections, privacy, translation scan, switching off" width="100%">
-
 ## Why
 
 The company offers Claude's websites in several languages; Arabic is not among them, nor is any right-to-left language. RTL
@@ -316,8 +318,6 @@ support is also incomplete: Arabic text is left-aligned, and its order breaks wh
 extension addresses both: **it translates the pages and mirrors their direction.**
 
 ## Where it works
-
-<img src="docs/screenshots/coverage-en.png" alt="Arabic coverage across Claude's sites: complete, and what is being completed" width="100%">
 
 | Site | Status | What is translated |
 |---|---|---|
