@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>scanback test</title>
+<!--
+  ★ (ر29-ي — توجيه المالك: لا يبقى نصُّ موقعٍ بالإنجليزية لعلّةٍ تقنية) «فحص الترجمة» في حزم التطبيق:
+   أ) الحرفية المائلة (`…`) بلا استيفاء ‎${}‎ رسالةٌ كغيرها، كما يقرؤها harvest-live: كانت 95 رسالةً في 23 حزمة من claude.ai لا تبلغ تصدير المالك.
+      - تُفكّ بـ CMLShared.unescapeTemplate (هروبُ ` و$ و' و‎’‎، ووصلُ السطر يُحذف)، وفقراتها (بسطرٍ فارغ) تُعدّ كلٌّ وحدها كما يحصدها harvest-live؛
+      - وما فيه ‎${‎ لا يُعدّ (نصُّه يُبنى وقت التشغيل)، والمرشّحات بالمحتوى كما هي (ICU والوسوم والروابط)، والمترجَمة مغطّاة.
+   ب) «~» لا يُسقط نثرًا: مسارٌ في البيت (‎~/.zzq/known‎) أو تقريبٌ (‎~{count}‎، ‎~24‎) داخل جملة يُعدّ، وما لا بياض فيه (مسارٌ وحده أو رمز) يبقى مُسقَطًا،
+      وسائر الرموز (@ و| و=) كما كانت.
+   ج) (ر29-ك) المفتاح مفتاحُ المحرّك: textKey يقصّ الطرفين ولا يضمّ ما بينهما، فالرسالة بسطرٍ جديد أو جدولةٍ أو مسافةٍ خاصة (U+00A0) تُعدّ وتُسرد
+      بها — ما لا يحفظ القاموس إلا مضمومَه في القائمة بنصّه (يبقى على الصفحة إنجليزيًّا)، وما يحفظه بأسطره مغطّى. والمرشّحات على المحتوى المضموم كما كانت.
+  بالمحرّك الحقيقي وقاموس التطبيق المشحون، على حزمتين اصطناعيتين يجيبهما الاختبار (ملف الدخول يُعلَن بوسم script لا يُنفَّذ، والثانية يكتشفها
+  الزحف من إشارةٍ في الأولى؛ ورسائل «Zzq …»: لا نصَّ من الموقع). العقد: document.title = "scanback N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1000px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vertical-align:top;word-break:break-all}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<script type="text/x-cml-fixture" src="assets/v9/index-Zq9BackA1.js"></script>
+</head>
+<body>
+<h1>اختبار «فحص الترجمة» في حزم التطبيق: الحرفية المائلة و«~»</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<pre id="log"></pre>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+  var MOCK = makeChromeMock({ session: false });
+  window.__store = MOCK.localStore;
+  window.chrome = MOCK.chrome;
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dictionary.js"></script>
+<script>
+  var L = globalThis.CLAUDE_L10N, D = L.dicts.ar;
+  var BT = String.fromCharCode(96), APOS = String.fromCharCode(0x2019), BS = String.fromCharCode(92);
+  // ما يُتوقَّع بعد الفكّ (والبياض مضمومٌ كما يضمّه الماسح)
+  var M = {
+    plain: "Zzq backtick message for the scan",
+    esc: "Zzq it" + APOS + "s $5 and the user's own folder joined here",
+    para1: "Zzq first paragraph of a backtick note",
+    para2: "Zzq second paragraph of the same note",
+    vars: "Zzq backtick with {count} files ready",
+    tr: "Zzq translated backtick message",
+    deep: "Zzq backtick message in a second bundle",
+    interpA: "Zzq interpolated head", interpB: "tail of an interpolated message",
+    icu: "Zzq {count, plural, one {# item} other {# items}} in a backtick",
+    tag: "Zzq <link>read more</link> in a backtick",
+    url: "Zzq see https://example.com/zzq in a backtick",
+    tildePath: "Zzq couldn" + APOS + "t update ~/.zzq/settings.json on this host, check the folder",
+    tildeLong: "Zzq the host key in ~/.zzq/known_hosts changed " + new Array(40).join("alpha bravo ") + "end",
+    tildeVar: "~{count} zzqchars remain in the zzq box",
+    tildeNum: "Zzq every ~24 zzqhours of the zzq day",
+    tildeBare: "~/.zzq/config",
+    tildeTok: "~zzqtoken",
+    at: "Zzq user@host here please",
+    pipe: "Zzq left | right label",
+    eq: "Zzq key=value label",
+    short: "Zzq short quoted label",
+    qparas: "Zzq quoted first line\n\nZzq quoted second line",
+    // ★ (مراجعة ر29-ي) ما تكتبه أدوات الحزم في المائلة بلا هروب: «$» لا تليه «{» وجدولةٌ خام، وفقراتٌ بينها CRLF أو سطرٌ فارغ فيه بياض
+    dollar: "Zzq costs $5 per seat in total",
+    tab: "Zzq tab\tinside the backtick note",
+    crlf1: "Zzq CRLF first paragraph", crlf2: "Zzq CRLF second paragraph",
+    ws1: "Zzq spaced first paragraph", ws2: "Zzq spaced second paragraph",
+    // ★ (ر29-ك) بأسطرها: الأولى لا يحفظ القاموس إلا مضمومها، والثانية يحفظها بأسطرها، والثالثة بمسافةٍ خاصة (U+00A0) لا يحفظ القاموس إلا مضمومها
+    nlCol: "Zzq first line of a listed note\nZzq second line of the same paragraph",
+    nlRaw: "Zzq quoted dict line one\nZzq quoted dict line two",
+    nbsp: "Zzq manage" + String.fromCharCode(0xa0) + "your zzq plan here",
+    // ★ (مراجعة ر29-ك) وبأسطرها وقائمةُ الإبقاء (L10N.keep) تحفظ مضمومَها: مُبقاةٌ بالإنجليزية بقرار، فلا تُسرد في «أمر الترجمة»
+    keepNl: "Zzq kept sample line one\nZzq kept sample line two",
+  };
+  function col(x) { return x.replace(/\s+/g, " ").trim(); }
+  D.strings[col(M.nlCol)] = "سطرٌ مضمومٌ في القاموس للاختبار";
+  D.strings[M.nlRaw] = "سطرا القاموس\nبأسطرهما للاختبار";
+  D.strings[col(M.nbsp)] = "مسافةٌ عادية في القاموس للاختبار";
+  L.keep.push(col(M.keepNl));
+  D.strings[M.tr] = "رسالةٌ مائلةٌ مترجَمة للاختبار";
+  function lit(s) { return JSON.stringify(s); }
+  function tpl(raw) { return BT + raw + BT; }
+  // الحرفية المائلة كما تكتبها أدوات الحزم: هروب ‎’‎ و‎\$‎ و‎\'‎، ووصلُ سطرٍ (\ ثم سطر) لا يبقى منه شيء
+  var RAW_ESC = "Zzq it" + BS + "u2019s " + BS + "$5 and the user" + BS + "'s own " + BS + "\nfolder joined here";
+  var RAW_PARAS = M.para1 + "\n\n  " + M.para2;
+  var BUNDLE_A = 'import"./panel-Zq9BackB2.js";var a={id:"zb.a",defaultMessage:' + tpl(M.plain) + '},b={id:"zb.b",defaultMessage:' + tpl(RAW_ESC) +
+    '},c={id:"zb.c",defaultMessage:' + tpl(RAW_PARAS) + '},d={id:"zb.d",defaultMessage:' + tpl(M.vars) + '},e={id:"zb.e",defaultMessage:' + tpl(M.tr) +
+    '},f={id:"zb.f",defaultMessage:' + tpl(M.interpA + " ${count} " + M.interpB) + '},g={id:"zb.g",defaultMessage:' + tpl(M.icu) +
+    '},h={id:"zb.h",defaultMessage:' + tpl(M.tag) + '},i={id:"zb.i",defaultMessage:' + tpl(M.url) +
+    '},j={id:"zb.j",defaultMessage:' + lit(M.tildePath) + '},k={id:"zb.k",defaultMessage:' + lit(M.tildeLong) + '},l={id:"zb.l",defaultMessage:' + lit(M.tildeVar) +
+    '},n={id:"zb.n",defaultMessage:' + lit(M.tildeNum) + '},o={id:"zb.o",defaultMessage:' + lit(M.tildeBare) + '},p={id:"zb.p",defaultMessage:' + lit(M.tildeTok) +
+    '},q={id:"zb.q",defaultMessage:' + lit(M.at) + '},r={id:"zb.r",defaultMessage:' + lit(M.pipe) + '},s={id:"zb.s",defaultMessage:' + lit(M.eq) +
+    '},t={id:"zb.t",defaultMessage:' + lit(M.short) + '},u={id:"zb.u",defaultMessage:' + lit(M.qparas) +
+    '},v={id:"zb.v",defaultMessage:' + tpl(M.dollar) + '},w={id:"zb.w",defaultMessage:' + tpl("Zzq tab\tinside the backtick note") +
+    '},x={id:"zb.x",defaultMessage:' + tpl(M.crlf1 + "\r\n\r\n" + M.crlf2) + '},y={id:"zb.y",defaultMessage:' + tpl(M.ws1 + "\n \t \n" + M.ws2) +
+    '},n1={id:"zb.n1",defaultMessage:' + tpl(M.nlCol) + '},n2={id:"zb.n2",defaultMessage:' + lit(M.nlRaw) + '},n3={id:"zb.n3",defaultMessage:' + lit(M.nbsp) +
+    '},n4={id:"zb.n4",defaultMessage:' + lit(M.keepNl) + '};';
+  var BUNDLE_B = 'var z={id:"zb.z",defaultMessage:' + tpl(M.deep) + '};';
+  var FETCHED = [], realFetch = window.fetch;
+  window.fetch = function (u, o) {
+    var s = String(u && u.url || u);
+    if (s.indexOf("/assets/v9/") >= 0) {
+      FETCHED.push(s.split("/").pop());
+      var body = /index-Zq9BackA1\.js$/.test(s) ? BUNDLE_A : /panel-Zq9BackB2\.js$/.test(s) ? BUNDLE_B : null;
+      return Promise.resolve(body === null ? new Response("nf", { status: 404 }) : new Response(body, { status: 200, headers: { "content-type": "text/javascript" } }));
+    }
+    return realFetch.apply(window, arguments);
+  };
+</script>
+<script src="../extension/engine.js"></script>
+<script>
+(function () {
+  var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+  function check(name, expect, got) {
+    total++; var ok = String(expect) === String(got); if (ok) pass++;
+    var tr = document.createElement("tr");
+    [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+    var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+    tb.appendChild(tr);
+    document.title = "scanback " + pass + "/" + total + " …";
+  }
+  function done() { document.title = "scanback " + pass + "/" + total; }
+  setTimeout(function () { chrome.storage.local.set({ cml_scan_request: { d: "app", kind: "scan", at: Date.now(), id: "b1" } }); }, 300);
+  var t0 = Date.now();
+  var poll = setInterval(function () {
+    var r = window.__store.cml_scan_result;
+    if ((!r || (r.status !== "done" && r.status !== "error")) && Date.now() - t0 < 15000) return;
+    clearInterval(poll);
+    try { run(r || {}); } catch (e) { check("استثناء في الاختبار", "", String(e && (e.stack || e.message) || e).slice(0, 400)); }
+    done();
+  }, 200);
+
+  function run(r) {
+    var list = r.list || [], vars = r.varList || [], all = list.concat(vars);
+    function has(s) { return all.indexOf(s) >= 0; }
+    function anyWith(sub) { return all.some(function (x) { return x.indexOf(sub) >= 0; }); }
+    document.getElementById("log").textContent = JSON.stringify({ status: r.status, fetched: r.fetched, found: r.found, missing: r.missing, files: FETCHED, list: list, varList: vars });
+    check("تمهيد: الفحص انتهى وقرأ الحزمتين (الثانية بإشارةٍ من الأولى)", "done/2", r.status + "/" + r.fetched);
+    check("★ (ر29-ي) رسالةٌ مائلةٌ بلا استيفاء غير مترجمة في القائمة بنصّها، وفي الحزمة الثانية كذلك", "true/true",
+      (list.indexOf(M.plain) >= 0) + "/" + (list.indexOf(M.deep) >= 0));
+    check("★ (ر29-ي) والهروب يُفكّ كما في harvest-live: ‎\\u2019‎ و‎\\$‎ و‎\\'‎، ووصلُ السطر لا يبقى منه شيء", "true", list.indexOf(M.esc) >= 0);
+    check("★ (ر29-ي) والمائلة ذات الفقرتين (سطرٌ فارغ بينهما) تُعدّ فقرتين، لا نصًّا مضمومًا لا يُرى أبدًا", "true/true/false",
+      (list.indexOf(M.para1) >= 0) + "/" + (list.indexOf(M.para2) >= 0) + "/" + anyWith(M.para1 + " " + M.para2.slice(0, 10)));
+    check("★ (ر29-ي) والمائلة بمتغيّرٍ {name} في قائمة المتغيّرات، والتي يترجمها القاموس مغطّاة", "true/false/false",
+      (vars.indexOf(M.vars) >= 0) + "/" + (list.indexOf(M.vars) >= 0) + "/" + has(M.tr));
+    check("★ (ر29-ي) وما فيه ‎${…}‎ لا يُعدّ ولا شيءَ منه (نصُّه يُبنى وقت التشغيل)", "false/false", anyWith(M.interpA) + "/" + anyWith(M.interpB));
+    check("★ (ر29-ي) والمرشّحات بالمحتوى على المائلة كغيرها: ICU والوسوم والروابط لا تُعدّ", "false/false/false",
+      has(M.icu) + "/" + has(M.tag) + "/" + has(M.url));
+    check("★ (ر29-ي) «~» داخل نثر: مسارٌ في البيت (قصيرٌ وأطول من 300 حرف) يُعدّ", "true/true/" + (M.tildeLong.length > 300),
+      (list.indexOf(M.tildePath) >= 0) + "/" + (list.indexOf(M.tildeLong) >= 0) + "/true");
+    check("★ (ر29-ي) والتقريب داخل نثر (‎~{count}‎ و‎~24‎) يُعدّ كذلك", "true/true", (vars.indexOf(M.tildeVar) >= 0) + "/" + (list.indexOf(M.tildeNum) >= 0));
+    check("وما لا بياض فيه مع «~» (مسارٌ وحده أو رمز) يبقى مُسقَطًا", "false/false", has(M.tildeBare) + "/" + has(M.tildeTok));
+    check("وسائر الرموز كما كانت: @ و| و= لا تُعدّ، والقصير بعلامتي اقتباس كما هو", "false/false/false/true",
+      has(M.at) + "/" + has(M.pipe) + "/" + has(M.eq) + "/" + (list.indexOf(M.short) >= 0));
+    check("★ (ر29-ك) والحرفية بعلامتي اقتباس لا تُقسَم فقراتٍ (كما في harvest-live)، وتُسرد بسطرها الفارغ كما يطلبها المحرّك، لا مضمومة", "true/false/false",
+      (list.indexOf(M.qparas) >= 0) + "/" + (list.indexOf("Zzq quoted first line") >= 0) + "/" + (list.indexOf(col(M.qparas)) >= 0));
+    // ★ (مراجعة ر29-ي) أربع طفراتٍ كانت تنجو: «$» الخام لا يطابقه التعبير، والجدولة الخام وCRLF يُفشلان الفكّ، والفاصل الذي فيه بياض لا يقسم
+    check("★ (مراجعة ر29-ي) والمائلة بـ«$» خامٍ لا تليه «{» وبجدولةٍ خام تُعدّ، وفقراتُها بفاصل CRLF أو بسطرٍ فارغٍ فيه بياض تُعدّ كلٌّ وحدها",
+      "true/true/true/true/true/true", [M.dollar, M.tab, M.crlf1, M.crlf2, M.ws1, M.ws2].map(function (x) { return list.indexOf(x) >= 0; }).join("/"));
+    // ★ (ر29-ك) المفتاح مفتاح المحرّك (textKey): يُطلب بأسطره ومسافته الخاصة كما في عقدة النص
+    check("★ (ر29-ك) رسالةٌ بأسطرها لا يحفظ القاموس إلا مضمومَها في القائمة بأسطرها (المحرّك يطلبها بها فتبقى إنجليزية)، لا مغطّاةً ولا مضمومة", "true/false",
+      (list.indexOf(M.nlCol) >= 0) + "/" + (list.indexOf(col(M.nlCol)) >= 0));
+    check("★ (ر29-ك) والتي يحفظها القاموس بأسطرها مغطّاة: لا بأسطرها ولا مضمومةً في القائمة", "false/false",
+      (list.indexOf(M.nlRaw) >= 0) + "/" + (list.indexOf(col(M.nlRaw)) >= 0));
+    check("★ (ر29-ك) والمسافة الخاصة (U+00A0) كالسطر: في القائمة بها، لا مضمومة", "true/false",
+      (list.indexOf(M.nbsp) >= 0) + "/" + (list.indexOf(col(M.nbsp)) >= 0));
+    // المقبول: plain esc para1 para2 vars tr deep tildePath tildeLong tildeVar tildeNum short qparas = 13، ومع مراجعة ر29-ي dollar tab crlf1 crlf2 ws1 ws2 = 19،
+    check("★ (مراجعة ر29-ك) ورسالةٌ بأسطرها أُبقي مضمومُها بالإنجليزية (L10N.keep) مُبقاةٌ: لا بأسطرها ولا مضمومةً في القائمة، وتُعدّ في kept", "false/false/1",
+      (list.indexOf(M.keepNl) >= 0) + "/" + (list.indexOf(col(M.keepNl)) >= 0) + "/" + r.kept);
+    // ومع ر29-ك nlCol nlRaw nbsp = 22، ومع مراجعتها keepNl = 23؛ وغير المترجَم 20 (tr وnlRaw مغطّاتان، وkeepNl مُبقاة)
+    check("العدّ: found = كل ما قُبل، وmissing = طول القائمتين بلا قصّ", "23/20/20/0", r.found + "/" + r.missing + "/" + all.length + "/" + r.omitted);
+    check("لا أخطاء جافاسكربت في الصفحة", 0, jsErrors);
+  }
+})();
+</script>
+</body>
+</html>

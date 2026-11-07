@@ -8,9 +8,9 @@
 
 <img src="docs/screenshots/features.png" alt="مزايا الإضافة وخياراتها: المواقع السبعة، والخط العربي، والمقالات، والاتجاه، والتصحيح، والخصوصية، وفحص الترجمة، والإطفاء" width="100%">
 
-<img src="docs/screenshots/coverage.png" alt="حال التعريب في مواقع Claude: المكتمل، وما يُستكمل قريبًا" width="100%">
+<img src="docs/screenshots/coverage.png" alt="حال التعريب في مواقع Claude اليوم، وما يبقى بالإنجليزية حتى تحديثٍ قادم" width="100%">
 
-<img src="docs/screenshots/sites-1.png" alt="تطبيق Claude على الويب قبل الإضافة وبعدها" width="100%">
+<img src="docs/screenshots/sites-1.png" alt="تطبيق Claude على الويب بعد الإضافة: محادثة جديدة وقائمة الحساب مفتوحة، وتبويب الخصوصية في الإعدادات" width="100%">
 
 <img src="docs/screenshots/sites-2.png" alt="مركز المساعدة ومركز الخصوصية قبل الإضافة وبعدها" width="100%">
 
@@ -30,15 +30,16 @@
 
 | الموقع | الحال | ما يُعرَّب |
 |---|---|---|
-| **تطبيق Claude**، `claude.ai` | كامل | الواجهة: 34,457 نصًّا، و6,168 قاعدةً للنصوص المتغيّرة. ونصّ المحادثات لا تلمسه الترجمة |
-| **مركز المساعدة**، `support.claude.com` | كامل | الواجهة (1,017 نصًّا) والمقالات: 18,168 مقطعًا في 376 صفحةً |
-| **مركز الخصوصية**، `privacy.claude.com` | كامل | الواجهة (235 نصًّا) والمقالات: 871 مقطعًا في 58 صفحةً |
-| **الوثائق القانونية**، `www.anthropic.com/legal` | جزئي: أربعُ وثائق من خمس | سياسة الخصوصية، وسياسة الخصوصية لغير المستخدمين، وسياسة ملفات تعريف الارتباط، وشروط الخدمة للمستهلكين (376 مقطعًا)، وفوق كلٍّ منها «ترجمة غير رسمية للاطلاع، والنص الإنجليزي هو المعتمد»؛ وتبقى سياسة الاستخدام بالإنجليزية |
-| **أكاديمية Claude**، `academy.claude.com` | جزئي | الواجهة وعناوين الدورات والدروس (3,049 نصًّا)، وتبقى متون الدروس بالإنجليزية |
-| **وثائق المطوّرين**، `platform.claude.com/docs` | جزئي | الواجهة (1,777 نصًّا) والمقالات ومرجع الواجهة البرمجية: 21,403 مقاطع في 624 صفحةً، وتبقى التعليمات البرمجية والمعاملات بالإنجليزية؛ والصفحات التي غيّرها الموقع بعد ترجمتها تبقى بالإنجليزية حتى تحديثٍ قادم |
-| **وثائق Claude Code**، `code.claude.com/docs` | جزئي | الواجهة وحدها (916 نصًّا) |
+| **تطبيق Claude**، `claude.ai` | الواجهة: 99.75٪ | الواجهة، ومنها أسماء بطاقات الخدمات القانونية وعناوين معايناتها وأوصافها في معرض المُخرَجات: 42,044 نصًّا، و9,353 قاعدةً للنصوص المتغيّرة، و1,256 نصًّا بصيغ الجمع. وتترجم 37,406 من 37,498 نصًّا بسيطًا في كتالوج الموقع (99.75٪). ونصّ المحادثات لا تلمسه الترجمة |
+| **مركز المساعدة**، `support.claude.com` | الواجهة، ومتن 62.6٪ من المقالات اليوم | الواجهة (1,033 نصًّا) والمقالات: 18,277 مقطعًا في 377 صفحةً، يظهر متن 236 منها اليوم، وما غيّره الموقع بعد ترجمته يبقى بالإنجليزية حتى تحديثٍ قادم |
+| **مركز الخصوصية**، `privacy.claude.com` | الواجهة، ومتن 86.2٪ من المقالات اليوم | الواجهة (235 نصًّا) والمقالات: 887 مقطعًا في 58 صفحةً، يظهر متن 50 منها اليوم |
+| **الوثائق القانونية**، `www.anthropic.com/legal` | جزئي: أربعُ وثائق من خمس | سياسة الخصوصية، وسياسة الخصوصية لغير المستخدمين، وسياسة ملفات تعريف الارتباط، وشروط الخدمة للمستهلكين (376 مقطعًا، ويظهر متن الأربع اليوم)، وواجهة قالبها الجديد وعناوين أقسامها (72 نصًّا)؛ وتبقى سياسة الاستخدام بالإنجليزية |
+| **أكاديمية Claude**، `academy.claude.com` | جزئي | الواجهة وعناوين الدورات والدروس (3,062 نصًّا)، وتبقى متون الدروس بالإنجليزية |
+| **وثائق المطوّرين**، `platform.claude.com/docs` | جزئي: متن 42.1٪ من المقالات اليوم | الواجهة (1,881 نصًّا) والمقالات ومرجع الواجهة البرمجية: 21,403 مقاطع في 624 صفحةً، يظهر متن 263 منها اليوم (259 من 352 في مرجع الواجهة البرمجية، و4 من 272 من صفحات الشرح)، وتبقى التعليمات البرمجية والمعاملات بالإنجليزية؛ والصفحات التي غيّرها الموقع بعد ترجمتها تبقى بالإنجليزية حتى تحديثٍ قادم |
+| **وثائق Claude Code**، `code.claude.com/docs` | جزئي | الواجهة وحدها (937 نصًّا) |
 
-وفي المجموع: 41,470 نصًّا للواجهات، و40,818 مقطعًا من المقالات، نحو 990 ألف كلمة عربية. وتكتمل المواقع الجزئية في التحديثات القادمة.
+وفي الإضافة في المجموع: 49,264 نصًّا للواجهات، و40,943 مقطعًا من المقالات في 1,063 صفحةً، أكثر من مليون كلمة عربية؛ ويظهر متن 553
+صفحةً منها اليوم (فحصٌ لكل صفحة بالإضافة نفسها يوم ٢٦ جمادى الأولى ١٤٤٨هـ). وتكتمل المواقع الجزئية في التحديثات القادمة.
 والمقطع فقرةٌ أو عنوانٌ أو بندٌ أو خليةُ جدول. والإضافة خاملةٌ في غير هذه الصفحات: في صفحات اللغات الأخرى من هذه المواقع، وفي
 لوحة المطوّرين (Console) على `platform.claude.com`، وفي claude.ai إذا اخترت لواجهته لغةً غير الإنجليزية.
 
@@ -46,11 +47,11 @@
 
 | | |
 |---|---|
-| **ترجمة المقالات** | ترجمةٌ لكل صفحة محفوظةٌ داخل الإضافة، تُقرأ وحدها عند فتح صفحتها، فلا يُجلب شيءٌ من الشبكة: 40,818 مقطعًا في 1,062 صفحةً |
+| **ترجمة المقالات** | ترجمةٌ لكل صفحة محفوظةٌ داخل الإضافة، تُقرأ وحدها عند فتح صفحتها، فلا يُجلب شيءٌ من الشبكة: 40,943 مقطعًا في 1,063 صفحةً، يظهر متن 553 منها اليوم وتبقى الصفحات التي غيّرها الموقع بعد ترجمتها بالإنجليزية |
 | **عناوين التبويب** | بالعربية في المواقع كلها |
-| **قواعد ذكية وصيغ الجمع** | 6,274 قاعدةً للنصوص المتغيّرة («قبل 3 أيام»، «الرسالة 1 من 2»…)، والفئات الست (`zero/one/two/few/many/other`): لا «3 محادثة» ولا «11 محادثات» |
+| **قواعد ذكية وصيغ الجمع** | 9,472 قاعدةً للنصوص المتغيّرة («قبل 3 أيام»، «الرسالة 1 من 2»…)، والفئات الست (`zero/one/two/few/many/other`): لا «3 محادثة» ولا «11 محادثات» |
 | **الاتجاه من اليمين إلى اليسار** | عكسُ التخطيط بورقةٍ تُبنى من ملفات تصميم الموقع نفسها وتُعاد كلما تغيّرت (وفي مركزَي المساعدة والخصوصية من لقطةٍ تُحدَّث مع كل إصدار)، واتجاهٌ مستقلٌّ لكل فقرة، والتعليمات البرمجية تبقى من اليسار |
-| **خطٌّ عربي تختاره** | ثلاثة خطوط من Google Fonts مضمَّنة في الإضافة (Cairo افتراضيًّا، وNoto Naskh Arabic، وMarkazi Text)، أو «خط النظام»، وهو خط جهازك العربي كما كانت الإضافة ترسمه قبل هذا الإصدار، أو «خط الموقع كما هو». يُرسم به الحرف العربي وحده، وتبقى الحروف الإنجليزية والأرقام الغربية بخط الموقع |
+| **خطٌّ عربي تختاره** | ثلاثة خطوط من Google Fonts مضمَّنة في الإضافة (Cairo افتراضيًّا، وNoto Naskh Arabic، وMarkazi Text)، أو «خط النظام»، وهو خط جهازك العربي كما كانت الإضافة ترسمه قبل الإصدار 2.0.0، أو «خط الموقع كما هو». يُرسم به الحرف العربي وحده، وتبقى الحروف الإنجليزية والأرقام الغربية بخط الموقع |
 | **خيارات لكل موقع** | مفتاح التعريب، ومحرّك الاتجاه، والتصحيحات، وإعادة الضبط، لكل موقعٍ على حدة، و«المواقع كلها» أولًا |
 | **تصحيح شخصي** | ابحث في القواميس وعدّل أي ترجمة لنفسك، وصحّح فقرةً من مقالة من قائمة الإضافة، وصدّر تصحيحاتك واستوردها |
 | **فحص الترجمة وفحص الاتجاه** | بضغطة منك: يقرأ فحص الترجمة ملفات الموقع العامة ليجد ما استُجدّ ولم يُترجَم (حزم claude.ai، وفهرس الصفحات `llms.txt` في وثائق المطوّرين ووثائق Claude Code)، ويُظهر فحص الاتجاه في claude.ai ما لم يُعكس بعد |
@@ -60,7 +61,7 @@
 
 - الملفات المرفقة والمنزَّلة، والصفحات خارج المواقع المذكورة، والصور والفيديو.
 - التعليمات البرمجية والأوامر، والخصائص والنماذج في مرجع الواجهة البرمجية.
-- نصّ المحادثات مع Claude، ومحتوى المُخرَجات (Artifacts)، وأجوبة المساعد في وثائق Claude Code وفي الأكاديمية.
+- نصّ المحادثات مع Claude، ومحتوى المُخرَجات (Artifacts) بعد فتحها، وأجوبة المساعد في وثائق Claude Code وفي الأكاديمية.
 - سياسة الاستخدام في الوثائق القانونية، ومتون دروس الأكاديمية ومتون وثائق Claude Code، في هذا الإصدار.
 - ما تتركه الشركة بالإنجليزية في ترجماتها لمواقعها يبقى بالإنجليزية هنا أيضًا. وأسماء أزرار وحدة التحكم (Console) في المقالات
   بالإنجليزية كما تظهر على شاشتها.
@@ -97,7 +98,8 @@
 
 **من متجر Chrome (الطريقة الموصى بها):** [ثبّت الإضافة من المتجر](https://chromewebstore.google.com/detail/ilebkilcahbijffokjmlakbocdjkojbe) — تثبيتٌ بضغطة وتحديثٌ تلقائي. وما الجديد والقيود المعروفة في [سجلّ الإصدارات](CHANGELOG.md).
 
-> **من كانت عنده 1.0.0:** يطلب كروم عند التحديث إلى 2.0.0 موافقتك على المواقع الجديدة، ويوقف الإضافة حتى توافق من قائمة
+> **من كانت عنده 2.0.0:** يصله 3.0.0 تلقائيًّا بلا موافقةٍ جديدة، لأن مواقعه هي هي، وتبقى إعداداتك وتصحيحاتك كما هي.
+> **ومن كانت عنده 1.0.0:** يطلب كروم عند التحديث موافقتك على المواقع التي أضافها 2.0.0، ويوقف الإضافة حتى توافق من قائمة
 > الإضافات أو من `chrome://extensions`. وتبقى إعداداتك وتصحيحاتك كما هي.
 
 ويلزم Chrome 120 أو أحدث.
@@ -135,7 +137,7 @@
   مساندة غير سعودية يُستأنس بها ولا تحكم. وحيث لا يوافق مقابلُ المعجم سياقَ الواجهة فالمعروفُ في واجهات الأجهزة، مع تسجيل مقابل
   المعجم بديلًا. والقائمة كاملةً أدناه، وفي صفحة «حول» داخل الإضافة.
 - نمط «الترجمة (English)» للعناوين المستقلة، والعربيةُ وحدها داخل الجُمل.
-- توحيد المصطلح الواحد عبر 41,470 نصًّا في قواميس الواجهات.
+- توحيد المصطلح الواحد عبر 49,264 نصًّا في قواميس الواجهات.
 
 وتُرجمت المقالات دفعةً دفعة: لكل دفعةٍ مترجمٌ ثم مراجعٌ منفصلٌ عنه ثم مدقّقٌ آلي، ثم مرّت بمرور اتساقٍ بين الدفعات أو بتحريرٍ
 على مستوى المقالة أو بكليهما؛ ولم يجرِ التحرير على مستوى المقالة لوثائق المطوّرين بعد. ومرّت نصوص القواميس بتدقيقٍ آلي (تغطية،
@@ -231,7 +233,7 @@ node tools/build-firefox.mjs
 
 ### الاختبارات
 
-صفحات الاختبار 39 في `test`، يشغّلها كلها بلا واجهة مشغّلٌ يقرأ النتيجة من عنوان كل صفحة (يلزم Chrome، ومع `CI=true`
+صفحات الاختبار 71 في `test`، يشغّلها كلها بلا واجهة مشغّلٌ يقرأ النتيجة من عنوان كل صفحة (يلزم Chrome، ومع `CI=true`
 يعمل بلا sandbox كما في عدّائي CI):
 
 ```bash
@@ -301,9 +303,9 @@ Independent and unofficial · fully local · one permission (`storage`) · open 
 
 <img src="docs/screenshots/features-en.png" alt="Features and options: seven sites, Arabic font, articles, direction, corrections, privacy, translation scan, switching off" width="100%">
 
-<img src="docs/screenshots/coverage-en.png" alt="Arabic coverage across Claude's sites: complete, and what is being completed" width="100%">
+<img src="docs/screenshots/coverage-en.png" alt="Arabic coverage across Claude's sites today, and what stays in English until a coming update" width="100%">
 
-<img src="docs/screenshots/sites-1-en.png" alt="The Claude web app before and after the extension" width="100%">
+<img src="docs/screenshots/sites-1-en.png" alt="The Claude web app after the extension: a new chat with the account menu open, and the Privacy tab in Settings" width="100%">
 
 <img src="docs/screenshots/sites-2-en.png" alt="The Help Center and Privacy Center before and after" width="100%">
 
@@ -321,15 +323,17 @@ extension addresses both: **it translates the pages and mirrors their direction.
 
 | Site | Status | What is translated |
 |---|---|---|
-| **The Claude app**, `claude.ai` | Full | The interface: 34,457 strings and 6,168 rules for variable text. Conversation text is never touched |
-| **Help Center**, `support.claude.com` | Full | The interface (1,017 strings) and the articles: 18,168 segments on 376 pages |
-| **Privacy Center**, `privacy.claude.com` | Full | The interface (235 strings) and the articles: 871 segments on 58 pages |
-| **Legal documents**, `www.anthropic.com/legal` | Partial: four documents of five | The Privacy Policy, the Non-User Privacy Policy, the Cookie Policy and the Consumer Terms of Service (376 segments), each headed «ترجمة غير رسمية للاطلاع، والنص الإنجليزي هو المعتمد» ("unofficial translation for reference; the English text is authoritative"); the Usage Policy stays in English |
-| **Claude Academy**, `academy.claude.com` | Partial | The interface and the course and lesson titles (3,049 strings); lesson bodies stay in English |
-| **Developer docs**, `platform.claude.com/docs` | Partial | The interface (1,777 strings), the articles and the API reference: 21,403 segments on 624 pages; code and parameters stay in English, and pages the site changed after translation stay in English until a coming update |
-| **Claude Code docs**, `code.claude.com/docs` | Partial | The interface only (916 strings) |
+| **The Claude app**, `claude.ai` | Interface: 99.75% | The interface, including the legal-services card names, preview titles and descriptions in the artifacts gallery: 42,044 strings, 9,353 rules for variable text and 1,256 strings with plural forms. It translates 37,406 of the 37,498 simple strings in the site's catalogue (99.75%). Conversation text is never touched |
+| **Help Center**, `support.claude.com` | Interface, and the body of 62.6% of articles today | The interface (1,033 strings) and the articles: 18,277 segments on 377 pages, of which 236 show their body today; what the site changed after translation stays in English until a coming update |
+| **Privacy Center**, `privacy.claude.com` | Interface, and the body of 86.2% of articles today | The interface (235 strings) and the articles: 887 segments on 58 pages, of which 50 show their body today |
+| **Legal documents**, `www.anthropic.com/legal` | Partial: four documents of five | The Privacy Policy, the Non-User Privacy Policy, the Cookie Policy and the Consumer Terms of Service (376 segments; all four show their body today), and the new template's interface and section titles (72 strings); the Usage Policy stays in English |
+| **Claude Academy**, `academy.claude.com` | Partial | The interface and the course and lesson titles (3,062 strings); lesson bodies stay in English |
+| **Developer docs**, `platform.claude.com/docs` | Partial: the body of 42.1% of articles today | The interface (1,881 strings), the articles and the API reference: 21,403 segments on 624 pages, of which 263 show their body today (259 of the 352 API reference pages and 4 of the 272 explanation pages); code and parameters stay in English, and pages the site changed after translation stay in English until a coming update |
+| **Claude Code docs**, `code.claude.com/docs` | Partial | The interface only (937 strings) |
 
-In total: 41,470 interface strings and 40,818 article segments, about 990 thousand Arabic words. The partial sites will be completed in coming updates.
+In total, the extension holds 49,264 interface strings and 40,943 article segments on 1,063 pages, over one million Arabic words; 553 of
+those pages show their body today (every page checked with the extension itself on 6 November 2026). The partial sites will be
+completed in coming updates.
 A segment is a paragraph, heading, list item or table cell. The extension stays inactive everywhere else: on these sites' pages in
 other languages, in the developer Console on `platform.claude.com`, and on claude.ai when its interface is set to a language other
 than English.
@@ -338,11 +342,11 @@ than English.
 
 | | |
 |---|---|
-| **Article translation** | A translation for each page, bundled inside the extension and read alone when its page opens, so nothing is fetched from the network: 40,818 segments on 1,062 pages |
+| **Article translation** | A translation for each page, bundled inside the extension and read alone when its page opens, so nothing is fetched from the network: 40,943 segments on 1,063 pages, of which 553 show their body today; pages the site changed after translation stay in English |
 | **Tab titles** | In Arabic on every site |
-| **Smart rules and plurals** | 6,274 rules for variable text ("3 days ago", "message 1 of 2"…), and all six plural categories (`zero/one/two/few/many/other`) — never "3 محادثة" or "11 محادثات" |
+| **Smart rules and plurals** | 9,472 rules for variable text ("3 days ago", "message 1 of 2"…), and all six plural categories (`zero/one/two/few/many/other`) — never "3 محادثة" or "11 محادثات" |
 | **Right-to-left layout** | The layout is mirrored by a stylesheet built from the site's own CSS and rebuilt whenever the site changes (on the help and privacy centers, from a snapshot updated with each release); each paragraph gets its own direction; code stays left-to-right |
-| **An Arabic font of your choice** | Three Google Fonts bundled in the extension (Cairo by default, Noto Naskh Arabic, Markazi Text), or «خط النظام» — your device's own Arabic font, as the extension drew it before this release — or «خط الموقع كما هو», the site's own fonts. It draws Arabic letters only; English letters and Western digits keep the site's font |
+| **An Arabic font of your choice** | Three Google Fonts bundled in the extension (Cairo by default, Noto Naskh Arabic, Markazi Text), or «خط النظام» — your device's own Arabic font, as the extension drew it before 2.0.0 — or «خط الموقع كما هو», the site's own fonts. It draws Arabic letters only; English letters and Western digits keep the site's font |
 | **Per-site options** | Translation switch, direction engine, corrections and reset for each site on its own, with "all sites" first |
 | **Personal corrections** | Search the dictionaries and change any translation for yourself, correct a paragraph of an article from the extension's popup, and export or import your corrections |
 | **Translation scan and direction check** | On your click: the translation scan reads the site's public files to find newly added strings not yet translated (claude.ai's bundles, and the `llms.txt` page index on the developer and Claude Code docs); the direction check shows, on claude.ai, styles not yet mirrored |
@@ -352,7 +356,7 @@ than English.
 
 - Attached and downloaded files, pages outside the sites above, images and video.
 - Code and commands, and the properties and models in the API reference.
-- Conversation text with Claude, the content of Artifacts, and the assistant's answers in the Claude Code docs and the Academy.
+- Conversation text with Claude, the content of Artifacts once opened, and the assistant's answers in the Claude Code docs and the Academy.
 - The Usage Policy among the legal documents, Academy lesson bodies and the Claude Code docs bodies, in this release.
 - What the company leaves in English in its own translations of its sites stays in English here too. Console button names in
   articles stay in English, as they appear on that screen.
@@ -395,7 +399,9 @@ Details in the [privacy policy](PRIVACY.md).
 **From the Chrome Web Store (recommended):** [install from the store](https://chromewebstore.google.com/detail/ilebkilcahbijffokjmlakbocdjkojbe) — one-click install
 and automatic updates. What's new and known limitations are in the [changelog](CHANGELOG.md).
 
-> **If you have 1.0.0:** when it updates to 2.0.0, Chrome asks you to approve the new sites and keeps the extension off until you
+> **If you have 2.0.0:** 3.0.0 reaches you automatically with no new approval, because its sites are the same; your settings and
+> corrections stay as they are.
+> **If you have 1.0.0:** when it updates, Chrome asks you to approve the sites 2.0.0 added and keeps the extension off until you
 > do, from the extensions menu or `chrome://extensions`. Your settings and corrections stay as they are.
 
 Chrome 120 or later is required.
@@ -437,7 +443,7 @@ The dictionaries were built and the articles translated **with the help of [Clau
   equivalent is recorded as an alternative. The full list, with each publisher, is in the Arabic section above and on the
   extension's About page.
 - The "Translation (English)" pattern for standalone headings, Arabic only inside sentences.
-- One consistent term across 41,470 interface strings.
+- One consistent term across 49,264 interface strings.
 
 The articles were translated batch by batch: each batch by a translator and then a separate reviewer, then an automated validator,
 then a cross-batch consistency pass, an article-level editorial pass, or both; the developer docs have not had the article-level
@@ -489,7 +495,7 @@ Firefox 127 site permissions are not granted on install: open the extension's op
 
 ### Tests
 
-The 39 test pages in `test` all run headless through a runner that reads each page's result from its title (it needs
+The 71 test pages in `test` all run headless through a runner that reads each page's result from its title (it needs
 Chrome; with `CI=true` it runs without the sandbox, as on CI runners):
 
 ```bash

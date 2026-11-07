@@ -10,6 +10,17 @@
    ٣) ولا يمسّ حقلًا LTR غيره (رابطٌ، ومفتاحٌ نصّه المؤقت معرَّب كذلك، ومساحة نص)، ولا حقل بريدٍ نصّه المؤقت فارغ؛
    ٤) وبإطفاء قلب الصفحة يبقى على سمة الموقع LTR والتعريب قائم؛
    ٥) وبإطفاء الإضافة يبقى LTR ويعود نصّه المؤقت إنجليزيًّا، ولو كانت الصفحة نفسها RTL بسمةٍ من الموقع.
+  ★ (ر29-ب، ١٣ جمادى الأولى ١٤٤٨هـ — القرار 123) وقاعدة الموقع الجديدة (#siteNew، على شكلها في ورقته): في صفحة RTL يحاذي حقول
+  البريد والرابط والهاتف LTR إلى «النهاية» ما دام النص المؤقت ظاهرًا والحقل غير مركَّز. فكانت قاعدتنا (RTL) تجعل النهاية يسارًا:
+   ٦) النص المؤقت المعرَّب يمينًا بقاعدة الموقع وبدونها (وهو حال الحقل المركَّز، لأن قاعدة الموقع لا تنطبق عليه)، ومركَّزًا فعلًا؛
+   ٧) ومن أول حرفٍ يُكتب يُقرأ البريد LTR من اليسار، بقاعدة الموقع وبدونها.
+  ★ (ر29-ن، ٢٠ جمادى الأولى ١٤٤٨هـ — القرار 135، وجواب السؤال 44 (ب)) وصف المعاينة في نافذة الخدمات القانونية، على سلسلة العناصر الستّ بأصنافها
+  كما قرأها المالك، ونصوصٍ اصطناعية. كان الوصف الإنجليزي يُحسب في الصفحة المقلوبة من اليمين فتقفز نقطته إلى أول سطره الأخير:
+   ٨) وصارت الفقرة plaintext: الإنجليزي من اليسار، ونقطته آخر سطره الأخير يمينًا، ووسطًا كما يضعه الموقع (بالمحرّك الحقيقي، والعرض أوسع من 640)؛
+   ٩) والعربي من اليمين ونقطته يسارًا: ترجمةٌ يكتبها المحرّك معزولةً بأصنافٍ بترتيبٍ آخر وصنفٍ زائد، وعربيٌّ خالص، وترجمةٌ تبدأ باسمٍ لاتيني؛
+   ١٠) ولا يتّسع: الشقيقة بلا الأدوات على حالها، وسبعة أشباهٍ ينقص كلًّا شرطٌ واحد من المحدِّد لا تُمسّ؛
+   ١١) وبإطفاء قلب الصفحة القاعدة خاملة؛ ١٢) وبإطفاء الإضافة الرسمُ بورقة app-point.css وبدونها واحد، ولو كانت الصفحة نفسها RTL؛
+   ١٣) والعرضان 1366 و390 في إطارين بأوراق التطبيق: الحالات الأربع (مقلوبة، وبلا قلب، ومطفأة والصفحة RTL، ومطفأة) والأشباه.
 -->
 <style>body{font-family:system-ui;padding:16px;max-width:820px;margin:auto}
 table{border-collapse:collapse;width:100%;margin-top:12px}
@@ -18,6 +29,10 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
 #loginForm input,#loginForm textarea{display:block;width:320px;margin:6px 0;font-size:16px}</style>
 
 <h1>اختبار إصلاحات التطبيق النقطية</h1>
+
+<!-- ★ (ر29-ب) قاعدة الموقع الجديدة كما في ورقته (شكلها لا نصّ فيه): حقول البريد والرابط والهاتف LTR في صفحة RTL إلى «النهاية»
+     ما دام النص المؤقت ظاهرًا والحقل غير مركَّز، إلا ما عليه صنف محاذاةٍ أو نمطها -->
+<style id="siteNew">:where(:root[dir=rtl] input[dir=ltr]:is([type=email],[type=url],[type=tel],[inputmode=email],[inputmode=url],[inputmode=tel]):not([class*=text-left],[class*=text-right],[class*=text-center],[class*=text-start],[class*=text-end],[class*=text-justify],[class*=text-align],[style*=text-align]):placeholder-shown:not(:focus)){text-align:end}</style>
 
 <!-- نموذج الدخول: حقل البريد كما يرسمه الموقع اليوم (dir="ltr" على الحقل نفسه)، وحقولٌ LTR أخرى لا شأن للقاعدة بها -->
 <form id="loginForm" onsubmit="return false">
@@ -28,6 +43,33 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
   <input id="fxBlank" type="email" dir="ltr" placeholder="">
 </form>
 
+<!-- ★ (ر29-ن) نافذة الخدمات القانونية: سلسلة العناصر الستّ بأصنافها كما قرأها المالك في متصفحه (الوصف ثم آباؤه الخمسة)، ونصوصٌ اصطناعية
+     لا من الموقع. وأدوات الموقع التي يحتاجها الرسم بتعريفاتها في ورقته اليوم (والمتغيّران قيمتان بديلتان). والأشباه السبعة بعد النافذة
+     (في غلافٍ وحده فلا تمسّ هندسة الوصف): كلٌّ ينقصه شرطٌ واحد من المحدِّد -->
+<style id="lgCss">:root{--spacing:.25rem;--cds-gap-sm:.5rem;--cds-pad-lg:1rem}
+.lg-win{max-width:760px;margin-top:12px;font:16px/1.5 system-ui}
+.flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}.text-center{text-align:center}.gap-sm{gap:var(--cds-gap-sm)}
+.grid{display:grid}.relative{position:relative}.min-h-0{min-height:0}.flex-1{flex:1}.overflow-y-auto{overflow-y:auto}
+.px-16{padding-inline:calc(var(--spacing) * 16)}.row-start-2{grid-row-start:2}.max-w-\[42rem\]{max-width:42rem}.text-balance{text-wrap:balance}
+@media (width>=40rem){.sm\:-mx-10{margin-inline:calc(var(--spacing) * -10)}}
+@media not all and (width>=40rem){.max-sm\:px-lg{padding-inline:var(--cds-pad-lg)}}</style>
+<template id="lgTpl"><div class="lg-win"><div class="flex min-h-0 flex-col max-sm:group-data-[view=list]/gallery:hidden"><section class="relative flex min-h-0 flex-1 flex-col bg-surface-2"><div class="min-h-0 flex-1 overflow-y-auto overscroll-contain [container-type:inline-size]"><div class="grid h-full grid-rows-[minmax(2.5rem,6rem)_auto_1.75rem_minmax(calc((100cqw-8rem)*0.65),1fr)_minmax(2.5rem,6rem)] px-16 max-sm:grid-rows-[minmax(3.5rem,6rem)_auto_1.75rem_minmax(calc((100cqw-3rem)*0.65),1fr)_minmax(2.5rem,6rem)] max-sm:px-lg"><div class="row-start-2 flex flex-col items-center gap-sm text-center">
+<p id="lgSib" class="text-body text-secondary">Zq reads each file and fills in a grid of notes. Every note opens the line it came from, so you can check it with one tap.</p>
+<p id="lgDesc" class="max-w-[42rem] text-body text-balance text-secondary sm:-mx-10">Zq reads each file and fills in a grid of notes. Every note opens the line it came from, so you can check it with one tap.</p>
+<p id="lgAr" class="text-secondary sm:-mx-10 text-balance text-body max-w-[42rem] zq-added">Zq checks each file and writes one short note. Every note links the line it came from, so you can check it in one tap and go back to the list.</p>
+<p id="lgPure" class="max-w-[42rem] text-body text-balance text-secondary sm:-mx-10">يقرأ النموذج كل ملف ويملأ جدولًا بالملاحظات، وكل ملاحظة تفتح السطر الذي جاءت منه فتتحقق منها بلمسة واحدة، ثم تعود إلى الجدول كما تركته.</p>
+<p id="lgArLat" class="max-w-[42rem] text-body text-balance text-secondary sm:-mx-10">Zq opens each file and writes one short note. Every note links the line it came from, so you can check it in one tap and go back to the list.</p>
+<div id="lgDiv" class="max-w-[42rem] text-body text-balance text-secondary sm:-mx-10">Zq near miss: not a paragraph.</div>
+<p id="lgNoMax" class="text-body text-balance text-secondary sm:-mx-10">Zq near miss: no max width.</p>
+<p id="lgNoBal" class="max-w-[42rem] text-body text-secondary sm:-mx-10">Zq near miss: no balance.</p>
+<p id="lgNoMx" class="max-w-[42rem] text-body text-balance text-secondary">Zq near miss: no negative margin.</p>
+<div><p id="lgDeep" class="max-w-[42rem] text-body text-balance text-secondary sm:-mx-10">Zq near miss: not a direct child.</p></div>
+</div></div></div></section></div></div>
+<div class="lg-miss"><div class="row-start-2 flex flex-col items-center gap-sm"><p id="lgNoCtr" class="max-w-[42rem] text-body text-balance text-secondary sm:-mx-10">Zq near miss: column not centred.</p></div>
+<div class="flex flex-col items-center gap-sm text-center"><p id="lgNoRow" class="max-w-[42rem] text-body text-balance text-secondary sm:-mx-10">Zq near miss: column not in row two.</p></div></div></template>
+<div id="lgHost"></div>
+<script>document.getElementById("lgHost").appendChild(document.getElementById("lgTpl").content.cloneNode(true));</script>
+
 <table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
 
 <link rel="stylesheet" href="../extension/base.css">
@@ -37,6 +79,16 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
 <script src="../extension/cml-const.js"></script>
 <script src="../extension/cml-shared.js"></script>
 <script src="../extension/dictionary.js"></script>
+<script>
+// ★ (ر29-ن) ترجمةٌ اصطناعية للوصف الثاني في القاموس المحمَّل في هذه الصفحة وحدها (لا المشحون)، فيكتبها المحرّك كما سيكتب ترجمة الوصف
+// بعد دمجها: تبدأ بالفعل، وفيها اسمٌ لاتيني فيعزلها المحرّك (RLI…PDI) كما يعزل كل ترجمةٍ مختلطة في الصفحة المقلوبة
+var LG_EN2 = "Zq checks each file and writes one short note. Every note links the line it came from, so you can check it in one tap and go back to the list.";
+var LG_AR2 = "يفحص Zq كل ملف ويكتب له ملاحظة قصيرة، وكل ملاحظة تربطك بالسطر الذي جاءت منه فتتحقق منها بلمسة واحدة، ثم تعود إلى القائمة كما تركتها.";
+var LG_EN3 = "Zq opens each file and writes one short note. Every note links the line it came from, so you can check it in one tap and go back to the list.";
+var LG_AR3 = "Zq يفتح كل ملف ويكتب له ملاحظة قصيرة، وكل ملاحظة تربطك بالسطر الذي جاءت منه فتتحقق منها بلمسة واحدة، ثم تعود إلى القائمة كما تركتها.";
+CLAUDE_L10N.dicts.ar.strings[LG_EN3] = LG_AR3;
+CLAUDE_L10N.dicts.ar.strings[LG_EN2] = LG_AR2;
+</script>
 <script src="_chrome-mock.js"></script>
 <script>
 // القشرة الموحّدة: الترجمة وقلب الصفحة مفعّلان كما عند المستخدم
@@ -72,6 +124,14 @@ var html = document.documentElement, email = document.getElementById("email");
 var url = document.getElementById("fxUrl"), key = document.getElementById("fxKey"), area = document.getElementById("fxArea");
 var blank = document.getElementById("fxBlank");
 function dirOf(el) { return getComputedStyle(el).direction; }
+// ★ (ر29-ب) الجهة الفيزيائية لنصّ الحقل أو نصّه المؤقت: من اتجاهه ومحاذاته المحسوبين معًا (البداية يمينٌ في RTL ويسارٌ في LTR)
+function side(el, pseudo) {
+  var cs = getComputedStyle(el, pseudo || null), d = cs.direction, a = cs.textAlign.replace(/^-webkit-/, "");
+  if (a === "left" || a === "right" || a === "center") return a;
+  if (a === "end") return d === "rtl" ? "left" : "right";
+  return d === "rtl" ? "right" : "left"; // start وjustify
+}
+var siteNew = document.getElementById("siteNew");
 function shown(el) { return el.matches(":placeholder-shown"); }
 // كتابة حرفٍ كما يكتبه المستخدم (مسار التحرير نفسه)، وإلا فالقيمة وحدثها
 function typeText(el, s) {
@@ -82,7 +142,82 @@ function typeText(el, s) {
 }
 function clearText(el) { el.value = ""; el.dispatchEvent(new Event("input", { bubbles: true })); }
 
-waitFor(function () { return html.getAttribute("data-cml") === "on" && email.getAttribute("placeholder") === AR; }, function () {
+// ★ (ر29-ن) فقرة النافذة كما تُرسم: «unicode-bidi/direction/المحاذاة/سطران فأكثر/جهة أول حرفٍ في سطره/آخر حرفٍ وجهته في سطره».
+// الجهة من مستطيلات الحروف (Range): L أقصى يسار السطر، وR أقصى يمينه، وM بينهما؛ والسطر الواحد ما تقارب منتصفُ حروفه (والعلامات الخفية خارج العدّ)
+var TARGET_AR = /\p{Script=Arabic}/u;
+function lgGlyphs(doc, el) {
+  var g = [], tw = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT, null), t;
+  while ((t = tw.nextNode())) {
+    for (var i = 0; i < t.nodeValue.length; i++) {
+      var ch = t.nodeValue[i], c = t.nodeValue.charCodeAt(i);
+      if (/\s/.test(ch) || (c >= 0x200B && c <= 0x200F) || (c >= 0x202A && c <= 0x202E) || (c >= 0x2066 && c <= 0x2069) || c === 0x061C) continue;
+      var r = doc.createRange(); r.setStart(t, i); r.setEnd(t, i + 1);
+      var b = r.getClientRects()[0];
+      if (b && b.width > 0) g.push({ c: ch, l: b.left, r: b.right, m: (b.top + b.bottom) / 2 });
+    }
+  }
+  return g;
+}
+function lgShape(doc, id) {
+  var el = doc.getElementById(id);
+  if (!el) return "(لا عنصر)";
+  var cs = doc.defaultView.getComputedStyle(el), g = lgGlyphs(doc, el);
+  if (!g.length) return cs.unicodeBidi + "/" + cs.direction + "/(لا نص)";
+  var mids = g.map(function (x) { return x.m; }).sort(function (a, b) { return a - b; }), lines = 1;
+  for (var k = 1; k < mids.length; k++) if (mids[k] - mids[k - 1] > 8) lines++;
+  function side(x) {
+    var ln = g.filter(function (y) { return Math.abs(y.m - x.m) <= 8; });
+    var minL = Math.min.apply(null, ln.map(function (y) { return y.l; })), maxR = Math.max.apply(null, ln.map(function (y) { return y.r; }));
+    return x.l <= minL + 0.5 ? "L" : x.r >= maxR - 0.5 ? "R" : "M";
+  }
+  var last = g[g.length - 1];
+  return [cs.unicodeBidi, cs.direction, cs.textAlign, lines >= 2 ? "2+" : String(lines), side(g[0]), last.c + side(last)].join("/");
+}
+// الأشباه السبعة: unicode-bidi وحدها (لا نصَّ يلتفّ فيها)
+var LG_MISS = ["lgDiv", "lgNoMax", "lgNoBal", "lgNoMx", "lgDeep", "lgNoCtr", "lgNoRow"];
+function lgMiss(doc) {
+  return LG_MISS.map(function (id) { var e = doc.getElementById(id); return e ? doc.defaultView.getComputedStyle(e).unicodeBidi : "(لا عنصر)"; }).join(",");
+}
+var LG_MISS_ISO = LG_MISS.map(function () { return "isolate"; }).join(",");
+// ورقة app-point.css في هذه الصفحة: تُعطَّل لحظةً لمقارنة الرسم بها وبدونها (الإضافة مطفأة: لا أثر لها حرفًا)
+function appPointSheet() {
+  for (var i = 0; i < document.styleSheets.length; i++) { var s = document.styleSheets[i]; if (s.href && /app-point\.css$/.test(s.href)) return s; }
+  return null;
+}
+// ★ (ر29-ن) العرضان (1366 و390) في إطارين بأوراق التطبيق بترتيب المانيفست ونموذج النافذة نفسه، وفقرة الترجمة كما كتبها المحرّك في الصفحة؛
+// والحالات بسمات الجذر كما يضعها المحرّك: مشغَّلةٌ مقلوبة، ومشغَّلةٌ بلا قلب، ومطفأةٌ والصفحة RTL من الموقع، ومطفأة
+function lgFrames(arWritten, done) {
+  var out = {}, widths = [1366, 390];
+  function abs(p) { return new URL(p, document.baseURI).href; }
+  function one(k) {
+    if (k >= widths.length) { done(out); return; }
+    var w = widths[k], fr = document.createElement("iframe"), finished = false;
+    fr.style.cssText = "width:" + w + "px;height:900px;border:0;display:block";
+    var tpl = document.createElement("div");
+    tpl.appendChild(document.getElementById("lgTpl").content.cloneNode(true));
+    tpl.querySelector("#lgAr").textContent = arWritten;
+    fr.srcdoc = '<!doctype html><html data-cml="on" dir="rtl" lang="ar"><head><meta charset="utf-8">' +
+      ["base.css", "rtl-overrides.css", "app-point.css"].map(function (f) { return '<link rel="stylesheet" href="' + abs("../extension/" + f) + '">'; }).join("") +
+      "<style>body{margin:0}" + document.getElementById("lgCss").textContent + "</style></head><body>" + tpl.innerHTML + "</body></html>";
+    function measure() {
+      if (finished) return; finished = true;
+      var d = fr.contentDocument, h = d && d.documentElement, r = {};
+      if (!h) { out[w] = { on: "(لا إطار)", miss: "-", unmirror: "-", siteRtl: "-", off: "-" }; fr.remove(); one(k + 1); return; }
+      var all = function () { return ["lgDesc", "lgAr", "lgPure", "lgSib"].map(function (id) { return lgShape(d, id); }).join(" | "); };
+      r.on = all(); r.miss = lgMiss(d);
+      h.removeAttribute("dir"); r.unmirror = all();
+      h.setAttribute("dir", "rtl"); h.removeAttribute("data-cml"); r.siteRtl = all();
+      h.removeAttribute("dir"); r.off = all();
+      out[w] = r; fr.remove(); one(k + 1);
+    }
+    fr.onload = function () { setTimeout(measure, 300); };
+    setTimeout(measure, 5000);
+    document.body.appendChild(fr);
+  }
+  one(0);
+}
+
+waitFor(function () { return html.getAttribute("data-cml") === "on" && email.getAttribute("placeholder") === AR && TARGET_AR.test(document.getElementById("lgAr").textContent); }, function () {
   check("المحرّك عامل: الصفحة RTL والنص المؤقت معرَّب في الحقول الأربعة", "on/rtl/" + [AR, AR, AR].join("|"),
     html.getAttribute("data-cml") + "/" + html.getAttribute("dir") + "/" +
     [email.getAttribute("placeholder"), key.getAttribute("placeholder"), area.getAttribute("placeholder")].join("|"));
@@ -91,6 +226,30 @@ waitFor(function () { return html.getAttribute("data-cml") === "on" && email.get
   check("★ (ر9-ب) حقل البريد LTR من الموقع وهو فارغ: RTL ونصّه المؤقت المعرَّب يمينًا", "true/ltr/rtl/rtl/start",
     shown(email) + "/" + email.getAttribute("dir") + "/" + dirOf(email) + "/" + getComputedStyle(email, "::placeholder").direction + "/" +
     getComputedStyle(email).textAlign);
+
+  // ٦) ★ (ر29-ب) قاعدة الموقع الجديدة (النهاية): النص المؤقت المعرَّب يمينًا وهو فارغ غير مركَّز، وبدونها (الموقع القديم، وهو حال
+  // الحقل المركَّز إذ لا تنطبق عليه)، ومركَّزًا فعلًا. وقبل الإصلاح كانت النهاية في الحقل RTL يسارًا
+  email.blur();
+  var unfoc = shown(email) + "/" + dirOf(email) + "/" + getComputedStyle(email).textAlign + "/" + side(email, "::placeholder") + "/" + side(email);
+  siteNew.disabled = true;
+  var oldSite = side(email, "::placeholder") + "/" + side(email);
+  siteNew.disabled = false;
+  email.focus();
+  var foc = email.matches(":focus") + "/" + shown(email) + "/" + side(email, "::placeholder");
+  email.blur();
+  check("★ (ر29-ب) حقل البريد بقاعدة الموقع الجديدة (النهاية): النص المؤقت المعرَّب يمينًا غيرَ مركَّز، وبلا قاعدته، ومركَّزًا",
+    "true/rtl/start/right/right|right/right|true/true/right", unfoc + "|" + oldSite + "|" + foc);
+  // ٧) ★ (ر29-ب) ومن أول حرفٍ يُكتب يُقرأ البريد LTR من اليسار، بقاعدة الموقع وبدونها
+  typeText(email, "u");
+  var typedNew = shown(email) + "/" + dirOf(email) + "/" + side(email);
+  siteNew.disabled = true;
+  var typedOld = dirOf(email) + "/" + side(email);
+  siteNew.disabled = false;
+  email.blur();
+  var typedBlur = dirOf(email) + "/" + side(email);
+  clearText(email);
+  check("★ (ر29-ب) حقل البريد بقاعدة الموقع الجديدة: البريد المكتوب LTR من اليسار، مركَّزًا وغير مركَّز وبلا قاعدته، ومحوه يعيده يمينًا",
+    "false/ltr/left|ltr/left|ltr/left|true/rtl/right", typedNew + "|" + typedOld + "|" + typedBlur + "|" + shown(email) + "/" + dirOf(email) + "/" + side(email, "::placeholder"));
 
   // ٢) أول حرفٍ يُكتب يعيده LTR، والبريد كاملًا LTR، ومحوه يعيده RTL
   typeText(email, "u");
@@ -109,19 +268,49 @@ waitFor(function () { return html.getAttribute("data-cml") === "on" && email.get
   // وحقل بريدٍ LTR نصّه المؤقت فارغ: كروم يعدّه «ظاهرًا» ولا نصّ يُحاذى، فيبقى ومؤشرُه على سمة الموقع
   check("★ (ر9-ب) حقل بريدٍ LTR نصّه المؤقت فارغ يبقى LTR", "true/ltr", shown(blank) + "/" + dirOf(blank));
 
+  // ★ (ر29-ن) ٨) الإضافة عاملة والصفحة مقلوبة، بالمحرّك الحقيقي في هذه الصفحة (أوسع من 640، فـsm:-mx-10 فاعلة كما على الحاسوب):
+  // الوصف الإنجليزي يُقرأ من اليسار، فنقطته آخر سطره الأخير يمينًا (كانت أوله يسارًا)، ووسطًا كما يضعه الموقع
+  var LG_RLI = String.fromCharCode(0x2067), LG_PDI = String.fromCharCode(0x2069);
+  var lgArWritten = document.getElementById("lgAr").textContent;
+  check("★ (ر29-ن) وصف المعاينة الإنجليزي في الصفحة المقلوبة: plaintext فيُقرأ من اليسار ونقطته آخر سطره الأخير يمينًا، ووسطًا كما يضعه الموقع",
+    "true/plaintext/rtl/center/2+/L/.R", (innerWidth >= 640) + "/" + lgShape(document, "lgDesc"));
+  // ٩) والوصف العربي: ترجمةٌ يكتبها المحرّك معزولةً (RLI…PDI لأن فيها اسمًا لاتينيًّا، وأصنافها بترتيبٍ آخر وصنفٍ زائد)، وعربيٌّ خالص:
+  // يُقرأ من اليمين، فأول حرفٍ أقصى يمين سطره الأول، ونقطته آخر سطره الأخير يسارًا
+  check("★ (ر29-ن) الوصف العربي (ترجمةٌ معزولة يكتبها المحرّك، وعربيٌّ خالص) من اليمين ونقطته آخر سطره الأخير يسارًا",
+    "true|plaintext/rtl/center/2+/R/.L|plaintext/rtl/center/2+/R/.L",
+    (lgArWritten === LG_RLI + LG_AR2 + LG_PDI) + "|" + lgShape(document, "lgAr") + "|" + lgShape(document, "lgPure"));
+  // ٩ب) وترجمةٌ تبدأ باسمٍ لاتيني: يعزلها المحرّك كلَّها (RLI…PDI) فتُرسم من اليمين كذلك — الاسم أقصى يمين سطرها الأول ونقطتها يسارًا —
+  // وإن لم يحسم اتجاهَ الفقرة حرفٌ عربيٌّ قبلها؛ والمطلوب من المترجم مع ذلك أن تبدأ الترجمة بكلمةٍ عربية (الفعل أولًا)، فلا يقوم الرسم على العزل وحده
+  var lgLat = document.getElementById("lgArLat").textContent, lgLatG = lgGlyphs(document, document.getElementById("lgArLat"));
+  var lgLatFirst = lgLatG.filter(function (x) { return lgLatG.length && Math.abs(x.m - lgLatG[0].m) <= 8; })
+    .reduce(function (a, x) { return !a || x.r > a.r ? x : a; }, null);
+  check("★ (ر29-ن) ترجمةٌ تبدأ باسمٍ لاتيني يعزلها المحرّك كلَّها فتُرسم من اليمين أيضًا: الاسم أقصى يمين سطرها الأول ونقطتها آخر سطرها الأخير يسارًا",
+    "true|plaintext/rtl/center/2+|q|.L",
+    (lgLat === LG_RLI + LG_AR3 + LG_PDI) + "|" + lgShape(document, "lgArLat").split("/").slice(0, 4).join("/") + "|" +
+    (lgLatFirst ? lgLatFirst.c : "-") + "|" + lgShape(document, "lgArLat").split("/").pop());
+  // ١٠) ولا يتّسع: الفقرة الشقيقة بلا الأدوات على حال الصفحة المقلوبة كما كانت (isolate، ونقطتها أول سطرها الأخير يسارًا)، والأشباه السبعة
+  // (ليست p، أو تنقصها أداةٌ من الثلاث، أو ليست ابنًا مباشرًا، أو عمودها بلا text-center أو بلا row-start-2) لا تُمسّ
+  check("★ (ر29-ن) لا يتّسع: الفقرة الشقيقة بلا الأدوات على حالها، والأشباه السبعة (ينقص كلًّا شرطٌ واحد) لا تُمسّ",
+    "isolate/rtl/center/2+/L/.L|" + LG_MISS_ISO, lgShape(document, "lgSib") + "|" + lgMiss(document));
+
   // ٤) قلب الصفحة مطفأ: الحقل على سمة الموقع، والتعريب قائم
   chrome.storage.local.set({ cml_rtl: false });
   waitFor(function () { return html.getAttribute("dir") !== "rtl"; }, function () {
     check("★ (ر9-ب) قلب الصفحة مطفأ: حقل البريد الفارغ على سمة الموقع LTR، والتعريب قائم",
       "on/(لا شيء)/true/ltr/" + AR,
       html.getAttribute("data-cml") + "/" + (html.getAttribute("dir") || "(لا شيء)") + "/" + shown(email) + "/" + dirOf(email) + "/" + email.getAttribute("placeholder"));
+    // ★ (ر29-ن) ١١) قلب الصفحة مطفأ والتعريب قائم: القاعدة خاملة، فالوصف والشقيقة على حال الموقع (LTR، ونقطة الإنجليزي آخر سطره يمينًا)،
+    // والترجمة المعزولة من اليمين كما يكتبها المحرّك
+    check("★ (ر29-ن) قلب الصفحة مطفأ: القاعدة خاملة، والوصف الإنجليزي والشقيقة على حال الموقع LTR ونقطتهما يمينًا، والترجمة المعزولة من اليمين",
+      "isolate/ltr/center/2+/L/.R|isolate/ltr/center/2+/L/.R|isolate/ltr/center/2+/R/.L",
+      lgShape(document, "lgDesc") + "|" + lgShape(document, "lgSib") + "|" + lgShape(document, "lgAr"));
 
     // ٥) الإضافة مطفأة: لا أثر ولو كانت الصفحة نفسها RTL بسمةٍ من الموقع (البوابة data-cml لا dir وحده)
     chrome.storage.local.set({ cml_rtl: true });
     waitFor(function () { return html.getAttribute("dir") === "rtl"; }, function () {
       var back = dirOf(email);
       chrome.storage.local.set({ cml_enabled: false });
-      waitFor(function () { return !html.hasAttribute("data-cml") && email.getAttribute("placeholder") === EN; }, function () {
+      waitFor(function () { return !html.hasAttribute("data-cml") && email.getAttribute("placeholder") === EN && document.getElementById("lgAr").textContent === LG_EN2; }, function () {
         var off = (html.getAttribute("data-cml") || "(لا شيء)") + "/" + (html.getAttribute("dir") || "(لا شيء)") + "/" +
           dirOf(email) + "/" + email.getAttribute("placeholder");
         html.setAttribute("dir", "rtl"); // الموقع نفسه RTL والإضافة مطفأة
@@ -129,7 +318,37 @@ waitFor(function () { return html.getAttribute("data-cml") === "on" && email.get
         html.removeAttribute("dir");
         check("★ (ر9-ب) الإضافة مطفأة: حقل البريد LTR ونصّه المؤقت إنجليزي، ولو كانت الصفحة نفسها RTL",
           "rtl|(لا شيء)/(لا شيء)/ltr/" + EN + "|true/ltr", back + "|" + off + "|" + siteRtl);
-        finish();
+        // ★ (ر29-ن) ١٢) الإضافة مطفأة: الترجمة أُرجعت، والوصف والشقيقة كما يضعهما الموقع حرفًا — رسمُهما بورقة app-point.css وبدونها واحد —،
+        // ولو كانت الصفحة نفسها RTL بسمةٍ من الموقع (فالوصف الإنجليزي فيها على حال الموقع: نقطته أول سطره الأخير يسارًا)
+        var lgS = function () { return ["lgDesc", "lgAr", "lgSib"].map(function (id) { return lgShape(document, id); }).join(" | "); };
+        var ap = appPointSheet(), offWith = lgS();
+        if (ap) ap.disabled = true;
+        var offWithout = lgS();
+        if (ap) ap.disabled = false;
+        html.setAttribute("dir", "rtl");
+        var rtlWith = lgS();
+        if (ap) ap.disabled = true;
+        var rtlWithout = lgS();
+        if (ap) ap.disabled = false;
+        html.removeAttribute("dir");
+        check("★ (ر29-ن) الإضافة مطفأة: الترجمة أُرجعت والوصف كما يضعه الموقع بلا app-point.css حرفًا، ولو كانت الصفحة نفسها RTL",
+          "true|true|true|true|isolate/ltr/center/2+/L/.R|isolate/rtl/center/2+/L/.L",
+          !!ap + "|" + (document.getElementById("lgAr").textContent === LG_EN2) + "|" + (offWith === offWithout) + "|" + (rtlWith === rtlWithout) + "|" +
+          offWith.split(" | ")[0] + "|" + rtlWith.split(" | ")[0]);
+        // ١٣) والعرضان في إطارين بأوراق التطبيق وسمات الجذر كما يضعها المحرّك في كل حال
+        lgFrames(lgArWritten, function (fx) {
+          var on = "plaintext/rtl/center/2+/L/.R | plaintext/rtl/center/2+/R/.L | plaintext/rtl/center/2+/R/.L | isolate/rtl/center/2+/L/.L";
+          var um = "isolate/ltr/center/2+/L/.R | isolate/ltr/center/2+/R/.L | isolate/ltr/center/2+/R/.R | isolate/ltr/center/2+/L/.R";
+          var sr = "isolate/rtl/center/2+/L/.L | isolate/rtl/center/2+/R/.L | isolate/rtl/center/2+/R/.L | isolate/rtl/center/2+/L/.L";
+          var at = function (w, k) { return (fx[w] || {})[k] || "-"; };
+          check("★ (ر29-ن) العرضان 1366 و390: الوصف الإنجليزي من اليسار ونقطته يمينًا، والعربي (المعزول والخالص) من اليمين ونقطته يسارًا، والشقيقة على حالها",
+            "1366: " + on + " || 390: " + on, "1366: " + at(1366, "on") + " || 390: " + at(390, "on"));
+          check("★ (ر29-ن) العرضان 1366 و390: الأشباه السبعة لا تُمسّ", LG_MISS_ISO + " || " + LG_MISS_ISO, at(1366, "miss") + " || " + at(390, "miss"));
+          check("★ (ر29-ن) العرضان 1366 و390: بلا قلب الصفحة، وبإطفاء الإضافة والصفحة RTL من الموقع، وبإطفائها: القاعدة خاملة",
+            [1366, 390].map(function () { return [um, sr, um].join(" ## "); }).join(" || "),
+            [1366, 390].map(function (w) { return [at(w, "unmirror"), at(w, "siteRtl"), at(w, "off")].join(" ## "); }).join(" || "));
+          finish();
+        });
       });
     });
   });

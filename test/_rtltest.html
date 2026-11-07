@@ -116,6 +116,52 @@ ad("ظلّ بإزاحة سينية يُحصى للطبيب ولا يُقلب", "
 ad("ظلّ بلا إزاحة سينية محايد", "box-shadow", "0 4px 6px #000", "null");
 ad("left تصير inset-inline-start مع مصفِّر", "left", "50%", "flip inset-inline-start:50% | neutral left:unset");
 ad("direction واعية بالاتجاه أصلًا", "direction", "ltr", "logical");
+// ★ (ر16-أ2، ٦ جمادى الأولى ١٤٤٨هـ) القيم الملتصقة بعد القوس (‎padding:var(--sp-8)var(--sp-12)‎ في أوراق claude.com المضغوطة، وأزرار لافتة
+// الموافقة في code.claude.com) كانت جزءًا واحدًا «متناظرًا» يُنسخ كلُّه في ‎padding-inline‎؛ والمختصر ذو var العارية كان «متعذّرًا» أبدًا
+// خشيةَ متغيّر التبديل. والآن جدول المتغيّرات من مجموعة الأوراق نفسها يشهد بما هو مكوِّنٌ واحدٌ أبدًا (المصرَّح به هنا يحاكي ورقة الموقع)
+var VT0 = R.varTable ? R.varTable([[["--a", "2px"], ["--b", "5px"], ["--c", "9px"], ["--d", "13px"], ["--_t", ""], ["--_t", "2px"], ["--m", "1px 2px"],
+  ["--r", "var(--a)"], ["--w", "initial"], ["--q", "\"a b\""], ["--q2", "\"a)b\" 2px"], ["--q3", "url(\"a b.png\")"], ["--q4", "url(x.png)url(y.png)"],
+  ["--n1", "calc(1px + min(2px, max(1px, 3px)))"], ["--cy1", "var(--cy2)"], ["--cy2", "var(--cy1)"]]]) : null;
+function ad3(name, prop, value, expect) { check(name, expect, fmtA(R.analyzeDecl(prop, value, VT0))); }
+ad3("★ (ر16-أ2) ملتصقان بلا مسافة: جزءان متناظران (لا تُنسخ القيمة كلها)", "padding", "var(--a)var(--b)", "null");
+ad3("★ (ر16-أ2) أربعةٌ ملتصقة غير متناظرة تُقلب خانتاها الأفقيتان", "padding", "var(--a)var(--b)var(--c)var(--d)",
+  "flip padding-inline-end:var(--b); padding-inline-start:var(--d)");
+ad3("★ (ر16-أ2) ثلاثةٌ ملتصقة لمتغيّراتٍ غير مصرَّح بها باحتياطٍ من مكوِّنٍ واحد: متناظرة", "margin", "var(--u1,4px)var(--u2,6px)var(--u3,1px)", "null");
+ad3("★ (ر16-أ2) مختصرٌ بمسافات من متغيّراتٍ مكوِّنُها واحد: غير المتناظر يُقلب", "padding", "0 var(--b) 0 var(--d)",
+  "flip padding-inline-end:var(--b); padding-inline-start:var(--d)");
+ad3("★ (ر16-أ2) متغيّر التبديل (مصرَّحٌ به فارغًا ولو في موضعٍ واحد) يبقى على الحماية", "padding", "var(--_t) 0 0 8px", "unflippable shorthand-var-toggle");
+ad3("★ (ر16-أ2) احتياطٌ فارغ ‎var(--x, )‎ يبقى على الحماية", "margin", "var(--a, ) 0 0 8px", "unflippable shorthand-var-toggle");
+check("★ (ر16-أ2) متعدّد المكوِّنات، ومجهولٌ بلا احتياط، وكلمةٌ عامّة، واحتياطٌ متعدّد، ودَورٌ: كلُّها على الحماية",
+  "5/5", [["var(--m) 0"], ["var(--zz) 0"], ["var(--w) 0"], ["var(--zz, 1px 2px) 0"], ["var(--cy1) 0"]].filter(function (x) {
+    return fmtA(R.analyzeDecl("padding", x[0], VT0)) === "unflippable shorthand-var-toggle"; }).length + "/5");
+ad3("★ (ر16-أ2) قيمةُ المتغيّر نفسُها var() تُحلّ بالقاعدة ذاتها", "padding", "var(--r)var(--b)var(--r)var(--a)",
+  "flip padding-inline-end:var(--b); padding-inline-start:var(--a)");
+ad3("★ (ر16-أ2) calc وclamp وmax وenv ملتصقة: كلٌّ منها مكوِّن", "padding", "clamp(1px,2px,3px)var(--b)max(1px,2px)env(safe-area-inset-left,7px)",
+  "flip padding-inline-end:var(--b); padding-inline-start:env(safe-area-inset-left,7px)");
+ad3("★ (ر16-أ2) border-width ملتصقة غير متناظرة تُقلب", "border-width", "var(--a)var(--b)var(--c)var(--d)",
+  "flip border-inline-end-width:var(--b); border-inline-start-width:var(--d)");
+ad3("★ (ر16-أ2) border-radius ملتصقةٌ بـcalc: أربع زوايا لا ‎calc(…)0‎", "border-radius", "calc(var(--d) - 1px)0 0 calc(var(--d) - 1px)",
+  "flip border-start-start-radius:calc(var(--d) - 1px); border-start-end-radius:0; border-end-end-radius:0; border-end-start-radius:calc(var(--d) - 1px)");
+ad3("★ (ر16-أ2) border-radius بمتغيّرٍ آمن ملتصق تُقلب", "border-radius", "var(--a)0 0 0",
+  "flip border-start-start-radius:var(--a); border-start-end-radius:0; border-end-end-radius:0; border-end-start-radius:0");
+ad3("★ (ر16-أ2) translate ملتصقة: السينية وحدها تُقلب (لا ‎calc(… )-100% * -1)‎)", "translate", "calc(-100% + var(--a))-100%",
+  "flip translate:calc(calc(-100% + var(--a)) * -1) -100%");
+check("★ (ر16-أ2) السلسلة المقتبسة وurl() مكوِّنٌ واحد وقوسٌ داخل السلسلة لا يُعدّ، والملتصقان بعد url() اثنان، والمتداخلة واحدة",
+  "true/false/true/false/true", VT0 ? [VT0.one("var(--q)"), VT0.one("var(--q2)"), VT0.one("var(--q3)"), VT0.one("var(--q4)"), VT0.one("var(--n1)")].join("/") : "(لا جدول)");
+check("★ (ر16-أ2) بلا جدولٍ (طبيب الاتجاه): المختصر ذو var العارية على الحماية كما كان", "unflippable shorthand-var-toggle",
+  fmtA(R.analyzeDecl("padding", "0 var(--b) 0 var(--d)")));
+check("★ (ر16-أ2) المحلّل يسجّل تصريحات الخصائص المخصّصة والفارغةَ منها (مدخل الجدول)", '[["--x",""],["--y","2px"]]',
+  JSON.stringify(R.parseCss(".t{--x: ;--y:2px;margin:0}").vars || null));
+// ★ (ر16-أ2، المراجعة المستقلة) طفراتٌ كانت تنجو: جدولٌ يحفظ أولَ تصريحٍ للاسم وحده، وفواصل بيضاء غير المسافة والجدولة، وكلماتٌ عامّة غير initial وinherit
+var VT1 = R.varTable ? R.varTable([R.parseCss(":root{--o:2px}@media (min-width:1px){.x{--o: ;}}").vars, [["--o2", "2px"]], [["--o2", "1px 2px"]]]) : null;
+check("★ (ر16-أ2، المراجعة) كلُّ تصريحٍ للمتغيّر يُفحص لا أوّلُه: مكوِّنٌ واحد ثم فارغٌ في ‎@media‎، أو ثم متعدّدٌ في ورقةٍ أخرى — على الحماية",
+  "unflippable shorthand-var-toggle/unflippable shorthand-var-toggle",
+  fmtA(R.analyzeDecl("padding", "var(--o) 0 0 8px", VT1)) + "/" + fmtA(R.analyzeDecl("padding", "var(--o2) 0 0 8px", VT1)));
+check("★ (ر16-أ2، المراجعة) فواصل CSS البيضاء كلها (السطر والإرجاع والصفحة) تفصل الأجزاء كالمسافة", "flip padding-inline-end:5px; padding-inline-start:13px",
+  fmtA(R.analyzeDecl("padding", R.parseCss(".x{padding:2px\n5px\r\n0\f13px}").rules[0].decls[0].value)));
+var VT2 = R.varTable ? R.varTable([[["--k1", "unset"], ["--k2", "revert"], ["--k3", "revert-layer"], ["--k4", "INHERIT"]]]) : null;
+check("★ (ر16-أ2، المراجعة) الكلمات العامّة كلها (unset وrevert وrevert-layer وبأيّ حالةٍ للحروف) على الحماية", "4/4",
+  ["--k1", "--k2", "--k3", "--k4"].filter(function (k) { return fmtA(R.analyzeDecl("padding", "var(" + k + ") 0 0 8px", VT2)) === "unflippable shorthand-var-toggle"; }).length + "/4");
 
 // ===== الطبقة ١/ج: ترتيب flipSheet والقسمان =====
 var FR = [
@@ -344,7 +390,20 @@ function finish() {
   check("★★ والسطح المحسوب (computed) لا يُفرض عليه اتجاه", "true",
     String(CMLRtl.ISLANDS_CSS.indexOf("[data-cml-noflip]{") === -1 &&
            CMLRtl.ISLANDS_CSS.indexOf("computed") === -1));
-  cascadeCases().then(htmlCompoundCase).then(htmlCompoundQuoted).then(finalize, function (e) {
+  // ★ (ر16-أ2) الورقة الحيّة تبني جدول المتغيّرات من أوراق الصفحة نفسها: الملتصقة الآمنة تُقلب فيها كما في المولِّد
+  var liveVar = CMLRtl.buildLiveSheet([{ text: ":root{--a:2px;--b:5px;--d:13px}" + big + ".lv{padding:var(--a)var(--b)var(--a)var(--d)}" }]);
+  check("★ (ر16-أ2) الورقة الحيّة: مختصرٌ ملتصق من متغيّراتٍ آمنة في أوراق الصفحة يُقلب خانتين", "true/true",
+    String(!!liveVar && /:where\(\.lv\)\{padding-inline-end:var\(--b\);padding-inline-start:var\(--d\)\}/.test(liveVar.css)) + "/" +
+    String(!!liveVar && liveVar.css.indexOf("var(--a)var(--b)") === -1));
+  // ★ (ر16-أ2، المراجعة المستقلة) الجدول من أوراق الصفحة كلها لا من الأولى: الاستعمال في ورقة والتصريح في أخرى (كتصريح ‎--sp-*‎ في ورقة الجذر)،
+  // ومتغيّر التبديل الفارغ في الورقة الثانية يحمي ما في الأولى (طفرة «جدول الورقة الأولى وحدها» كانت تنجو)
+  var liveVar2 = CMLRtl.buildLiveSheet([{ text: big + ".lw{padding:var(--a2)var(--b2)var(--a2)var(--d2)}.lt{padding:var(--t2) 0 0 var(--d2)}" },
+    { text: ":root{--a2:2px;--b2:5px;--d2:13px;--t2:2px}.pz{--t2: ;}" }]);
+  check("★ (ر16-أ2، المراجعة) الورقة الحيّة تجمع تصريحات أوراق الصفحة كلها: المصرَّح به في ورقةٍ ثانية يُعدّ، والفارغ فيها يحمي", "true/false",
+    String(!!liveVar2 && /:where\(\.lw\)\{padding-inline-end:var\(--b2\);padding-inline-start:var\(--d2\)\}/.test(liveVar2.css)) + "/" +
+    String(!!liveVar2 && /:where\(\.lt\)\{padding-inline/.test(liveVar2.css)));
+  check("★ (ر30-ب2) REV المحرّك 10 (يدخل بصمة الورقة الحيّة فلا تبقى ورقةٌ مخزَّنة تعكس زاويةً بجوار طبقةٍ شعاعية أو مخروطية بموضعٍ عددي، ولا ما قبل ر30-ب)", "10", String(CMLRtl.REV));
+  cascadeCases().then(htmlCompoundCase).then(htmlCompoundQuoted).then(gluedVarCases).then(shippedGlued).then(finalize, function (e) {
     check("استثناء في حالات التعاقب", "(لا شيء)", String(e && e.message || e));
     finalize();
   });
@@ -474,6 +533,105 @@ function htmlCompoundQuoted() {
     };
     document.body.appendChild(f);
   });
+}
+
+// ===== ★ (ر16-أ2، ٦ جمادى الأولى ١٤٤٨هـ) القيم الملتصقة ومختصرات المسافات بالمتغيّرات: المقلوب مرآةُ الأصل بـgetComputedStyle =====
+// كلُّ حالةٍ ورقةُ موقعٍ صغيرة تُقلب بمسار البناء نفسه (المحلّل، ثم جدول المتغيّرات من الورقة نفسها، ثم flipSheet): الأصل في إطار LTR، والمقلوب
+// في إطار RTL مع الورقة المولَّدة، والعقد أن يمين المقلوب يسارُ الأصل والعكس في كل خانةٍ أفقية من العائلة. وفي الحالات المتناظرة صنفٌ خاسرٌ
+// (‎.lose‎) يقلب خانةً من العائلة على العنصر نفسه فيبثّ مصفِّرَه: بلا نسخةٍ مطابقةٍ صحيحة يمحو المصفِّرُ الحشوة (روابط القوائم 12/12 ← 0/0)
+function gluedVarCases() {
+  var ROOT = ":root{--a:2px;--b:5px;--c:9px;--d:13px;--s1:solid;--s2:dashed;--s4:dotted;--k1:rgb(1, 2, 3);--k2:rgb(40, 50, 60);--k3:rgb(70, 80, 90)}";
+  var P = [["paddingLeft", "paddingRight"]], M = [["marginLeft", "marginRight"]], I = [["left", "right"]];
+  var RAD = [["borderTopLeftRadius", "borderTopRightRadius"], ["borderBottomLeftRadius", "borderBottomRightRadius"]];
+  var CASES = [
+    ["ملتصقان (2) وخاسرٌ على العنصر نفسه", ".lose{padding-left:3px}.g2{padding:var(--a)var(--b)}", "lose g2", P],
+    ["ثلاثةٌ ملتصقة", ".lose{padding-left:3px}.g3{padding:var(--a)var(--b)var(--c)}", "lose g3", P],
+    ["أربعةٌ ملتصقة متناظرة", ".lose{padding-left:3px}.g4{padding:var(--a)var(--b)var(--c)var(--b)}", "lose g4", P],
+    ["أربعةٌ ملتصقة غير متناظرة", ".g4a{padding:var(--a)var(--b)var(--c)var(--d)}", "g4a", P],
+    ["ملتصقان باحتياطَين (متغيّران غير مصرَّح بهما)", ".lose{margin-left:3px}.gf{margin:var(--u1,4px)var(--u2,6px)}", "lose gf", M],
+    ["أربعةٌ ملتصقة باحتياطات غير متناظرة", ".gf4{margin:var(--u1,1px)var(--u2,6px)var(--u3,1px)var(--u4,11px)}", "gf4", M],
+    ["مختصرٌ بمسافات متناظر من متغيّراتٍ مصرَّح بها", ".lose{padding-left:3px}.s2{padding:var(--a) var(--b)}", "lose s2", P],
+    ["مختصرٌ بمسافات غير متناظر", ".s4{padding:0 var(--b) 0 var(--d)}", "s4", P],
+    ["inset ملتصقة غير متناظرة", ".in{position:absolute;inset:var(--a)var(--b)var(--c)var(--d)}", "in", I],
+    ["inset ملتصقة متناظرة وخاسر", ".lose-i{left:1px}.in2{position:absolute;inset:var(--a)var(--b)}", "lose-i in2", I],
+    ["scroll-margin ملتصقة غير متناظرة", ".sm{scroll-margin:var(--a)var(--b)var(--c)var(--d)}", "sm", [["scrollMarginLeft", "scrollMarginRight"]]],
+    ["scroll-padding ملتصقة متناظرة وخاسر", ".lose-sp{scroll-padding-left:3px}.sp{scroll-padding:var(--a)var(--b)}", "lose-sp sp", [["scrollPaddingLeft", "scrollPaddingRight"]]],
+    ["border-width ملتصقة غير متناظرة", ".bw{border-style:solid;border-width:var(--a)var(--b)var(--c)var(--d)}", "bw", [["borderLeftWidth", "borderRightWidth"]]],
+    ["border-style ملتصقة غير متناظرة", ".bs{border-width:3px;border-style:var(--s1)var(--s2)var(--s1)var(--s4)}", "bs", [["borderLeftStyle", "borderRightStyle"]]],
+    ["border-color ملتصقة غير متناظرة", ".bc{border:3px solid;border-color:var(--k1)var(--k2)var(--k1)var(--k3)}", "bc", [["borderLeftColor", "borderRightColor"]]],
+    ["border-radius ملتصقةٌ بـcalc", ".br{border-radius:calc(var(--d) - 1px)0 0 calc(var(--d) - 1px)}", "br", RAD],
+    ["border-radius بمتغيّرٍ ملتصق", ".br2{border-radius:var(--a)0 0 0}", "br2", RAD],
+    ["border-radius متناظرة بمتغيّرين ملتصقين وخاسر", ".lose-r{border-top-left-radius:1px}.br3{border-radius:var(--d)var(--d)0 0}", "lose-r br3", RAD],
+    ["!important ملتصقة غير متناظرة", ".mi{margin:var(--a)var(--b)var(--c)var(--d)!important}", "mi", M],
+    ["clamp وmax وenv ملتصقة", ".cx{padding:clamp(1px,2px,3px)var(--b)max(1px,2px)env(safe-area-inset-left,7px)}", "cx", P],
+    // متغيّر التبديل كما في نثر claude.ai: فارغٌ في سياق ‎.pr‎ ومكوِّنٌ واحدٌ في غيره — يبقى على الحماية فلا يُعدّ أربعةً فيُقلب خطأً
+    ["متغيّر التبديل (فارغٌ في سياقٍ ومصرَّحٌ به في غيره) لا يُعدّ", ".pr{--_t: ;}.q{--_t:2px}.tx{padding:var(--_t) 0 0 8px}", "tx", P, "pr"],
+    // ★ (ر16-أ2، المراجعة المستقلة) والترتيب معكوس: المكوِّن الواحد أولًا ثم الفارغ (جدولٌ يحفظ أول تصريحٍ وحده كان يعدّه أربعةً فيقلبه)
+    ["متغيّر التبديل مصرَّحٌ به أولًا ثم فارغٌ في سياقٍ بعده لا يُعدّ", ".q2{--_u:2px}.pr2{--_u: ;}.tx2{padding:var(--_u) 0 0 8px}", "tx2", P, "pr2"],
+  ];
+  function frame(css, cls, wrap, pairs, mirrored, generated) {
+    return new Promise(function (res) {
+      var f = document.createElement("iframe");
+      f.style.cssText = "position:absolute;left:-9999px;width:300px;height:160px";
+      f.srcdoc = '<html dir="' + (mirrored ? "rtl" : "ltr") + '"' + (mirrored ? ' data-cml-rtl="v2"' : "") +
+        "><head><style>@layer cml-point,cml-imp;</style><style>" + css + "</style>" +
+        (mirrored ? "<style>" + generated + "</style>" : "") +
+        '</head><body style="margin:0"><div class="' + (wrap || "") + '" style="position:relative;width:200px;height:120px"><div class="' + cls + '" id="t">x</div></div></body></html>';
+      f.onload = function () {
+        var st = f.contentWindow.getComputedStyle(f.contentDocument.getElementById("t"));
+        var v = pairs.map(function (p) { return [st[p[0]], st[p[1]]]; });
+        f.remove();
+        res(v);
+      };
+      document.body.appendChild(f);
+    });
+  }
+  var chain = Promise.resolve();
+  CASES.forEach(function (c) {
+    chain = chain.then(function () {
+      var css = ROOT + c[1];
+      var parsed = R.parseCss(css);
+      var out = R.flipSheet(parsed.rules, { layerOrder: parsed.layerOrder, vars: R.varTable ? R.varTable([parsed.vars]) : null });
+      var gen = "@layer cml-point,cml-imp;@layer cml-imp{" +
+        R.serializeRules(out.neutralImp.concat(out.logicalImp, out.dirBoostImp)) + "}" +
+        R.serializeRules(out.neutral.concat(out.logical, out.dirBoost));
+      return frame(css, c[2], c[4], c[3], false).then(function (o) {
+        return frame(css, c[2], c[4], c[3], true, gen).then(function (m) {
+          check("★ (ر16-أ2) مرآة: " + c[0], o.map(function (p) { return p[0] + "|" + p[1]; }).join(" ; "),
+            m.map(function (p) { return p[1] + "|" + p[0]; }).join(" ; "));
+        });
+      });
+    });
+  });
+  return chain;
+}
+
+// ★ (ر16-أ2) الأوراق المشحونة الستّ: لا نسخة مطابقة ولا مقلوبَ مسافاتٍ أفقيًّا بقيمةٍ ملتصقة بعد القوس (كانت 3 في rtl-code.css: أزرار لافتة
+// الموافقة 8 بدايةً و16 نهايةً بدل 16 و16). وورقة claude.com خارجها عمدًا: فيها نسخةٌ مطابقة لإعلان الموقع المنطقيّ نفسه ملتصقًا كما كتبه
+function shippedGlued() {
+  if (location.protocol === "file:") return Promise.resolve();
+  var SHEETS = ["rtl-overrides.css", "rtl-intercom.css", "rtl-docs.css", "rtl-code.css", "rtl-legal.css", "rtl-academy.css"];
+  var SPACING = /^(?:margin|padding|inset|scroll-margin|scroll-padding)-inline(?:-start|-end)?$|^border-inline(?:-start|-end)?-(?:width|style|color)$|^border-(?:start|end)-(?:start|end)-radius$/;
+  function glued(v) {
+    for (var i = 0, d = 0; i < v.length; i++) {
+      var ch = v.charAt(i);
+      if (ch === "(") d++;
+      else if (ch === ")") { d--; if (d === 0 && i + 1 < v.length && !/[\s,\/)]/.test(v.charAt(i + 1))) return true; }
+    }
+    return false;
+  }
+  return Promise.all(SHEETS.map(function (f) {
+    return fetch("../extension/" + f).then(function (r) { return r.text(); }).then(function (txt) {
+      var n = 0, rules = R.parseCss(txt.split(GATE).join(".g")).rules;
+      for (var i = 0; i < rules.length; i++) for (var j = 0; j < rules[i].decls.length; j++) {
+        var dd = rules[i].decls[j];
+        if (SPACING.test(dd.prop) && glued(dd.value)) n++;
+      }
+      return f + ":" + n;
+    });
+  })).then(function (res) {
+    check("★ (ر16-أ2) الأوراق المشحونة الستّ بلا قيمة مسافاتٍ منطقية ملتصقة بعد القوس", SHEETS.map(function (f) { return f + ":0"; }).join(" "), res.join(" "));
+  }, function (e) { check("★ (ر16-أ2) جلب الأوراق المشحونة", "نجح", "فشل: " + e); });
 }
 
 function finalize() {

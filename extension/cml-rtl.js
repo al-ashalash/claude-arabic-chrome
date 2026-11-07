@@ -65,6 +65,7 @@
     var layerOrder = [];   // أسماء الطبقات بترتيب أول ظهور/تصريح
     var layerSeen = {};
     var stats = { parseErrors: 0, skippedAt: 0, animatedPhysical: 0 };
+    var customDecls = [];  // [[الاسم، القيمة]…] لكل خاصيةٍ مخصّصة بترتيبها، والفارغة بقيمة "" (انظر varTable)
     var i = 0, n = text.length;
 
     function noteLayer(name) {
@@ -176,6 +177,8 @@
         var value = t.slice(colon + 1).trim();
         var important = false;
         if (value.indexOf("!") !== -1 && IMPORTANT_RE.test(value)) { important = true; value = value.replace(IMPORTANT_RE, "").trim(); }
+        // ★ (ر16-أ2) كلُّ تصريحٍ لخاصيةٍ مخصّصة يُسجَّل لجدول المتغيّرات (varTable) — والفارغُ منها خاصةً، فهو «متغيّر التبديل» الذي يكذّب عدَّ الأجزاء
+        if (prop.slice(0, 2) === "--") customDecls.push([prop, value]);
         // «متغيّرات التبديل» (‎--x: ;‎ بقيمة فارغة) CSS صالحٌ محايد اتجاهيًّا — تُهمل بصمت
         if (!value && prop.slice(0, 2) === "--") continue;
         if (!prop || !value) { stats.parseErrors++; continue; }
@@ -273,6 +276,11 @@
           // قيمة كتلية لخاصية مخصصة (--x: {...}) — CSS صالح؛ كانت تُقرأ قاعدةً
           // متداخلة وهمية بمحدِّد هراء فيبلغ الطبيب عنها كذبًا. تُتخطى قيمتها كلها.
           if (/^--/.test(prelude)) { j = skipBlock(r.next); continue; }
+          // ★ (ر24-ب2، ١٢ جمادى الأولى ١٤٤٨هـ — مراجعة Codex CX-006) الإعلانات السابقة لقاعدةٍ متداخلة تُدفع قبلها: كانت تتراكم حتى قوس
+          // الإغلاق وتُدفع بعد القواعد المتداخلة كلها، فتأخذ موضعًا بعدها فتغلبها عند تساوي التخصيص المسطَّح — ‎.probe{margin-left:10px;
+          // @media(…){margin-left:20px}}‎ كان يصير 10px والأصل 20px. وما بعد القاعدة المتداخلة قاعدةٌ مستقلةٌ بعدها بمحدِّد الأب نفسه، كما يرتّبها
+          // المتصفح (الإعلانات المتداخلة بعد القاعدة). والحكم واحدٌ في قواعد @ المتداخلة وقواعد &
+          if (declText) { pushDecls(sel, declText, ctx, layer); declText = ""; }
           if (prelude.charAt(0) === "@") {
             var at = classifyAt(prelude);
             if (at && at.kind === "cond") j = parseRuleBody(r.next, sel, ctx.concat([at.cond]), layer, depth + 1);
@@ -348,7 +356,7 @@
       pos = parseGroup(pos, [], null, 0); // قوس إغلاق شارد بالمستوى الأعلى يعيدنا هنا فنكمل
       if (pos <= before) break;           // وقاية من الدوران
     }
-    return { rules: rules, imports: imports, layerOrder: layerOrder, stats: stats };
+    return { rules: rules, imports: imports, layerOrder: layerOrder, stats: stats, vars: customDecls };
   }
 
   // ---------- 2) جداول القلب ----------
@@ -381,18 +389,99 @@
   };
   var ALREADY_LOGICAL = /^(margin|padding|inset|border|scroll-margin|scroll-padding)-(inline|block)|^border-(start|end)-(start|end)-radius/;
 
+  /* ★ (ر16-أ2، ٦ جمادى الأولى ١٤٤٨هـ) أجزاء القيمة في العمق صفر: تفصلها المسافات (وأخواتها في CSS: السطر والجدولة)
+   * **وقوسُ الإغلاق** العائد إلى العمق صفر إذا التصق به ما بعده. المُصغِّر يكتب ‎padding:var(--sp-8)var(--sp-12)‎ بلا مسافةٍ
+   * بعد القوس، وهما في CSS مكوِّنان (القوس يُنهي الدالة)؛ وكانت القسمة على المسافات وحدها تعدّهما جزءًا واحدًا «متناظرًا»
+   * فتنسخ القيمة كلها في ‎padding-inline‎ — فيقرأ المتصفح بدايةً 8 ونهايةً 12 بدل 12 و12، وتبطل الثلاث والأربع الملتصقة عند
+   * الحوسبة فتصير الحشوة صفرًا (220 إعلانًا في ورقة claude.com، و3 في أزرار لافتة الموافقة في code.claude.com).
+   * ولا تُقسم بعد القوس إن تلاه فاصلٌ له شأنه («,» أو «/» أو قوسٌ آخر). والسلاسل المقتبسة قطعةٌ واحدة لا يُعدّ ما فيها. */
   function splitVals(v) {
-    // قيم مفصولة بمسافات في العمق صفر (calc(...) قطعة واحدة)
     var parts = [], depth = 0, cur = "";
     for (var j = 0; j < v.length; j++) {
       var c = v[j];
+      if (c === '"' || c === "'") { // سلسلة: قطعةٌ واحدة بمحارفها المهرَّبة
+        var e = j + 1;
+        while (e < v.length && v[e] !== c) { if (v[e] === "\\") e++; e++; }
+        cur += v.slice(j, e + 1); j = e; continue;
+      }
+      if (c === "\\") { cur += v.slice(j, j + 2); j++; continue; }
       if (c === "(") depth++;
       else if (c === ")") depth--;
-      if (depth === 0 && (c === " " || c === "\t")) { if (cur) { parts.push(cur); cur = ""; } }
-      else cur += c;
+      if (depth === 0 && WS_RE.test(c)) { if (cur) { parts.push(cur); cur = ""; } }
+      else {
+        cur += c;
+        if (c === ")" && depth === 0 && j + 1 < v.length && !GLUE_STOP_RE.test(v.charAt(j + 1))) { parts.push(cur); cur = ""; }
+      }
     }
     if (cur) parts.push(cur);
     return parts;
+  }
+  var WS_RE = /[ \t\n\r\f]/, GLUE_STOP_RE = /[ \t\n\r\f,\/)]/;
+  /* ★ (ر16-أ2) جدول المتغيّرات: «متغيّر التبديل» (var عارية قيمتُها بياض، كـ‎--_prose-noscope: ;‎ في claude.ai، أو احتياطٌ فارغ
+   * ‎var(--tw-rotate-x, )‎ في تايلويند) يجعل عدَّ أجزاء المختصر كاذبًا، فكانت كلُّ var عارية في مختصرٍ ذي جزأين فأكثر تُصنَّف
+   * «متعذّرة» فلا تُقلب ولا تُنسخ — ومصفِّراتُ القواعد الأخرى على العنصر نفسه تمحوها (روابط القوائم 12/12 ← 0/0 في claude.com).
+   * والأمان يُعرف من مجموعة الأوراق نفسها التي يقلبها المولِّد (اللقطة وقت البناء، وأوراق الصفحة في الورقة الحيّة): المتغيّرُ جزءٌ
+   * واحدٌ إذا كان **كلُّ** تصريحٍ له في المجموعة مكوِّنًا واحدًا غيرَ فارغ (ولا كلمةً عامّةً كـinitial)، وكان احتياطُه — إن وُجد —
+   * مكوِّنًا واحدًا كذلك؛ وغيرُ المصرَّح به جزءٌ واحدٌ بشرط احتياطٍ من مكوِّنٍ واحد. وما سوى ذلك (فارغٌ في موضعٍ ما، أو متعدّد،
+   * أو مجهولٌ بلا احتياط) يبقى على حماية التبديل كما كان. والقيمة التي هي نفسها var() تُحلّ بالقاعدة ذاتها (والدَّور = غير آمن).
+   * حدُّه المعروف: متغيّرٌ تكتبه جافاسكربت أو سمةُ style بقيمةٍ متعددة الأجزاء مع تصريحٍ مفرد في الأوراق — لا يُرى من الأوراق. */
+  var CSS_WIDE_RE = /^(?:initial|inherit|unset|revert|revert-layer)$/i;
+  function varTable(lists) {
+    var decl = new Map();
+    for (var a = 0; a < (lists || []).length; a++) {
+      var L = lists[a] || [];
+      for (var b = 0; b < L.length; b++) {
+        var nm = L[b][0], val = String(L[b][1] || "").trim();
+        var set = decl.get(nm);
+        if (!set) { set = new Set(); decl.set(nm, set); }
+        set.add(val);
+      }
+    }
+    var memo = new Map();
+    function state(nm) { // "one" | "none" (غير مصرَّح) | "bad"
+      var s = memo.get(nm);
+      if (s !== undefined) return s;
+      var set = decl.get(nm);
+      if (!set) { memo.set(nm, "none"); return "none"; }
+      memo.set(nm, "bad"); // حارس الدَّور
+      s = "one";
+      set.forEach(function (val) { if (s === "one" && !oneTok(val)) s = "bad"; });
+      memo.set(nm, s);
+      return s;
+    }
+    function oneTok(val) {
+      if (!val) return false;
+      var p = splitVals(val);
+      if (p.length !== 1 || CSS_WIDE_RE.test(p[0])) return false;
+      return isVarPart(p[0]) ? onePart(p[0]) : true;
+    }
+    function onePart(part) {
+      var inner = part.slice(part.indexOf("(") + 1, -1);
+      var args = splitTopComma(inner), nm = args[0].trim();
+      var fb = args.length > 1 ? args.slice(1).join(",").trim() : null;
+      var fbOk = fb === null ? null : oneTok(fb);
+      var st = state(nm);
+      if (st === "one") return fb === null || fbOk;
+      if (st === "none") return fbOk === true;
+      return false;
+    }
+    return { one: function (part) { return isVarPart(part) && onePart(part); }, size: decl.size };
+  }
+  // جزءٌ هو var() عارية كاملة: يبدأ بها ويُغلَق قوسُها في آخره (‎var(--a)px‎ أو ‎var(--a),b‎ ليسا كذلك)
+  function isVarPart(x) {
+    if (!/^var\(/i.test(x) || x.charAt(x.length - 1) !== ")") return false;
+    for (var j = 4, d = 1; j < x.length; j++) {
+      var c = x.charAt(j);
+      if (c === "(") d++;
+      else if (c === ")") { d--; if (d === 0) return j === x.length - 1; }
+    }
+    return false;
+  }
+  // كلُّ أجزاء var العارية آمنةٌ بالجدول؟ (بلا جدولٍ: لا — فيبقى السلوك القديم)
+  function varsCounted(parts, vars) {
+    if (!vars) return false;
+    for (var j = 0; j < parts.length; j++) if (/^var\(/i.test(parts[j]) && !vars.one(parts[j])) return false;
+    return true;
   }
   function expand4(parts) {
     if (parts.length === 1) return [parts[0], parts[0], parts[0], parts[0]];
@@ -524,13 +613,117 @@
     return false;
   }
 
+  /* ★ (ر30-ب، ١٣ جمادى الأولى ١٤٤٨هـ — القرار 124، ثغرات ملف «فحص الاتجاه» عند المالك: 23 تدرّجًا بزاوية في claude.ai) زاوية التدرّج الخطي.
+   * المصغِّر يكتب ‎to right‎ زاويةً (90deg) و‎to left‎ (270deg)، فكانت كل زاويةٍ غير رأسية عجزًا يصرّح به الطبيب. ومرآة التدرّج الخطي حول المحور
+   * الرأسي هي عكس زاويته: θ ↦ 360−θ (والدورة 1turn و400grad و2π rad) — 90 ↦ 270، و105 ↦ 255، و45 ↦ 315، والرأسيّ (0 و180) على حاله. فيُقلب
+   * كلُّ ‎linear-gradient‎ و‎repeating-linear-gradient‎ في القيمة بزاويته، والمكتوبُ بكلمات الجهة تقلبه swapWords كما كان. ويبقى عجزًا:
+   *   - الصيغة القديمة ذات البادئة (‎-webkit-linear-gradient(<زاوية>)‎ زاويتها من الشرق عكس عقارب الساعة)، والمخروطي بزاوية (‎conic-gradient(from …)‎:
+   *     مرآته عكسُ ترتيب محطّاته لا زاويته وحدها)؛
+   *   - وخاصيةٌ غير الخلفية والقناع (‎border-image‎ وأمثالها)، ومختصر الخلفية أو القناع إذا كان فيه موضعٌ أو مقاسٌ عددي خارج الدوالّ (يُقلب مع
+   *     الزاوية موضعه أيضًا، ولا نعرف أيّ أعداده السيني).
+   * والحارسان قبله كما هما: القاعدة المشروطة بـRTL لا تُقلب (فتغلب نسختها في المستوى الرابع)، والقيمة التي تقرأ متغيّرًا يبدّله الموقع تحت RTL تُترك. */
+  var ANGLE_FULL = { deg: 360, grad: 400, rad: 2 * Math.PI, turn: 1 };
+  var ANGLE_TOK_RE = /^(-?(?:\d*\.)?\d+)(deg|grad|rad|turn)$/i;
+  function mirrorAngle(tok) {
+    var m = ANGLE_TOK_RE.exec(tok);
+    if (!m) return null;
+    var full = ANGLE_FULL[m[2].toLowerCase()], v = parseFloat(m[1]);
+    var r = ((full - v) % full + full) % full, v0 = ((v % full) + full) % full;
+    if (Math.abs(r - v0) < 1e-6 || Math.abs(Math.abs(r - v0) - full) < 1e-6) return tok; // رأسيّ: مرآته هو
+    return String(+r.toFixed(4)) + m[2];
+  }
+  var GRAD_CALL_RE = /(-webkit-|-moz-|-o-)?(repeating-)?(linear|radial|conic)-gradient\(/gi;
+  /* ★ (ر30-ب2 — مراجعة ر30-ب، O4) طبقةٌ شعاعية أو مخروطية موضعُها السيني عدديٌّ غير موسَّط (‎radial-gradient(circle at 20% 30%, …)‎ و‎at 8px 0‎
+   * و‎at calc(…) 50%‎) لا تنعكس بعكس زاوية جارتها الخطية: فعكسُ الزاوية وحدها يقلب نصف القيمة ويترك نصفها. فالقيمة كلها عجزٌ (gradient-angle) كما
+   * كانت قبل ر30-ب. والموسَّط (‎at center‎ و‎at 50% 0‎ و‎at top‎) مرآةُ نفسه، وكلمة الحافّة (‎at left top‎ و‎at right 10px top 20%‎) تقلبها swapWords
+   * مع الزاوية فتنعكس. ولا أثر لهذا في قيمةٍ لا تُعكس فيها زاويةٌ خطية (تبقى كما كانت). */
+  function gradPositioned(first) {
+    var at = /(?:^|\s)at\s+([\s\S]+)$/i.exec(first);
+    if (!at) return false;
+    var pos = splitVals(at[1].trim());
+    if (pos.length > 2) return false; // حافّةٌ بإزاحة (‎left 10px top 20%‎): الكلمة تنقلب بإزاحتها
+    var x = /^(?:top|bottom)$/i.test(pos[0] || "") ? (pos[1] || "center") : (pos[0] || "center");
+    if (/^(?:left|right|center)$/i.test(x)) return false;
+    return !/^50%$/.test(x);
+  }
+  // القيمة بزوايا تدرّجاتها الخطية معكوسة ⇒ {value, changed}؛ أو null إن كان فيها ما لا يُعكس بزاويته (البادئة القديمة، والمخروطي بزاوية،
+  // وطبقةٌ شعاعية أو مخروطية بموضعٍ غير موسَّط إلى جانب زاويةٍ تُعكس)
+  function flipGradients(value) {
+    var out = "", j = 0, changed = false, positioned = false, m;
+    GRAD_CALL_RE.lastIndex = 0;
+    while ((m = GRAD_CALL_RE.exec(value))) {
+      var open = GRAD_CALL_RE.lastIndex, depth = 1, k = open;
+      while (k < value.length && depth > 0) { if (value[k] === "(") depth++; else if (value[k] === ")") depth--; k++; }
+      if (depth !== 0) return null;
+      var kind = m[3].toLowerCase(), inner = value.slice(open, k - 1);
+      var args = splitTopComma(inner), lead = args[0].match(/^\s*/)[0], first = args[0].trim();
+      if (kind === "linear") {
+        var toks = splitVals(first);
+        var a = toks.length ? mirrorAngle(toks[0]) : null;
+        if (a !== null && a !== toks[0]) {
+          if (m[1]) return null; // الصيغة القديمة: زاويتها من الشرق عكس عقارب الساعة
+          toks[0] = a; args[0] = lead + toks.join(" ");
+          out += value.slice(j, open) + args.join(",") + ")";
+          j = k; changed = true;
+        }
+      } else if (kind === "conic" && /(?:^|\s)from\s/i.test(first) && /\d(?:deg|grad|rad|turn)\b/i.test(first)) {
+        return null;
+      } else if (gradPositioned(first)) {
+        positioned = true; // ★ (ر30-ب2، O4) لا يُحكم إلا بعد معرفة أن في القيمة زاويةً تُعكس
+      }
+      GRAD_CALL_RE.lastIndex = k;
+    }
+    if (positioned && changed) return null;
+    return { value: changed ? out + value.slice(j) : value, changed: changed };
+  }
+  var GRAD_PROP_RE = /^(?:background|background-image|(?:-webkit-)?mask|(?:-webkit-)?mask-image)$/;
+  var GRAD_SHORT_RE = /^(?:background|(?:-webkit-)?mask)$/;
+  var ANGLED_GRAD_RE = /(?:linear|conic)-gradient\(\s*-?(?:\d*\.)?\d+(?:deg|grad|rad|turn)/i;
+  // تدرّجٌ بزاوية: {kind:"flip"…} بعكس زواياه، أو عجزٌ (gradient-angle)، أو null إن لم يكن فيه زاويةٌ غير رأسية
+  function gradientDecl(prop, v) {
+    if (!ANGLED_GRAD_RE.test(v)) return null;
+    var fg = flipGradients(v);
+    if (fg === null) return { kind: "physical-unflippable", reason: "gradient-angle" };
+    if (!fg.changed) return null; // زواياه رأسية كلها
+    if (!GRAD_PROP_RE.test(prop)) return { kind: "physical-unflippable", reason: "gradient-angle" };
+    if (GRAD_SHORT_RE.test(prop)) {
+      var rest = maskCalls(fg.value, "[a-z-]+", []); // ما خارج الدوالّ: موضعٌ أو مقاسٌ عددي؟
+      if (/\d/.test(rest.replace(new RegExp(PH + "\\d+" + PH, "g"), "").replace(/#[0-9a-f]{3,8}\b/gi, ""))) return { kind: "physical-unflippable", reason: "gradient-angle" }; // (اللون السداسي ليس موضعًا)
+    }
+    var sw = swapWords(fg.value);
+    return { kind: "flip", flips: [{ prop: prop, value: sw !== null ? sw : fg.value }], neutral: [], grad: true };
+  }
+  /* ★ (مراجعة ر30-ب) موضعُ البلاطة في القاعدة نفسها. عكسُ الزاوية يعكس الصورة داخل بلاطتها، فلا يكون مرآةً إلا إذا انعكس موضع البلاطة معها:
+   * ‎.filter-selector{background-image:linear-gradient(45deg,…),linear-gradient(135deg,…);background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%}‎
+   * يرسم سهم القائمة بمثلّثين متجاورين، فعكسُ زاويتيهما وموضعاهما على حالهما يفكّ السهم إلى أذنين. فإن كان في القاعدة موضعٌ للعائلة نفسها (الخلفية أو
+   * القناع) لا نقلبه وليس وسطًا في كل طبقاته، بقي التدرّج على حاله عجزًا (gradient-angle) كما كان قبل ر30-ب؛ وما لا موضع له (البلاطة الصندوقُ كلّه)
+   * أو موضعُه مقلوبٌ معه أو وسطٌ يُعكس. يستعمله المولّد والورقة الحيّة (buildLiveSheet) والطبيب (engine.js) فيتّفقون. */
+  var GRAD_POS_RE = { bg: /^background-position(?:-x)?$/, mask: /^(?:-webkit-)?mask-position(?:-x)?$/ };
+  function gradPlacementKept(decls, d, vars) {
+    var re = /mask/.test(decls[d].prop) ? GRAD_POS_RE.mask : GRAD_POS_RE.bg;
+    for (var i = 0; i < decls.length; i++) {
+      if (i === d || !re.test(decls[i].prop)) continue;
+      var a = analyzeDecl(decls[i].prop, decls[i].value, vars);
+      if (a && a.kind === "flip") continue;
+      var layers = splitTopComma(String(decls[i].value));
+      for (var l = 0; l < layers.length; l++) {
+        var x = splitVals(layers[l].trim())[0] || "";
+        if (!/^(?:center|50%)$/i.test(x)) return true;
+      }
+    }
+    return false;
+  }
+  var GRAD_KEPT = { kind: "physical-unflippable", reason: "gradient-angle" };
+
   /* تحليل إعلان واحد. يرجع أحد:
    *  {kind:"flip", flips:[{prop,value}...], neutral:[{prop,value}...]}  — يُقلب
    *  {kind:"physical-unflippable", reason}  — فيزيائي لكن لا نقلبه (يُصرّح به الطبيب)
    *  {kind:"logical"}   — منطقي/واعٍ بالاتجاه أصلًا (يُحصى بِشارةَ صحةٍ للموقع)
    *  null               — لا علاقة له بالاتجاه
-   * تعريف «الفيزيائي» عند الطبيب = kind يبدأ بـ flip أو physical. */
-  function analyzeDecl(prop, value) {
+   * تعريف «الفيزيائي» عند الطبيب = kind يبدأ بـ flip أو physical.
+   * vars (اختياري، ر16-أ2): جدول varTable من مجموعة الأوراق نفسها — به تُعدّ var العارية الآمنة في المختصرات جزءًا واحدًا؛
+   * وبلا جدولٍ (الطبيب) يبقى المختصر ذو var العارية على حماية التبديل كما كان. */
+  function analyzeDecl(prop, value, vars) {
     var v = value;
     if (prop.charAt(0) === "-" && prop.charAt(1) === "-") {
       // خصائص مخصصة: لا نقلب إلا متغيّر الإزاحة السينية (تايلويند يمرّر كل إزاحات
@@ -553,8 +746,9 @@
       var e4 = expand4(parts);
       if (!e4) return { kind: "physical-unflippable", reason: "shorthand-odd" };
       // «متغيّر تبديل» بين القيم (var عارية قد تكون بياضًا) يجعل عدّ الأجزاء نفسه
-      // كاذبًا — فالتفكيك إلى خانات يُنتج زوايا/جوانب خاطئة (حالة prose الحقيقية)
-      if (parts.some(function (x) { return /^var\(/i.test(x); })) {
+      // كاذبًا — فالتفكيك إلى خانات يُنتج زوايا/جوانب خاطئة (حالة prose الحقيقية).
+      // ★ (ر16-أ2) إلا أن يشهد جدولُ المتغيّرات أن كلَّ var عارية فيه مكوِّنٌ واحدٌ أبدًا: فالعدُّ صادق، فيُقلب أو يُنسخ كغيره
+      if (parts.some(function (x) { return /^var\(/i.test(x); }) && !varsCounted(parts, vars)) {
         return e4[1] === e4[3] && parts.length < 2 ? null : { kind: "physical-unflippable", reason: "shorthand-var-toggle" };
       }
       if (e4[1] === e4[3]) return null; // متناظر — لا شأن للاتجاه به
@@ -579,7 +773,7 @@
       var rparts = splitVals(v);
       var rp = expand4(rparts);
       if (!rp) return { kind: "physical-unflippable", reason: "radius-odd" };
-      if (rparts.length > 1 && rparts.some(function (x) { return /^var\(/i.test(x); })) {
+      if (rparts.length > 1 && rparts.some(function (x) { return /^var\(/i.test(x); }) && !varsCounted(rparts, vars)) {
         return { kind: "physical-unflippable", reason: "shorthand-var-toggle" }; // متغيّر تبديل يكذّب العدّ
       }
       if (rp[0] === rp[1] && rp[2] === rp[3]) return null; // متناظر أفقيًّا
@@ -623,10 +817,9 @@
       tv[0] = fx2;
       return { kind: "flip", flips: [{ prop: "translate", value: tv.join(" ") }], neutral: [] };
     }
-    // تدرّجٌ بزاويةٍ غير عمودية لا يُقلب بتبديل كلمات — يُصرَّح به عجزًا قبل فروع الخلفية
-    if (/(?:linear|conic|repeating-linear)-gradient\(\s*-?\d+(?:\.\d+)?deg/i.test(v) && !/gradient\(\s*(?:0|180|360)deg/i.test(v)) {
-      return { kind: "physical-unflippable", reason: "gradient-angle" };
-    }
+    // ★ (ر30-ب) تدرّجٌ بزاويةٍ غير رأسية: يُقلب بعكس زاويته في الخلفية والقناع (gradientDecl)، وإلا صُرّح به عجزًا — قبل فروع الخلفية
+    var gd = gradientDecl(prop, v);
+    if (gd) return gd;
     if (prop === "background" || prop === "background-image") {
       var swb = swapWords(v);
       if (swb !== null) return { kind: "flip", flips: [{ prop: prop, value: swb }], neutral: [] };
@@ -670,10 +863,6 @@
     if (/^(?:-webkit-)?mask(?:-image|-position|-position-x)?$/.test(prop) && /\b(?:left|right)\b/i.test(v)) {
       var mv = v.replace(/\b(left|right)\b/gi, function (w) { return w.toLowerCase() === "left" ? "right" : "left"; });
       return { kind: "flip", flips: [{ prop: prop, value: mv }], neutral: [] };
-    }
-    // تدرّجٌ بزاويةٍ غير عمودية لا يُقلب بتبديل كلمات — يُصرَّح به عجزًا ولا يُسكَت
-    if (/(?:linear|conic|repeating-linear)-gradient\(\s*-?\d+(?:\.\d+)?deg/i.test(v) && !/gradient\(\s*(?:0|180|360)deg/i.test(v)) {
-      return { kind: "physical-unflippable", reason: "gradient-angle" };
     }
     return null;
   }
@@ -719,12 +908,216 @@
    * منبثقةٌ كاملةٌ إلى اليسار (شُخّص حيًّا). و:not(:where(…)) صفرُ تخصيصٍ فلا يزحزح السلّم. */
   var NOFLIP_EXEMPT = ':not(:where([data-cml-noflip="computed"]))';
   var DIR_AWARE_RE = /\[dir\s*[=\]]|:dir\(/; // قاعدةٌ واعيةٌ بالاتجاه (سمة dir أو :dir())
+  /* ★ (ر29-ب، ١٣ جمادى الأولى ١٤٤٨هـ — القرار 123، الخطر الكامن الذي كشفته ر30-أ) شرطُ RTL بلغة الصفحة أو بصنفٍ لا بسمة dir: ‎:lang(ar)‎
+   * و‎[lang=ar]‎ و‎[lang|=ar]‎ و‎[lang^=ar]‎ وصنف ‎.rtl‎. كان المولّد يقلبها قلبَه لقاعدةٍ من اليسار، فإذا كتب الموقع ‎lang=ar‎ (يكتبها نصُّه
+   * الأول لمن يختار عربيته الرسمية) انقلبت مرتين. فهي كالمشروطة بـ‎dir=rtl‎: لا تُقلب، وتُعاد في المستوى الرابع قصدًا للموقع.
+   * والموجبُ وحده شرط: ‎:not(.rtl)‎ و‎:not(:lang(ar))‎ قاعدةٌ لغير RTL تنطبق في صفحتنا (لا نضع الصنف ولا اللغة) فتُقلب كغيرها. */
+  var LANG_AR_RE = /:lang\(\s*(?:[^()]*,\s*)?["']?ar(?:-[a-z0-9-]+)?["']?\s*(?:,[^()]*)?\)|\[\s*lang\s*[|^]?=\s*["']?ar(?:-[a-z0-9-]+)?["']?(?:\s+[is])?\s*\]/i;
+  var RTL_CLASS_RE = /\.rtl(?![\w\\-])/;
+  var RTL_DIR_RE = /:dir\(\s*rtl\s*\)|\[dir\s*=\s*"?rtl"?\]/i;
+  // المحدِّد بلا مجموعات ‎:not(…)‎ (المنفيُّ فيها ليس شرطًا موجبًا)؛ يتخطّى المهرَّب والسلاسل
+  function positiveSel(sel) {
+    if (sel.indexOf(":not(") === -1) return sel;
+    var out = "", i = 0, n = sel.length;
+    while (i < n) {
+      var c = sel[i];
+      if (c === "\\") { out += sel.substr(i, 2); i += 2; continue; }
+      if (c === '"' || c === "'") { var j = skipStr(i); out += sel.slice(i, j); i = j; continue; }
+      if (c === ":" && sel.substr(i, 5) === ":not(") {
+        var depth = 0, k = i + 4;
+        while (k < n) {
+          var ck = sel[k];
+          if (ck === "\\") { k += 2; continue; }
+          if (ck === '"' || ck === "'") { k = skipStr(k); continue; }
+          if (ck === "(") depth++;
+          else if (ck === ")") { depth--; if (depth === 0) break; }
+          k++;
+        }
+        i = k + 1; continue;
+      }
+      out += c; i++;
+    }
+    return out;
+    function skipStr(at) { // من علامة التنصيص إلى ما بعد نظيرتها
+      var q = sel[at], m = at + 1;
+      while (m < n && sel[m] !== q) m += sel[m] === "\\" ? 2 : 1;
+      return m + 1;
+    }
+  }
+  // شرطٌ موجبٌ بلغة العربية أو بصنف ‎.rtl‎ (خارج ‎:not()‎)
+  function langRtl(sel) {
+    if (sel.indexOf("lang") === -1 && sel.indexOf(".rtl") === -1) return false;
+    var s = positiveSel(sel);
+    return LANG_AR_RE.test(s) || RTL_CLASS_RE.test(s);
+  }
+  // نوع القاعدة: 1 مخرجاتنا، 2 واعيةٌ بالاتجاه (سمة dir أو ‎:dir()‎ أو شرط RTL باللغة أو الصنف)، 0 سواها — للمولّد والطبيب معًا
+  function condKind(sel) {
+    if (sel.indexOf("data-cml") !== -1) return 1;
+    return DIR_AWARE_RE.test(sel) || langRtl(sel) ? 2 : 0;
+  }
+  // شرط RTL موجبٌ (خارج ‎:not()‎): القواعد التي يعرّف بها الموقع متغيّراته تحت RTL
+  function rtlPositive(sel) {
+    return (/rtl/i.test(sel) && RTL_DIR_RE.test(positiveSel(sel))) || langRtl(sel);
+  }
+  /* ★ (ر29-ب — القلب المزدوج بالمتغيّرات، حواف التلاشي في ‎.scroll-fade‎ و‎.scroll-fade-x‎) الموقع يبدّل متغيّرات الجهتين تحت RTL
+   * (‎.scroll-fade-x:where(:root[dir=rtl] :dir(rtl)){--cds-scroll-fade-left: …right-raw…}‎) ويُبقي مستهلكها فيزيائيًّا (تدرّج القناع
+   * ‎to right‎ وحشو التمرير الأيسر)، فقلبُنا للمستهلك يعيد الحافّتين إلى جهة LTR. فالمتغيّرات التي يعرّفها الموقع في قاعدةٍ RTL موجبة
+   * تُجمع من الأوراق نفسها، وإعلانٌ فيزيائيٌّ يستهلك أحدها لا يُقلب ولا يُصفَّر ولا يُنسخ: الموقع يعالج جهته بنفسه. */
+  var VAR_USE_RE = /var\(\s*(--[\w-]+)/g;
+  var SITE_RTL_VAR = { kind: "site-rtl-var" }; // علامة الإعلان المتروك لجهة الموقع (مرجعٌ واحد يُقارن بالهوية)
+  /* ★ (ر30-ب، ١٣ جمادى الأولى ١٤٤٨هـ — مراجع ر29-ب، البند 1) الحارس بنطاق المكوّن. كان يجمع كلَّ متغيّرٍ معرَّفٍ تحت شرط RTL موجب أينما كان، ومنها
+   * أدواتٌ لعنصرٍ بعينه لا تبدّل الجهتين: ‎.rtl\:scroll-fade-hide-left{--cds-scroll-fade-left-on:0}‎ تُخفي حافّةً واحدة، فكان حشو التمرير الذي يقرأ
+   * ‎-left-on‎ يُترك فيزيائيًّا في كل مكان، والقناعُ بجانبه مقلوب (الورقتان الاحتياطيتان للتطبيق والأكاديمية: الحشو في جهةٍ غير جهة التلاشي). فصار المتغيّر
+   * متروكًا للموقع في حالين:
+   *   ١) مرآةٌ حقيقية، تُترك لكل مستهلك: قاعدة RTL تعيّنه بقيمةٍ فيها كلمة جهة (‎left‎ و‎to left‎) أو زاوية، أو تقرأ نظيره من الجهة الأخرى (‎--…-left‎
+   *      من ‎--…-right-raw‎)، أو أداةُ خاصيةٍ اعتباطية تسمّي المتغيّر نفسه (‎.\[\&\:dir\(rtl\)\]\:\[--x\:…\]‎ و‎.rtl\:\[--_meter-dir\:1\]‎): قصدٌ صريح لذلك المتغيّر؛
+   *   ٢) وفي المكوّن نفسه: قاعدة RTL مركّبُها الأخير (العنصر الذي تعيّن عليه) يشترك مع محدِّد المستهلك في صنفٍ أو معرِّفٍ أو سمةٍ خاصّة (المكوّن نفسه، أو
+   *      سلفٌ في محدِّد المستهلك)، وتعيّن المتغيّر أو تقرؤه معادلةُ تبديلها (قيمةُ متغيّرٍ تعيّنه) — ‎.scroll-fade-x:where(:root[dir=rtl] :dir(rtl))‎ يبدّل الحافّتين
+   *      بمعادلةٍ تقرأ ‎-left-on‎ و‎-right-on‎، فحشو ‎.scroll-fade-x‎ متروكٌ مع قناعه. وقراءة متغيّرٍ في خاصيةٍ عادية (لونُ حدٍّ)، أو متغيّرٍ لا جهة في اسمه
+   *      (مسافةٌ عامّة)، ليست تبديلًا.
+   * وما سوى ذلك (أداةٌ مسمّاة بقيمةٍ ثابتة لعنصرٍ آخر) يُقلب مستهلكه كغيره. */
+  var SIDE_WORD_RE = /\b(?:left|right)\b/i, ANGLE_IN_RE = /\d(?:deg|grad|rad|turn)\b/i;
+  var ARB_VAR_RE = /\\\[(--[\w-]+)\\:/g;
+  var TOKEN_RE = /([.#])((?:\\.|[\w-]|[^\x00-\x7f])+)|\[\s*([\w-]+)/g;
+  // علاماتٌ عامّة لا تعيّن مكوّنًا: مجموعات Tailwind وأقرانها، والسمات والحالات المشتركة بين المكوّنات
+  var GENERIC_TOK_RE = /^(?:[.](?:group|peer)(?:\\\/|$)|[.](?:dark|light)$|\[(?:dir|lang|class|style|id|role|type|href|open|hidden|aria-[\w-]+|data-(?:state|orientation|side|align|highlighted|disabled|selected|checked|open|closed|active|ending-style|starting-style))$)/;
+  // أصناف المحدِّد ومعرِّفاته وأسماء سماته خارج ‎:not()‎ (مهرَّبةً كما كُتبت) — للمستهلك: مركّباته كلها، فالسلف المشترك منها
+  function compTokens(sel) {
+    var out = [], s = positiveSel(sel), m;
+    TOKEN_RE.lastIndex = 0;
+    while ((m = TOKEN_RE.exec(s))) {
+      var t = m[3] ? "[" + m[3] : m[1] + m[2];
+      if (!GENERIC_TOK_RE.test(t) && out.indexOf(t) === -1) out.push(t);
+    }
+    return out;
+  }
+  // ولقاعدة RTL: مركّبها الأخير وحده (العنصر الذي تعيّن عليه المتغيّر) بلا مجموعات الشرط الوظيفية (‎:where(:root[dir=rtl] …)‎ وأمثالها)
+  function subjectTokens(sel) {
+    var parts = splitSelList(sel), out = [];
+    for (var i = 0; i < parts.length; i++) {
+      var p = positiveSel(parts[i]), depth = 0, cut = 0, q = 0, t = "";
+      for (q = 0; q < p.length; q++) {
+        var c = p[q];
+        if (c === "\\") { q++; continue; }
+        if (c === "(" || c === "[") depth++;
+        else if (c === ")" || c === "]") depth--;
+        else if (depth === 0 && /[\s>+~]/.test(c)) cut = q + 1;
+      }
+      var last = p.slice(cut), k = 0;
+      while (k < last.length) { // يُسقط ‎:name(…)‎ كاملةً
+        var ch = last[k];
+        if (ch === "\\") { t += last.substr(k, 2); k += 2; continue; }
+        if (ch === ":" && /^:{1,2}[\w-]+\(/.test(last.slice(k))) {
+          var o = last.indexOf("(", k), d2 = 0, e = o;
+          for (; e < last.length; e++) { if (last[e] === "(") d2++; else if (last[e] === ")") { d2--; if (d2 === 0) break; } }
+          k = e + 1; continue;
+        }
+        t += ch; k++;
+      }
+      var tk = compTokens(t);
+      for (var j = 0; j < tk.length; j++) if (out.indexOf(tk[j]) === -1) out.push(tk[j]);
+    }
+    return out;
+  }
+  function sideOf(name) { return /left/i.test(name) ? "left" : /right/i.test(name) ? "right" : null; }
+  function sideBase(name) { return name.replace(/left|right/gi, "#").replace(/-raw$/i, ""); } // ‎--a-left‎ و‎--a-right-raw‎ نظيران
+  // قيمةٌ تبدّل الجهة: كلمة جهة أو زاوية خارج أسماء المتغيّرات، أو قراءةُ نظيرٍ من الجهة الأخرى
+  function mirrorValue(prop, value) {
+    var bare = String(value).replace(/--[\w-]+/g, "");
+    if (SIDE_WORD_RE.test(bare) || ANGLE_IN_RE.test(bare)) return true;
+    var side = sideOf(prop); if (!side) return false;
+    var base = sideBase(prop), m;
+    VAR_USE_RE.lastIndex = 0;
+    while ((m = VAR_USE_RE.exec(value))) { var s2 = sideOf(m[1]); if (s2 && s2 !== side && sideBase(m[1]) === base) return true; }
+    return false;
+  }
+  function rtlVarsOf(rules) {
+    var glob = Object.create(null), any = Object.create(null), idx = Object.create(null);
+    for (var i = 0; i < rules.length; i++) {
+      var r = rules[i];
+      if (r.sel.indexOf("data-cml") !== -1 || !rtlPositive(r.sel)) continue;
+      var arb = Object.create(null), am;
+      ARB_VAR_RE.lastIndex = 0;
+      while ((am = ARB_VAR_RE.exec(r.sel))) arb[am[1]] = 1;
+      var vars = Object.create(null), n = 0;
+      for (var d = 0; d < r.decls.length; d++) {
+        var p = r.decls[d].prop, val = String(r.decls[d].value), m;
+        if (p.charAt(0) !== "-" || p.charAt(1) !== "-") continue; // قراءةٌ في خاصيةٍ عادية (لونٌ أو مسافة) ليست تبديلًا للمتغيّر
+        any[p] = 1; vars[p] = 1; n++;
+        if (arb[p] === 1 || mirrorValue(p, val)) glob[p] = 1;
+        VAR_USE_RE.lastIndex = 0;
+        // وما تقرؤه معادلةُ التبديل نفسها من متغيّرات الجهة (‎-left-on‎ في ‎--…-left: calc(…-right-raw… * …-left-on)‎)؛ ومسافةٌ عامّة تقرؤها (‎--df-nav-extent‎) ليست منه
+        while ((m = VAR_USE_RE.exec(val))) if (sideOf(m[1])) { vars[m[1]] = 1; n++; }
+      }
+      if (!n) continue;
+      var toks = subjectTokens(r.sel);
+      for (var t = 0; t < toks.length; t++) (idx[toks[t]] = idx[toks[t]] || []).push(vars);
+    }
+    return { glob: glob, any: any, idx: idx, memo: new Map() };
+  }
+  // sel: محدِّد المستهلك (بلا محدِّدٍ لا يُترك إلا المرآة الحقيقية). ويقبل مجموعةً مجرّدة {اسم: 1} كما كان قبل ر30-ب: كلُّها مرايا
+  function rtlVarHeld(value, info, sel) {
+    if (!info || String(value).indexOf("var(") === -1) return false;
+    var glob = info.glob || info, names = [], m;
+    VAR_USE_RE.lastIndex = 0;
+    while ((m = VAR_USE_RE.exec(value))) { if (glob[m[1]] === 1) return true; names.push(m[1]); }
+    if (!sel || !info.idx) return false;
+    var toks = info.memo.get(sel);
+    if (!toks) { toks = compTokens(sel); info.memo.set(sel, toks); }
+    for (var t = 0; t < toks.length; t++) {
+      var L = info.idx[toks[t]];
+      if (!L) continue;
+      for (var k = 0; k < L.length; k++) for (var q = 0; q < names.length; q++) if (L[k][names[q]] === 1) return true;
+    }
+    return false;
+  }
   // خصائصُ المرساة وحدها تحمل الاستثناء — وإلحاقُه بكل قاعدةٍ يضخّم الورقة بلا فائدة
   var ANCHOR_PROPS = {
     "left": 1, "right": 1, "inset-inline-start": 1, "inset-inline-end": 1, "inset-inline": 1,
     "inset": 1, "transform": 1, "translate": 1, "--tw-translate-x": 1,
     "margin-inline-start": 1, "margin-inline-end": 1, "margin-left": 1, "margin-right": 1,
   };
+  /* ★ (ر24-ب2، ١٢ جمادى الأولى ١٤٤٨هـ — مراجعة Codex CX-007) الجزر من اليسار: داخل جزيرة LTR (‎direction:ltr‎ من ISLANDS_CSS) تبقى التحويلات
+   * المنطقية على معناها الأصلي من تلقاء نفسها (‎inset-inline-start‎ يسارٌ فيها)، أما القيمة الفيزيائية المقلوبة فلا يُرجعها الاتجاه: ‎left:50%;
+   * transform:translateX(-50%)‎ كان يصير فيها ‎inset-inline-start:50%; translateX(50%)‎ فيزيح العنصر بعرضه كلِّه. فهذه القيم وحدها تُستثنى في الجزر
+   * وأحفادها — الشيفرة (pre وcode وkbd وsamp) وعلامتُنا ‎[data-cml-noflip="ltr"]‎ (والفارغة) — ويبقى التحويل المنطقي فيها كما هو، فلا يُفصل عنه بديله
+   * المحلّي. والاستثناء ‎:not(:where(…))‎ صفرُ تخصيصٍ فلا يزحزح السلّم. ومتغيّر الإزاحة السينية يُستثنى حيث يُصرَّح به: تايلويند يصرّح به على العنصر
+   * الذي يستعمله، فإن صُرّح به خارج الجزيرة واستُعمل داخلها ورثته مقلوبًا (حدٌّ معروف). */
+  var ISLAND_SEL = ["pre", "code", "kbd", "samp", '[data-cml-noflip="ltr"]', '[data-cml-noflip=""]'];
+  var ISLAND_EXEMPT = ":not(:where(" + ISLAND_SEL.concat(ISLAND_SEL.map(function (s) { return s + " *"; })).join(",") + "))";
+  /* ★ (ر24-ب4، ١٢ جمادى الأولى ١٤٤٨هـ — بقية CX-007) جزر أوراق ‎*-point.css‎: تعلنها الورقة بمحدِّدات الموقع (‎direction:ltr‎ على كتلة شيفرةٍ
+   * أو مسارٍ أو إطار)، فكانت القيم الفيزيائية المقلوبة تُطبَّق داخلها. وعلامتُها التي نملكها إعلانُ ‎--cml-island: ltr‎ في قاعدة الجزيرة نفسها
+   * (ISLAND_MARK): فالجزيرة ما أعلنته ورقتُنا جزيرةً، لا ما يُستنبط من CSS الموقع. islandSelectors تقرأ محدِّدات القواعد الحاملة للعلامة من نصّ
+   * الورقة (المولّد من الملف، والعامل من نسخة الحزمة)، وislandExempt يضمّها وأحفادَها إلى استثناء الجزر المسمّاة في ورقة ذلك الموقع وحدها.
+   * ومحدِّد الجزيرة يُنقل بشرطه كما هو (بوابة html وحال المتن ومسار الهيكل)، فلا تُستثنى الجزيرة إلا حين تكون جزيرةً فعلًا. والقاعدة الحاملة
+   * للعلامة تكون في المستوى الأعلى (لا @media ولا @supports): شرطٌ لا يُنقل إلى المحدِّد يُرفض في errors */
+  var ISLAND_MARK = "--cml-island";
+  function islandSelectors(cssText) {
+    var out = [], errors = [], p;
+    try { p = parseCss(String(cssText || "")); } catch (e) { return { sels: out, errors: ["parse"] }; }
+    for (var i = 0; i < p.rules.length; i++) {
+      var r = p.rules[i], marked = false;
+      for (var d = 0; d < r.decls.length; d++) if (r.decls[d].prop === ISLAND_MARK) marked = true;
+      if (!marked) continue;
+      if (r.ctx && r.ctx.length) { errors.push("ctx:" + r.sel.slice(0, 80)); continue; }
+      var parts = splitSelList(r.sel);
+      for (var k = 0; k < parts.length; k++) {
+        var sel = parts[k].replace(/\s+/g, " ").trim();
+        if (sel && out.indexOf(sel) === -1) out.push(sel);
+      }
+    }
+    return { sels: out, errors: errors };
+  }
+  // استثناء الجزر لورقةٍ بعينها: المسمّاة ثم جزر ورقة الموقع (بلا جزرٍ إضافية هو ISLAND_EXEMPT حرفًا بحرف، فلا تتغيّر ورقةٌ بلا جزر)
+  function islandExempt(extra) {
+    if (!extra || !extra.length) return ISLAND_EXEMPT;
+    var named = ISLAND_SEL.concat(ISLAND_SEL.map(function (s) { return s + " *"; }));
+    return ":not(:where(" + named.concat(extra, extra.map(function (s) { return s + " *"; })).join(",") + "))";
+  }
+  var PHYS_VALUE = { "transform": 1, "translate": 1, "background": 1, "background-image": 1, "background-position": 1, "object-position": 1 };
+  function physValue(prop) {
+    return PHYS_VALUE[prop] === 1 || (prop.charAt(0) === "-" && prop.charAt(1) === "-") || /^(?:-webkit-)?mask/.test(prop);
+  }
   function anchorish(decls) {
     for (var i = 0; i < decls.length; i++) if (ANCHOR_PROPS[decls[i].prop]) return true;
     return false;
@@ -950,12 +1343,27 @@
     return fnvStep(0x811c9dc5, ctxKey(ctx) + "{" + sel.replace(/\s+/g, " ").trim() + "}");
   }
   function coverageKey(ctx, sel, prop) { return fnvHex(fnvStep(coveragePrefix(ctx, sel), prop)); }
+  /* ★ (ر30-ب2، ١٤ جمادى الأولى ١٤٤٨هـ — حدّا «فحص الاتجاه»، R29B §٤) القائمة كما يقسمها القلب: قائمةُ محدِّداتٍ متفاوتة التخصيص تُفصل قاعدةً لكل محدِّد
+   * (كي يُفرز كلٌّ بحقّه، flipSheet)، فبصماتُ تغطيتها بصماتُ أجزائها لا بصمةُ القائمة كلها؛ والمتساوية التخصيص (والمحدِّد الواحد) تبقى كما كُتبت.
+   * وكان الطبيب يبصم القائمة كلها دائمًا فيرى المقلوبَ ثغرة (8 ثغراتٍ كاذبة في ملف المالك). فالقسمةُ هنا واحدةٌ للقلب والطبيب: {sels, specs} */
+  function specParts(sel) {
+    // بلا فاصلةٍ أصلًا فهو محدِّدٌ واحد — لا حاجة إلى التقسيم (الغالب)
+    if (sel.indexOf(",") === -1) return { sels: [sel], specs: [specificity(sel)] };
+    var parts = splitSelList(sel);
+    if (parts.length < 2) return { sels: [sel], specs: [specificity(sel)] };
+    var specs = parts.map(specificity), same = specs.every(function (s) { return s === specs[0]; });
+    if (same) return { sels: [sel], specs: [specs[0]] };
+    return { sels: parts.map(function (x) { return x.trim(); }), specs: specs };
+  }
+  function coverageSels(sel) { return specParts(sel).sels; }
 
   /* يقلب قائمة قواعد (من parseCss واحد أو أكثر). opts.layerOrder يعيد ترتيب البثّ
    * بحسب رتبة الطبقة (الطبقة المتأخرة تغلب، وغير المطبَّق يغلب الكل فيُبثّ أخيرًا).
    * يرجع { neutral: [rule], logical: [rule], coverage: [hash..], stats }. */
   function flipSheet(rules, opts) {
     var layerOrder = (opts && opts.layerOrder) || [];
+    var vars = (opts && opts.vars) || null; // ★ (ر16-أ2) جدول varTable من مجموعة الأوراق نفسها (بلا جدولٍ: حماية التبديل كما كانت)
+    var islandEx = islandExempt(opts && opts.islands); // ★ (ر24-ب4) جزر ورقة الموقع (islandSelectors) مع المسمّاة
     function rank(layer) {
       if (layer === null || layer === undefined) return layerOrder.length + 1; // غير مطبَّق — يغلب الكل
       var r = layerOrder.indexOf(layer);
@@ -968,16 +1376,11 @@
     // وقائمةُ محدِّداتٍ متفاوتةِ التخصيص تُفصل قاعدةً لكل محدِّد كي يُفرز كلٌّ بحقّه.
     var expanded = [];
     for (var ei = 0; ei < rules.length; ei++) {
-      var er = rules[ei];
-      // بلا فاصلةٍ أصلًا فهو محدِّدٌ واحد — لا حاجة إلى التقسيم (الغالب)
-      if (er.sel.indexOf(",") === -1) { er.spec = specificity(er.sel); expanded.push(er); continue; }
-      var parts = splitSelList(er.sel);
-      if (parts.length < 2) { er.spec = specificity(er.sel); expanded.push(er); continue; }
-      var specs = parts.map(specificity), same = specs.every(function (s) { return s === specs[0]; });
-      if (same) { er.spec = specs[0]; expanded.push(er); continue; }
-      for (var pi = 0; pi < parts.length; pi++) {
+      var er = rules[ei], sp = specParts(er.sel);
+      if (sp.sels.length === 1) { er.spec = sp.specs[0]; expanded.push(er); continue; }
+      for (var pi = 0; pi < sp.sels.length; pi++) {
         var clone = {}; for (var kk in er) { if (Object.prototype.hasOwnProperty.call(er, kk)) clone[kk] = er[kk]; }
-        clone.sel = parts[pi].trim(); clone.spec = specs[pi]; clone.idx = er.idx + pi / 1000;
+        clone.sel = sp.sels[pi]; clone.spec = sp.specs[pi]; clone.idx = er.idx + pi / 1000;
         expanded.push(clone);
       }
     }
@@ -997,7 +1400,9 @@
     // الأول وأكثر — فحذفُ ما قبله لا يغيّر الحسم لأي عنصر.
     // (المفتاح: الرتبة، فبصمةُ التغطية رقمًا لا ستّ عشريًّا — تكافؤٌ واحد، و«!» بعدها لا يكون رقمًا فلا التباس)
     var lastAt = new Map();
-    var stats = { flipped: 0, neutralized: 0, identity: 0, unflippable: {}, logicalAlready: 0, dirAware: 0, dirBoosted: 0, gateSkipped: 0, rules: rules.length };
+    var stats = { flipped: 0, neutralized: 0, identity: 0, unflippable: {}, logicalAlready: 0, dirAware: 0, dirBoosted: 0, gateSkipped: 0, rules: rules.length, rtlVarHeld: 0, langRtl: 0, gradient: 0 };
+    // ★ (ر29-ب) متغيّرات الموقع المعرَّفة تحت شرط RTL موجب، من الأوراق نفسها (المولّد من اللقطة، والحيّ من أوراق الصفحة)
+    var rtlVars = rtlVarsOf(rules);
     // قواعد الموقع المشروطة بـRTL (أدوات ‎rtl:‎ و‎:dir(rtl)‎) هي **قصد المؤلف** في RTL،
     // وتخصيصها واطئ (:where) فقلبُنا المعزَّز للأداة الأساس كان سيدهسها على العناصر
     // الجامعة للصنفين. الحل: تُبثّ نسخة منها معزَّزةً بالبوابة في قسمٍ ثالثٍ **بعد**
@@ -1018,11 +1423,15 @@
     var flipTails = new Set(); // ذيول مفاتيح المقلوبات (القيمة + علامة الأهمية) — انظر التمرير الثاني
     for (var r0 = 0; r0 < sorted.length; r0++) {
       var rule0 = sorted[r0];
-      kindAt[r0] = rule0.sel.indexOf("data-cml") !== -1 ? 1 : DIR_AWARE_RE.test(rule0.sel) ? 2 : 0;
+      kindAt[r0] = condKind(rule0.sel);
       if (kindAt[r0]) continue;
       var an0 = anAt[r0] = new Array(rule0.decls.length);
       for (var d0 = 0; d0 < rule0.decls.length; d0++) {
-        var a0 = an0[d0] = analyzeDecl(rule0.decls[d0].prop, rule0.decls[d0].value);
+        var a0 = an0[d0] = analyzeDecl(rule0.decls[d0].prop, rule0.decls[d0].value, vars);
+        // ★ (ر29-ب) فيزيائيٌّ يستهلك متغيّرًا يبدّله الموقع تحت RTL: جهته من الموقع — لا قلب ولا تصفير ولا نسخة مطابقة
+        if (a0 && a0.kind !== "logical" && rtlVarHeld(rule0.decls[d0].value, rtlVars, rule0.sel)) { a0 = an0[d0] = SITE_RTL_VAR; continue; }
+        // ★ (مراجعة ر30-ب) تدرّجٌ بزاوية وموضعُ بلاطته في القاعدة لا ينقلب: يبقى عجزًا (gradPlacementKept)
+        if (a0 && a0.grad && gradPlacementKept(rule0.decls, d0, vars)) { a0 = an0[d0] = GRAD_KEPT; continue; }
         if (!a0 || a0.kind !== "flip") continue;
         flipTails.add(rule0.decls[d0].value + (rule0.decls[d0].important ? "!i" : ""));
         for (var f0 = 0; f0 < a0.flips.length; f0++) markSlots(a0.flips[f0].prop);
@@ -1065,7 +1474,9 @@
       if (kindAt[r] === 1) { stats.gateSkipped++; continue; } // مخرجاتنا نحن
       if (kindAt[r] === 2) {
         stats.dirAware++;
-        if (RTL_COND_RE.test(rule.sel)) {
+        var byLang = !DIR_AWARE_RE.test(rule.sel); // ★ (ر29-ب) واعيةٌ بشرط اللغة أو الصنف وحده
+        if (byLang) stats.langRtl++;
+        if (byLang || RTL_COND_RE.test(rule.sel)) {
           var bn = [], bi = [];
           for (var bx = 0; bx < rule.decls.length; bx++) (rule.decls[bx].important ? bi : bn).push(rule.decls[bx]);
           if (bn.length) dirBoost.push({ sel: prefixTier(rule.sel, 4), decls: bn, ctx: rule.ctx });
@@ -1074,10 +1485,11 @@
         }
         continue;
       }
-      var flips = [], neut = [];
+      var flips = [], neut = [], pvals = [];
       for (var d = 0; d < rule.decls.length; d++) {
         var dec = rule.decls[d];
         var a = anAt[r][d];
+        if (a === SITE_RTL_VAR) { stats.rtlVarHeld++; continue; }
         if (!a || a.kind === "logical") {
           if (a) stats.logicalAlready++;
           // النسخة المطابقة: محايدٌ أو منطقيٌّ خاناتُه متنازَعةٌ فعلًا يُعاد بثُّه
@@ -1099,16 +1511,21 @@
         var ck = fnvHex(covAt[r][d]);
         if (!covSeen[ck]) { covSeen[ck] = 1; coverage.push(ck); }
         if (lastAt.get(keyAt[r][d]) !== r * 100000 + d) { stats.deduped = (stats.deduped || 0) + 1; continue; }
-        for (var f = 0; f < a.flips.length; f++) flips.push({ prop: a.flips[f].prop, value: a.flips[f].value, important: dec.important });
+        // ★ (ر24-ب2، CX-007) القيمة الفيزيائية المقلوبة (إزاحةٌ سينية، أو كلمة جهةٍ أو موضعٌ في خلفيةٍ أو قناع) تُفصل لتحمل استثناء الجزر
+        for (var f = 0; f < a.flips.length; f++) (physValue(a.flips[f].prop) ? pvals : flips).push({ prop: a.flips[f].prop, value: a.flips[f].value, important: dec.important });
         for (var q = 0; q < a.neutral.length; q++) neut.push({ prop: a.neutral[q].prop, value: a.neutral[q].value, important: dec.important });
         stats.flipped++;
+        if (a.grad) stats.gradient++; // ★ (ر30-ب) تدرّجٌ بزاوية عُكست زاويته
       }
       // فرز المهمّات: !important داخل طبقات الموقع يقلب قانون الطبقات (المهمّ المبكر
       // يغلب المتأخر) فيهزم مهمّاتُ الموقع المطبَّقةُ مهمّاتِنا غيرَ المطبَّقة — لذا
       // تُفصل الإعلانات الحاملة له لتُبثّ داخل ‎@layer cml-imp‎ المعلَنة أولَ الورقة.
       // (البادئة تُبنى لما له ناتجٌ وحده — وكانت تُبنى مرتين لكل قاعدة ثم تُهمل في الغالب)
       if (neut.length) pushSplit(neutral, neutralImp, prefixTier(rule.sel, 2, anchorish(neut) ? NOFLIP_EXEMPT : ""), neut, rule.ctx, impOrder(rule, r));
-      if (flips.length) pushSplit(logical, logicalImp, prefixTier(rule.sel, 3, anchorish(flips) ? NOFLIP_EXEMPT : ""), flips, rule.ctx, impOrder(rule, r));
+      // (استثناء السطح المحسوب يُحكم على إعلانات القاعدة كلها كما كان قبل فصل القيم الفيزيائية، فلا يتغيّر لغير الجزر شيء)
+      var anch = anchorish(flips) || anchorish(pvals);
+      if (flips.length) pushSplit(logical, logicalImp, prefixTier(rule.sel, 3, anch ? NOFLIP_EXEMPT : ""), flips, rule.ctx, impOrder(rule, r));
+      if (pvals.length) pushSplit(logical, logicalImp, prefixTier(rule.sel, 3, (anch ? NOFLIP_EXEMPT : "") + islandEx), pvals, rule.ctx, impOrder(rule, r));
       stats.neutralized += neut.length;
     }
     // ★ ترتيب المهمّات مستقلٌّ عن ترتيب العاديات (مراجعة كودكس ١٠، مثبتة في كروم): في
@@ -1210,9 +1627,10 @@
       try { return "url(" + q + new URL(u, base).href + q + ")"; } catch (e) { return all; }
     });
   }
-  function buildLiveSheet(texts, info) {
+  // ★ (ر24-ب4) opts.islands: محدِّدات جزر ورقة الموقع النقطية (islandSelectors) — يمرّرها العامل من نسخة الحزمة
+  function buildLiveSheet(texts, info, opts) {
     info = info || {};
-    var all = [], layerOrder = [], parseErrors = 0;
+    var all = [], layerOrder = [], parseErrors = 0, varLists = [];
     for (var i = 0; i < texts.length; i++) {
       var src = texts[i];
       var rec = typeof src === "string" ? { text: src } : (src || {});
@@ -1230,6 +1648,7 @@
         }
       }
       parseErrors += p.stats.parseErrors;
+      varLists.push(p.vars);
       for (var L = 0; L < p.layerOrder.length; L++) {
         if (layerOrder.indexOf(p.layerOrder[L]) === -1) layerOrder.push(p.layerOrder[L]);
       }
@@ -1238,8 +1657,10 @@
     // بوابتا صحّةٍ كبوابتَي المولّد: مدخلٌ هزيلٌ أو أخطاءُ تحليلٍ كثيرة ⇒ لا ورقة
     // (فتبقى اللقطة عاملةً بدل ورقةٍ ناقصةٍ تُفسد الصفحة)
     if (parseErrors > 50) { info.reason = "parse"; return null; }
-    var out = flipSheet(all, { layerOrder: layerOrder });
-    if (all.length < LIVE_MIN_RULES || out.stats.flipped < LIVE_MIN_FLIPPED) { info.reason = "thin"; return null; }
+    var out = flipSheet(all, { layerOrder: layerOrder, vars: varTable(varLists), islands: opts && opts.islands });
+    // ★ (ر29-ب) والمتروك لجهة الموقع (rtlVarHeld) فيزيائيٌّ في المدخل كالمقلوب، فيُعدّ معه: كان يُنقص العدّ فرُفضت ورقة /login بعرض 390 «هزيلة»
+    // (حزمة المحمول، أدنى العتبة بقليل) فعادت اللقطة المتقادمة — قِيس في فحص الاتجاه (app-login-390: rtl/v2 بستة أصنافٍ عالية)
+    if (all.length < LIVE_MIN_RULES || out.stats.flipped + out.stats.rtlVarHeld < LIVE_MIN_FLIPPED) { info.reason = "thin"; return null; }
     var impRules = out.neutralImp.concat(out.logicalImp, out.dirBoostImp);
     var css = "@layer cml-point, cml-imp;\n" + ISLANDS_CSS +
       (impRules.length ? "@layer cml-imp{\n" + serializeRules(impRules) + "\n}\n" : "") +
@@ -1248,7 +1669,8 @@
     // تبديل البوابة على الناتج كاملًا (الجزر تحمل البوابة نفسها) — تبديلٌ نصّي على سلسلةٍ
     // ثابتةٍ نحن كتبناها، فلا يطال محتوى قاعدةٍ من الموقع
     css = css.split(GATE).join(LIVE_GATE);
-    return { css: css, stats: out.stats, rules: all.length };
+    // ★ (ر30-ب2) وبصماتُ تغطيتها: يقارن بها «فحص الاتجاه» ما دامت هذه الورقة هي المطبَّقة (لا بصمات اللقطة المشحونة)
+    return { css: css, stats: out.stats, rules: all.length, coverage: out.coverage };
   }
 
   g.CMLRtl = {
@@ -1257,16 +1679,39 @@
     // مخزَّنةً ما دامت عناوين أوراق الموقع كما هي). ٢: النسخ المطابقة والمختصرات أفقيةٌ وحدها (فحص الاتجاه ق١)
     // ٣ ★ (ر5-ج): قواعد ‎@scope‎ تُسطَّح فتدخل القلب والنسخ المطابقة (حشوة خلايا الجداول في النثر)
     // ٤ ★ (ر9-هـ): مركّب html يُقطع في المستوى الأعلى وحده (compoundLen) — فلا تبقى في الذاكرة ورقةٌ حيّة مبتورة بُنيت قبله
-    REV: 4,
+    // ٥ ★ (ر16-أ2): القيم الملتصقة بعد القوس تُقسم، وvar العارية الآمنة بجدول المتغيّرات تُعدّ في المختصرات — فلا تبقى ورقةٌ حيّة بنسخٍ ملتصقة
+    // ٦ ★ (ر24-ب2): الإعلانات السابقة لقاعدةٍ متداخلة تُدفع قبلها (CX-006)، والقيم الفيزيائية لا تُقلب داخل جزر LTR (CX-007)
+    // ٧ ★ (ر24-ب4): ولا داخل جزر أوراق ‎*-point.css‎ (علامتها ‎--cml-island‎؛ بقية CX-007)
+    // ٨ ★ (ر29-ب): شرط RTL باللغة أو بصنف ‎.rtl‎ لا يُقلب ويُعاد قصدًا للموقع، ومستهلك متغيّرٍ يبدّله الموقع تحت RTL لا يُقلب (حواف التلاشي)
+    // ٩ ★ (ر30-ب): زاوية التدرّج الخطي تُعكس (θ ↦ 360−θ)، وحارس متغيّرات الموقع بنطاق المكوّن (المرآة الحقيقية، أو قاعدة RTL على المكوّن نفسه)
+    // ١٠ ★ (ر30-ب2): التدرّج بزاوية مع طبقةٍ شعاعية أو مخروطية بموضعٍ عددي غير موسَّط يبقى عجزًا (O4) — فلا تبقى ورقةٌ حيّة بنصف قيمةٍ معكوس
+    REV: 10,
     buildLiveSheet: buildLiveSheet,
     GATE: GATE,
     parseCss: parseCss,
     analyzeDecl: analyzeDecl,
+    varTable: varTable,
     flipSheet: flipSheet,
     serializeRules: serializeRules,
     prefixSelector: prefixSelector,
     coverageKey: coverageKey,
+    coverageSels: coverageSels, // ★ (ر30-ب2) أجزاء القائمة كما تُبصم في التغطية (الطبيب)
     fnv1a: fnv1a,
     ISLANDS_CSS: ISLANDS_CSS,
+    ISLAND_EXEMPT: ISLAND_EXEMPT,
+    ISLAND_MARK: ISLAND_MARK,
+    islandSelectors: islandSelectors,
+    islandExempt: islandExempt,
+    // ★ (ر29-ب) الحارسان للطبيب أيضًا (engine.js): نوع القاعدة، ومتغيّرات الموقع تحت RTL ومستهلكها المتروك له
+    condKind: condKind,
+    langRtl: langRtl,
+    rtlVarsOf: rtlVarsOf,
+    rtlVarHeld: rtlVarHeld,
+    // ★ (ر30-ب) للفحص الذاتي والطبيب: عكس زاوية التدرّج، وعلامات المكوّن
+    mirrorAngle: mirrorAngle,
+    flipGradients: flipGradients,
+    gradPlacementKept: gradPlacementKept,
+    compTokens: compTokens,
+    subjectTokens: subjectTokens,
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);

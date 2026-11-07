@@ -45,8 +45,9 @@
    "d": "code",
    "check": "collateral",
    "sel": "span.min-w-0.truncate",
-   "count": 33,
-   "decision": "intended"
+   "count": 39,
+   "decision": "intended",
+   "reason": "القرار 139 (٢٠ جمادى الأولى ١٤٤٨هـ، السؤال 28، التوصية أ): عدده كما قاسه الفحص الكامل في ر27، 33 ← 39. علاجنا المقصود لقصّ العناوين القصيرة في وثائق Claude Code (overflow: clip بدل hidden)، ويزيد بزيادة صفحات الموقع لا بخللٍ فينا"
   },
   {
    "fp": "3de09e67b7b8",
@@ -108,8 +109,9 @@
    "d": "docs",
    "check": "collateral",
    "sel": "span.min-w-0.truncate",
-   "count": 60,
-   "decision": "intended"
+   "count": 65,
+   "decision": "intended",
+   "reason": "القرار 139 (٢٠ جمادى الأولى ١٤٤٨هـ، السؤال 28، التوصية أ): عدده كما قاسه الفحص الكامل في ر27، 64 ← 65. علاجنا المقصود لقصّ العناوين القصيرة في وثائق المطوّرين (overflow: clip بدل hidden)، ويزيد بزيادة صفحات الموقع لا بخللٍ فينا"
   },
   {
    "fp": "83f6c1af8cfb",
@@ -198,8 +200,9 @@
    "d": "docs",
    "check": "collateral",
    "sel": "span.text-code.text-secondary.content-center",
-   "count": 4,
-   "decision": "intended"
+   "count": 6,
+   "decision": "intended",
+   "reason": "القرار 139 (٢٠ جمادى الأولى ١٤٤٨هـ، السؤال 28، التوصية أ): عدده كما قاسه الفحص الكامل في ر27، 4 ← 6. علاجنا المقصود لقصّ تسميات المسارات في مرجع API (overflow: clip بدل hidden)، ويزيد بزيادة صفحات الموقع لا بخللٍ فينا"
   },
   {
    "fp": "4e9f843a7a3e",
@@ -364,13 +367,14 @@
    "decision": "false-positive"
   },
   {
-   "fp": "37a486499996",
+   "fp": "92388b5ca072",
    "sev": "medium",
    "d": "academy",
    "check": "collateral",
    "sel": "div.mt-auto.flex.items-end",
    "count": 2,
-   "decision": "layout"
+   "decision": "layout",
+   "reason": "إعادة مفتاحٍ لا صنفٌ جديد (ر29-ز، ١٩ جمادى الأولى ١٤٤٨هـ): هو الصنف 37a486499996 نفسه — العنصر والفحص والعدد (2) وصفحته (فهرس الدورات بعرض 1366) — تغيّرت بصمته لأن الأكاديمية نشرت ورقة أنماطٍ جديدة (index-nz82gdqd.css بدل index-gfv2x689.css) بعد لقطة ر29-هـ، وقيس على الإضافة السابقة كذلك في ر29-و. والفائز إعلانٌ من الموقع نفسه (.mt-auto)، فالتغيّر أثرُ تخطيط"
   },
   {
    "fp": "d744e682971a",
@@ -495,6 +499,77 @@
    "check": "text-ltr",
    "sel": "button.pl-tag",
    "count": 2
+  },
+  {
+   "fp": "bab92d6558f5",
+   "sev": "medium",
+   "d": "com",
+   "check": "icon-not-flipped",
+   "sel": "svg",
+   "count": 4,
+   "decision": "intended-ltr"
+  },
+  {
+   "fp": "21b16c317d42",
+   "sev": "low",
+   "d": "com",
+   "check": "box-not-mirrored",
+   "sel": "li.ResourcesHero-module-scss-module__PhBx_a__slot",
+   "count": 4,
+   "decision": "keep-composition"
+  },
+  {
+   "fp": "045b1a1beda0",
+   "sev": "low",
+   "d": "com",
+   "check": "box-not-mirrored",
+   "sel": "li.ResourcesHero-module-scss-module__PhBx_a__slot.ResourcesHero-module-scss-module__PhBx_a__tallSlot",
+   "count": 2,
+   "decision": "keep-composition"
+  },
+  {
+   "fp": "289c6c96cfeb",
+   "sev": "low",
+   "d": "com",
+   "check": "box-not-mirrored",
+   "sel": "li.ResourcesHero-module-scss-module__PhBx_a__slot.ResourcesHero-module-scss-module__PhBx_a__illustratedSlot",
+   "count": 2,
+   "decision": "keep-composition"
+  },
+  {
+   "fp": "659c67d1f875",
+   "sev": "low",
+   "d": "com",
+   "check": "box-not-mirrored",
+   "sel": "li.ResourcesHero-module-scss-module__PhBx_a__slot.ResourcesHero-module-scss-module__PhBx_a__slotB",
+   "count": 1,
+   "decision": "keep-composition"
+  },
+  {
+   "fp": "384e9ac2ae17",
+   "sev": "low",
+   "d": "com",
+   "check": "box-not-mirrored",
+   "sel": "li.ResourcesHero-module-scss-module__PhBx_a__slot.ResourcesHero-module-scss-module__PhBx_a__slotF.ResourcesHero-module-scss-module__PhBx_a__illustratedSlot",
+   "count": 1,
+   "decision": "keep-composition"
+  },
+  {
+   "fp": "4571610dac31",
+   "sev": "low",
+   "d": "com",
+   "check": "box-not-mirrored",
+   "sel": "li.ResourcesHero-module-scss-module__PhBx_a__slot.ResourcesHero-module-scss-module__PhBx_a__slotA.ResourcesHero-module-scss-module__PhBx_a__illustratedSlot",
+   "count": 1,
+   "decision": "keep-composition"
   }
- ]
+ ],
+ "domains": {
+  "com": {
+   "at": "2026-10-17T18:31:35.287Z",
+   "commit": "971a90d",
+   "extVersion": "2.0.0",
+   "switchedOn": true
+  }
+ }
 }

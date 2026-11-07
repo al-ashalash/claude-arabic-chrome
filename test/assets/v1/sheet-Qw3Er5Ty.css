@@ -2,3 +2,8 @@
    ويحلّلها. أربع خصائص فيزيائية ليست في بصمات التغطية المشحونة، ولا عنصر في الصفحة يطابق محدِّداتها */
 .zzq-scan-panel { margin-left: 8px; padding-right: 4px; }
 .zzq-scan-badge { float: left; text-align: left; }
+/* ★ (ر29-ب، ١٣ جمادى الأولى ١٤٤٨هـ) حارسا المولّد في الطبيب أيضًا: قاعدةٌ مشروطة بلغة العربية واعيةٌ بالاتجاه فلا تُعدّ، ومستهلكُ متغيّرٍ يبدّله
+   الموقع تحت RTL (ونظير حواف التلاشي) جهتُه من الموقع فلا يُعدّ فجوةً ويُحصى في siteRtl */
+:lang(ar) .zzq-scan-l { margin-right: 6px; }
+.zzq-scan-f { mask-image: linear-gradient(to right, #000 var(--zzq-fade-l), transparent); }
+.zzq-scan-f:where(:root[dir=rtl] :dir(rtl)) { --zzq-fade-l: 4px; }

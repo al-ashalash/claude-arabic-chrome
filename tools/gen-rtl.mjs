@@ -18,20 +18,23 @@ import { fileURLToPath } from "node:url";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // ★ (١-١) أهدافٌ للمواقع: لقطةٌ ومخرجٌ وعتباتُ صحةٍ بحجم كل موقع — منصة Intercom (مركز
 // المساعدة والخصوصية) أصغر أوراقًا من التطبيق بكثير، فعتبات التطبيق كانت ترفضها «هزيلة».
-//   node gen-rtl.mjs [--target=app|intercom|docs|code|legal|academy] [<مجلد اللقطة>] [--out-dir=<مجلد>]
+//   node gen-rtl.mjs [--target=app|intercom|docs|code|legal|academy|com] [<مجلد اللقطة>] [--out-dir=<مجلد>]
 const TARGETS = {
-  app:      { dir: "sitecss",          out: "rtl-overrides.css", cov: "rtl-coverage.js", minRules: 1000, minFlipped: 200 },
-  intercom: { dir: "sitecss-intercom", out: "rtl-intercom.css",  cov: null,              minRules: 400,  minFlipped: 60 },
-  docs:     { dir: "sitecss-docs",     out: "rtl-docs.css",      cov: null,              minRules: 400,  minFlipped: 60 },
+  app:      { dir: "sitecss",          out: "rtl-overrides.css", cov: "rtl-coverage.js", minRules: 1000, minFlipped: 200, point: "app-point.css" },
+  intercom: { dir: "sitecss-intercom", out: "rtl-intercom.css",  cov: null,              minRules: 400,  minFlipped: 60, point: "intercom-point.css" },
+  docs:     { dir: "sitecss-docs",     out: "rtl-docs.css",      cov: null,              minRules: 400,  minFlipped: 60, point: "docs-point.css" },
   // وثائق Claude Code (Mintlify، Tailwind v4): قِيس على لقطةٍ من الروابط والأوراق المضمَّنة 4,587 قاعدة و306 مقلوبًا
-  code:     { dir: "sitecss-code",     out: "rtl-code.css",      cov: null,              minRules: 1000, minFlipped: 150 },
+  code:     { dir: "sitecss-code",     out: "rtl-code.css",      cov: null,              minRules: 1000, minFlipped: 150, point: "code-point.css" },
   // ★ (ر3، ٢٨ ربيع الآخر ١٤٤٨هـ) الوثائق القانونية في www.anthropic.com/legal (Next.js 16): قِيس على لقطة الصفحات الخمس (6 أوراقٍ
   // مرتبطة و10 مضمَّنة) 3,086 قاعدة و348 مقلوبًا — والعتبتان نحو نصفهما (كما في دراسة ر3)
-  legal:    { dir: "sitecss-legal",    out: "rtl-legal.css",     cov: null,              minRules: 1500, minFlipped: 170 },
+  legal:    { dir: "sitecss-legal",    out: "rtl-legal.css",     cov: null,              minRules: 1500, minFlipped: 170, point: "legal-point.css" },
   // ★ (ر4، ٢٨ ربيع الآخر ١٤٤٨هـ) الأكاديمية في academy.claude.com (Vite وTailwind ونظام تصميم CDS): لقطة عشر صفحاتٍ بلا ورقة أفلام
   // حالات الاستخدام (جزيرةٌ إنجليزية LTR داخل المتن)، ثلاث أوراق (index وIcon ومضمَّنة) — قِيس 5,546 قاعدة و431 مقلوبًا كما في الدراسة،
   // والعتبتان نحو نصفهما
-  academy:  { dir: "sitecss-academy",  out: "rtl-academy.css",   cov: null,              minRules: 2500, minFlipped: 200 },
+  academy:  { dir: "sitecss-academy",  out: "rtl-academy.css",   cov: null,              minRules: 2500, minFlipped: 200, point: "academy-point.css" },
+  // ★ (ر16-أ، ٦ جمادى الأولى ١٤٤٨هـ) claude.com (Next.js مع Sanity؛ دراسة ر14 §٤ب): لقطةٌ من 24 صفحة، صفحةٌ لكل قالب، تغطي الأوراق الـ38 التي
+  // تربطها صفحات المسارَين الكامل والهيكل كلها (2,234 صفحة في حصر الصفحات الإنجليزية الـ2,387) — قِيس 7,317 قاعدة و499 مقلوبًا، والعتبتان نحو نصفهما
+  com:      { dir: "sitecss-com",      out: "rtl-com.css",       cov: null,              minRules: 3500, minFlipped: 250, point: "com-point.css" },
 };
 const TARGET_NAME = (process.argv.find((a) => a.startsWith("--target=")) || "--target=app").slice(9);
 const TARGET = TARGETS[TARGET_NAME];
@@ -77,9 +80,11 @@ const all = [];
 const layerOrder = [];
 let parseErrors = 0;
 const parseStats = { animatedPhysical: 0 };
+const varLists = []; // ★ (ر16-أ2) تصريحات الخصائص المخصّصة في اللقطة كلها — لجدول المتغيّرات (var العارية الآمنة في المختصرات)
 for (const f of files) {
   const p = R.parseCss(fs.readFileSync(path.join(SITECSS, f), "utf8"));
   parseErrors += p.stats.parseErrors;
+  varLists.push(p.vars || []);
   parseStats.animatedPhysical += p.stats.animatedPhysical;
   for (const L of p.layerOrder) if (!layerOrder.includes(L)) layerOrder.push(L);
   for (const r of p.rules) { r.idx = all.length; all.push(r); }
@@ -87,16 +92,27 @@ for (const f of files) {
 }
 
 // ---- 2) اقلب ----
-const out = R.flipSheet(all, { layerOrder });
+const vars = R.varTable(varLists);
+// ★ (ر24-ب4، بقية CX-007) جزر الورقة النقطية لهذا الموقع (القواعد الحاملة لعلامة ‎--cml-island‎): القيم الفيزيائية المقلوبة لا تُطبَّق داخلها
+let islands = [];
+if (TARGET.point) {
+  const isl = R.islandSelectors(fs.readFileSync(path.join(EXT, TARGET.point), "utf8"));
+  if (isl.errors.length) { console.error(`! جزر ${TARGET.point} لا تُفهم (${isl.errors.join("، ")}). لن أكتب.`); process.exit(1); }
+  islands = isl.sels;
+}
+const out = R.flipSheet(all, { layerOrder, vars, islands });
 const st = out.stats;
 console.log(`\nقواعد الموقع: ${all.length} | مقلوب: ${st.flipped} إعلانًا | مصفِّرات: ${st.neutralized}`);
 console.log(`منطقي أصلًا: ${st.logicalAlready} | واعٍ بالاتجاه: ${st.dirAware} (عُزّز منه المشروط بـRTL: ${st.dirBoosted})`);
+// ★ (ر29-ب) الحارسان: شرط RTL باللغة أو بصنف ‎.rtl‎ (يُعدّ في الواعي بالاتجاه)، ومستهلك متغيّرٍ يبدّله الموقع تحت RTL (لا يُقلب)
+console.log(`منه بشرط اللغة أو صنف .rtl: ${st.langRtl} | متروكٌ لجهة الموقع (متغيّرٌ يبدّله تحت RTL): ${st.rtlVarHeld}`);
+console.log(`★ (ر30-ب) تدرّجٌ بزاويةٍ عُكست زاويته (θ ↦ 360−θ): ${st.gradient || 0}`);
 const unf = Object.entries(st.unflippable).map(([k, v]) => `${k}:${v}`).join(" ");
 if (unf) console.log(`متعذّر (يصرّح به الطبيب): ${unf}`);
 
 // ---- 3) بوابات الصحة قبل الكتابة ----
 if (parseErrors > 50) { console.error(`! ${parseErrors} خطأ تحليل — صيغة CSS الموقع تغيّرت؟ لن أكتب.`); process.exit(1); }
-if (all.length < TARGET.minRules || st.flipped < TARGET.minFlipped) {
+if (all.length < TARGET.minRules || st.flipped + st.rtlVarHeld < TARGET.minFlipped) { // ★ (ر29-ب) المتروك لجهة الموقع يُعدّ كالحيّ
   console.error(`! المدخل هزيل (قواعد ${all.length}، قلب ${st.flipped}) — لقطة ناقصة؟ لن أكتب.`);
   process.exit(1);
 }
@@ -175,5 +191,6 @@ fs.writeFileSync(path.join(OUT_DIR, TARGET.cov), cov, "utf8");
 
 console.log(`\n✓ ${TARGET.out}: ${(css.length / 1024).toFixed(1)}KB (تصفير ${out.neutral.length} + منطقي/مطابق ${out.logical.length} + معزَّز ${out.dirBoost.length} + مهمّات ${impRules.length})`);
 console.log(`  نسخ مطابقة: ${st.identity} إعلانًا | حركات اتجاهية (تُبلَّغ لا تُقلب): ${parseStats.animatedPhysical}`);
+if (TARGET.point) console.log(`  جزر ${TARGET.point}: ${islands.length} محدِّدًا في استثناء القيم الفيزيائية`);
 if (TARGET.cov) console.log(`✓ ${TARGET.cov}: ${out.coverage.length} بصمة`);
 console.log("✓ البوابات الثلاث: إعادة التحليل، البوابة على كل قاعدة، لا فيزيائيَّ في الناتج");

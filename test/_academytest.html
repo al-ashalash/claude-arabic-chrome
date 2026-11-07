@@ -12,16 +12,26 @@
   الصفحة»، والتذييل بمنتقي اللغة، وقائمة المنتقي المنبثقة بأسماء لغات، ومحادثة «اسأل Claude»):
    ١) الجدول: النطاق من العنوان (المضيف كلّه)، وحارس المسار (الرئيسة بعينها وأقسام الموقع الإنجليزية كاملة، والمساعدة هيكل، و‎/<لغة>/…‎
       والإدارة والداخلي خامل)، وعنوان الموقع المختصر (meta.siteLabel)، والقاموس المبنيّ.
-   ٢) الواجهة والعناوين تُعرَّب؛ والمتن وقائمة «في هذه الصفحة» واللافتة والمنتقي وأسماء اللغات ومحادثة «اسأل Claude» لا تُمسّ ولو طابق
-      نصُّها القاموس (meta.skipSel)، ولا يحصدها الحاصد؛ واتجاهها LTR (academy-point.css)، والفقرات والبنود بحسب نصّها (meta.dirSel).
+   ٢) الواجهة والعناوين تُعرَّب؛ واللافتة والمنتقي وأسماء اللغات ومحادثة «اسأل Claude» لا تُمسّ ولو طابق نصُّها القاموس (meta.skipSel)، ولا
+      يحصدها الحاصد؛ واتجاهها LTR (academy-point.css)، والفقرات والبنود بحسب نصّها (meta.dirSel).
    ٣) عنوان التبويب: بالذيل « · Claude Academy»، والدرس بحرفيٍّ كامل، والرئيسة حرفيٌّ، والمختلط يبقى إنجليزيًّا.
    ٤) حارس <html lang>: الموقع يكتب لغةً أخرى ⇒ خمولٌ تام، والعودة إلى en تعيدها. ٥) مسار المساعدة هيكل. ٦) التنقّل إلى ‎/<لغة>/…‎ وعودته.
+   ٧) ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ — دراسة ر13-أ) المتون بوضع الكتلة (meta.bodies وbodySel: المقالة وقائمة «في هذه الصفحة»، والحارس بعتبة
+      القرار 83): الدرس الأول بلا قطعة كالحزمة اليوم (محجوبٌ «none»، والمتن وقائمته على أصلهما LTR ولو طابق نصُّهما القاموس)؛ ثم صفحاتٌ
+      بقطعٍ تجريبية: المعرَّبة كلّها («tr»: العنوان بذرّة مرساته، والفقرة برابطها، والبند، والفيديو، وملخّص الأداة لقارئ الشاشة، وبند القائمة
+      بترجمة عنوانه، والشيفرة على حالها، والإبقاء بقرار، والجزيرة ترتفع، والأسهم تنقلب، ونصُّ «Transcript» بعد الحكم يُكتب)، والإطفاء
+      وعودته، والتنقّل إلى صفحةٍ بلا قطعة يُعيد الموقع فيها عقد المتن، وكتلةٌ ناقصةٌ تحت العتبة، وقطعةٌ تغيّر متنها («drift»).
+   ٨) ★ (مراجعة ر13-أ، ٦ جمادى الأولى ١٤٤٨هـ) بندٌ جديد في «في هذه الصفحة» ليس في القطعة LTR بنصّه؛ والدرس المحجوب بعد معرَّبٍ أعاد الموقع عقده لا تبقى
+      فيه سمة rtl ترسم الإنجليزية من اليمين؛ ودرسٌ بلا قطعة تُركَّب أداتُه بعد الحكم يُعاد حكمه فيُحجب (meta.bodyRejudge).
   النصوص العربية هنا تجريبيةٌ للاختبار لا ترجمات. العقد: document.title الختامي = "academy N/N".
 -->
 <style>body{font-family:system-ui;padding:16px;max-width:1100px;margin:auto}
 #tbl{border-collapse:collapse;width:100%;margin-top:12px}
 #tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
 .ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<!-- ★ (ر29-و، ١٥ جمادى الأولى ١٤٤٨هـ) قاعدة الموقع التي يعكس بها أيقوناته (بشكلها في ورقته، وبشرط ‎:lang(ar)‎ وحده من قائمة لغاته ذات الاتجاه من اليمين
+     إلى اليسار): تعكس ‎[data-cds-mirror]‎ بالتحويل. ولا شيء في الصفحة يحمل السمة إلا عيّنات ١٢) في آخرها -->
+<style id="siteMirror">:root[dir=rtl] :is([data-cds=Icon],svg)[data-cds-mirror]:is(:lang(ar)){transform:scaleX(-1)}</style>
 <link rel="stylesheet" href="../extension/base.css">
 <link rel="stylesheet" href="../extension/academy-point.css">
 <header class="fixed" id="hdr">
@@ -39,11 +49,16 @@
     <p id="pAr">Resources</p>
     <ul><li id="obj1">Zq learning objective stays in English.</li></ul>
   </header>
-  <article class="mdx-article" id="art"><h2 id="art1">Settings</h2><p id="art2">Zq body paragraph with a <a href="#" id="art2a">Courses</a> link inside.</p></article>
+  <!-- ★ (ر13) المتن ببنية الموقع (دراسة ر13-أ §2): عنوانٌ بمرساةٍ أيقونتها محرفٌ من المنطقة الخاصة (ذرّة)، وفقرةٌ برابط، وبندٌ بغامقٍ في أوله، ورابطٌ بسهمٍ
+       يتحرك عند المرور، والفيديو (سطر عنوانه ومدّته، ومفتاحا «Summary/Transcript»، وصندوق الملخص)، والأداة الحيّة (ملخّصها لقارئ الشاشة بسمة
+       lang=en، وبطاقتها)، وشيفرةٌ كتلةً وسطرية، وجملةٌ يُبقيها المترجم إنجليزية، وقائمةٌ مرقّمة ببندٍ مترجَم وبندين يُبقيهما (اسمُ منتجٍ وجملةٌ —
+       ر12-ب)، وفقرات حشوٍ (#fill). وفي أوله فقرةٌ إنجليزيةٌ طويلة يُبقيها المترجم (#lead): أول 600 حرفٍ من نصّ المقالة لاتينيةٌ أكثرُها، فإن بقي
+       فيها نصٌّ لم يُقرَّر حكم dirSel على الحاوية بها لا باتجاه اللغة (كالأفلام في حالات الاستخدام) -->
+  <article class="mdx-article" id="art"><p id="lead">Zq kept lead paragraph by translator decision, a long simulated product caption with many words that fills the first part of the article so that its first strong letters are Latin, and the direction that the engine computes for the whole container from its first six hundred characters would follow them, turning a translated article into a left to right one without the rule in the point sheet.</p><h2 id="art1">Settings</h2><p id="art2">Zq body paragraph with a <a href="#" id="art2a">Courses</a> link inside.</p><h2 id="hd1">Zq Heading One<a aria-hidden="true" tabindex="-1" id="hd1a"><span data-cds="Icon" aria-hidden="true">&#xE000;</span></a></h2><ul><li id="li1"><strong>Zq strong lead.</strong> Zq list item of the lesson.</li></ul><p id="more"><a href="/courses/zq-course" id="moreA">Zq more link<span data-cds="Icon" class="group-hover:translate-x-0.5" id="moreI">&#xE010;</span></a></p><div data-living-video id="vid"><p id="vidT">Zq Video Title<span> · 4 min</span></p><div role="radiogroup" id="vidSeg"><button type="button" role="radio" aria-checked="true" id="vidR1">Summary</button><button type="button" role="radio" aria-checked="false" id="vidR2">Transcript</button></div><div class="max-h-44 overflow-y-auto" id="vidBox"><p id="vidS">Zq video summary paragraph.</p></div></div><div role="group" data-living-embed id="emb"><p data-widget-summary="true" lang="en" class="sr-only" id="ws">Zq widget summary for screen readers.</p><h3 id="embH">Zq widget card title</h3></div><pre id="pre"><code>zq --sample</code></pre><p id="art5">Zq paragraph with <code>zq_inline</code> code.</p><p id="keepP">Zq kept sentence by translator decision.</p><ol id="kl"><li id="kl1">Zq translated numbered step.</li><li id="kl2">Claude Code</li><li id="kl3">Zq kept step sentence by decision.</li></ol><div id="fill"></div></article>
   <nav aria-label="Course outline" id="outline">
     <span class="text-caption" id="sec1">Zq Section Title</span>
     <a href="#" id="ol1">Zq Lesson Title</a>
-    <ul id="toc"><li><a href="#intro" id="toc1">Settings</a></li></ul>
+    <ul id="toc"><li><a href="#intro" id="toc1">Settings</a></li><li><a href="#hd1" id="toc2">Zq Heading One</a></li></ul>
   </nav>
   <ul id="rows"><li class="border-b" id="row1"><a href="/courses/zq-course" id="rowA"><span id="rowT">Zq English Product Title Kept In English Here</span><span id="rowK">Resources</span></a></li></ul>
 </main>
@@ -73,19 +88,137 @@ var LM = CMLConst.domain("academy").meta;
 // جدول النطاقات الحقيقي، والاختبار محلّيٌّ هرمسيّ: لا ترطيب ينتظره، ولا ورقة حيّة
 var META = Object.assign({}, LM, { hydrate: "none", live: false });
 // قاموس الواجهة التجريبي: «Settings» و«Courses» و«English» و«Zq Endonym» وجواب Claude فيه عمدًا لتثبت أن المحدِّد (skipSel) لا
-// المصادفة هو ما يُبقي المتن والقائمة واللافتة والمنتقي والمحادثة على أصلها
+// المصادفة هو ما يُبقي اللافتة والمنتقي والمحادثة على أصلها؛ ★ (ر13) وأن حارس المتن لا المصادفة هو ما يُبقي المتن وقائمته في الصفحة المحجوبة
+// («Settings» عنوانٌ في المتن وبندٌ في القائمة، و«Summary/Transcript» مفتاحا الفيديو داخل المتن)
 var STR = {
   "Courses": "الدورات", "Resources": "الموارد", "Settings": "الإعدادات", "Sign in": "تسجيل الدخول",
   "Zq Course Title": "دورةٌ تجريبية", "Zq Lesson Title": "درسٌ تجريبي", "Zq Section Title": "قسمٌ تجريبي",
   "English": "الإنجليزية", "Zq Endonym": "اسم لغةٍ تجريبي", "Zq Other Name": "اسمٌ تجريبي آخر", "Zq answer from Claude.": "جوابٌ تجريبي",
+  "Summary": "الملخّص", "Transcript": "النصّ المكتوب",
+  // ★ (ر13-ج) تسميةٌ تُبقيها الشركة في شاشة فيلمٍ وتترجمها في غيره (إبقاءٌ بنطاق الصفحة)، وعبارة صفّ العدّاد الزمني في فيلم (بندٌ في صفّ لافتات)
+  "Zq Owner": "مالكٌ تجريبي", "Zq Reading the brief": "قراءةٌ تجريبية للموجز",
   // عنوان الدرس الثلاثي حرفيٌّ مشتقٌّ وقت الدمج (دراسة ر4 §4.4)، والرئيسة حرفيٌّ كامل
   "Zq Lesson Title · Zq Course Title · Claude Academy": "درسٌ تجريبي · دورةٌ تجريبية · Claude Academy",
   "Claude Academy · Zq home tagline": "Claude Academy · شعارٌ تجريبي",
 };
+// ★ (ر13) قوالب المتن الإنجليزية ← عربيةٌ تجريبية؛ والقطعة تُبنى من بصمات حاصد الكتل على الصفحة الخام (الهوية مع المحرّك). المرساة والسهم
+// محرفان من المنطقة الخاصة في ذرّتين (<cN>) تُنسخان كما هما، والشيفرة السطرية كذلك
+var GLYPH_A = String.fromCharCode(0xE000), GLYPH_R = String.fromCharCode(0xE010);
+var TR = {
+  "Zq body paragraph with a <a1>Courses</a1> link inside.": "فقرةٌ تجريبية فيها <a1>رابط الدورات</a1> داخلها.",
+  "Zq Heading One<c1>GA</c1>": "عنوانٌ أولُ تجريبي<c1>GA</c1>",
+  // بند «في هذه الصفحة»: رابطُه وحده كتلته (‎li > a‎)، فقالبه الرابط بنصّه
+  "<a1>Zq Heading One</a1>": "<a1>عنوانٌ أولُ تجريبي</a1>",
+  "<b1>Zq strong lead.</b1> Zq list item of the lesson.": "<b1>مقدّمةٌ غامقة.</b1> بندٌ تجريبي من الدرس.",
+  "<a1>Zq more link<c2>GR</c2></a1>": "<a1>رابطٌ تجريبي للمزيد<c2>GR</c2></a1>",
+  "Zq Video Title<s1> · 4 min</s1>": "عنوان فيديو تجريبي<s1> · 4 دقائق</s1>",
+  "Zq video summary paragraph.": "فقرةٌ تجريبية من ملخص الفيديو.",
+  "Zq widget summary for screen readers.": "ملخّصٌ تجريبي للأداة لقارئ الشاشة.",
+  "Zq widget card title": "عنوان بطاقةٍ تجريبي",
+  "Zq paragraph with <c1>zq_inline</c1> code.": "فقرةٌ تجريبية فيها الشيفرة <c1>zq_inline</c1>.",
+  "Zq translated numbered step.": "خطوةٌ مرقّمة تجريبية مترجَمة.",
+};
+(function () {
+  for (var k in TR) if (Object.prototype.hasOwnProperty.call(TR, k) && /G[AR]</.test(k)) {
+    var v = TR[k]; delete TR[k];
+    TR[k.replace("GA", GLYPH_A).replace("GR", GLYPH_R)] = v.replace("GA", GLYPH_A).replace("GR", GLYPH_R);
+  }
+})();
+// نصُّ الفيديو بعد النقر على «Transcript» (يُركَّب بعد الحكم، فلا يراه الحاصد في الصفحة الخام)، وجملةٌ يُبقيها المترجم إنجليزيةً (علامة إبقاء)
+var TRN_EN = "Zq transcript paragraph one.", TRN_AR = "فقرةٌ تجريبية من نصّ الفيديو.";
+var KEEP_EN_TPL = "Zq kept sentence by translator decision.";
+// ★ (ر13؛ ر12-ب) بندان يُبقيهما المترجم: اسمُ منتجٍ يُرسم في سطرٍ من اليمين بترتيبه (SHARED.ltrSafe)، وجملةٌ تنتهي بنقطة (ليست كذلك)
+var KEEP_SAFE = "Claude Code", KEEP_STEP = "Zq kept step sentence by decision.";
+var LEAD_EN = "Zq kept lead paragraph by translator decision, a long simulated product caption with many words that fills the first part of the article so that its first strong letters are Latin, and the direction that the engine computes for the whole container from its first six hundred characters would follow them, turning a translated article into a left to right one without the rule in the point sheet.";
+// ★ (ر13) فقرات حشوٍ مترجَمة تجعل الكتلة الوحيدة الناقصة من القطعة في صفحة «gap» 1 من 33 (3٪) فلا تُحجب — كما في الموقع تحت العتبة (5٪)
+var FILL_EN = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen"];
+(function () {
+  var f = document.getElementById("fill");
+  FILL_EN.forEach(function (w, i) {
+    var q = document.createElement("p"); q.id = "f" + (i + 1); q.textContent = "Zq filler paragraph " + w + " of the lesson."; f.appendChild(q);
+    TR["Zq filler paragraph " + w + " of the lesson."] = "فقرة الحشو رقم " + (i + 1) + " من الدرس.";
+  });
+})();
 var SKIP_FULL = CMLShared.harvestSkip(LM, "full");
 var MAIN_HTML = document.getElementById("main").innerHTML; // الدرس كما يرسمه الموقع (قبل المحرّك)، ليُرسم من جديد بعد التنقّل
 var HK = CMLShared.harvestDom(document.documentElement, { chat: false, max: Infinity, skip: SKIP_FULL }).map(function (h) { return h.key; });
-var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) { if (cb) cb(null); } });
+// ★ (ر13) منطقة المتن كما يقسمها harvest-dom.mjs: ما حُصد داخل جذور bodySel «body»، ويُطرح من حصاد الصفحة بعدده فالباقي «ui»
+var HKB = [].concat.apply([], Array.prototype.map.call(document.querySelectorAll(LM.bodySel), function (el) {
+  return CMLShared.harvestDom(el, { chat: false, max: Infinity, skip: SKIP_FULL }).map(function (h) { return h.key; });
+}));
+var HKU = HK.slice();
+HKB.forEach(function (k) { var i = HKU.indexOf(k); if (i >= 0) HKU.splice(i, 1); });
+var HV = CMLShared.harvestBlocks(document, { body: LM.bodySel, skip: SKIP_FULL });
+var hvTpl = {};
+HV.forEach(function (h) { hvTpl[h.tpl] = h; });
+// القطع التجريبية بمفتاح الصفحة: «tr» كلُّ الكتل (وعلامة الإبقاء، ونصُّ الفيديو الظاهر بعد الحكم)، و«gap» كلُّها إلا فقرة الشيفرة السطرية،
+// و«drift» عنوانٌ واحد (تغيّر المتن بعد ترجمته)؛ والبقية «لا قطعة» (ردٌّ null) كالحزمة اليوم
+var FP = function (tpl) { return CMLShared.blockFp(tpl); };
+var BLOCKS = {};
+HV.forEach(function (h) { if (Object.prototype.hasOwnProperty.call(TR, h.tpl)) BLOCKS[h.fp] = TR[h.tpl]; });
+BLOCKS[FP(TRN_EN)] = TRN_AR;
+// ★ (ر13) والناقصة من «gap» فقرة «المزيد» برابطها وسهمها: تبقى إنجليزيةً كلّها في صفحةٍ معرَّبة، فلا ينقلب سهمُها (academy-point.css ٤)
+var GAP_MISSING = "<a1>Zq more link<c2>" + GLYPH_R + "</c2></a1>";
+var GAP = {};
+Object.keys(BLOCKS).forEach(function (fp) { if (fp !== FP(GAP_MISSING)) GAP[fp] = BLOCKS[fp]; });
+var PART = {};
+PART[FP("Zq Heading One" + "<c1>" + GLYPH_A + "</c1>")] = TR["Zq Heading One<c1>" + GLYPH_A + "</c1>"];
+var P_LESSON = "/courses/zq-course/zq-lesson", P_TR = "/courses/zq-course/zq-lesson-tr", P_GAP = "/courses/zq-course/zq-lesson-gap",
+    P_DRIFT = "/courses/zq-course/zq-lesson-drift", P_B = "/courses/zq-course/zq-lesson-b", P_LATE = "/courses/zq-course/zq-lesson-late";
+var SHARDS = {};
+SHARDS[P_TR] = { blocks: BLOCKS, keep: [FP(KEEP_EN_TPL), FP(LEAD_EN), FP(KEEP_SAFE), FP(KEEP_STEP)] };
+SHARDS[P_GAP] = { blocks: GAP, keep: [FP(KEEP_EN_TPL), FP(LEAD_EN), FP(KEEP_SAFE), FP(KEEP_STEP)] };
+SHARDS[P_DRIFT] = { blocks: PART, keep: [] };
+// ★ (ر13-ج، ٦ جمادى الأولى ١٤٤٨هـ) ثلاث صفحاتٍ أخرى بمتنٍ غير متن الدرس:
+//   P_LANG (E-lang): فقرةٌ داخل قسمٍ يعلن lang=en، وفقرةٌ مُبقاة فيه، وجملةٌ فيها عبارةٌ تعلن lang=en تُكتب عربية، وجملةٌ فيها مصطلحٌ يعلنها ويبقى لاتينيًّا؛
+//   P_K1 وP_K2 (إبقاءٌ بنطاق الصفحة): التسمية «Zq Owner» والكتلة «Zq status label row.» لهما ترجمةٌ في قطعة P_K1 وعلامة إبقاءٍ فيها معًا (تُبقيهما الشركة
+//   في شاشات هذا الفيلم)، وفي P_K2 الترجمة وحدها؛ ومعهما صفُّ عدّادٍ زمني (أيقونةٌ وعبارةٌ وثوانٍ) عبارته في قاموس الواجهة وحده
+var P_LANG = "/courses/zq-course/zq-lesson-lang", P_K1 = "/use-cases/zq-film-keeps", P_K2 = "/use-cases/zq-film-translates";
+var LANG_HTML = '<header><h1 id="h1">Zq Lang Lesson</h1></header><article class="mdx-article" id="art">' +
+  '<div lang="en" id="lgDiv"><p id="lgP">Zq paragraph inside an English section.</p><p id="lgKeep">Zq kept paragraph inside the section.</p></div>' +
+  '<p id="lgIn">Zq sentence with <span lang="en" id="lgSpan">Zq inner phrase</span> inside.</p>' +
+  '<p id="lgTerm">Zq sentence with the term <span lang="en" id="lgTermS">Zq Term</span> kept.</p></article>';
+var TR_LANG = {
+  "Zq paragraph inside an English section.": "فقرةٌ تجريبية داخل قسمٍ إنجليزي.",
+  "Zq late widget summary for screen readers.": "ملخّصٌ متأخّرٌ تجريبي للأداة لقارئ الشاشة.",
+  "Zq sentence with <s1>Zq inner phrase</s1> inside.": "جملةٌ تجريبية فيها <s1>عبارةٌ داخلية تجريبية</s1> داخلها.",
+  "Zq sentence with the term <s1>Zq Term</s1> kept.": "جملةٌ تجريبية فيها المصطلح <s1>Zq Term</s1> باقيًا."
+};
+var KEEP_LANG = "Zq kept paragraph inside the section.";
+var LB = {};
+Object.keys(TR_LANG).forEach(function (t) { LB[FP(t)] = TR_LANG[t]; });
+SHARDS[P_LANG] = { blocks: LB, keep: [FP(KEEP_LANG)] };
+var FILM_HTML = function (secs) {
+  return '<header><h1 id="h1">Zq Film Use Case</h1></header><article class="mdx-article" id="art">' +
+    '<p id="kA">Zq first shared paragraph.</p><p id="kOwner">Zq Owner</p><p id="kRow">Zq status <strong>label</strong> row.</p>' +
+    '<div class="st" id="tmr"><span class="mk" data-sprite="spark"></span><span class="vb" id="tmrL">Zq Reading the brief</span><span class="el" id="tmrS">' + secs + '</span></div>' +
+    '<p id="kB">Zq second shared paragraph.</p></article>';
+};
+var TR_FILM = {
+  "Zq first shared paragraph.": "فقرةٌ مشتركة أولى تجريبية.", "Zq second shared paragraph.": "فقرةٌ مشتركة ثانية تجريبية.",
+  "Zq Owner": "مالكٌ من القطعة", "Zq status <b1>label</b1> row.": "صفُّ <b1>حالٍ</b1> تجريبي."
+};
+var K1 = {}, K2 = {};
+Object.keys(TR_FILM).forEach(function (t) { K1[FP(t)] = TR_FILM[t]; if (t !== "Zq Owner") K2[FP(t)] = TR_FILM[t]; });
+SHARDS[P_K1] = { blocks: K1, keep: [FP("Zq Owner"), FP("Zq status <b1>label</b1> row.")] };
+SHARDS[P_K2] = { blocks: K2, keep: [] };
+// ★ (مراجعة ر13-ج، ٦ جمادى الأولى ١٤٤٨هـ — meta.keepRows) صفُّ لافتاتٍ بندان منه في قاموس الواجهة («Zq Owner» و«Zq Reading the brief»): عليه علامة إبقاءٍ في
+// قطعة P_K3 (تُبقيه الشركة كلَّه في شاشة هذا الفيلم)، ولا علامة له في P_K4؛ ومعه فقرةٌ مترجمة في القطعتين
+var P_K3 = "/use-cases/zq-film-row-keeps", P_K4 = "/use-cases/zq-film-row-translates";
+var ROW_TPL = "<s1>Zq Owner</s1><s2>Zq Reading the brief</s2>", ROW_P = "Zq paragraph for the row.";
+var ROW_HTML = '<header><h1 id="h1">Zq Row Use Case</h1></header><article class="mdx-article" id="art">' +
+  '<div class="lr" id="lrRow"><span id="lrA">Zq Owner</span><span id="lrB">Zq Reading the brief</span></div><p id="lrP">' + ROW_P + '</p></article>';
+var RB = {};
+RB[FP(ROW_P)] = "فقرةٌ للصفّ تجريبية.";
+SHARDS[P_K3] = { blocks: RB, keep: [FP(ROW_TPL)] };
+SHARDS[P_K4] = { blocks: RB, keep: [] };
+var bodyReqs = [];
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) {
+  if (!msg || msg.type !== "bodies") { if (cb) cb(null); return; }
+  var pk = CMLShared.pageKey(META, msg.path);
+  bodyReqs.push(pk);
+  setTimeout(function () { var s = SHARDS[pk]; if (cb) cb(s ? { page: pk, blocks: s.blocks, keep: s.keep } : null); }, 40);
+} });
 Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
 // مستمع رسائل النافذة (القشرة بلا onMessage): نلتقطه لنسأله كما تسأله النافذة
 var HELLO = null;
@@ -94,7 +227,7 @@ window.chrome = MOCK.chrome;
 window.CLAUDE_L10N = { domain: "academy", meta: META, default: "ar", langs: [{ code: "ar" }],
   dicts: { ar: { dir: "rtl", strings: STR, patterns: [], plurals: {} } } };
 // المسار الحقيقي للدرس قبل المحرّك (حارس المسار على location.pathname)
-history.replaceState({}, "", "/courses/zq-course/zq-lesson");
+history.replaceState({}, "", P_LESSON);
 </script>
 <script src="../extension/cml-rtl.js"></script>
 <script src="../extension/engine.js"></script>
@@ -109,24 +242,36 @@ function check(name, expect, got) {
 }
 function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 var MARKS = new RegExp("[" + String.fromCharCode(0x200E) + String.fromCharCode(0x200F) + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g");
+var AR = new RegExp("[" + String.fromCharCode(0x0600) + "-" + String.fromCharCode(0x06FF) + "]");
 function $(id) { return document.getElementById(id); }
 function txt(id) { return $(id).textContent.replace(MARKS, "").replace(/\s+/g, " ").trim(); }
+// نصُّ العقدة الأولى وحدها (العنوان بلا ذرّة مرساته، والرابط بلا سهمه)
+function own(id) { return ($(id).firstChild.nodeValue || "").replace(MARKS, "").replace(/\s+/g, " ").trim(); }
 function cs(id) { return getComputedStyle($(id)); }
 function T() { return document.title.replace(MARKS, ""); }
 var H = document.documentElement;
 function attrs() { return ["dir", "lang", "data-cml", "data-cml-route"].map(function (a) { return H.getAttribute(a) || "-"; }).join("|"); }
+function body() { return (H.getAttribute("data-cml-body") || "-") + "|" + (H.getAttribute("data-cml-held") || "-"); }
 function hello() { var r = null; if (HELLO) HELLO({ type: "cml-hello" }, {}, function (x) { r = x; }); return r; }
+function guard() { var b = (hello() || {}).bodies || {}, g = b.guard; return g ? g.why + "/" + g.uncovered + "/" + g.blocks : "-"; }
 // تنقّلٌ من جهة العميل: عنوانٌ جديد ثم رسمٌ يوقظ مراقب الطفرات (كما يرسم React الصفحة الجديدة)
 function go(p) { history.pushState({}, "", p); $("wake").textContent = p; return wait(400); }
+// ★ (ر13) تنقّلٌ إلى درسٍ آخر: العنوان ثم main مرسومٌ من جديد (عقدٌ جديدة) كما يفعل React — فيُحكم الحارس للدرس الجديد بقطعته
+function goPage(p) { history.pushState({}, "", p); $("main").innerHTML = MAIN_HTML; $("wake").textContent = p; return wait(700); }
 async function setTitle(t) { document.title = t; await wait(150); return T(); }
 var UI_IDS = ["menu1", "menu2", "signin", "bc1", "bc2", "h1", "sec1", "ol1", "pk2Sr", "dlg2T"];
-var KEEP_IDS = ["art1", "art2a", "toc1", "bannerP", "bannerA", "pickerVal", "optEn", "optXx", "pk2Val", "rad1a", "rad2a", "rad2b", "askQ", "askA"];
-var KEEP_EN = "Settings/Courses/Settings/Courses/Settings/English/English/Zq Endonym/English/English/Zq Endonym/Zq Other Name/Settings/Zq answer from Claude.";
+var SKIP_IDS = ["bannerP", "bannerA", "pickerVal", "optEn", "optXx", "pk2Val", "rad1a", "rad2a", "rad2b", "askQ", "askA"];
+var SKIP_EN = "Courses/Settings/English/English/Zq Endonym/English/English/Zq Endonym/Zq Other Name/Settings/Zq answer from Claude.";
+// ★ (ر13) ما في المتن وقائمته ويطابق قاموس الواجهة: العنوان «Settings» ورابط الفقرة «Courses» وبند القائمة «Settings» ومفتاحا الفيديو
+var BODY_UI_IDS = ["art1", "art2a", "toc1", "vidR1", "vidR2"];
+var BODY_UI_EN = "Settings/Courses/Settings/Summary/Transcript";
+function bodyArabic() { return AR.test($("art").textContent + $("toc").textContent); }
 
 (async function () {
   // ١) الجدول (دوالّ خالصة) والحاصد
   var dom = function (u) { var d = CMLConst.domainOfUrl(u); return d ? d.id : "null"; };
-  check("★ الجدول: النطاق من العنوان (المضيف كلّه بمساراته، ولا غيره)", "academy/academy/academy/null/null/null",
+  // ★ (ر15) وclaude.com نطاقُه الخاص (com) لا الأكاديمية
+  check("★ الجدول: النطاق من العنوان (المضيف كلّه بمساراته، ولا غيره)", "academy/academy/academy/null/com/null",
         [dom("https://academy.claude.com/"), dom("https://academy.claude.com/courses/x/y?z=1"), dom("https://academy.claude.com/xx/courses"),
          dom("http://academy.claude.com/courses"), dom("https://claude.com/academy"), dom("https://academy.claude.com.zq.example/")].join("/"));
   var RM = function (p) { return CMLShared.routeMode(LM.routes, p); };
@@ -140,35 +285,57 @@ var KEEP_EN = "Settings/Courses/Settings/Courses/Settings/English/English/Zq End
         ["/xx/courses", "/xx", "/xx-YY/courses/a/b", "/admin/reports", "/garden", "/_dev/thumb", "/embed/x", "/oauth/callback", "/mcp",
          "/coursesx", "/zq-new-section"].map(RM).join(","));
   var caps = CMLConst.caps("academy");
-  check("★ عنوان الموقع المختصر من الجدول (meta.siteLabel، لا «‎/all‎»)، والقدرات (بلا محادثة ولا فحص ولا متون، وبورقةٍ حيّة)",
-        "academy.claude.com/false/false/false/true", CMLConst.siteLabel("academy") + "/" + caps.chat.on + "/" + caps.scan.on + "/" + caps.bodies.on + "/" + caps.live.on);
+  check("★ (ر13) عنوان الموقع المختصر من الجدول (meta.siteLabel، لا «‎/all‎»)، والقدرات (بلا محادثة ولا فحص، وبمتونٍ وورقةٍ حيّة)",
+        "academy.claude.com/false/false/true/true", CMLConst.siteLabel("academy") + "/" + caps.chat.on + "/" + caps.scan.on + "/" + caps.bodies.on + "/" + caps.live.on);
+  // ★ (ر13) الجدول: متونٌ بوضع الكتلة — جذراها المقالة وقائمة «في هذه الصفحة» في main، والحارس بعتبة القرار 83؛ ولا مسارات بديلة ولا صدى عنوان
+  check("★ (ر13) الجدول: متونٌ بوضع الكتلة (bodies)، وجذراها المقالة وقائمة «في هذه الصفحة» (bodySel)، والحارس بعتبة القرار 83 (0.05)، ولا pageAlias ولا echoSel",
+        "true/article.mdx-article, main nav ul:has(> li > a[href^='#'])/0.05/false/false",
+        LM.bodies + "/" + LM.bodySel + "/" + LM.bodyGuard + "/" + ("pageAlias" in LM) + "/" + ("echoSel" in LM));
   check("★ القاموس المبنيّ يعلن نطاقه وجدولَه (build.mjs يحقن meta)، وفيه ترجمة ت3: نصوصٌ وأنماطٌ وجموع", "academy/true/true/true/true",
         BUILT.domain + "/" + (JSON.stringify(BUILT.meta) === JSON.stringify(LM)) + "/" + (Object.keys(BUILT.dicts.ar.strings).length > 0) + "/" +
         (BUILT.dicts.ar.patterns.length > 0) + "/" + (Object.keys(BUILT.dicts.ar.plurals || {}).length > 0));
   var NOT_HV = ["Zq body paragraph with a", "Zq Endonym", "Zq Other Name", "Zq answer from Claude.", "English"];
-  check("★ الحاصد: الواجهة والعناوين، ولا شيء من المتن ولا القائمة ولا اللافتة ولا المنتقي وأسماء اللغات ولا المحادثة",
-        "true/true/true/true//2/2",
-        (HK.indexOf("Zq Lesson Title") >= 0) + "/" + (HK.indexOf("Zq Section Title") >= 0) + "/" + (HK.indexOf("Resources") >= 0) + "/" +
-        (HK.indexOf("Course outline") >= 0) + "/" + NOT_HV.filter(function (k) { return HK.indexOf(k) >= 0; }).join(",") + "/" +
-        // «Courses» تُحصد من قائمة الترويسة ومسار التنقّل وحدهما (مرّتين، لا من اللافتة ولا من رابط المتن)، و«Settings» لا تُحصد أصلًا:
-        // هي في المتن وقائمة «في هذه الصفحة» واللافتة والمحادثة وحدها
-        HK.filter(function (k) { return k === "Courses"; }).length + "/" + HK.filter(function (k) { return k === "Courses" || k === "Settings"; }).length);
+  check("★ (ر13) حاصد الواجهة: الواجهة والعناوين، ولا شيء من المتن وقائمته (منطقتهما body، يطرحها harvest-dom) ولا اللافتة ولا المنتقي وأسماء اللغات ولا المحادثة",
+        "true/true/true/true//2/2/true/true/0",
+        (HKU.indexOf("Zq Lesson Title") >= 0) + "/" + (HKU.indexOf("Zq Section Title") >= 0) + "/" + (HKU.indexOf("Resources") >= 0) + "/" +
+        (HKU.indexOf("Course outline") >= 0) + "/" + NOT_HV.filter(function (k) { return HKU.indexOf(k) >= 0; }).join(",") + "/" +
+        // «Courses» تُحصد واجهةً من قائمة الترويسة ومسار التنقّل وحدهما (لا من اللافتة، ورابطُ المتن منطقته body)، و«Settings» لا تُحصد واجهةً أصلًا:
+        // هي في المتن وقائمة «في هذه الصفحة» (body) واللافتة والمحادثة (مستثناتان) وحدها
+        HKU.filter(function (k) { return k === "Courses"; }).length + "/" + HKU.filter(function (k) { return k === "Courses" || k === "Settings"; }).length + "/" +
+        (HKB.indexOf("Zq body paragraph with a") >= 0) + "/" + (HKB.indexOf("Zq widget summary for screen readers.") >= 0) + "/" +
+        HKB.filter(function (k) { return k === "Zq answer from Claude." || k === "English" || k === "Zq Endonym"; }).length);
+  // ★ (ر13) حاصد الكتل (CMLShared.harvestBlocks، تطبيع المحرّك نفسه): قوالب المقالة والقائمة كلها — ومنها ملخّص الأداة بسمة lang=en ومفتاحا الفيديو
+  // صفًّا واحدًا — ولا شيء من اللافتة والمنتقي وأسماء اللغات ومحادثة «اسأل Claude» والشيفرة الكتلية
+  var hvAll = HV.map(function (h) { return h.tpl; }).join("\n");
+  check("★ (ر13) حاصد الكتل: قوالب المقالة والقائمة كلها (ومنها ملخّص الأداة بسمة lang=en، والمرساة والسهم ذرّتان)، ولا شيء من اللافتة والمنتقي ومحادثة «اسأل Claude» والشيفرة الكتلية",
+        "0/33/true/true/true/false/false/false",
+        Object.keys(TR).filter(function (t) { return !hvTpl[t]; }).length + "/" + HV.length + "/" +
+        !!hvTpl["<s1>Summary</s1><s2>Transcript</s2>"] + "/" + !!(hvTpl["Settings"] && hvTpl["Settings"].single === "Settings") + "/" + !!hvTpl[KEEP_EN_TPL] + "/" +
+        /Zq answer from Claude|Zq Endonym|English/.test(hvAll) + "/" + /zq --sample/.test(hvAll) + "/" + /Zq Lesson Title|Zq Section Title/.test(hvAll));
 
   await wait(700);
   // ٢) التعريب والاتجاه
   check("★ المسار الكامل: الاتجاه واللغة والتشغيل والمسار", "rtl|ar|on|full", attrs());
   check("★ الواجهة والعناوين تُعرَّب: القائمة والدخول ومسار التنقّل وعنوان الدرس وقسم الدورة ودرس المخطط",
         "الدورات/الموارد/تسجيل الدخول/الدورات/دورةٌ تجريبية/درسٌ تجريبي/قسمٌ تجريبي/درسٌ تجريبي/الموارد/تسجيل الدخول", UI_IDS.map(txt).join("/"));
-  check("★ ما لا يُمسّ ولو طابق القاموس (skipSel): المتن، وقائمة «في هذه الصفحة»، واللافتة، وقيمة المنتقي، وأسماء اللغات، ومحادثة «اسأل Claude»",
-        KEEP_EN, KEEP_IDS.map(txt).join("/"));
+  check("★ ما لا يُمسّ ولو طابق القاموس (skipSel): اللافتة، وقيمة المنتقي، وأسماء اللغات، ومحادثة «اسأل Claude»",
+        SKIP_EN, SKIP_IDS.map(txt).join("/"));
+  // ★ (ر13، القرار 84) الدرس بلا قطعة (فهرس الحزمة اليوم فارغ): يُحكم بقطعةٍ فارغة فيُحجب «none» — 30 كتلةً غير مغطّاة من 33 (العنوان والبند «Settings»
+  // ومفتاحا الفيديو صفًّا يغطّيها قاموس الواجهة) — فلا يكتب فيه قاموس الواجهة شيئًا، والواجهة حوله عربية، وجواب النافذة سببُه none
+  check("★ (ر13، القرار 84) درسٌ بلا قطعة: محجوبٌ «none» (30 من 33)، والمتن وقائمته على أصلهما ولو طابق نصُّهما القاموس، والواجهة حولهما عربية، وطُلبت قطعته مرّة",
+        "held|none|none/30/33|" + BODY_UI_EN + "|false|درسٌ تجريبي|" + P_LESSON,
+        body() + "|" + guard() + "|" + BODY_UI_IDS.map(txt).join("/") + "|" + bodyArabic() + "|" + txt("h1") + "|" + bodyReqs.join(","));
   check("وما ليس في القاموس على أصله: جذر المسار والشعار ورابط التذييل (keep-en)", "Academy/Claude Academy/Privacy policy",
         txt("bc0") + "/" + txt("logo") + "/" + txt("ftrPriv"));
-  check("★ الجزر LTR في صفحةٍ RTL (academy-point.css): المتن، واللافتة، وقائمة «في هذه الصفحة»، وقيمة المنتقي، وقائمته المنبثقة؛ والمخطط والرأس RTL",
+  check("★ (ر13) الجزر LTR في صفحةٍ RTL (academy-point.css): المتن وقائمة «في هذه الصفحة» (والصفحة غير معرَّبة)، واللافتة، وقيمة المنتقي، وقائمته المنبثقة؛ والمخطط والرأس RTL",
         "ltr/ltr/ltr/ltr/ltr/ltr/ltr/rtl/rtl", ["art", "banner", "toc", "pickerVal", "lb", "pk2Val", "rg2", "outline", "hdr"].map(function (i) { return cs(i).direction; }).join("/"));
   // (المراجعة المستقلة) وجزيرة المتن بالقاعدة نفسها لا بسمة dir=auto التي يضعها dirSel على المتن وحدها (حذفُ المتن من القاعدة كان لا يُرى)
   var artDir = $("art").getAttribute("dir"); $("art").removeAttribute("dir");
   var artCss = cs("art").direction; if (artDir !== null) $("art").setAttribute("dir", artDir);
   check("جزيرة المتن LTR بقاعدة academy-point.css ولو بلا سمة dir", "ltr", artCss);
+  // ★ (ر13) وملخّص الأداة داخل المتن (بسمة lang=en) لم يعد جزيرةً وحده: يتبع المتن (LTR هنا بجزيرة المتن)، وسهم الرابط في المتن الإنجليزي لا ينقلب
+  check("★ (ر13) في المتن الإنجليزي: ملخّص الأداة بسمة lang=en على أصله ويتبع جزيرة المتن، وسهم الرابط لا ينقلب (academy-point.css ٤)",
+        "Zq widget summary for screen readers./ltr/none", txt("ws") + "/" + cs("ws").direction + "/" + cs("moreI").scale);
   // (الإنجليزي يأخذ dir=auto فيحسمه المتصفح LTR بأول حرفٍ قوي — resolveDir لا يجزم بما لا يخالف المنصة — والعربي rtl صريحًا)
   check("★ اتجاه الفقرات والبنود بنصّها (dirSel): الملخص والهدف الإنجليزيان LTR والفقرة المعرَّبة RTL، ومحادثة «اسأل Claude» كل فقرةٍ بنصّها",
         "auto:ltr/auto:ltr/rtl:rtl/auto:ltr/rtl:rtl/auto:ltr",
@@ -211,11 +378,295 @@ var KEEP_EN = "Settings/Courses/Settings/Courses/Settings/English/English/Zq End
   await go("/xx/courses");
   check("★ ‎/<لغة>/…‎ خاملٌ تمامًا: كل شيءٍ يُرجع والسمات تُمحى والعنوان الأصلي", "-|en|-|-|Courses|Resources|Zq Lesson Title · Zq Course Title · Claude Academy|inactive",
         attrs() + "|" + txt("menu1") + "|" + txt("menu2") + "|" + T() + "|" + (hello() || {}).route);
-  history.pushState({}, "", "/courses/zq-course/zq-lesson");
+  history.pushState({}, "", P_LESSON);
   $("main").innerHTML = MAIN_HTML;
   await wait(400);
   check("★ والعودة إلى الدرس الإنجليزي تعيد التعريب (الترويسة والدرس المرسوم من جديد والعنوان)", "rtl|ar|on|full|الدورات|درسٌ تجريبي|قسمٌ تجريبي|درسٌ تجريبي · دورةٌ تجريبية · Claude Academy",
         attrs() + "|" + txt("menu1") + "|" + txt("h1") + "|" + txt("sec1") + "|" + T());
+
+  // ٧) ★ (ر13) وضع الكتلة بقطعٍ تجريبية (الحزمة اليوم بلا قطعة؛ والقطع تُشحن في AC-د)
+  await goPage(P_TR);
+  check("★ (ر13) درسٌ بقطعة: الكتل كلها منها — العنوان بذرّة مرساته، والفقرة برابطها، والبند بغامقه، والرابط بسهمه، والفيديو، وملخّص الأداة، وبطاقتها، والشيفرة السطرية — وعلى الجذر «tr» ولا سبب حجب",
+        "tr|-|عنوانٌ أولُ تجريبي|" + GLYPH_A + "|فقرةٌ تجريبية فيها رابط الدورات داخلها.|مقدّمةٌ غامقة. بندٌ تجريبي من الدرس.|رابطٌ تجريبي للمزيد|" + GLYPH_R +
+        "|عنوان فيديو تجريبي · 4 دقائق|فقرةٌ تجريبية من ملخص الفيديو.|ملخّصٌ تجريبي للأداة لقارئ الشاشة.|عنوان بطاقةٍ تجريبي|فقرةٌ تجريبية فيها الشيفرة zq_inline.|" + P_TR,
+        body() + "|" + own("hd1") + "|" + txt("hd1a") + "|" + txt("art2") + "|" + txt("li1") + "|" + own("moreA") + "|" + txt("moreI") + "|" +
+        txt("vidT") + "|" + txt("vidS") + "|" + txt("ws") + "|" + txt("embH") + "|" + txt("art5") + "|" + bodyReqs[bodyReqs.length - 1]);
+  check("★ (ر13) وما يغطّيه قاموس الواجهة في المتن يُعرَّب به (العنوان وبند القائمة ومفتاحا الفيديو بندًا بندًا)، وبند «في هذه الصفحة» ترجمةُ عنوانه نفسها، والشيفرة الكتلية والجملة المُبقاة بقرارٍ على أصلهما",
+        "الإعدادات/الإعدادات/الملخّص/النصّ المكتوب|true|zq --sample|" + KEEP_EN_TPL + "|false",
+        ["art1", "toc1", "vidR1", "vidR2"].map(txt).join("/") + "|" + (txt("toc2") === own("hd1")) + "|" + txt("pre") + "|" + txt("keepP") + "|" + AR.test(txt("keepP")));
+  check("★ (ر13) الاتجاه في المتن المعرَّب: ارتفعت جزيرة المتن، فالمقالة والكتل المعرَّبة وملخّص الأداة RTL، والجملة المُبقاة LTR بنصّها، والشيفرة LTR، والقائمة وبنودها RTL",
+        "rtl/rtl/rtl/rtl/ltr/ltr/rtl/rtl/rtl",
+        ["art", "hd1", "li1", "ws", "keepP", "pre", "toc"].map(function (i) { return cs(i).direction; }).join("/") + "/" +
+        getComputedStyle($("toc1").parentNode).direction + "/" + getComputedStyle($("toc2").parentNode).direction);
+  // ★ (مراجعة ر13-أ، ٦ جمادى الأولى ١٤٤٨هـ) بندٌ في «في هذه الصفحة» يظهر بعد الحكم ولا تحمله القطعة (عنوانٌ جديد أضافه الموقع): يبقى إنجليزيًّا وLTR
+  // بنصّه في القائمة المعرَّبة RTL، لأن بنود القائمة في dirSel (‎ACADEMY_TOC > li‎)؛ وبدونها يرث البند اتجاه القائمة فتُرسم الإنجليزية من اليمين
+  var tocLate = document.createElement("li");
+  tocLate.id = "tocLate";
+  tocLate.innerHTML = '<a href="#late">Zq late heading the shard does not carry.</a>';
+  $("toc").appendChild(tocLate);
+  await wait(400);
+  check("★ (مراجعة ر13-أ) بندٌ جديد في «في هذه الصفحة» ليس في القطعة: إنجليزيٌّ وLTR بنصّه (dirSel)، والقائمة RTL",
+        "Zq late heading the shard does not carry./ltr/rtl", txt("tocLate") + "/" + cs("tocLate").direction + "/" + cs("toc").direction);
+  $("toc").removeChild(tocLate);
+  await wait(200);
+  // ★ (ر13؛ ر12-ب) وأول المقالة فقرةٌ إنجليزيةٌ طويلة مُبقاة (#lead)، ونصُّها كلُّه مقرَّر (ترجماتٌ وعلامات إبقاء): فسمةُ حاويتها من dirSel اتجاهُ اللغة
+  // (decidedOnly منذ ر12-ب) لا حكمُ أول 600 حرف، والفقرة نفسها LTR بنصّها. وما بقي فيه نصٌّ لم يُقرَّر ففي صفحة «gap» أدناه
+  check("★ (ر13؛ ر12-ب) المقالة المعرَّبة كلُّ نصّها مقرَّر: سمةُ حاويتها rtl ولو كان أولها فقرةٌ إنجليزية طويلة مُبقاة، والفقرة المُبقاة LTR بنصّها",
+        "rtl/rtl/ltr/" + LEAD_EN.slice(0, 40), $("art").getAttribute("dir") + "/" + cs("art").direction + "/" + cs("lead").direction + "/" + txt("lead").slice(0, 40));
+  // ★ (ر13؛ ر12-ب) وبنود القائمة: البند مالكُ كتلته في الأكاديمية (نصُّه فيه بلا فقرة): المترجَم RTL، والمُبقى الآمن (اسم منتجٍ يُرسم بترتيبه في سطرٍ من
+  // اليمين) RTL ونصُّه كما هو، والمُبقى جملةً تنتهي بنقطة يبقى لحكم نصّه LTR جزيرةً تُقرأ بترتيبها؛ والقائمة نفسها باتجاه المقالة
+  check("★ (ر13؛ ر12-ب) بنود القائمة في المتن المعرَّب: المترجَم RTL، والمُبقى الآمن («Claude Code») RTL ونصُّه كما هو، والمُبقى جملةً تنتهي بنقطة LTR بنصّه، والقائمة RTL",
+        "rtl/rtl/ltr/rtl|خطوةٌ مرقّمة تجريبية مترجَمة.|" + KEEP_SAFE + "|" + KEEP_STEP,
+        ["kl1", "kl2", "kl3", "kl"].map(function (i) { return cs(i).direction; }).join("/") + "|" + txt("kl1") + "|" + txt("kl2") + "|" + txt("kl3"));
+  check("★ (ر13) وسهم الرابط في المتن المعرَّب ينقلب كسائر الصفحة (academy-point.css ٤)، ومرساة العنوان لا تُمسّ", "-1 1/none",
+        cs("moreI").scale + "/" + cs("hd1a").scale);
+  // ★ (ر13-ج، ٦ جمادى الأولى ١٤٤٨هـ — E-lang) وملخّص الأداة لقارئ الشاشة (‎p.sr-only[data-widget-summary][lang=en]‎) كُتب بالعربية من القطعة فسمتُه lang لغةُ
+  // الصفحة كما تجعلها الشركة في عروضها المترجمة (meta.blockLang)؛ وكانت تبقى en على نصٍّ عربي. وسمات المنتقي واللغات خارج المتن على أصلها
+  check("★ (ر13؛ ر13-ج) وفي الصفحة المعرَّبة أيضًا: اللافتة وقيمة المنتقي (‎span[lang=en]‎) وأسماء اللغات ومحادثة «اسأل Claude» على أصلها (skipSel)، وسمة lang لملخّص الأداة المعرَّب لغةُ الصفحة (E-lang)",
+        SKIP_EN + "|ar|en/en/xx", SKIP_IDS.map(txt).join("/") + "|" + $("ws").getAttribute("lang") + "|" + ["pk2Val", "rad1", "rad2"].map(function (i) { return $(i).getAttribute("lang"); }).join("/"));
+  // نصٌّ يظهر بعد الحكم: النقر على «Transcript» يستبدل الموقعُ به الملخّص (لا يُعاد الحكم؛ ما يُضاف بعده يتبعه)
+  $("vidBox").innerHTML = '<p id="trn">' + TRN_EN + "</p>";
+  await wait(500);
+  check("★ (ر13) نصُّ الفيديو بعد النقر على «Transcript» (يُركَّب بعد الحكم): يُكتب من القطعة في الصفحة المعرَّبة", TRN_AR + "|tr", txt("trn") + "|" + body().split("|")[0]);
+  // الإطفاء والتشغيل
+  MOCK.localStore.cml_enabled = false; MOCK.fireChanged({ cml_enabled: { newValue: false } }, "local");
+  await wait(300);
+  var off = body() + "|" + own("hd1") + "|" + txt("trn") + "|" + (H.getAttribute("dir") || "-");
+  var offLang = $("ws").getAttribute("lang"), OFF_WS = txt("ws");
+  MOCK.localStore.cml_enabled = true; MOCK.fireChanged({ cml_enabled: { newValue: true } }, "local");
+  await wait(500);
+  check("★ (ر13-ج، E-lang) والإطفاء يُرجع سمة lang لملخّص الأداة إلى أصلها (en) مع نصّه، والتشغيل يعيدها لغةَ الصفحة (ar) مع نصّه العربي",
+        "en|Zq widget summary for screen readers. > ar|ملخّصٌ تجريبي للأداة لقارئ الشاشة.", offLang + "|" + OFF_WS + " > " + $("ws").getAttribute("lang") + "|" + txt("ws"));
+  check("★ (ر13) إيقاف الإضافة في درسٍ معرَّب يُرجع المتن ويمحو «tr»، وتشغيلها يعيد المتن العربي وجزيرته مرفوعة",
+        "-|-|Zq Heading One|" + TRN_EN + "|- > tr|-|عنوانٌ أولُ تجريبي|" + TRN_AR + "|rtl",
+        off + " > " + body() + "|" + own("hd1") + "|" + txt("trn") + "|" + cs("art").direction);
+  // ★ (ر13) تنقّلٌ إلى درسٍ بلا قطعة يُعيد فيه الموقع عقد المتن نفسها (React يكتب النصوص في مكانها): العنوان h1 يتبدّل فتتبدّل الشجرة، فيُحكم
+  // «none»؛ وما كتبته قطعة السابقة في عقدٍ لم يغيّرها الموقع (فقرةٌ مشتركة بين الدرسين، وقائمة «في هذه الصفحة») يُرجع، ولا يُكتب شيءٌ منها
+  history.pushState({}, "", P_B);
+  $("h1").firstChild.nodeValue = "Zq Lesson B Title";
+  $("hd1").firstChild.nodeValue = "Zq Heading Two";
+  $("embH").firstChild.nodeValue = "Zq other widget card title";
+  await wait(800);
+  check("★ (ر13) التنقّل إلى درسٍ بلا قطعة يُعيد الموقع فيه عقد المتن: يُحكم «none» بعد تبدّل الشجرة، ولا يبقى في المتن وقائمته حرفٌ عربي من قطعة السابقة",
+        "held|none|none|false|Zq Heading Two|Zq other widget card title|" + TRN_EN + "|Zq Heading One|Settings|Zq Lesson B Title|" + P_B,
+        body() + "|" + guard().split("/")[0] + "|" + bodyArabic() + "|" + own("hd1") + "|" + txt("embH") + "|" + txt("trn") + "|" +
+        txt("toc2") + "|" + txt("toc1") + "|" + txt("h1") + "|" + bodyReqs[bodyReqs.length - 1]);
+  // ★ (ر13-ج، E-lang) وملخّص الأداة نفسه (عقدةٌ أبقاها الموقع) في الدرس المحجوب: أُرجع نصُّه فأُرجعت سمتُه en — لا lang="ar" على نصٍّ إنجليزي
+  check("★ (ر13-ج، E-lang) في الدرس المحجوب بعد المعرَّب (عقدٌ أبقاها الموقع): ملخّص الأداة على أصله نصًّا وسمةً (en)",
+        "Zq widget summary for screen readers.|en", txt("ws") + "|" + $("ws").getAttribute("lang"));
+  // ★ (مراجعة ر13-أ، ٦ جمادى الأولى ١٤٤٨هـ — الفحص الحيّ: حالة استخدامٍ معرَّبة ثم أخرى بلا قطعة بنقرة) والموقع يُبقي العقد ويغيّر نصوصها في مكانها، فما
+  // وضعه dirSel على بنود القائمة والعنوان والفقرة في الدرس المعرَّب (dir="rtl") يبقى عليها في المحجوب ولا يُعاد حكمُه (لا يُكتب في المتن المحجوب شيء،
+  // وتبدّلُ نصٍّ في مكانه لا يوقظ حكم الاتجاه): كانت بنودٌ إنجليزية تُرسم من اليمين (6 بنود في الفحص الحيّ). والمتن المحجوب لا عربية فيه، فقاعدة
+  // academy-point.css تجعل ما بقيت عليه سمةٌ من المحرّك فيه LTR
+  check("★ (مراجعة ر13-أ) درسٌ محجوب بعد درسٍ معرَّب أعاد الموقع عقده: بندا «في هذه الصفحة» والعنوان والفقرة LTR (لا تبقى سمة rtl من السابق ترسم الإنجليزية من اليمين)",
+        "ltr/ltr/ltr/ltr", [getComputedStyle($("toc1").parentNode).direction, getComputedStyle($("toc2").parentNode).direction, cs("hd1").direction, cs("art2").direction].join("/"));
+  // ★ (مراجعة ر13-أ، ٦ جمادى الأولى ١٤٤٨هـ — meta.bodyRejudge) درسٌ بلا قطعة متنُه أداةٌ حيّة تُركَّب من العميل بعد الحكم: حين يُحكم ليس في متنه إلا عنوانٌ
+  // يغطّيه قاموس الواجهة (1 من 1) فلا يُحجب ويُعرَّب العنوان؛ ثم تُركَّب الأداة (فقرتان وزرٌّ يطابق نصَّ واجهة) فيكبر المتن فيُعاد الحكم: محجوبٌ «none»
+  // ولا عربية فيه، فيُرجع العنوان ولا يُكتب الزرّ (كان قاموس الواجهة يكتبهما داخل متنٍ إنجليزي: 8 من 156 صفحةً بأداةٍ حيّة بالحزمة بلا قطعة)
+  history.pushState({}, "", P_LATE);
+  $("main").innerHTML = '<header><h1 id="h1">Zq Late Lesson Title</h1></header><article class="mdx-article" id="art"><h2 id="lateH">Settings</h2></article>';
+  $("wake").textContent = P_LATE;
+  await wait(700);
+  var lateBefore = body() + "|" + guard() + "|" + txt("lateH");
+  var lateEmb = document.createElement("div");
+  lateEmb.setAttribute("data-living-embed", "");
+  lateEmb.setAttribute("role", "group");
+  lateEmb.innerHTML = '<p>Zq late widget paragraph one.</p><p>Zq late widget paragraph two.</p><button type="button" id="lateBtn">Courses</button>';
+  $("art").appendChild(lateEmb);
+  await wait(700);
+  check("★ (مراجعة ر13-أ، meta.bodyRejudge) درسٌ بلا قطعة تُركَّب أداتُه بعد الحكم: حُكم بعنوانٍ مغطّى وحده فلم يُحجب، ثم كبر المتن فأُعيد الحكم: محجوبٌ «none» ولا عربية فيه (العنوان والزرّ على أصلهما)",
+        "-|-|none/0/1|الإعدادات > held|none|none/2/4|Settings|Courses|false",
+        lateBefore + " > " + body() + "|" + guard() + "|" + txt("lateH") + "|" + txt("lateBtn") + "|" + AR.test($("art").textContent));
+  // ★ (ر13، القرار 83) كتلةٌ واحدة ليست في القطعة من 33 (3٪ تحت العتبة): تُكتب الصفحة ولا تُحجب، والكتلة الناقصة إنجليزيةٌ كلّها
+  await goPage(P_GAP);
+  check("★ (ر13، القرار 83) كتلةٌ واحدة ليست في القطعة من 33 (أقل من 5٪): تُكتب الصفحة ولا تُحجب، والكتلة الناقصة إنجليزيةٌ كلّها وLTR بنصّها",
+        "tr|-|1/33|عنوانٌ أولُ تجريبي|فقرةٌ تجريبية فيها الشيفرة zq_inline.|Zq more link|ltr",
+        body() + "|" + guard().split("/").slice(1).join("/") + "|" + own("hd1") + "|" + txt("art5") + "|" + own("moreA") + "|" + cs("more").direction);
+  // ★ (ر13، الفحص الحيّ) وفي المقالة نصٌّ لم يُقرَّر (الكتلة الناقصة) فلا تأخذ حاويتها اتجاه اللغة من dirSel: تُحسم بأول 600 حرفٍ من نصّها وأولُها
+  // الفقرة الإنجليزية المُبقاة، فلا تكون سمتُها rtl — ومع ذلك فالمقالة المعرَّبة RTL بقاعدة academy-point.css («tr»). وسهمُ الكتلة الناقصة لا
+  // ينقلب داخل نصّها اللاتيني (‎:dir(ltr)‎ في academy-point.css ٤)، وسهمُ المعرَّبة في الصفحة الأخرى انقلب أعلاه
+  check("★ (ر13) صفحةٌ معرَّبة فيها كتلةٌ لم تُقرَّر: سمةُ حاوية المقالة ليست rtl (أول 600 حرفٍ لاتينيةٌ أكثرُها) والمقالة RTL بقاعدة «tr»، وسهمُ الكتلة الإنجليزية لا ينقلب",
+        "true/rtl/ltr/none", ($("art").getAttribute("dir") !== "rtl") + "/" + cs("art").direction + "/" + cs("lead").direction + "/" + cs("moreI").scale);
+  // ★ (ر13، القرار 84) قطعةٌ تغيّر متنها بعدها (لا تغطّي إلا عنوانًا واحدًا): محجوبةٌ «drift» — لا عربية في المتن ولا من قاموس الواجهة، والجزيرة LTR،
+  // ونصُّ الفيديو الظاهر بعد الحكم يتبعه إنجليزيًّا
+  await goPage(P_DRIFT);
+  var drift = body() + "|" + guard() + "|" + bodyArabic() + "|" + BODY_UI_IDS.map(txt).join("/") + "|" + own("hd1") + "|" + cs("art").direction + "|" + cs("toc").direction;
+  $("vidBox").innerHTML = '<p id="trn">' + TRN_EN + "</p>";
+  await wait(500);
+  check("★ (ر13، القرار 84) قطعةٌ تغيّر متنها بعدها (29 من 33 غير مغطّاة): محجوبةٌ «drift»، فلا عربية في المتن وقائمته ولو من قاموس الواجهة أو قطعتها، والجزيرة LTR، ونصُّ الفيديو بعد الحكم إنجليزي",
+        "held|drift|drift/29/33|false|" + BODY_UI_EN + "|Zq Heading One|ltr|ltr|" + TRN_EN + "|false",
+        drift + "|" + txt("trn") + "|" + bodyArabic());
+
+  // ٩) ★ (ر13-ج، ٦ جمادى الأولى ١٤٤٨هـ) E-lang: سمة lang لما يُكتب بالعربية في عنصرٍ من المتن يعلن لغةً أخرى، وتُرجع مع إرجاع نصّه
+  var goMain = function (p, html) { history.pushState({}, "", p); $("main").innerHTML = html; $("wake").textContent = p; return wait(700); };
+  // القوالب من الصفحة كما يرسمها الموقع (مستندٌ منفصل قبل المحرّك) — والقطعة التجريبية ببصماتها
+  var hvLang = CMLShared.harvestBlocks(new DOMParser().parseFromString("<main>" + LANG_HTML + "</main>", "text/html"), { body: LM.bodySel, skip: SKIP_FULL })
+    .map(function (h) { return h.tpl; });
+  await goMain(P_LANG, LANG_HTML);
+  var langOf = function (i) { return $(i).getAttribute("lang") || "-"; };
+  check("(ر13-ج) قوالب صفحة E-lang كما يحصدها الحاصد (القطعة التجريبية تطابقها)", "0/4",
+        Object.keys(TR_LANG).concat([KEEP_LANG]).filter(function (t) { return t.indexOf("Zq late") !== 0 && hvLang.indexOf(t) < 0; }).length + "/" + hvLang.length);
+  check("★ (ر13-ج، E-lang) فقرةٌ معرَّبة داخل قسمٍ يعلن lang=en تأخذ lang لغةَ الصفحة (والقسم والمُبقاة على أصلهما)، وعبارةٌ تعلن lang=en كُتبت عربيةً تأخذها، والمصطلح اللاتيني يبقى en",
+        "tr|ar|en|-|ar|en|فقرةٌ تجريبية داخل قسمٍ إنجليزي.|" + KEEP_LANG,
+        body().split("|")[0] + "|" + ["lgP", "lgDiv", "lgKeep", "lgSpan", "lgTermS"].map(langOf).join("|") + "|" + txt("lgP") + "|" + txt("lgKeep"));
+  // ملخّص أداةٍ يركّبه الموقع بعد الحكم (لوحةٌ تُفتح): يُكتب في دفعة الطفرات فتتبعه سمته في آخرها
+  var late = document.createElement("p");
+  late.setAttribute("data-widget-summary", "true"); late.setAttribute("lang", "en"); late.className = "sr-only"; late.id = "lgLate";
+  late.textContent = "Zq late widget summary for screen readers.";
+  $("art").appendChild(late);
+  await wait(600);
+  check("★ (ر13-ج، E-lang) وملخّص أداةٍ يُركَّب بعد الحكم يُكتب عربيًّا في دفعة الطفرات وسمته لغةُ الصفحة", "ar|ملخّصٌ متأخّرٌ تجريبي للأداة لقارئ الشاشة.",
+        langOf("lgLate") + "|" + txt("lgLate"));
+  // والإطفاء والتشغيل: السمة تتبع النص في المهمة نفسها (المرور الكامل)، لا بعد دفعة طفراتٍ لاحقة
+  MOCK.localStore.cml_enabled = false; MOCK.fireChanged({ cml_enabled: { newValue: false } }, "local");
+  var langOffNow = ["lgP", "lgDiv", "lgSpan", "lgTermS", "lgLate"].map(langOf).join("|") + "|" + txt("lgP");
+  await wait(300);
+  var langOff = ["lgP", "lgDiv", "lgSpan", "lgTermS", "lgLate"].map(langOf).join("|");
+  MOCK.localStore.cml_enabled = true; MOCK.fireChanged({ cml_enabled: { newValue: true } }, "local");
+  var langOnNow = ["lgP", "lgDiv", "lgSpan", "lgTermS", "lgLate"].map(langOf).join("|");
+  await wait(500);
+  check("★ (ر13-ج، E-lang) والإطفاء يُرجع كل سمةٍ إلى أصلها مع النص في مهمته (تُمحى ما أُضيف، وen لما كان en)، والتشغيل يعيدها كذلك",
+        "-|en|en|en|en|Zq paragraph inside an English section. > -|en|en|en|en > ar|en|ar|en|ar > ar|en|ar|en|ar",
+        langOffNow + " > " + langOff + " > " + langOnNow + " > " + ["lgP", "lgDiv", "lgSpan", "lgTermS", "lgLate"].map(langOf).join("|"));
+  // ١٠) ★ (ر13-ج) إبقاءٌ بنطاق الصفحة: علامة الإبقاء في قطعة الصفحة تسبق ترجمة البصمة فيها (وقاموس الواجهة)، والحارس يعدّها مغطّاة؛ والبصمة نفسها
+  // تُترجم في صفحةٍ أخرى. وصفُّ العدّاد الزمني بلا مدخلٍ في القطعة: عبارته من قاموس الواجهة بندًا بندًا والثواني على حالها، والحارس يعدّه مغطًّى
+  await goMain(P_K1, FILM_HTML("31s"));
+  check("★ (ر13-ج) صفحةٌ تُبقي فيها الشركة التسمية وكتلةً أخرى (علامة إبقاءٍ مع ترجمة البصمة في قطعتها): تبقيان إنجليزيتين، والباقي معرَّب، ولا حجب (غير المغطّى 0 من 5)",
+        "tr|-|drift/0/5|Zq Owner|Zq status label row.|فقرةٌ مشتركة أولى تجريبية.|فقرةٌ مشتركة ثانية تجريبية.",
+        body() + "|" + guard() + "|" + txt("kOwner") + "|" + txt("kRow") + "|" + txt("kA") + "|" + txt("kB"));
+  check("★ (ر13-ج) صفُّ العدّاد الزمني بلا مدخلٍ في القطعة: العبارة من قاموس الواجهة والثواني على حالها، ولا يُعدّ غير مغطًّى",
+        "قراءةٌ تجريبية للموجز|31s", txt("tmrL") + "|" + txt("tmrS"));
+  $("tmrS").firstChild.nodeValue = "32s";
+  await wait(500);
+  check("(ر13-ج) والثواني تتبدّل (بصمة الصفّ معها): العبارة معرَّبة كما هي", "قراءةٌ تجريبية للموجز|32s|tr", txt("tmrL") + "|" + txt("tmrS") + "|" + body().split("|")[0]);
+  await goMain(P_K2, FILM_HTML("47s"));
+  check("★ (ر13-ج) والبصمتان نفساهما في صفحةٍ تترجمهما الشركة: التسمية من قاموس الواجهة والكتلة من القطعة، وصفُّ العدّاد بثوانٍ أخرى مغطًّى (0 من 5)",
+        "tr|-|drift/0/5|مالكٌ تجريبي|صفُّ حالٍ تجريبي.|قراءةٌ تجريبية للموجز|47s",
+        body() + "|" + guard() + "|" + txt("kOwner") + "|" + txt("kRow") + "|" + txt("tmrL") + "|" + txt("tmrS"));
+  await goMain(P_K1, FILM_HTML("12s"));
+  check("★ (ر13-ج) والعودة إلى الصفحة المُبقية: التسمية والكتلة إنجليزيتان من جديد (لا ترجمةَ من قطعة الصفحة السابقة ولا من قاموس الواجهة)",
+        "tr|Zq Owner|Zq status label row.|قراءةٌ تجريبية للموجز", body().split("|")[0] + "|" + txt("kOwner") + "|" + txt("kRow") + "|" + txt("tmrL"));
+  // ١١) ★ (مراجعة ر13-ج، ٦ جمادى الأولى ١٤٤٨هـ — meta.keepRows) علامة الإبقاء في صفّ لافتات: كان الصفّ يمرّ بعدها بقاموس الواجهة بندًا بندًا (ex.group) فيُعرَّب
+  // منه ما في القاموس داخل شاشةٍ تُبقيها الشركة إنجليزيةً كلَّها (قِيس حيًّا: «Design» في صفٍّ مُبقًى بحالة استخدام). والصفّ نفسه بلا علامة تُعرَّب بنوده كما كانت
+  var hvRow = CMLShared.harvestBlocks(new DOMParser().parseFromString("<main>" + ROW_HTML + "</main>", "text/html"), { body: LM.bodySel, skip: SKIP_FULL })
+    .map(function (h) { return h.tpl + (h.group ? "#group" : ""); });
+  check("(مراجعة ر13-ج) قالب صفّ اللافتات كما يحصده الحاصد (صفٌّ لا جملة، والقطعة التجريبية تطابقه)", ROW_TPL + "#group/" + ROW_P, hvRow.join("/"));
+  // وتصحيح القارئ (النافذة تسأل عن الفقرة المحدَّدة): الصفّ المُبقى يُعرض كتلةً كاملة كالمُبقاة ذات العقدة الوحيدة، والصفّ بلا علامة بندُه في قاموس الواجهة
+  var blockAt = function (id) {
+    var r = document.createRange(), s = window.getSelection(), out = null;
+    r.selectNodeContents($(id)); s.removeAllRanges(); s.addRange(r);
+    if (HELLO) HELLO({ type: "cml-block-at" }, {}, function (x) { out = x; });
+    s.removeAllRanges();
+    return !out ? "-" : out.ui ? "ui:" + out.en : out.fp === FP(ROW_TPL) ? "block:row" : out.error ? "error:" + out.error : "block:other";
+  };
+  await goMain(P_K3, ROW_HTML);
+  check("★ (مراجعة ر13-ج، keepRows) صفُّ لافتاتٍ عليه علامة إبقاءٍ في قطعة صفحته وبنوده في قاموس الواجهة: يبقى إنجليزيًّا كلُّه، والحارس يعدّه مغطًّى، والفقرة معرَّبة",
+        "tr|-|drift/0/2|Zq Owner|Zq Reading the brief|فقرةٌ للصفّ تجريبية.", body() + "|" + guard() + "|" + txt("lrA") + "|" + txt("lrB") + "|" + txt("lrP"));
+  var atKept = blockAt("lrA");
+  await goMain(P_K4, ROW_HTML);
+  check("★ (مراجعة ر13-ج، keepRows) والصفّ نفسه بلا علامة إبقاءٍ في صفحةٍ أخرى: بنوده من قاموس الواجهة كما كانت، ولا حجب",
+        "tr|-|drift/0/2|مالكٌ تجريبي|قراءةٌ تجريبية للموجز", body() + "|" + guard() + "|" + txt("lrA") + "|" + txt("lrB"));
+  check("(مراجعة ر13-ج، keepRows) وتصحيح القارئ يتبع العرض: بندُ الصفّ المُبقى يُعرض كتلةً كاملة، وبندُ الصفّ بلا علامة في قاموس الواجهة",
+        "block:row|ui:Zq Owner", atKept + "|" + blockAt("lrA"));
+
+  // ١٢) ★ (ر29-و، ١٥ جمادى الأولى ١٤٤٨هـ — مراجعة ر29-هـ) الأسهم التي يعكسها الموقع بنفسه (سمة data-cds-mirror وقاعدته بشرط اللغة، ‎#siteMirror‎ أعلاه): القاعدة
+  // ٤ في academy-point.css لا تضيف عكسها حيث تبلغ قاعدةُ الموقع (‎[data-cds-mirror]:lang(ar)‎) وتعكس ما سواه، فينعكس كل سهمٍ مرةً واحدة. تُبنى العيّنات
+  // وتُقاس وتُزال في مهمةٍ واحدة فلا يمرّ بها المحرّك، والعكوس تُعدّ على القيم المحسوبة عليها وعلى أسلافها كلّها: التحويل بـ‎computedStyleMap‎ (لأيقونةٍ
+  // بلا صندوق يقرأ getComputedStyle تحويلها «none» — كذلك قيست «الأيقونات الثلاث المخبوءة» في مراجعة ر29-هـ)، و‎scale‎
+  var detOf = function (el) {
+    var v = null;
+    try { v = el.computedStyleMap().get("transform"); } catch (e) { v = null; }
+    if (!v || String(v) === "none") return 1;
+    try { var m = v.toMatrix(); return m.m11 * m.m22 - m.m12 * m.m21; } catch (e) { return 1; }
+  };
+  var reflN = function (el) {
+    var n = 0;
+    for (var a = el; a && a.nodeType === 1; a = a.parentElement) {
+      if (detOf(a) < 0) n++;
+      var sc = getComputedStyle(a).scale;
+      if (sc && sc !== "none") { var q = sc.split(/\s+/), sx = parseFloat(q[0]), sy = q.length > 1 ? parseFloat(q[1]) : sx; if (sx * sy < 0) n++; }
+    }
+    return n;
+  };
+  // فروع القاعدة ٤ الأربعة ببنية الموقع: أيقونة «المزيد» المتحركة عند المرور، وذيل الدرس، ورابط الرجوع في مسار التنقّل، وزرّ «بدء الدورة»
+  // ★ (مراجعة ر29-و) وشرط الموقع وجودُ السمة لا قيمتُها (‎[data-cds-mirror]‎)، فعيّنتان بقيمةٍ فارغة كما يكتبها الموقع اليوم وعيّنتان بقيمة: استثناءٌ
+  // مقيَّدٌ بقيمةٍ (‎[data-cds-mirror=""]‎ مثلًا) يترك الأخرى منعكسةً مرتين، ونجا من الفحوص لمّا كانت العيّنات كلها فارغة
+  var GL_F = String.fromCharCode(0xE010), GL_B = String.fromCharCode(0xE00C), MIR = ' data-cds-mirror=""', MIRV = ' data-cds-mirror="true"';
+  var BR4 = [
+    function (m) { return '<a href="#"><span data-cds="Icon" class="group-hover:translate-x-0.5"' + m + '>' + GL_F + '</span></a>'; },
+    function (m) { return '<nav class="grid grid-cols-2"><a href="#"><span><span data-cds="Icon"' + m + '>' + GL_F + '</span></span></a></nav>'; },
+    function (m) { return '<nav class="text-secondary"><a href="#"><span data-cds="Icon"' + m + '>' + GL_B + '</span></a></nav>'; },
+    function (m) { return '<a class="cds-reset group/btn" href="/courses/zq-arrow"><span data-cds="Icon"' + m + '>' + GL_F + '</span></a>'; }
+  ];
+  var ic = function (id) { return $(id).querySelector('[data-cds="Icon"]'); };
+  var zf = document.createElement("div");
+  zf.innerHTML = BR4.map(function (f, i) { return '<div id="zfM' + i + '">' + f(i % 2 ? MIRV : MIR) + '</div><div id="zfN' + i + '">' + f("") + '</div>'; }).join("") +
+    '<div id="zfHid" style="display:none">' + BR4[2](MIR) + '</div><div id="zfHidN" style="display:none">' + BR4[2]("") + '</div>';
+  document.body.appendChild(zf);
+  var IDX = [0, 1, 2, 3];
+  var arrowsM = IDX.map(function (i) { var e = ic("zfM" + i); return reflN(e) + ":" + getComputedStyle(e).scale; }).join("/");
+  var arrowsN = IDX.map(function (i) { var e = ic("zfN" + i); return reflN(e) + ":" + getComputedStyle(e).scale; }).join("/");
+  var all8 = IDX.map(function (i) { return reflN(ic("zfM" + i)); }).concat(IDX.map(function (i) { return reflN(ic("zfN" + i)); }));
+  var twice = all8.filter(function (n) { return n === 2; }).length, unrefl = all8.filter(function (n) { return n === 0; }).length;
+  var hI = ic("zfHid"), hN = ic("zfHidN");
+  var hidden = (detOf(hI) < 0 ? 1 : 0) + "|" + getComputedStyle(hI).transform + "|" + getComputedStyle(hI).scale + "|" + (hI.getClientRects().length ? "box" : "nobox") +
+    "|" + getComputedStyle(hN).scale;
+  $("zfHid").style.display = "block"; $("zfHidN").style.display = "block";
+  var shown = reflN(hI) + ":" + getComputedStyle(hI).transform + "|" + reflN(hN);
+  document.body.removeChild(zf);
+  // وفي المتن المعرَّب («tr»): سهمٌ بالسمة بلغة الصفحة، وآخر في قسمٍ يعلن الإنجليزية lang=en-US (كقسم E-lang) فلا تبلغه قاعدة الموقع
+  var zb = document.createElement("div");
+  zb.innerHTML = '<div id="zfAr">' + BR4[0](MIR) + '</div><div lang="en-US" id="zfEn">' + BR4[0](MIR) + '</div>';
+  $("art").appendChild(zb);
+  var bAr = ic("zfAr"), bEn = ic("zfEn");
+  var inBody = body().split("|")[0] + "|" + reflN(bAr) + ":" + getComputedStyle(bAr).scale + "|" + reflN(bEn) + ":" + getComputedStyle(bEn).scale + ":" + getComputedStyle(bEn).direction;
+  $("art").removeChild(zb);
+  check("★ (ر29-و) سهمٌ يحمل data-cds-mirror (فارغةً أو بقيمة) تحت قاعدة الموقع في فروع القاعدة ٤ الأربعة: ينعكس مرةً واحدة بتحويل الموقع، ولا scale منّا (كان عكسُنا فوق عكسه يردّه)",
+        "1:none/1:none/1:none/1:none", arrowsM);
+  check("★ (ر29-و) والسهم نفسه بلا السمة بجانبه تعكسه القاعدة ٤ مرةً واحدة، ولا سهمَ في العيّنات الثماني منعكسٌ مرتين ولا متروك",
+        "1:-1 1/1:-1 1/1:-1 1/1:-1 1|0/0", arrowsN + "|" + twice + "/" + unrefl);
+  check("★ (ر29-و) الأيقونة المخبوءة بلا صندوق (رابط الرجوع في حاويةٍ يخفيها الموقع في أحد العرضين): تبلغها قاعدة الموقع (تحويلها المحسوب عكسٌ ويقرؤه getComputedStyle «none»)، ولا scale منّا، فإذا ظهرت انعكست مرةً واحدة؛ وبلا السمة تعكسها القاعدة ٤ مخبوءةً وظاهرة",
+        "1|none|none|nobox|-1 1|1:matrix(-1, 0, 0, 1, 0, 0)|1", hidden + "|" + shown);
+  check("★ (ر29-و) وفي المتن المعرَّب: السهم بالسمة بلغة الصفحة يعكسه الموقع وحده، وفي قسمٍ يعلن lang=en-US لا تبلغه قاعدة الموقع فتعكسه القاعدة ٤ (الشرط لغة العنصر كشرط الموقع، لا السمة وحدها ولا الاتجاه)",
+        "tr|1:none|1:-1 1:rtl", inBody);
+  // ١٣) ★ (ر29-ز، ١٩ جمادى الأولى ١٤٤٨هـ — ما حملته ر29-و) عكسُ الموقع داخل جزرنا LTR: قاعدته بشرط اللغة تبلغ أيقونةً بالسمة داخل نصٍّ إنجليزي نعرضه من
+  // اليسار (لغة الجذر العربية)، فتشير بعكس ما تشير إليه في الموقع الإنجليزي. فالقاعدة ٥ في academy-point.css تردّها بـ‎scale: -1 1‎ في الجزر وحدها:
+  // صافي العكوس 0 (كالموقع الإنجليزي) حيث الاتجاه LTR بالسمة (كتلةٌ مُبقاة dir="ltr"، وdir="auto" بنصٍّ لاتيني) وفي جزر الورقة (اللافتة، والمتن
+  // ما لم يُكتب بالعربية، ومحتوى مسار الهيكل)؛ وتبقى كما هي حيث الاتجاه RTL (كتلةٌ معرَّبة، وmain في المسار الكامل) وحيث لا يبلغها الموقع
+  // (قسمٌ يعلن lang=en-US). والحالتان المحجوبة ومسار الهيكل تُضبطان على الجذر وتُقاسان وتُرجعان في مهمةٍ واحدة
+  var zg = document.createElement("div");
+  zg.innerHTML = '<div dir="ltr" id="zgL">' + BR4[0](MIR) + '</div><p dir="auto" id="zgA">Zq kept English line ' + BR4[0](MIRV) + '</p>' +
+    '<div dir="rtl" id="zgR">نصٌّ تجريبي ' + BR4[0](MIR) + '</div>';
+  $("art").appendChild(zg);
+  var zgBan = document.createElement("span"); zgBan.id = "zgB"; zgBan.innerHTML = BR4[0](MIR); $("banner").appendChild(zgBan);
+  var zgLang = document.createElement("div"); zgLang.id = "zgE"; zgLang.setAttribute("lang", "en-US"); zgLang.innerHTML = BR4[0](MIR); document.body.appendChild(zgLang);
+  var zgMain = document.createElement("div"); zgMain.id = "zgM"; zgMain.innerHTML = BR4[1](MIR); $("main").appendChild(zgMain);
+  // صافي العكوس (زوجيّة عددها: 0 كالموقع الإنجليزي، 1 منعكس) وscale المحسوبة منّا
+  var rs = function (id) { var e = $(id) && ic(id); return e ? (reflN(e) % 2) + ":" + getComputedStyle(e).scale : "missing:" + id; };
+  var inTr = ["zgL", "zgA", "zgR", "zgB", "zgE", "zgM"].map(rs).join("/");
+  var bodyWas = H.getAttribute("data-cml-body"), routeWas = H.getAttribute("data-cml-route");
+  H.setAttribute("data-cml-body", "held");
+  var heldArt = rs("zgR") + "/" + rs("zgL");
+  H.setAttribute("data-cml-body", bodyWas);
+  H.setAttribute("data-cml-route", "shell");
+  var shellMain = rs("zgM");
+  H.setAttribute("data-cml-route", routeWas);
+  var afterBack = rs("zgM") + "/" + rs("zgR");
+  $("art").removeChild(zg); $("banner").removeChild(zgBan); document.body.removeChild(zgLang); $("main").removeChild(zgMain);
+  check("★ (ر29-ز) في المتن المعرَّب: أيقونةٌ بالسمة في كتلةٍ مُبقاة LTR (dir=ltr، وdir=auto بنصٍّ لاتيني) صافي عكوسها 0 كالموقع الإنجليزي، وفي كتلةٍ معرَّبة RTL ينعكس مرةً بالموقع وحده",
+        "0:-1 1/0:-1 1/1:none", inTr.split("/").slice(0, 3).join("/"));
+  check("★ (ر29-ز) واللافتة جزيرةٌ (صافيها 0)، والقسم الذي يعلن lang=en-US لا تبلغه قاعدة الموقع ولا قاعدتنا، وmain في المسار الكامل RTL ينعكس بالموقع وحده",
+        "0:-1 1/0:none/1:none", inTr.split("/").slice(3).join("/"));
+  check("★ (ر29-ز) والمتن المحجوب جزيرةٌ كله (حتى ما بقيت عليه سمة rtl من صفحةٍ معرَّبة)، ومحتوى مسار الهيكل جزيرة؛ ويعودان كما كانا برجوع الحال",
+        "0:-1 1/0:-1 1|0:-1 1|1:none/1:none", heldArt + "|" + shellMain + "|" + afterBack);
+  // (ر29-و) وقاعدة الموقع كما نسختها الورقة المولَّدة من لقطته (rtl-academy.css) ما زالت بالشرط الذي تفترضه القاعدة ٤: أيقونة CDS بالسمة (أيًّا كانت قيمتها) بشرط
+  // ‎:lang(ar)‎ وتحويل ‎scaleX(-1)‎ — فإن غيّر الموقع شرطه أو سمته وجُدّدت اللقطة سقط هذا، فيُعاد النظر في القاعدة ٤
+  var genCss = "";
+  try { genCss = await (await fetch("../extension/rtl-academy.css")).text(); } catch (e) { genCss = ""; }
+  var genMir = genCss.split("}").filter(function (r) { return r.indexOf("cds-mirror") >= 0; });
+  check("(ر29-و) نسخة قاعدة الموقع في الورقة المولَّدة: واحدة، بأيقونة CDS وسمة ‎[data-cds-mirror]‎ وشرط ‎:lang(ar)‎ وتحويل ‎scaleX(-1)‎", "1/true/true/true/true",
+        genMir.length + "/" + (genMir.join("").indexOf("[data-cds=Icon]") >= 0) + "/" + (genMir.join("").indexOf("[data-cds-mirror]:") >= 0) + "/" +
+        (genMir.join("").indexOf(":lang(ar)") >= 0) + "/" + /\{\s*transform:\s*scaleX\(-1\)\s*$/.test(genMir.join("")));
 
   check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
   history.replaceState({}, "", HOME);

@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "language": "ar",
+    "direction": "rtl",
+    "domain": "docs",
+    "routeClass": "console",
+    "languageNameEnglish": "Arabic",
+    "languageNameNative": "العربية",
+    "sourceLanguage": "en",
+    "version": "2.0.0",
+    "count": 0
+  },
+  "_guide": {
+    "ar": "قاموس لوحة المطوّرين (Console) على platform.claude.com خارج /docs/ — صنفُ مسارٍ في مدخل الوثائق (ر20-أ)، قادمٌ خاملٌ حتى CN1. أضِف داخل strings سطرًا: \"النص الإنجليزي كما يظهر\": \"الترجمة\"، ثم ابنِ بـ node web/code/toolchain/build.mjs فيُبنى dict-console.js. ولا يُحقن في المانيفست ولا يعمل حتى تُبدَّل حال الصنف في cml-const.js (classes في صفّ docs). محتوى المستخدم (المفاتيح والأسماء والبريد والمبالغ والسجلّات ومحرِّر الموجِّه ومخرجاته) لا يُترجم أبدًا: انظر CONSOLE_USER.",
+    "en": "Dictionary for the Console route class of the docs entry (platform.claude.com outside /docs/). Upcoming until CN1. Add \"exact English text\": \"Arabic\" lines under strings, then run node web/code/toolchain/build.mjs."
+  },
+  "strings": {},
+  "plurals": {},
+  "patterns": []
+}

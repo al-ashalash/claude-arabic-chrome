@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>blockprot test</title>
+<!--
+  ★ (ر24-أ، ٨ جمادى الأولى ١٤٤٨هـ — مراجعة Codex CX-003 وCX-001، وملحقها AD-005) وضع الكتلة بلا سقف طول، وبحماية المحتوى داخل التتابع.
+   ١) CX-003: كتلٌ بقوالب من 3,999 و4,001 ونحو 10,000 محرف بوسومٍ سطرية تُحصد (harvestBlocks بلا سقف)، ويعرّبها المحرّك كلَّها بقالبها
+      إن كانت في القاموس (والعناصر هي نفسها)، وتبقى على أصلها كلُّها إن لم تكن، ويعدّها حارس المتن (عدد كتله = عدد الحصاد).
+   ٢) CX-001 بحالاتٍ متقابلة (AD-005): لكل استثناءٍ نسخةٌ محمية ونسخةٌ ضابطة بالبناء نفسه بلا حماية — span من مستثنى النطاق (meta.skipSel)
+      داخل فقرة، وقابلٌ للتحرير بالوراثة (b داخل span[contenteditable])، وسلفٌ محميٌّ لجذر الحصاد، وسلفُ محادثة (.prose) والمحادثة مستثناة.
+      في المحمية: جاسوسٌ على nodeValue وdata وtextContent لعقدة العلامة يعدّ 0 قراءة في الحصاد والحارس والمطابقة، ولا صفَّ حصادٍ ولا قالبٌ
+      فيه العلامة، والفقرة لا تُحصد ولا تُعدّ ولا يُكتب فيها شيء (نصُّها المؤهَّل على أصله). وفي الضابطة: تُحصد وتُعرَّب.
+  القاموس مبنيٌّ من بصمات الحاصد على الصفحة الخام (هوية المحرّك والحاصد). العقد: document.title = "blockprot N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right;word-break:break-word}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+.zq-body p{max-height:3em;overflow:hidden}</style>
+<div id="main" class="zq-body">
+  <p id="L1"></p>
+  <p id="L2"></p>
+  <p id="L3"></p>
+  <p id="L4"></p>
+  <p id="pSkip">Read the <b>guide</b> before <span data-zq-skip><i>Zqsentinel one</i></span> you start.</p>
+  <p id="cSkip">Read the <b>guide</b> before <span data-zq-other><i>Control one</i></span> you start.</p>
+  <p id="pEdit">Open the <b>panel</b> and <span contenteditable="true"><b>Zqsentinel two</b></span> continue.</p>
+  <p id="cEdit">Open the <b>panel</b> and <span><b>Control two</b></span> continue.</p>
+  <p id="pChat">Ask the <b>model</b> about <span class="prose">Zqsentinel three</span> here.</p>
+  <p id="cChat">Ask the <b>model</b> about <span class="plain">Control three</span> here.</p>
+  <p id="pEmpty">Settings <span contenteditable="true"></span></p>
+  <p id="cEmpty">Settings <span></span></p>
+</div>
+<div data-zq-skip><div class="zq-body" id="rootP"><p id="pRoot">Harvest root text Zqsentinel four stays protected.</p></div></div>
+<div><div class="zq-body" id="rootC"><p id="cRoot">Harvest root text control four is harvested.</p></div></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var META = { scan: "none", live: false, chat: true, hydrate: "none", bodies: true, bodySel: ".zq-body", skipSel: "[data-zq-skip]", bodyGuard: 0.9 };
+function $(id) { return document.getElementById(id); }
+// ١) كتلٌ طويلة بوسومٍ سطرية بقالبٍ طوله المطلوب بالضبط: «Lead text <b1>bold part</b1> middle <a2>link text</a2> …»
+//    (الوسوم 18 محرفًا في القالب، والنص بلا بياضٍ مزدوج ولا في الطرفين)
+function fillTo(n, word) { var s = ""; while (s.length < n) s += (s ? " " : "") + word; s = s.slice(0, n); return s.replace(/ $/, "x"); }
+function longPara(id, len, tag) {
+  var p = $(id), head = "Lead " + tag + " text ", mid = " middle ", tail = " " + fillTo(len - 18 - head.length - "bold part".length - mid.length - "link text".length - 2, "zqfill" + tag) + ".";
+  p.appendChild(document.createTextNode(head));
+  var b = document.createElement("b"); b.textContent = "bold part"; p.appendChild(b);
+  p.appendChild(document.createTextNode(mid));
+  var a = document.createElement("a"); a.href = "#"; a.textContent = "link text"; p.appendChild(a);
+  p.appendChild(document.createTextNode(tail));
+  return head + "<b1>bold part</b1>" + mid + "<a2>link text</a2>" + tail;
+}
+var LT = { L1: longPara("L1", 3999, "one"), L2: longPara("L2", 4001, "two"), L3: longPara("L3", 10000, "three"), L4: longPara("L4", 10000, "four") };
+function arOf(tpl, tag) { return "مقدمة " + tag + " نص <b1>جزء غامق</b1> وسط <a2>نص الرابط</a2> " + "عربي ".repeat(Math.round(tpl.length / 6)).trim() + "."; }
+var TR = {};
+TR[LT.L1] = arOf(LT.L1, "١"); TR[LT.L2] = arOf(LT.L2, "٢"); TR[LT.L3] = arOf(LT.L3, "٣");   // L4 ليست في القاموس
+TR["Read the <b1>guide</b1> before <s2><i3>Control one</i3></s2> you start."] = "اقرأ <b1>الدليل</b1> قبل <s2><i3>الضابطة الأولى</i3></s2> أن تبدأ.";
+TR["Open the <b1>panel</b1> and <s2><b3>Control two</b3></s2> continue."] = "افتح <b1>اللوحة</b1> ثم <s2><b3>الضابطة الثانية</b3></s2> تابع.";
+TR["Ask the <b1>model</b1> about <s2>Control three</s2> here."] = "اسأل <b1>النموذج</b1> عن <s2>الضابطة الثالثة</s2> هنا.";
+TR["Harvest root text control four is harvested."] = "نصُّ جذر الحصاد الضابط الرابع يُحصد.";
+// ٢) جاسوس القراءة والكتابة على عقد العلامة (nodeValue وdata وtextContent للعقدة نفسها) — قبل الحصاد والمحرّك
+var ND = Object.getOwnPropertyDescriptor(Node.prototype, "nodeValue"), CD = Object.getOwnPropertyDescriptor(CharacterData.prototype, "data"),
+    TD = Object.getOwnPropertyDescriptor(Node.prototype, "textContent");
+var SPY = {};
+function spyOn(name, t) {
+  var bag = SPY[name] = { r: 0, w: 0, node: t, orig: ND.get.call(t) };
+  [["nodeValue", ND], ["data", CD], ["textContent", TD]].forEach(function (x) {
+    Object.defineProperty(t, x[0], { configurable: true,
+      get: function () { bag.r++; return x[1].get.call(this); }, set: function (v) { bag.w++; x[1].set.call(this, v); } });
+  });
+}
+function textUnder(el) { var w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), t = w.nextNode(); return t; }
+spyOn("skip", textUnder($("pSkip").querySelector("[data-zq-skip]")));
+spyOn("edit", textUnder($("pEdit").querySelector("[contenteditable] b")));
+spyOn("chat", textUnder($("pChat").querySelector(".prose")));
+spyOn("root", textUnder($("pRoot")));
+function reads() { return Object.keys(SPY).map(function (k) { return SPY[k].r; }).join("/"); }
+function writes() { return Object.keys(SPY).map(function (k) { return SPY[k].w; }).join("/"); }
+// ٣) الحصاد بحماية النطاق (مستثناه في المسار الكامل، والمحادثة مستثناة فيه) — كما يمرّرها harvest-dom.mjs
+var HV = CMLShared.harvestBlocks(document, { body: META.bodySel, skip: CMLShared.harvestSkip(META, "full"), chat: true });
+var HV_READS = reads();
+var BLOCKS = {}, hvTpl = {};
+HV.forEach(function (h) { hvTpl[h.tpl] = h; if (Object.prototype.hasOwnProperty.call(TR, h.tpl)) BLOCKS[h.fp] = TR[h.tpl]; });
+var ORIG = {}, ORIG_T = {};
+["L4", "pSkip", "pEdit", "pChat", "pRoot"].forEach(function (id) { ORIG[id] = $(id).innerHTML; ORIG_T[id] = $(id).textContent; });
+var NODES = { L3b: $("L3").querySelector("b"), L3a: $("L3").querySelector("a"), L3t: $("L3").firstChild };
+var clicks = 0; NODES.L3a.addEventListener("click", function (e) { e.preventDefault(); clicks++; });
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) {
+  if (!msg || msg.type !== "bodies") { if (cb) cb(null); return; }
+  setTimeout(function () { if (cb) cb({ page: CMLShared.pageKey(META, msg.path), blocks: BLOCKS, keep: [] }); }, 50);
+} });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true, cml_chatrtl: true });
+var HELLO = null;
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { HELLO = fn; } };
+window.chrome = MOCK.chrome;
+// قاموس الواجهة يعرف كلمات الفقرات المحمية وحدها: لا تُعرَّب جزئيًّا بمسار العقدة الواحدة
+window.CLAUDE_L10N = { domain: "privacy", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "guide": "الدليل", "panel": "اللوحة", "model": "النموذج", "Settings": "الإعدادات" }, patterns: [], plurals: {} } } };
+var ENGINE_FROM = reads();
+</script>
+<link rel="stylesheet" href="../extension/base.css">
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + String.fromCharCode(0x200E) + String.fromCharCode(0x200F) + "]", "g"), ""); }
+function txt(id) { return noBidi($(id).textContent).replace(/\s+/g, " ").trim(); }
+function plainOf(tpl) { return tpl.replace(/<\/?[abisgc]\d+\/?>/g, "").replace(/\s+/g, " ").trim(); }
+function hello() { var r = null; if (HELLO) HELLO({ type: "cml-hello" }, {}, function (x) { r = x; }); return r; }
+var SENT = /Zqsentinel/;
+
+(async function () {
+  // ━━ CX-003: لا سقف طول ━━
+  check("القوالب المصنوعة بأطوالها المطلوبة بالضبط", "3999/4001/10000/10000", [LT.L1.length, LT.L2.length, LT.L3.length, LT.L4.length].join("/"));
+  check("★ (ر24-أ، CX-003) الحاصد يستخرج كتل 3,999 و4,001 و10,000 محرف بوسومها كاملةً (لا سقف يُسقطها)", "true/true/true/true",
+        [!!hvTpl[LT.L1], !!hvTpl[LT.L2], !!hvTpl[LT.L3], !!hvTpl[LT.L4]].join("/"));
+  await wait(900);
+  check("★ (ر24-أ، CX-003) المحرّك يعرّب كتلة 3,999 و4,001 و10,000 محرف كلَّها بقالبها (لا إنجليزية باقية فيها)", "true/true/true",
+        ["L1", "L2", "L3"].map(function (id) { return txt(id) === plainOf(TR[LT[id]]); }).join("/"));
+  check("★ (ر24-أ، CX-003) وكتلة 10,000 محرف المعرَّبة: عناصرها هي نفسها في مواضعها، والنقر يعمل", "true/true/true/1",
+        (function () { NODES.L3a.click(); return [$("L3").querySelector("b") === NODES.L3b, NODES.L3a.parentNode === $("L3"), $("L3").firstChild === NODES.L3t, clicks].join("/"); })());
+  check("★ (ر24-أ، CX-003) كتلةٌ من 10,000 محرف ليست في القاموس تبقى على أصلها كلُّها (لا ترجمة جزئية)", "true", $("L4").innerHTML === ORIG.L4);
+  var hl = hello(), g = hl && hl.bodies && hl.bodies.guard;
+  check("★ (ر24-أ، CX-003) حارس المتن يعدّ الكتل كلَّها ومنها الطويلة: عددُه عددُ الحصاد، وغير المغطّى الطويلةُ الغائبة وحدها", HV.length + "/1/false",
+        g ? [g.blocks, g.uncovered, g.held].join("/") : "no-guard");
+  // ━━ CX-001 وAD-005: حالاتٌ متقابلة ━━
+  check("★ (ر24-أ، CX-001) الحاصد لا يقرأ نصَّ المحميّ: 0 قراءة في الحالات الأربع (مستثنى النطاق، والتحرير بالوراثة، والمحادثة، وسلف الجذر)", "0/0/0/0", HV_READS);
+  check("★ (ر24-أ، CX-001) ولا صفَّ حصادٍ ولا قالبٌ ولا عقدةٌ وحيدة فيه العلامة", "0",
+        HV.filter(function (h) { return SENT.test(h.tpl) || SENT.test(h.single || "") || SENT.test(JSON.stringify(h.group || [])); }).length);
+  check("★ (ر24-أ، AD-005) الفقرات المحمية الثلاث لا تُحصد، والضابطات الثلاث المماثلة بناءً تُحصد", "false/false/false|true/true/true",
+        [/^Read the <b1>guide/, /^Open the <b1>panel/, /^Ask the <b1>model/].map(function (re) {
+          return HV.some(function (h) { return re.test(h.tpl) && !/Control/.test(h.tpl); }); }).join("/") + "|" +
+        [/Control one/, /Control two/, /Control three/].map(function (re) { return HV.some(function (h) { return re.test(h.tpl); }); }).join("/"));
+  // مستندٌ غير مرسوم (DOMParser، كما يحلّل com-harvest.mjs HTML الخادم): isContentEditable فيه false دائمًا، فالسمة وحدها تحمي
+  var DP = new DOMParser().parseFromString("<main><p>Read the <b>guide</b> before <span contenteditable=\"true\"><i>Zqsentinel six</i></span> you start.</p>" +
+    "<p>Read the <b>guide</b> before <span><i>Control six</i></span> you start.</p></main>", "text/html");
+  var hvDP = CMLShared.harvestBlocks(DP, { body: "main" });
+  check("★ (ر24-أ، AD-005) مستندٌ غير مرسوم (DOMParser): سمة contenteditable وحدها تحمي التتابع، والضابط المماثل يُحصد", "false/true",
+        hvDP.some(function (h) { return SENT.test(h.tpl); }) + "/" + hvDP.some(function (h) { return /Control six/.test(h.tpl); }));
+  check("★ (ر24-أ، AD-005) جذر حصادٍ تحت سلفٍ محميّ لا يُحصد منه شيء، والجذر الضابط المماثل يُحصد", "false/true",
+        HV.some(function (h) { return /Harvest root text Zq/.test(h.tpl); }) + "/" + HV.some(function (h) { return /control four/.test(h.tpl); }));
+  check("★ (ر24-أ، CX-001) المحرّك (المطابقة والكتابة وعدّ الحارس) لا يقرأ نصَّ المحميّ ولا يكتب فيه: 0 قراءة و0 كتابة", "0/0/0/0|0/0/0/0",
+        Object.keys(SPY).map(function (k) { return SPY[k].r - +ENGINE_FROM.split("/")[Object.keys(SPY).indexOf(k)]; }).join("/") + "|" + writes());
+  // (نصُّها لا سماتها: اتجاه المحادثة يضع dir على ‎.prose‎ بتصميمه، كما في التطبيق)
+  check("★ (ر24-أ، CX-001) الفقرات المحمية على أصلها كلُّها (لا ترجمة جزئية ولو عرف القاموس كلماتها المؤهَّلة)", "true/true/true/true",
+        ["pSkip", "pEdit", "pChat", "pRoot"].map(function (id) { return $(id).textContent === ORIG_T[id]; }).join("/"));
+  // وتتابعٌ نصُّه المؤهَّل عقدةٌ وحيدة في قاموس الواجهة ومحميُّه بلا نص (حقلٌ قابلٌ للتحرير فارغ): مرفوضٌ كلّه فلا يعرّبه القاموس، والضابط المماثل يُعرَّب
+  check("★ (ر24-أ، AD-005) تتابعٌ فيه محميٌّ بلا نص لا يعرّب قاموس الواجهة عقدته الوحيدة، والضابط المماثل يُعرَّب", "Settings|الإعدادات", txt("pEmpty") + "|" + txt("cEmpty"));
+  check("★ (ر24-أ، AD-005) والضابطات المماثلة بناءً تُعرَّب كلُّها بقالبها", "اقرأ الدليل قبل الضابطة الأولى أن تبدأ.|افتح اللوحة ثم الضابطة الثانية تابع.|اسأل النموذج عن الضابطة الثالثة هنا.|نصُّ جذر الحصاد الضابط الرابع يُحصد.",
+        [txt("cSkip"), txt("cEdit"), txt("cChat"), txt("cRoot")].join("|"));
+  // ━━ تتابعٌ مُعرَّب يصير محميًّا: يُرجع نصُّه المؤهَّل كلُّه (لا ترجمة جزئية)، ولا يُقرأ المحميّ الجديد ━━
+  var ed = document.createElement("span"); ed.setAttribute("contenteditable", "true"); ed.appendChild(document.createTextNode("Zqsentinel five"));
+  spyOn("late", ed.firstChild);
+  $("cSkip").appendChild(ed);
+  await wait(900);
+  check("★ (ر24-أ، CX-001) فقرةٌ معرَّبة أُدرج فيها عنصرٌ قابلٌ للتحرير: تعود على أصلها كلُّها، ولا يُقرأ نصُّ المُدرَج", "Read the guide before Control one you start.Zqsentinel five/0/0",
+        noBidi($("cSkip").textContent).replace(/\s+/g, " ").trim() + "/" + SPY.late.r + "/" + SPY.late.w);
+  ed.remove();
+  await wait(900);
+  check("وبإزالته تعود معرَّبة", "اقرأ الدليل قبل الضابطة الأولى أن تبدأ.", txt("cSkip"));
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "blockprot " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "BLOCKPROT: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

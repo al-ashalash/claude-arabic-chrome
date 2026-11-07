@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>tabind test</title>
+<!--
+  اختبار مؤشر التبويبات المحسوب (ر24-ب2، ١٢ جمادى الأولى ١٤٤٨هـ — صنف فحص الاتجاه 51204596b9cb في الوثائق القانونية، بعد تصحيح المراجع
+  المستقل في ر24-ب1). صفحةٌ اصطناعية بشكل مكوّن الموقع (Base UI): قائمة تبويباتٍ relative، ومؤشرٌ absolute يجمع left:0 إلى
+  ‎translate: var(--active-tab-left) -50%‎ وينتقل بـ‎transition-property: translate, width‎، و«سكربت الموقع» يقيس offsetLeft للتبويب النشط
+  ويكتبه متغيّرًا سطريًّا على المؤشر نفسه — كما يفعل المكوّن الحقيقي. والمحرّك الحقيقي (engine.js) هو الذي يسم، لا نسخةٌ من منطقه.
+   ١) الورقة المشحونة (rtl-legal.css بصنف المؤشر الحقيقي): المؤشر موسومٌ «computed» وعلى التبويب النشط في الحالات الثلاث، وبلا الوسم
+      يُقذف عنه (إثبات أن الوسم هو الفاعل)، وصندوقٌ آخر عليه left:0 ومتغيّرٌ سطري بلا انتقال إزاحة يُقلب إلى اليمين ولا يوسم.
+   ٢) الورقة الحيّة (buildLiveSheet من CSS اصطناعي بالشكل نفسه، تُحقن بردّ العامل فترتفع البوابة live): الأمر نفسه.
+   ٣) بعد المسحتين المتأخرتين (4 ثوانٍ): مؤشرٌ يُدرج مخفيًّا بلا نمطٍ ثم يكتب السكربت متغيّراته في مهمةٍ لاحقة يوسم عند إدراجه بصنفه
+      ([class*="ndicator"])، ومؤشرٌ بصنفٍ آخر ومتغيّرٍ سطري عند الإدراج يوسم به ([style*="--"])، وصندوقٌ بمتغيّرٍ سطري وانتقال «all» لا
+      يوسم (التوقيع الأضيق للمرشّحَين الجديدين) فيُقلب، وعنصرٌ من المرشّح الأول (origin-) بانتقال «all» يوسم كما كان، ومؤشرٌ يحرّكه
+      transform (لا translate) بمتغيّرٍ سطري يوسم ويبقى على تبويبه (ر24-ب4).
+   ٤) (ر24-و) xyOf: شريطٌ عمودي بمصفوفةٍ فيها سينيٌّ وصادي، وبـmatrix3d (سينيٌّ وصادي، وصاديٌّ وحده، وسينيٌّ وحده، والعمق وحده — مراجعة ر24-و:
+      فالصادي يُقرأ من عنصره لا من العمق)؛ والحدّ المعلوم مثبَّتًا: المؤشر العمودي على بنده الأول موسوم، والدرج الأفقي مفتوحًا ومغلقًا موسوم.
+  العقد: document.title = "tabind N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}
+#tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<!-- الورقة المشحونة الحقيقية: منها قلب ‎left:0‎ في صنف المؤشر وصنف الستار -->
+<link rel="stylesheet" href="../extension/rtl-legal.css">
+<!-- CSS الموقع الاصطناعي بشكل قواعده (أسماء الأصناف من اللقطة، والقيم مختلَقة) -->
+<!-- ★ (ر29-ح، ١٩ جمادى الأولى ١٤٤٨هـ) صيغة أصناف الموقع الجديدة في اللقطة المجدَّدة: ‎<بصمة>_<اسم>‎ (‎iIvFzq_indicator‎ و‎_1oJwFW_veil-left‎)
+     بدل ‎<الوحدة>-module-scss-module__<بصمة>__<اسم>‎، والبصمة واسم الصنف كما كانا؛ فالورقة المشحونة المولَّدة منها تقلبهما بالاسم الجديد -->
+<style id="site">
+.zq-list{position:relative;display:flex;width:600px;height:40px;margin:16px 0}
+.zq-list>button{flex:none;width:150px;height:40px;border:0;padding:0;margin:0;background:#eee;font:inherit}
+.iIvFzq_indicator{box-sizing:border-box;z-index:0;height:28px;translate:var(--active-tab-left) -50%;width:var(--active-tab-width);border:0;background:#08f4;transition-property:translate,width;transition-duration:0s;position:absolute;top:50%;left:0}
+.zq-ink{box-sizing:border-box;height:28px;translate:var(--zq-left) -50%;width:var(--zq-width);background:#0a04;transition-property:translate,width;transition-duration:0s;position:absolute;top:50%;left:0}
+.zq-stage{position:relative;width:600px;height:20px}
+._1oJwFW_veil-left{box-sizing:border-box;position:absolute;top:0;left:0;width:40px;height:20px;transition-property:opacity;transition-duration:0s;border:0}
+.zq-all{box-sizing:border-box;position:absolute;top:0;left:0;width:40px;height:20px;transition:all 0s}
+.origin-left{transform-origin:left}
+.zq-old{box-sizing:border-box;position:absolute;top:0;left:0;width:40px;height:20px;transition:all 0s}
+.zq-tind{box-sizing:border-box;position:absolute;top:0;left:0;height:20px;width:var(--zq-tw);transform:translateX(var(--zq-tx));transition:transform 0s;background:#a0a4}
+.zq-rind{box-sizing:border-box;position:absolute;top:0;right:0;height:20px;width:var(--zq-rw);translate:calc(-1 * var(--zq-r)) 0;transition-property:translate;transition-duration:0s;background:#08f4}
+.zq-vstage{position:relative;width:600px;height:60px}
+.nav-indicator{box-sizing:border-box;position:absolute;left:0;top:0;width:4px;height:20px;transform:translateY(var(--zq-y));transition:transform 0s;background:#c004}
+.zq-plain{box-sizing:border-box;position:absolute;left:0;top:0;width:40px;height:20px;transition:transform .2s;background:#0c04}
+.zq-lind{box-sizing:border-box;position:absolute;top:0;left:var(--zq-lx);height:20px;width:var(--zq-lw);transition:left 0s;background:#08f4}
+.zq-drawer{box-sizing:border-box;position:absolute;left:0;top:0;width:40px;height:20px;transition:left .2s;background:#00c4}
+/* ★ (ر24-و — ثغرة اختبارٍ من مراجعة ر24-ب4) xyOf في المحرّك: شريطٌ عمودي (أطول منه عرضًا) يحرّكه transform بمصفوفةٍ فيها سينيٌّ وصادي، وبـmatrix3d */
+.zq-xbar{box-sizing:border-box;position:absolute;left:0;top:0;width:4px;height:20px;transition:transform 0s;background:#a004}
+.zq-x2d{transform:translate(12px,20px)}
+.zq-x3d{transform:translate3d(12px,20px,1px)}
+.zq-y3d{transform:translate3d(0,20px,1px)}
+.zq-xo3d{transform:translate3d(12px,0,1px)}
+/* ★ (مراجعة ر24-و) matrix3d بلا إزاحةٍ سينية ولا صادية (العمق وحده): لو قُرئ الصادي من عنصر العمق (15) لعُدّ الشريط مُزاحًا رأسيًّا فلا يوسم */
+.zq-z3d{transform:translate3d(0,0,1px)}
+/* ★ (ر24-و — البند 2 من مراجعة ر24-ب4) درجٌ أفقيٌّ أطول منه عرضًا (يُفتح بـtranslateX(0) ويُغلق بـtranslateX(-100%)) ومتغيّرٌ سطريٌّ عليه */
+.zq-sheet{box-sizing:border-box;position:absolute;left:0;top:0;width:30px;height:56px;transform:translateX(var(--zq-dx));transition:transform .2s;background:#0c04}
+</style>
+<h1>اختبار مؤشر التبويبات المحسوب</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<p id="probe">Hello</p>
+<div class="zq-list" id="list1"><button id="a1">1</button><button id="a2">2</button><button id="a3">3</button><span role="presentation" id="ind1" class="iIvFzq_indicator"></span></div>
+<div class="zq-stage" id="stage1"><span id="veil1" class="_1oJwFW_veil-left" style="--zq-v:1"></span></div>
+<!-- ★ (ر24-ب4، مراجع ر24-ب2): مؤشرٌ إزاحته من اليمين، وشريطٌ عمودي يحرّكه translateY، وصندوقٌ بمتغيّرٍ سطري وانتقال transform بلا تحويل -->
+<div class="zq-list" id="listR"><button id="r1">1</button><button id="r2">2</button><button id="r3">3</button><span id="indR" class="zq-rind"></span></div>
+<div class="zq-vstage" id="stageV"><span id="vbar" class="nav-indicator" style="--zq-y:20px"></span></div>
+<div class="zq-vstage" id="stageP"><span id="plain" class="zq-plain" style="--zq-k:1"></span></div>
+<!-- ★ (ر24-ب4، البند 4) مؤشرٌ موضعه left:var() وانتقاله left، وصندوقٌ ينتقل بـleft ومتغيّره السطري غير موضعه -->
+<div class="zq-list" id="listL"><button id="l1">1</button><button id="l2">2</button><button id="l3">3</button><span id="indL" class="zq-lind"></span></div>
+<div class="zq-vstage" id="stageD"><span id="drawer" class="zq-drawer" style="--zq-d:5px"></span></div>
+<!-- ★ (ر24-و) xyOf: أشرطةٌ عمودية بصنفٍ فيه indicator تحرّكها مصفوفة -->
+<div class="zq-vstage" id="stageX1"><span id="xy2d" class="zq-indicator zq-xbar zq-x2d"></span></div>
+<div class="zq-vstage" id="stageX2"><span id="xy3d" class="zq-indicator zq-xbar zq-x3d"></span></div>
+<div class="zq-vstage" id="stageX3"><span id="y3d" class="zq-indicator zq-xbar zq-y3d"></span></div>
+<div class="zq-vstage" id="stageX4"><span id="xo3d" class="zq-indicator zq-xbar zq-xo3d"></span></div>
+<div class="zq-vstage" id="stageX5"><span id="z3d" class="zq-indicator zq-xbar zq-z3d"></span></div>
+<!-- ★ (ر24-و) المؤشر العمودي على بنوده الثلاثة (0 و20 و40 بكسلًا)، والدرج الأفقي مفتوحًا ومغلقًا -->
+<div class="zq-vstage" id="stageV0"><span id="vbar0" class="nav-indicator" style="--zq-y:0px"></span></div>
+<div class="zq-vstage" id="stageV2"><span id="vbar2" class="nav-indicator" style="--zq-y:40px"></span></div>
+<div class="zq-vstage" id="stageS1"><span id="sheetOpen" class="zq-sheet" style="--zq-dx:0px"></span></div>
+<div class="zq-vstage" id="stageS2"><span id="sheetShut" class="zq-sheet" style="--zq-dx:-100%"></span></div>
+<div id="late"></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+// «سكربت الموقع» كما يفعل المكوّن: إزاحة التبويب النشط من offsetLeft تُكتب متغيّرًا سطريًّا على المؤشر نفسه
+function selectTab(ind, tab, xVar, wVar) {
+  ind.style.setProperty(xVar || "--active-tab-left", tab.offsetLeft + "px");
+  ind.style.setProperty(wVar || "--active-tab-width", tab.offsetWidth + "px");
+}
+selectTab(document.getElementById("ind1"), document.getElementById("a1"));
+// المؤشر الذي إزاحته من اليمين: السكربت يكتب بُعد التبويب عن الحافة اليمنى
+function selectR(ind, tab) {
+  ind.style.setProperty("--zq-r", (ind.parentElement.clientWidth - (tab.offsetLeft + tab.offsetWidth)) + "px");
+  ind.style.setProperty("--zq-rw", tab.offsetWidth + "px");
+}
+selectR(document.getElementById("indR"), document.getElementById("r1"));
+selectTab(document.getElementById("indL"), document.getElementById("l1"), "--zq-lx", "--zq-lw");
+var REQS = [];
+var MOCK = makeChromeMock({
+  session: false,
+  sendMessage: function (msg, cb) { if (msg && msg.type === "rtlcss") REQS.push({ msg: msg, cb: cb }); else if (cb) cb(null); },
+});
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+// قاموسٌ أدنى — الاختبار للوسم والورقتين لا للترجمة؛ والورقة الحيّة بردٍّ نتحكّم في وقته
+window.CLAUDE_L10N = { domain: "legal", meta: { live: true }, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Hello": "مرحبا" }, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function $(id) { return document.getElementById(id); }
+// هل المؤشر منطبقٌ على التبويب؟ (تسامحٌ بكسلان لحواف التقريب)
+function covers(ind, tab) {
+  var a = ind.getBoundingClientRect(), b = tab.getBoundingClientRect();
+  return Math.abs(a.left - b.left) <= 2 && Math.abs(a.right - b.right) <= 2;
+}
+// المؤشر على كل تبويبٍ يُختار، بالترتيب: «yyy» كلها
+function coversAll(ind, tabs, xVar, wVar) {
+  return tabs.map(function (t) { selectTab(ind, t, xVar, wVar); void ind.offsetWidth; return covers(ind, t) ? "y" : "n"; }).join("");
+}
+// الصندوق في الطرف الأيمن من حاويته (قُلب) أم الأيسر
+function side(box) {
+  var a = box.getBoundingClientRect(), p = box.parentElement.getBoundingClientRect();
+  return Math.abs(a.right - p.right) <= 1 ? "right" : Math.abs(a.left - p.left) <= 1 ? "left" : "mid";
+}
+// ★ (ر24-ب2، مراجعة مستقلة) دفعة المراقب تُجدول بـrequestIdleCallback ومهلتها 500ms، فانتظار 120ms وحده سباقٌ يخفق تحت الحمل
+// (أخفقت به حالة المتغيّر السطري مرةً في الحزمة الكاملة مع فحصَي الاتجاه). فالانتظار بعد كل إدراجٍ يتجاوز المهلة
+var BATCH = 700;
+// ★ (ر24-و) مرساة الصندوق بلا تحويله (offsetLeft لا يرى transform): في طرف حاويته الأيسر أم الأيمن (قُلبت)
+function anchor(box) {
+  var l = box.offsetLeft, r = box.offsetParent.clientWidth - box.offsetLeft - box.offsetWidth;
+  return Math.abs(r) <= 1 ? "right" : Math.abs(l) <= 1 ? "left" : "mid";
+}
+function tfKind(box) { var t = getComputedStyle(box).transform; return /^matrix3d\(/.test(t) ? "3d" : /^matrix\(/.test(t) ? "2d" : t; }
+function mark(el) { return el.getAttribute("data-cml-noflip") || "-"; }
+var H = document.documentElement;
+var TABS1 = [$("a1"), $("a2"), $("a3")];
+// CSS الموقع للورقة الحيّة: قواعد الصفحة نفسها، وألف قاعدة حشوٍ مقلوبة تتجاوز عتبتَي «المدخل الهزيل» (1000 قاعدة و60 مقلوبًا)
+function liveSheetCss() {
+  var t = $("site").textContent;
+  for (var i = 0; i < 1000; i++) t += ".zq-fill" + i + "{margin-left:" + (i + 1) + "px}\n";
+  var b = CMLRtl.buildLiveSheet([{ text: t }]);
+  return b ? b.css : "";
+}
+
+async function main() {
+  await wait(400);
+  check("الإقلاع: الاتجاه RTL وبوابة الورقة المشحونة v2، وطُلب بناءٌ حيّ", "rtl/v2/1", H.getAttribute("dir") + "/" + H.getAttribute("data-cml-rtl") + "/" + REQS.length);
+  // ================= ١) الورقة المشحونة =================
+  check("★ الورقة المشحونة: مؤشر التبويبات موسومٌ موضعًا محسوبًا (انتقال translate ومتغيّرٌ سطري)", "computed", mark($("ind1")));
+  check("★★ الورقة المشحونة: المؤشر على التبويب النشط في الحالات الثلاث", "yyy", coversAll($("ind1"), TABS1));
+  check("★ وصندوقٌ آخر عليه left:0 ومتغيّرٌ سطري بلا انتقال إزاحة: لا يوسم ويُقلب إلى اليمين", "-/right", mark($("veil1")) + "/" + side($("veil1")));
+  $("ind1").removeAttribute("data-cml-noflip"); void $("ind1").offsetWidth;
+  check("بلا الوسم تنقلب المرساة فيُقذف المؤشر عن التبويب النشط (إثبات أن الوسم هو الفاعل)", "nnn", coversAll($("ind1"), TABS1));
+  $("ind1").setAttribute("data-cml-noflip", "computed");
+  // ================= ٢) الورقة الحيّة =================
+  var css = liveSheetCss();
+  check("الورقة الحيّة بُنيت وفيها قلب مرساة المؤشر باستثناء المحسوب", "true",
+    String(css.indexOf('iIvFzq_indicator):not(:where([data-cml-noflip="computed"]))') !== -1 && /inset-inline-start:0/.test(css)));
+  REQS[0].cb({ css: css });
+  await wait(50);
+  check("ردّ العامل يُحقن وترتفع البوابة live", "live", H.getAttribute("data-cml-rtl"));
+  check("★★ الورقة الحيّة: المؤشر على التبويب النشط في الحالات الثلاث", "yyy", coversAll($("ind1"), TABS1));
+  check("★ الورقة الحيّة: والصندوق الآخر يُقلب إلى اليمين", "-/right", mark($("veil1")) + "/" + side($("veil1")));
+  $("ind1").removeAttribute("data-cml-noflip"); void $("ind1").offsetWidth;
+  check("الورقة الحيّة بلا الوسم: يُقذف المؤشر عن التبويب النشط", "nnn", coversAll($("ind1"), TABS1));
+  $("ind1").setAttribute("data-cml-noflip", "computed");
+  // ★ (ر24-ب4، البند 3) التوقيع الأضيق للمرشّحَين الجديدين: المؤشر الذي إزاحته من اليمين يبقى موسومًا على تبويبه، والشريط العمودي والصندوق بلا تحويل
+  // لا يوسمان فتنقلب مرساتهما إلى اليمين كسائر الصفحة
+  check("★ مؤشرٌ إزاحته من اليمين (right:0 مع translate سالب): موسومٌ وعلى التبويب النشط في الحالات الثلاث", "computed/yyy",
+    mark($("indR")) + "/" + [$("r1"), $("r2"), $("r3")].map(function (t) { selectR($("indR"), t); void $("indR").offsetWidth; return covers($("indR"), t) ? "y" : "n"; }).join(""));
+  check("★ شريط تنقّلٍ عمودي يحرّكه translateY وحده (صنفٌ فيه indicator ومتغيّرٌ سطري): لا يوسم وتنقلب مرساته إلى اليمين", "-/right", mark($("vbar")) + "/" + side($("vbar")));
+  check("★ صندوقٌ عليه متغيّرٌ سطري وانتقال transform بلا تحويلٍ أصلًا: لا يوسم وتنقلب مرساته إلى اليمين", "-/right", mark($("plain")) + "/" + side($("plain")));
+  // ★ (ر24-ب4، البند 4) المرساة التي يحسبها السكربت متغيّرًا سطريًّا وتنتقل بـleft
+  check("★ مؤشرٌ موضعه left:var() وانتقاله left: موسومٌ وعلى التبويب النشط في الحالات الثلاث", "computed/yyy",
+    mark($("indL")) + "/" + coversAll($("indL"), [$("l1"), $("l2"), $("l3")], "--zq-lx", "--zq-lw"));
+  check("★ وصندوقٌ ينتقل بـleft ومتغيّره السطري غير موضعه: لا يوسم وتنقلب مرساته إلى اليمين", "-/right", mark($("drawer")) + "/" + side($("drawer")));
+  // ★ (ر24-و — ثغرة اختبارٍ من مراجعة ر24-ب4) xyOf: المركّبة السينية من المصفوفة (e) ومن matrix3d (العنصر 13)، والصادية (f والعنصر 14)
+  check("★ (ر24-و) شريطٌ عمودي بمصفوفةٍ فيها سينيٌّ وصادي (translate(12px,20px)): يُزاح أفقيًّا فيوسم وتبقى مرساته يسارًا", "2d/computed/left",
+    tfKind($("xy2d")) + "/" + mark($("xy2d")) + "/" + anchor($("xy2d")));
+  check("★ (ر24-و) شريطٌ عمودي بـmatrix3d فيها سينيٌّ وصادي: يوسم وتبقى مرساته يسارًا", "3d/computed/left",
+    tfKind($("xy3d")) + "/" + mark($("xy3d")) + "/" + anchor($("xy3d")));
+  check("★ (ر24-و) شريطٌ عمودي بـmatrix3d صاديّةٍ وحدها: لا يوسم وتنقلب مرساته يمينًا", "3d/-/right",
+    tfKind($("y3d")) + "/" + mark($("y3d")) + "/" + anchor($("y3d")));
+  check("★ (ر24-و) شريطٌ عمودي بـmatrix3d سينيّةٍ وحدها: يوسم وتبقى مرساته يسارًا", "3d/computed/left",
+    tfKind($("xo3d")) + "/" + mark($("xo3d")) + "/" + anchor($("xo3d")));
+  // ★ (مراجعة ر24-و) وطافرةٌ تقرأ الصادي من عنصر العمق (15 لا 14) كانت تنجو من الفحوص الثلاثة أعلاه (عمقها كلها 1px فصاديّها غير صفرٍ أبدًا)
+  check("★ (مراجعة ر24-و) شريطٌ عمودي بـmatrix3d بلا إزاحةٍ سينية ولا صادية (العمق وحده): لا مركّبة صادية فيوسم وتبقى مرساته يسارًا", "3d/computed/left",
+    tfKind($("z3d")) + "/" + mark($("z3d")) + "/" + anchor($("z3d")));
+  // ★ (ر24-و — البند 2 من مراجعة ر24-ب4، حدٌّ معلوم في RULES §1 يُثبَّت هنا ولا يُصلح): المؤشر العمودي على بنده الأول (translateY(0)) لا مركّبة
+  // صاديّة له فيُوسم وتبقى مرساته يسارًا، وعلى بنديه الآخرين لا يوسم فتنقلب؛ والدرج الأفقي الأطول من عرضه مفتوحًا (translateX(0)) ومغلقًا يبقى موسومًا —
+  // ولا إشارة وقت الوسم تفرّق المؤشر على بنده الأول من الدرج المفتوح (كلاهما مصفوفةٌ بلا إزاحة)
+  check("★ (ر24-و) المؤشر العمودي على بنوده الثلاثة: الأول (translateY(0)) موسومٌ ومرساته يسارًا (الحدّ المعلوم)، والثاني والثالث لا يوسمان فتنقلب",
+    "computed/left,-/right,-/right",
+    [$("vbar0"), $("vbar"), $("vbar2")].map(function (b) { return mark(b) + "/" + anchor(b); }).join(","));
+  check("★ (ر24-و) الدرج الأفقي الأطول من عرضه مفتوحًا (translateX(0)) ومغلقًا (translateX(-100%)): موسومٌ في الحالين ومرساته يسارًا",
+    "computed/left,computed/left", [$("sheetOpen"), $("sheetShut")].map(function (b) { return mark(b) + "/" + anchor(b); }).join(","));
+  // ================= ٣) بعد المسحتين المتأخرتين (1.2 و4 ثوانٍ من الإقلاع) =================
+  await wait(4300);
+  // (أ) يُدرج المؤشر مخفيًّا بلا نمطٍ (كما يرسمه المكوّن أول مرة)، ثم يكتب السكربت متغيّراته ويُظهره في مهمةٍ لاحقة
+  var l2 = document.createElement("div"); l2.className = "zq-list"; l2.id = "list2";
+  l2.innerHTML = '<button id="b1">1</button><button id="b2">2</button><button id="b3">3</button><span role="presentation" id="ind2" hidden class="iIvFzq_indicator"></span>';
+  $("late").appendChild(l2);
+  await wait(BATCH);
+  selectTab($("ind2"), $("b1")); $("ind2").hidden = false;
+  await wait(30);
+  check("★ مؤشرٌ يُدرج مخفيًّا ثم تُكتب متغيّراته بعد الإدراج: يوسم عند إدراجه بصنفه", "computed", mark($("ind2")));
+  check("★★ وهو على التبويب النشط في الحالات الثلاث", "yyy", coversAll($("ind2"), [$("b1"), $("b2"), $("b3")]));
+  // (ب) مؤشرٌ بصنفٍ لا يذكر indicator، ومتغيّره السطري مكتوبٌ عند الإدراج
+  var l3 = document.createElement("div"); l3.className = "zq-list"; l3.id = "list3";
+  l3.innerHTML = '<button id="c1">1</button><button id="c2">2</button><button id="c3">3</button><span id="ind3" class="zq-ink"></span>';
+  $("late").appendChild(l3);
+  selectTab($("ind3"), $("c1"), "--zq-left", "--zq-width");
+  await wait(BATCH);
+  check("★ مؤشرٌ بصنفٍ آخر ومتغيّرٍ سطري عند الإدراج: يوسم بمتغيّره", "computed", mark($("ind3")));
+  check("★★ وهو على التبويب النشط في الحالات الثلاث (بصنفٍ آخر ومتغيّرٍ سطري)", "yyy", coversAll($("ind3"), [$("c1"), $("c2"), $("c3")], "--zq-left", "--zq-width"));
+  // (ج) و(د) صندوقان بانتقال «all»: بمتغيّرٍ سطري (المرشّح الجديد بتوقيعه الأضيق) فلا يوسم ويُقلب، وبصنف origin- (المرشّح الأول كما كان) فيوسم
+  var st = document.createElement("div"); st.className = "zq-stage"; st.id = "stage2";
+  st.innerHTML = '<span id="all1" class="zq-all" style="--zq-v:2"></span>';
+  var st2 = document.createElement("div"); st2.className = "zq-stage"; st2.id = "stage3";
+  st2.innerHTML = '<span id="old1" class="zq-old origin-left"></span>';
+  $("late").appendChild(st); $("late").appendChild(st2);
+  await wait(BATCH);
+  check("★ صندوقٌ بمتغيّرٍ سطري وانتقال «all»: لا يوسم ويُقلب إلى اليمين", "-/right", mark($("all1")) + "/" + side($("all1")));
+  check("وعنصرٌ من المرشّح الأول (origin-) بانتقال «all»: يوسم كما كان", "computed", mark($("old1")));
+  // (هـ) ★ (ر24-ب4 — طافرةٌ نجت في ر24-ب2) مؤشرٌ يحرّكه transform لا translate (‎translateX(var(--x))‎ بانتقال transform) ومتغيّره السطري عند الإدراج
+  var l4 = document.createElement("div"); l4.className = "zq-list"; l4.id = "list4";
+  l4.innerHTML = '<button id="d1">1</button><button id="d2">2</button><button id="d3">3</button><span id="ind4" class="zq-tind"></span>';
+  $("late").appendChild(l4);
+  selectTab($("ind4"), $("d1"), "--zq-tx", "--zq-tw");
+  await wait(BATCH);
+  check("★ مؤشرٌ يحرّكه transform (translateX بمتغيّرٍ سطري، وانتقال transform): يوسم", "computed", mark($("ind4")));
+  check("★★ وهو على التبويب النشط في الحالات الثلاث (الإزاحة بـtransform)", "yyy", coversAll($("ind4"), [$("d1"), $("d2"), $("d3")], "--zq-tx", "--zq-tw"));
+  // (و) ★ (ر24-ب4، البند 4) مؤشرٌ موضعه left:var() يُدرج بعد الورقة الحيّة: قلبُنا جعل مرساته يمينًا (right = المتغيّر)، فيُعرف بها ويوسم
+  var l5 = document.createElement("div"); l5.className = "zq-list"; l5.id = "list5";
+  l5.innerHTML = '<button id="e1">1</button><button id="e2">2</button><button id="e3">3</button><span id="ind5" class="zq-lind"></span>';
+  $("late").appendChild(l5);
+  selectTab($("ind5"), $("e3"), "--zq-lx", "--zq-lw"); // (التبويب الثالث: موضعه من اليسار غير قيمتَي المتغيّرين، فلا يُعرف إلا بمرساته اليمنى)
+  await wait(BATCH);
+  check("★ مؤشرٌ موضعه left:var() أُدرج بعد الورقة الحيّة (مرساته المقلوبة يمينًا): يوسم ويبقى على التبويب النشط", "computed/yyy",
+    mark($("ind5")) + "/" + coversAll($("ind5"), [$("e1"), $("e2"), $("e3")], "--zq-lx", "--zq-lw"));
+  check("لا أخطاء", "0", jsErrors);
+  document.title = "tabind " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "TABIND: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+}
+main().catch(function (e) { check("استثناء", "none", String(e && e.message || e)); document.title = "tabind " + pass + "/" + total; });
+</script>

@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>protclass test</title>
+<!--
+  ★ (ر24-ج1، ١٠ جمادى الأولى ١٤٤٨هـ — بعد ر24-أ، القراران 107 و113، ومراجعة Codex CX-004) صنفا المستثنى، بحالاتٍ متقابلة (AD-005) وجاسوسٍ عامّ على
+  القراءة (نموذج _blockprotspytest: كل getter يقرأ نصًّا، وكل عنصرٍ يحوي العلامة فتُرى قراءة السلف):
+   ١) ما تبقيه الشركة (meta.keepSel) داخل التتابع ذرّةٌ معتمة: يُترجم التتابع ويبقى العنصر حرفًا بحرف ويُحصد (ومنه بنية عنوان بطاقة المثال بجوار
+      شارة الطريقة)؛ ومحتوى المستخدم بالبناء نفسه يرفض التتابع كلَّه و0 قراءة. والعنصر المُبقى الذي فيه محتوى مستخدم، أو الذي يطابق الصنفين، محتوى
+      مستخدم. وبلا keep فالمستثنى كلُّه محتوى مستخدم. والجدول الحقيقي يصنّف كل محدِّد.
+   ٢) CX-004: عنصرٌ صار محتوى مستخدمٍ أو قابلًا للتحرير بسمةٍ وحدها يُرجع ما كتبناه فيه وفي تتابعه كلّه، ويُترجم إذا زالت السمة؛ وسمةٌ أخرى لا تغيّر شيئًا.
+      ومنه ما وجده مراجع ر24-أ: تتابعٌ معرَّب صار عنصرٌ سطريٌّ فيه قابلًا للتحرير بسمة. وعقدةٌ معرَّبة نُقلت إلى حاويةٍ قابلةٍ للتحرير أو إلى المحادثة.
+      (مراجعة ر24-ج1) ومحدِّدُ محتوى مستخدمٍ بالمعرّف (#zqchat هنا، كـ#chat-content في وثائق Claude Code): تغيّرُ id وحده يكفي؛ وselParts لا يعدّ قوسًا في نصٍّ منصَّص.
+   ٣) langSync وisolateLabel يقرآن النصّ غير المحميّ وحده: 0 قراءة للعلامة، والضابطة تعمل.
+   ٤) عقدة نصٍّ وحيدة فوق 100,000 حرف: الحاصد يعطيها مفتاحًا كما يطلبها المحرّك في قاموس الواجهة.
+  العقد: document.title = "protclass N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right;word-break:break-word}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}#big{display:none}</style>
+<div id="main" class="zq-body">
+  <p id="kA">Open the <span data-zq-keep id="kAk">KEEPTOKEN</span> panel now.</p>
+  <p id="uA">Open the <span data-zq-user><i>Zqsentinel UA</i></span> panel now.</p>
+  <div class="flex" id="kB"><span data-zq-keep aria-label="POST" role="img" id="kBk"><span>&#xE015;</span></span><span id="kBt">Create a Zq Batch</span></div>
+  <div class="flex" id="uB"><span data-zq-user><span>Zqsentinel UB</span></span><span id="uBt">Create a Zq Batch</span></div>
+  <div id="kC"><span data-zq-keep id="kCk">Deprecated</span><span id="kCt">List Zq Tunnels</span></div>
+  <p id="kD">First part<span data-zq-keep id="kDk">,</span> second part here.</p>
+  <p id="cD">First part<span>,</span> second part here.</p>
+  <p id="uE">Open <span data-zq-keep>Keep <i data-zq-user>Zqsentinel UE</i></span> now.</p>
+  <p id="uF">Open <span data-zq-keep data-zq-user>Zqsentinel UF</span> now.</p>
+  <p id="pR">Read the <b>guide</b> before <span id="eR">Zq marker</span> you start.</p>
+  <p id="pS">Read the <b>guide</b> after <span id="eS">Zq marker</span> you start.</p>
+  <p id="pT">Read the <b>guide</b> often <span id="eT">Zq marker</span> you start.</p>
+  <p id="pU">Read the <b>guide</b> early <span id="eU">Zq marker</span> you start.</p>
+  <div lang="en"><ul><li id="lgP"><div contenteditable="true">Zqsentinel L</div>Read the <b>guide</b> today.</li></ul></div>
+  <div lang="en"><ul><li id="lgC"><div>Control L</div>Read the <b>guide</b> tonight.</li></ul></div>
+  <p id="big"></p>
+</div>
+<div id="row"><span id="lbl" data-zlabel>Settings</span></div>
+<div id="uiE"><span id="uiEl">Settings</span></div>
+<div id="uiC"><span id="uiCl">Settings</span></div>
+<div id="mvSrc"><span id="mv">Settings</span><span id="mv2">Settings</span></div>
+<div id="mvDst" contenteditable="true"></div>
+<div class="prose" id="chatBox"></div>
+<div id="isoBox"><span id="isoL">C#</span><span contenteditable="true">Zqsentinel I</span></div>
+<div id="isoBox2"><span id="isoL2">C#</span></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };
+var SENT = new Set(), SPY_ON = false, HITS = {}, STACKS = {};
+function hit(where, t) {
+  if (!SPY_ON) return;
+  var ok = false;
+  if (t && t.nodeType === 3) ok = SENT.has(t);
+  else if (t && t.contains) SENT.forEach(function (s) { if (!ok && t !== s && t.contains(s)) ok = true; });
+  if (!ok) return;
+  HITS[where] = (HITS[where] || 0) + 1;
+  var st = String(new Error().stack).split("\n").slice(2, 5).map(function (l) { return l.trim().replace(/\(.*\//, "(").replace(/^at /, ""); }).join(" < ");
+  STACKS[st] = (STACKS[st] || 0) + 1;
+}
+[[Node.prototype, "nodeValue"], [CharacterData.prototype, "data"], [Node.prototype, "textContent"], [HTMLElement.prototype, "innerText"],
+ [Element.prototype, "innerHTML"], [Element.prototype, "outerHTML"], [Text.prototype, "wholeText"], [HTMLElement.prototype, "outerText"]].forEach(function (x) {
+  var d = Object.getOwnPropertyDescriptor(x[0], x[1]); if (!d || !d.get) return;
+  Object.defineProperty(x[0], x[1], { configurable: true, enumerable: d.enumerable, get: function () { hit(x[1], this); return d.get.call(this); }, set: d.set });
+});
+var RTS = Range.prototype.toString;
+Range.prototype.toString = function () { var self = this; try { SENT.forEach(function (s) { if (self.intersectsNode(s)) hit("range", s); }); } catch (e) {} return RTS.call(this); };
+function spyReport() { return JSON.stringify(HITS) === "{}" ? "0" : JSON.stringify(HITS) + " " + JSON.stringify(STACKS); }
+</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var META = { scan: "none", live: false, chat: true, hydrate: "none", bodies: true, bodySel: ".zq-body", bodyGuard: 0.9, blockLang: true, isoLabels: true,
+             skipSel: "[data-zq-keep], [data-zq-user], [data-zrow] [data-zlabel], #zqchat", keepSel: "[data-zq-keep]" };
+function $(id) { return document.getElementById(id); }
+// عقدة نصٍّ وحيدة فوق 100,000 حرف (CX-003 والمفتاح بلا سقف)
+var BIG = "Zq long text " + new Array(25001).join("words ") + "end.";
+$("big").appendChild(document.createTextNode(BIG));
+["uA", "uB", "uE", "uF", "lgP", "isoBox"].forEach(function (id) {
+  var w = document.createTreeWalker($(id), NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) if (/Zqsentinel/.test(t.data)) SENT.add(t);
+});
+function inner(id) { var was = SPY_ON; SPY_ON = false; var r = $(id).outerHTML; SPY_ON = was; return r; }
+var KEPT0 = ["kAk", "kBk", "kCk", "kDk"].map(inner).join("|");
+// وكتابةٌ عابرة في المُبقى تُرى ولو أُرجعت بعدها (سجلّات الطفرات من قبل الإقلاع)
+var KW = 0;
+["kAk", "kBk", "kCk", "kDk"].forEach(function (id) {
+  new MutationObserver(function (l) { KW += l.length; }).observe($(id), { characterData: true, childList: true, attributes: true, subtree: true });
+});
+SPY_ON = true;
+var HV = CMLShared.harvestBlocks(document, { body: META.bodySel, skip: CMLShared.harvestSkip(META, "full"), keep: CMLShared.harvestKeep(META, "full"), chat: true });
+var HV_SPY = spyReport(); HITS = {}; STACKS = {};
+var HV0 = CMLShared.harvestBlocks(document, { body: META.bodySel, skip: CMLShared.harvestSkip(META, "full"), chat: true });
+var HV0_SPY = spyReport(); HITS = {}; STACKS = {};
+SPY_ON = false;
+var TR = {
+  "Open the <c1>KEEPTOKEN</c1> panel now.": "افتح لوحة <c1>KEEPTOKEN</c1> الآن.",
+  "First part<c1>,</c1> second part here.": "الجزء الأول<c1>,</c1> والجزء الثاني هنا.",
+  "Read the <b1>guide</b1> before <s2>Zq marker</s2> you start.": "اقرأ <b1>الدليل</b1> قبل <s2>العلامة</s2> أن تبدأ.",
+  "Read the <b1>guide</b1> after <s2>Zq marker</s2> you start.": "اقرأ <b1>الدليل</b1> بعد <s2>العلامة</s2> أن تبدأ.",
+  "Read the <b1>guide</b1> often <s2>Zq marker</s2> you start.": "اقرأ <b1>الدليل</b1> كثيرًا <s2>العلامة</s2> أن تبدأ.",
+  "Read the <b1>guide</b1> early <s2>Zq marker</s2> you start.": "اقرأ <b1>الدليل</b1> باكرًا <s2>العلامة</s2> أن تبدأ.",
+  "Read the <b1>guide</b1> today.": "اقرأ <b1>الدليل</b1> اليوم.",
+  "Read the <b1>guide</b1> tonight.": "اقرأ <b1>الدليل</b1> الليلة."
+};
+var BLOCKS = {}, HVT = {};
+HV.forEach(function (h) { HVT[h.tpl] = 1; if (Object.prototype.hasOwnProperty.call(TR, h.tpl)) BLOCKS[h.fp] = TR[h.tpl]; });
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) {
+  if (!msg || msg.type !== "bodies") { if (cb) cb(null); return; }
+  setTimeout(function () { if (cb) cb({ page: CMLShared.pageKey(META, msg.path), blocks: BLOCKS, keep: [] }); }, 50);
+} });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true, cml_chatrtl: true });
+MOCK.chrome.runtime.onMessage = { addListener: function () {} };
+window.chrome = MOCK.chrome;
+var UI = { "Settings": "الإعدادات", "Create a Zq Batch": "إنشاء دفعة تجريبية", "List Zq Tunnels": "قائمة الأنفاق", "Deprecated": "مهملة",
+           "KEEPTOKEN": "رمز", "Zq marker": "علامة" };
+UI[BIG.trim()] = "ترجمة النص الطويل.";
+window.CLAUDE_L10N = { domain: "privacy", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: UI, patterns: [], plurals: {} } } };
+SPY_ON = true;
+</script>
+<link rel="stylesheet" href="../extension/base.css">
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+var BIDI = new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + String.fromCharCode(0x200E) + String.fromCharCode(0x200F) + "]", "g");
+function noBidi(s) { return String(s).replace(BIDI, ""); }
+function txt(id) { var was = SPY_ON; SPY_ON = false; var r = noBidi($(id).textContent).replace(/\s+/g, " ").trim(); SPY_ON = was; return r; }
+function raw(id) { var was = SPY_ON; SPY_ON = false; var r = $(id).textContent; SPY_ON = was; return r; }
+(async function () {
+  await wait(1200);
+  SPY_ON = false;
+  var EN_SPY = spyReport();
+  // ١) صنفا المستثنى
+  check("★ (ر24-ج1) الحاصد بصنفَي الجدول: التتابع الذي فيه ما تبقيه الشركة يُحصد بذرّته (والفاصلة المُبقاة)، وعنوان البطاقة عقدةً وحيدة، وصفُّ الشارة المُبقاة بندًا واحدًا",
+        "1/1/Create a Zq Batch/[null,\"List Zq Tunnels\"]",
+        (HVT["Open the <c1>KEEPTOKEN</c1> panel now."] ? 1 : 0) + "/" + (HVT["First part<c1>,</c1> second part here."] ? 1 : 0) + "/" +
+        (HV.filter(function (h) { return /Create a Zq Batch<\/s2>$/.test(h.tpl) && /^<c1>/.test(h.tpl); }).map(function (h) { return h.single; })[0]) + "/" +
+        JSON.stringify((HV.filter(function (h) { return /^<c1>Deprecated<\/c1>/.test(h.tpl); })[0] || {}).group));
+  check("★ (ر24-ج1، AD-005) ومحتوى المستخدم بالبناء نفسه يرفض التتابع كلَّه: لا قالب ولا مفتاح فيه العلامة، و0 قراءة (جاسوسٌ عامّ)", "0/0",
+        HV.filter(function (h) { return /Zqsentinel/.test(h.tpl + (h.single || "") + JSON.stringify(h.group || [])); }).length + "/" + HV_SPY);
+  check("★ (ر24-ج1) وبلا keep فالمستثنى كلُّه محتوى مستخدم (الافتراض الآمن): لا يُحصد تتابع الذرّة المُبقاة، و0 قراءة", "0/0/0",
+        HV0.filter(function (h) { return /KEEPTOKEN|Zqsentinel/.test(h.tpl + (h.single || "")); }).length + "/" +
+        HV0.filter(function (h) { return /Create a Zq Batch/.test(h.tpl); }).length + "/" + HV0_SPY);
+  check("★ (ر24-ج1) المحرّك يعرّب التتابع حول ما تبقيه الشركة: الفقرة، وعنوان البطاقة بجوار الشارة، وبند الصفّ",
+        "افتح لوحة KEEPTOKEN الآن.|إنشاء دفعة تجريبية|Deprecatedقائمة الأنفاق", [txt("kA"), txt("kBt"), txt("kC")].join("|"));
+  check("★ (ر24-ج1) وما تبقيه الشركة حرفًا بحرف: لا يُكتب فيه ولو عابرًا (0 طفرة، ولو كان نصُّه في قاموس الواجهة)، ولا تُبدَّل فاصلته، والضابطة تُبدَّل",
+        "true/0|الجزء الأول, والجزء الثاني هنا.|الجزء الأول، والجزء الثاني هنا.", (["kAk", "kBk", "kCk", "kDk"].map(inner).join("|") === KEPT0) + "/" + KW + "|" + txt("kD") + "|" + txt("cD"));
+  check("★ (ر24-ج1، AD-005) ومحتوى المستخدم بالبناء نفسه: التتابع على أصله كلُّه (ومنه ما تبقيه الشركة وفيه محتوى مستخدم، وما يطابق الصنفين)",
+        "Open the Zqsentinel UA panel now.|Create a Zq Batch|Open Keep Zqsentinel UE now.|Open Zqsentinel UF now.", [txt("uA"), txt("uBt"), txt("uE"), txt("uF")].join("|"));
+  check("★ (ر24-ج1) والمحرّك (الإقلاع والمطابقة والكتابة وعدّ الحارس وlangSync وisolateLabel) لا يقرأ نصَّ المحميّ بأي getter ولا بسلفٍ يحويه", "0", EN_SPY);
+  var P1 = CMLShared.blockProt("[data-zq-user], [data-zq-keep]", false, "[data-zq-keep], [data-zq-other], .x:is(a, b)");
+  check("★ (ر24-ج1) blockProt: keep لا يوسّع المستثنى (ما ليس من أجزاء skip يُتجاهل)، والأجزاء بالفاصلة في المستوى الأعلى", "[\"[data-zq-user]\"]/[\"[data-zq-keep]\"]/3/2",
+        JSON.stringify(P1.sels) + "/" + JSON.stringify(P1.keep) + "/" + CMLShared.selParts(".a :is(b, c), [x='1,2'], d").length + "/" +
+        CMLShared.selParts("[x=')'], d").length);   // ★ (مراجعة ر24-ج1) قوسٌ داخل نصٍّ منصَّص لا يغيّر العمق
+  // الجدول الحقيقي: محتوى المستخدم في كل نطاق بعد التصنيف (وما تبقيه الشركة من أجزاء skipSel)
+  var CL = CMLConst.DOMAINS.map(function (d) {
+    var m = d.meta, P = CMLShared.blockProt(CMLShared.harvestSkip(m, "full"), m.chat !== false, CMLShared.harvestKeep(m, "full"));
+    var sub = CMLShared.selParts(m.keepSel || "").every(function (k) { return CMLShared.selParts(m.skipSel || "").indexOf(k) >= 0; });
+    return d.id + ":" + P.sels.length + ":" + (P.sels.indexOf(CMLShared.DOM_RULES.CHAT_ANCESTOR) >= 0 ? "chat" : "-") + ":" +
+      CMLShared.selParts(P.sels.filter(function (s) { return s !== CMLShared.DOM_RULES.CHAT_ANCESTOR; }).join(", ")).length + ":" + sub;
+  }).join(" ");
+  // ★ (ر24-ج2، ١٠ جمادى الأولى ١٤٤٨هـ) ومواضع الكتابة الثلاثة (EDITOR_USER: ‎.ProseMirror > *‎ و‎[role=textbox]‎ و‎[role=searchbox]‎) محتوى مستخدمٍ في كل نطاقٍ مشحون، وclaude.com القادم على حاله
+  check("★ (ر24-ج1، ر24-ج2) الجدول يصنّف المستثنى: محتوى المستخدم في التطبيق (المحادثة وأسماء المستخدم 12 ومواضع الكتابة 3) وClaude Code (أجوبة المساعد ومواضع الكتابة) والأكاديمية (اسأل Claude وما يعلن لغته ومواضع الكتابة)، ومواضع الكتابة الثلاثة وحدها في سواها إلا claude.com، وkeepSel من أجزاء skipSel",
+        // ★ (ر20-ب) وبوابة Anthropic: محتوى المستخدم ستة أجزاء (PORTAL_USER الثلاثة ومواضع الكتابة الثلاثة) ولا keepSel
+        "app:2:chat:15:true support:1:-:3:true privacy:1:-:3:true legal:1:-:3:true academy:1:-:5:true docs:1:-:3:true code:1:-:4:true com:0:-:0:true portal:1:-:6:true", CL);
+  // ٣) langSync وisolateLabel
+  check("★ (ر24-ج1) langSync يضبط lang بالنصّ غير المحميّ (البند وفيه حدٌّ قابلٌ للتحرير، وضابطه)، وisolateLabel لا يعزل لافتةً صندوقُها فيه محتوى مستخدم، ويعزل ضابطها",
+        "ar|ar|false|true", $("lgP").getAttribute("lang") + "|" + $("lgC").getAttribute("lang") + "|" +
+        (raw("isoL").charCodeAt(0) === 0x2066) + "|" + (raw("isoL2").charCodeAt(0) === 0x2066));
+  // ٤) عقدةٌ وحيدة فوق 100,000 حرف
+  check("★ (ر24-ج1) عقدةٌ وحيدة فوق 100,000 حرف: الحاصد يعطيها مفتاحها كما يطلبها المحرّك في قاموس الواجهة (فيعرّبها)",
+        "true/" + BIG.trim().length + "/ترجمة النص الطويل.", (BIG.trim().length > 100000) + "/" +
+        ((HV.filter(function (h) { return h.single && h.single.length > 100000; })[0] || {}).single || "").length + "/" + txt("big"));
+  // ٢) CX-004: الاستثناء بسمةٍ وحدها
+  var r0 = [txt("pR"), txt("pS"), txt("pT"), txt("lbl"), txt("uiEl"), txt("uiCl"), txt("pU")].join("|");
+  check("قبل السمات: التتابعات واللافتات معرَّبة", "اقرأ الدليل قبل العلامة أن تبدأ.|اقرأ الدليل بعد العلامة أن تبدأ.|اقرأ الدليل كثيرًا العلامة أن تبدأ.|الإعدادات|الإعدادات|الإعدادات|اقرأ الدليل باكرًا العلامة أن تبدأ.", r0);
+  // ★ (مراجعة ر24-ج1) ومحدِّد محتوى مستخدمٍ بالمعرّف (‎#…‎، كـ‎#chat-content‎ في وثائق Claude Code): سمة id تُراقَب كذلك
+  var eU = $("eU");
+  $("eR").setAttribute("contenteditable", "true");
+  $("eS").setAttribute("data-zq-user", "");
+  $("eT").setAttribute("data-zq-other", "");
+  $("row").setAttribute("data-zrow", "");
+  $("uiE").setAttribute("contenteditable", "true");
+  $("uiC").setAttribute("data-zq-other", "");
+  eU.setAttribute("id", "zqchat");
+  await wait(900);
+  check("★ (ر24-ج1، CX-004) تتابعٌ معرَّب صار عنصرٌ سطريٌّ فيه قابلًا للتحرير أو محتوى مستخدمٍ بسمةٍ وحدها: يعود كلُّه إلى أصله (مراجع ر24-أ)، والضابط بسمةٍ أخرى على حاله",
+        "Read the guide before Zq marker you start.|Read the guide after Zq marker you start.|اقرأ الدليل كثيرًا العلامة أن تبدأ.|Read the guide early Zq marker you start.", [txt("pR"), txt("pS"), txt("pT"), txt("pU")].join("|"));
+  check("★ (ر24-ج1، CX-004) خارج المتن: اسمٌ صار محتوى مستخدمٍ بسمةٍ على صفّه (‎[data-zrow] [data-zlabel]‎)، ولافتةٌ صار سلفها قابلًا للتحرير، تعودان؛ والضابط على حاله",
+        "Settings|Settings|الإعدادات", [txt("lbl"), txt("uiEl"), txt("uiCl")].join("|"));
+  $("eR").removeAttribute("contenteditable");
+  $("eS").removeAttribute("data-zq-user");
+  $("row").removeAttribute("data-zrow");
+  $("uiE").removeAttribute("contenteditable");
+  eU.setAttribute("id", "eU");
+  await wait(900);
+  check("★ (ر24-ج1، CX-004) وإذا زالت السمة صار مؤهَّلًا فيُعرَّب من جديد (في المتن وخارجه)",
+        "اقرأ الدليل قبل العلامة أن تبدأ.|اقرأ الدليل بعد العلامة أن تبدأ.|الإعدادات|الإعدادات|اقرأ الدليل باكرًا العلامة أن تبدأ.", [txt("pR"), txt("pS"), txt("lbl"), txt("uiEl"), txt("pU")].join("|"));
+  // عقدةٌ معرَّبة تُنقل إلى حاويةٍ قابلةٍ للتحرير أو إلى المحادثة: يُرجع أصلها
+  var m1 = $("mv").firstChild, m2 = $("mv2").firstChild, mb = noBidi(m1.nodeValue) + "|" + noBidi(m2.nodeValue);
+  $("mvDst").appendChild(m1);
+  $("chatBox").appendChild(m2);
+  await wait(900);
+  check("★ (ر24-ج1، CX-004) عقدةٌ معرَّبة نُقلت إلى حاويةٍ قابلةٍ للتحرير أو إلى المحادثة يُرجع أصلها", "الإعدادات|الإعدادات|Settings|Settings",
+        mb + "|" + m1.nodeValue + "|" + m2.nodeValue);
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "protclass " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "PROTCLASS: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

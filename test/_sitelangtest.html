@@ -55,6 +55,11 @@ function hello() { var r = null; if (HELLO) HELLO({ type: "cml-hello" }, {}, fun
   check("الجدول: الحارس للتطبيق (meta.siteLang)، والنطاق من القاموس المبنيّ", "true/app", CMLConst.domain("app").meta.siteLang + "/" + CLAUDE_L10N.domain);
   check("★ الموقع بالإنجليزية: الإضافة تعمل (اتجاه ولغة وترجمة)", "rtl|ar|on|محادثة جديدة", snap());
   check("جواب النافذة: لا لغةَ أجنبية", "null/true", hello());
+  // ★ (ر29-ب، ١٣ جمادى الأولى ١٤٤٨هـ — ملاحظة ر30-أ) الموقع يكتب لغته الإنجليزية بعد كتابتنا وهي عاملة (claude.ai يكتب en-US عند تركيب تطبيقه):
+  // تعود lang=ar في الحال والإضافة عاملة، والإنجليزية التي كتبها هي الأصل المستعاد (يمتحنه الإيقاف بعد en-GB أدناه)
+  H.setAttribute("lang", "en-US");
+  await wait(500);
+  check("★ (ر29-ب) الموقع يكتب الإنجليزية بعد كتابتنا وهي عاملة: تعود lang=ar والإضافة عاملة", "rtl|ar|on|محادثة جديدة|null/true", snap() + "|" + hello());
   // الموقع يكتب لغةً أخرى اختارها المستخدم في حسابه
   H.setAttribute("lang", "xx-YY");
   await wait(500);
@@ -91,6 +96,62 @@ function hello() { var r = null; if (HELLO) HELLO({ type: "cml-hello" }, {}, fun
   MOCK.fireChanged({ cml_enabled: { newValue: true } }, "local");
   await wait(500);
   check("والتشغيل يعيدها", "rtl|ar|on|محادثة جديدة", snap());
+  // ★★ (ر24-أ، ٨ جمادى الأولى ١٤٤٨هـ — مراجعة Codex CX-005) الحكم بمصدر الطفرة لا بالمساواة: الموقع يكتب القيمة نفسها التي كتبناها
+  // ١) en→(نحن)ar ثم الموقع يكتب ar بـsetAttribute (يتيح عربيته يومًا): تخمد، وتبقى لغته، ودير يعود إلى أصله (لم يكتبه الموقع)
+  H.setAttribute("lang", "ar");
+  await wait(600);
+  check("★ (ر24-أ، CX-005) الموقع يكتب lang=ar بعد كتابتنا ar (القيمة نفسها): تخمد الإضافة كلها وتبقى لغة الموقع", "-|ar|-|New chat", snap());
+  check("★ (ر24-أ، CX-005) وجواب النافذة يحمل لغة الموقع ar", "ar/false", hello());
+  H.setAttribute("lang", "en-US");
+  await wait(600);
+  check("★ (ر24-أ، CX-005) ثم يكتب الموقع الإنجليزية: تعود الإضافة", "rtl|ar|on|محادثة جديدة", snap());
+  // ٢) إعادة رسم الجذر كلّه بعربية الموقع: يمحو سماتنا ويكتب lang=ar وdir=rtl كما نكتبهما — خامدة، وقيمتا الموقع باقيتان (لا يُرجعهما الإطفاء)
+  H.removeAttribute("data-cml"); H.removeAttribute("data-cml-rtl"); H.removeAttribute("dir"); H.setAttribute("lang", "ar"); H.setAttribute("dir", "rtl");
+  await wait(600);
+  check("★ (ر24-أ، CX-005) إعادة رسم الجذر بعربية الموقع (lang=ar وdir=rtl كقيمتينا): خامدة، وlang وdir للموقع باقيتان", "rtl|ar|-|New chat", snap());
+  H.removeAttribute("dir"); H.setAttribute("lang", "en-US");
+  await wait(600);
+  check("★ (ر24-أ، CX-005) وإعادة رسمه بالإنجليزية: تعود الإضافة", "rtl|ar|on|محادثة جديدة", snap());
+  // ٣) كتابتنا وكتابة الموقع متداخلتان في مهمةٍ واحدة (دفعة طفراتٍ واحدة): الترتيب يحكم
+  // ٣أ) الإطفاء ثم في المهمة نفسها: التشغيل (نكتب en→ar) ثم الموقع يكتب ar ⇒ خامدة
+  MOCK.localStore.cml_enabled = false;
+  MOCK.fireChanged({ cml_enabled: { newValue: false } }, "local");
+  await wait(500);
+  MOCK.localStore.cml_enabled = true;
+  MOCK.fireChanged({ cml_enabled: { newValue: true } }, "local");
+  var oursFirst = H.getAttribute("lang");
+  H.setAttribute("lang", "ar");
+  await wait(600);
+  check("★ (ر24-أ، CX-005) في مهمةٍ واحدة: نكتب en→ar ثم يكتب الموقع ar ⇒ تخمد (كتابة الموقع الأخيرة)", "ar|-|ar|-|New chat", oursFirst + "|" + snap());
+  // ٣ب) وفي مهمةٍ واحدة: الموقع يكتب en-GB ثم نكتب نحن ar (تبديل الاتجاه يعيد الكتابة) ⇒ لا تخمد: كتابتنا لا تُحسب للموقع وإن كانت لغةً أخرى،
+  // ولغة الموقع en-GB هي الأصل المستعاد
+  H.setAttribute("lang", "en-US");
+  await wait(600);
+  // (ولا خمودٌ عابرٌ ثم عودة: سمة data-cml لا تغيب لحظةً طوال الدفعتين — سجلٌّ قيمته القديمة null إعادةٌ بعد محو)
+  var flick = 0, fo = new MutationObserver(function (l) { l.forEach(function (r) { if (r.oldValue !== "on") flick++; }); });
+  fo.observe(H, { attributes: true, attributeOldValue: true, attributeFilter: ["data-cml"] });
+  H.setAttribute("lang", "en-GB");
+  MOCK.fireChanged({ cml_rtl: { newValue: true } }, "local");
+  var oursAfter = H.getAttribute("lang");
+  await wait(600);
+  fo.disconnect();
+  check("★ (ر24-أ، CX-005) في مهمةٍ واحدة: يكتب الموقع en-GB ثم نكتب ar ⇒ لا تخمد ولو لحظة (كتابتنا لا تُحسب للموقع)", "ar|0|rtl|ar|on|محادثة جديدة", oursAfter + "|" + flick + "|" + snap());
+  MOCK.localStore.cml_enabled = false;
+  MOCK.fireChanged({ cml_enabled: { newValue: false } }, "local");
+  await wait(500);
+  check("★ (ر24-أ، CX-005) وما كتبه الموقع في تلك المهمة هو الأصل: الإيقاف يعيد en-GB", "-|en-GB|-|New chat", snap());
+  MOCK.localStore.cml_enabled = true;
+  MOCK.fireChanged({ cml_enabled: { newValue: true } }, "local");
+  await wait(500);
+  // ٣ج) وفي مهمةٍ واحدة: الموقع يكتب لغةً أخرى ثم نكتب نحن ar فوقها (قبل أن نرى كتابته) ⇒ تخمد، ويعود ما كتبه الموقع
+  H.setAttribute("lang", "xx-YY");
+  MOCK.fireChanged({ cml_rtl: { newValue: true } }, "local");
+  var oursOver = H.getAttribute("lang");
+  await wait(600);
+  check("★ (ر24-أ، CX-005) في مهمةٍ واحدة: يكتب الموقع xx-YY ثم نكتب ar فوقها ⇒ تخمد ويعود xx-YY (آخر ما كتبه الموقع يُحكم به لا القيمة الحاضرة)", "ar|-|xx-YY|-|New chat", oursOver + "|" + snap());
+  H.setAttribute("lang", "en-US");
+  await wait(600);
+  check("ثم بالإنجليزية تعود", "rtl|ar|on|محادثة جديدة", snap());
   check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
   document.title = "sitelang " + pass + "/" + total;
   var h = document.createElement("p");

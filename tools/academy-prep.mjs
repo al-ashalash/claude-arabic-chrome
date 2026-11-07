@@ -18,7 +18,8 @@
 //      تشغيلٍ بعده (ولا يُعاد العرض إلا بالوسيط).
 //   ٥) القواميس المراجَعة (ar.json وar-<نطاق>.json): ترجمةٌ قائمة لنصٍّ إنجليزيٍّ مطابق تُرفق مرجعًا (ref) لاتساق R30.
 //
-//   NODE_USE_ENV_PROXY=1 node web/code/toolchain/academy-prep.mjs [--harvest=<حصاد.json>] [--tmp=<مجلد>] [--no-completeness] [--titles-by-scope] [--keep-only]
+//   NODE_USE_ENV_PROXY=1 node web/code/toolchain/academy-prep.mjs [--harvest=<حصاد.json>[,…]] [--tmp=<مجلد>] [--no-completeness] [--titles-by-scope] [--keep-only]
+//   ★ (ر13-ج) بلا ‎--harvest‎: حصادات DOM للنطاق كلها مضمومةً (لكل صفحةٍ أحدثُ حصادٍ لها)، لا أحدثُها وحده
 //   CI=true CHROME=<كروم للاختبار> NODE_USE_ENV_PROXY=1 node web/code/toolchain/academy-prep.mjs --pairs [--pages=/,/all,…] [--pairs-only] [--pair-both]
 //   ‎--tmp‎: مجلدٌ يُنشأ فيه مجلد التشغيل المؤقت (افتراضه مجلد النظام المؤقت): الفهرس والجداول الإنجليزية وملف تعريف كروم فيه، ويُحذف
 //        كلّه آخر كل تشغيل وعند المقاطعة. والطباعة أعدادٌ لا نصوص.
@@ -40,7 +41,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { DICTS } from "./paths.mjs";
-import { C, SHARED, workDir, latestHarvest } from "./domain-arg.mjs";
+import { C, SHARED, workDir, domHarvests, mergeDomHarvests } from "./domain-arg.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const argv = process.argv.slice(2);
@@ -609,7 +610,9 @@ async function runPairs(codes, harvestPages) {
       await cdp.send("Page.navigate", { url: ORIGIN + (prefixed ? "/" + code + (p === "/" ? "" : p) : p) }, sessionId);
       await settle(cdp, sessionId, { quietMs: 2000, maxMs: 30000 });
       const mode = SHARED.routeMode(META.routes, p);
-      return await cdp.evalIn(sessionId, collector(SHARED.harvestSkip(META, mode)), 60000);
+      // ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) والمتن (meta.bodySel: المقالة وقائمة «في هذه الصفحة») خارج هذا العرض كما كان في ر4-ب حين كان في skipSel:
+      // نصوصه تُترجم بوضع الكتلة لا بقاموس الواجهة، فلا تدخل مقارنةَ الواجهة باللغات الأخرى ولا ما يُصنَّف منها واجهةً (العرض وحده بلا حصاد DOM)
+      return await cdp.evalIn(sessionId, collector([SHARED.harvestSkip(META, mode), META.bodySel].filter(Boolean).join(", ")), 60000);
     } finally { await cdp.closePage(targetId); }
   }
   // مقارنة عرضٍ بلغةٍ أخرى بالعرض الإنجليزي موضعًا بموضع. الموضع نفسه (المسار في الشجرة + نوع العقدة أو السمة) بالقيمة نفسها = باقٍ؛
@@ -719,8 +722,13 @@ async function main() {
   const t0 = Date.now();
   say(`academy-prep — ${C.domain(D).name} (${D})`);
   // --- الحصاد ---
-  const hvFile = opt("harvest", "") ? path.resolve(opt("harvest", "")) : latestHarvest(D);
-  const hv = hvFile && fs.existsSync(hvFile) ? readJson(hvFile) : null;
+  // ★ (ر13-ج، ٦ جمادى الأولى ١٤٤٨هـ) حصادات DOM للنطاق كلها مضمومةً بقاعدة merge-blocks (لكل صفحةٍ أحدثُ حصادٍ لها — domain-arg.mjs:
+  // mergeDomHarvests) لا أحدثُها وحده: حصاد ر13-ب ثماني دفعاتٍ لصفحاتٍ مختلفة، وأحدثُها 60 صفحةً من 803 — فكان التشغيل بلا ‎--harvest‎ يُسقط من
+  // قائمتي الإبقاء ما تولّده الأداة لنصوص الصفحات الأخرى. و‎--harvest=<ملف>[,<ملف>…]‎ يضمّ ما سُمّي وحده بالقاعدة نفسها
+  const hvList = opt("harvest", "") ? opt("harvest", "").split(",").filter(Boolean).map((p) => path.resolve(p)) : domHarvests(D);
+  const hvFile = hvList.map((f) => path.basename(f)).join(" + ") || null;
+  const hv = hvList.length && hvList.every((f) => fs.existsSync(f)) ? (hvList.length === 1 ? readJson(hvList[0]) : mergeDomHarvests(hvList)) : null;
+  if (hv && hvList.length > 1) say(`الحصاد: ${hvList.length} حصادات DOM مضمومة (لكل صفحةٍ أحدثُ حصادٍ لها) — ${(hv.pages || []).length} صفحة و${(hv.keys || []).length} مفتاحًا`);
   if (!hv && !flag("pairs-only")) { say("! لا حصاد DOM للنطاق (harvest-dom.mjs --domain=academy) — لا تصنيف"); process.exitCode = 2; return; }
   if (hv && hv.domain && hv.domain !== D) { say("! الحصاد لنطاقٍ آخر"); process.exitCode = 2; return; }
 
@@ -1408,7 +1416,7 @@ async function main() {
     recommendation: "translate", why: "الموضع الذي تترجمه الشركة واجهةٌ يعمل فيها القارئ؛ والقاموس حرفيٌّ فمدخلٌ واحد يخدم الموضعين (الافتراض في ملخص ر4-ب)" }));
   const summary = {
     _tool: "academy-prep", at: new Date().toISOString(), hijri: hijri(),
-    inputs: { harvest: path.basename(hvFile), harvestPages: (hv.pages || []).length, harvestPagesOk: hvPages.length, harvestUniqueKeys: rows.length,
+    inputs: { harvest: hvFile, harvestPages: (hv.pages || []).length, harvestPagesOk: hvPages.length, harvestUniqueKeys: rows.length,
       catalogueMessages: ids.length, otherLocales: locales.length, contentLocales, contentUnits: units.length, hubCopy: enIdx.hub.size,
       pairs: pairs ? { file: path.basename(pairsFile), pages: pairs.pages.length, locales: pairs.locales, items: pairs.items.length } : null },
     classes: Object.fromEntries([...cls].sort((a, b) => b[1] - a[1])),

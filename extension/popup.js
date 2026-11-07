@@ -5,7 +5,6 @@
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
   var enabled = $("enabled");
-  var src = $("src"), dst = $("dst"), saveBtn = $("save"), status = $("status");
   var rtlToggle = $("rtl");
   var chatrtlToggle = $("chatrtl");
   var current = "ar";
@@ -13,7 +12,18 @@
   // بلا إذن tabs)؛ وتبويبٌ لا يجيب إمّا خارج المواقع أو مفتوحٌ قبل تحديث الإضافة
   var tabDomain = null;
   var SITE = (CMLConst.K && CMLConst.K.SITE_ON) || "cml_site";
-  var ALL_IDS = CMLConst.DOMAINS.map(function (d) { return d.id; });
+  // ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) المواقع المشحونة وحدها: النطاق القادم (status.upcoming) لا مفتاح له ولا يُعدّ في «المواقع كلها مطفأة»
+  var ALL_IDS = (CMLConst.shipped ? CMLConst.shipped() : CMLConst.DOMAINS).map(function (d) { return d.id; });
+  // سطر التبويب في موقعٍ قادم: مطابقته في الإضافة ومحرّكه خاملٌ حتى يُشحن قاموسه، فلا مفتاح له ولا «حدّثه»
+  // ★ (ر20-أ) وصنفُ مسارٍ قادم في موقعٍ مشحون (لوحة المطوّرين على مضيف الوثائق): هذه الصفحات وحدها لا تتغيّر، والموقع يعمل في مساراته
+  function upcomingClassNote(d, rc) {
+    var rt = d.meta && d.meta.routes, scope = rt && rt.full && rt.full[0] ? d.host + rt.full[0] : CMLConst.siteLabel(d.id);
+    return "تعريب «" + rc.name + "» قادمٌ في تحديثٍ لاحق، والإضافة لا تغيّر صفحاتها في هذا الإصدار؛ و«" + d.name + "» تُعرَّب في \u2066" +
+      scope + "\u2069 وحدها.";
+  }
+  function upcomingNote(d) {
+    return "تعريب «" + d.name + "» قادمٌ في تحديثٍ لاحق، والإضافة لا تغيّر صفحات \u2066" + d.host + "\u2069 في هذا الإصدار.";
+  }
   // ★ المفتاح الرئيس بوّابة (كصفحة الإعدادات): مفتاح التبويب يُعرض بحاله الفعلية (master && site)
   // ومعطَّلًا عند إطفاء الرئيس، واختيارُ الموقع محفوظ؛ والتجميع المعاكس: المواقع كلها مطفأة ⇒ سطرٌ يقوله
   var RUN = { master: true, site: {} };
@@ -35,9 +45,11 @@
   // كما كان. يُقال في ملاحظة التبويب، وفي صندوق تصحيح الفقرة إن طُلب فيها تصحيح
   var HELD_NOTE = {
     drift: "تغيّر متن هذه الصفحة في الموقع بعد ترجمتها، فيبقى إنجليزيًّا كلُّه حتى تُحدَّث ترجمته.",
-    none: "لم يُعرَّب متن هذه الصفحة في هذا الإصدار، فيبقى إنجليزيًّا كلُّه."
+    none: "لم يُعرَّب متن هذه الصفحة في هذا الإصدار، فيبقى إنجليزيًّا كلُّه.",
+    // ★ (ر29-د) "nosel": لم يطابق محدِّد المتن شيئًا في صفحة متن (تغيّرت بنية الموقع)، فخمدت الإضافة في الصفحة كلها
+    nosel: "تغيّرت بنية هذه الصفحة في الموقع فلم تجد الإضافة متنها، فتُركت كما هي حتى تُحدَّث الإضافة."
   };
-  function heldNote(why) { return why === "none" ? HELD_NOTE.none : HELD_NOTE.drift; }
+  function heldNote(why) { return why === "none" ? HELD_NOTE.none : why === "nosel" ? HELD_NOTE.nosel : HELD_NOTE.drift; }
   // ★ (ر7-ب، ٣٠ ربيع الآخر ١٤٤٨هـ — الفحص الحيّ ر7، L7) سطرا حال المحرّك في التبويب — حجبُ المتن (tabNoteLive) والخط — من جوابه لحظةَ فتح
   // النافذة: كانا يبقيان بعد إطفاء «هذا التبويب» حتى تُفتح النافذة من جديد، والمحرّك قد خمد في الموقع فلا حجب ولا خط. فيسقطان ما دام الموقع
   // مطفأً (من النافذة نفسها أو من الإعدادات بالتحديث الحيّ) ويعودان بإعادة تشغيله، فالصفحة هي هي. وسطرا الخمول (مسارٌ خارج النطاق، ولغة الموقع)
@@ -83,8 +95,31 @@
     detectTab(function (hello, tab) {
       var guess = tab && tab.url ? CMLConst.domainOfUrl(tab.url) : null;
       var d = hello ? CMLConst.domain(hello.domain) : null;
-      tabDomain = d ? d.id : null;
-      if (d) {
+      // ★ (ر15) موقعٌ قادم: يجيب محرّكه الخامل بأنه قادم (أو يُعرف من عنوان التبويب إن فُتح قبل التحديث) — سطرٌ يقوله، ولا مفتاح ولا تصحيح
+      var soon = d && (hello.upcoming || (CMLConst.upcoming && CMLConst.upcoming(d.id))) ? d
+        : !d && guess && CMLConst.upcoming && CMLConst.upcoming(guess.id) ? guess : null;
+      if (soon) d = null;
+      // ★ (ر20-أ، ١٢ جمادى الأولى ١٤٤٨هـ) صنفُ مسارٍ قادم في موقعٍ مشحون (لوحة المطوّرين في مدخل «وثائق المطوّرين»): المحرّك يجيب بصنف الصفحة، أو يُعرف
+      // من عنوان التبويب إن فُتح قبل التحديث. سطرٌ يقول إنها قادمة تحت موقعها، ولا مفتاح (مفتاح الموقع لا أثر له فيها حتى CN1) ولا «حدّثه»
+      var site = d || guess, path = "";
+      try { path = tab && tab.url ? new URL(tab.url).pathname : ""; } catch (e) {}
+      var rc = hello && hello.routeClass ? hello.routeClass
+        : !hello && site && CMLConst.routeClass ? (function (c) { return c ? { id: c.id, name: c.name, upcoming: CMLConst.classUpcoming(c) } : null; })(CMLConst.routeClass(site.id, path)) : null;
+      var rcSoon = !!(rc && rc.upcoming && site);
+      tabDomain = d && !rcSoon ? d.id : null;
+      if (rcSoon) {
+        lab.textContent = "هذا التبويب: " + site.name + " — " + rc.name;
+        sw.classList.add("hidden");
+        tabNoteLive = false;
+        readRun(renderGate);
+        tabNoteText = upcomingClassNote(site, rc);
+      } else if (soon) {
+        lab.textContent = "هذا التبويب: " + soon.name;
+        sw.classList.add("hidden");
+        tabNoteLive = false;
+        readRun(renderGate);
+        tabNoteText = upcomingNote(soon);
+      } else if (d) {
         lab.textContent = "هذا التبويب: " + d.name;
         sw.classList.remove("hidden");
         readRun(renderGate);
@@ -110,8 +145,11 @@
           : "واجهة \u2066" + d.host + "\u2069 بلغةٍ غير الإنجليزية — " + how + " لتعمل الإضافة.";
         // ★ (ر6-د — القرار 84) متن الصفحة محجوب والإضافة عاملةٌ فيها (مسارٌ كامل): سطرٌ بسببه. ولا يجتمع مع السطرين قبله (كلاهما خمول)
         var gd = hello.bodies && hello.bodies.guard;
-        tabNoteLive = !!(hello.enabled !== false && hello.route === "full" && gd && gd.held);
+        // ★ (ر29-د) و"nosel" والإضافة خاملةٌ في الصفحة به (لا بإطفاء)
+        tabNoteLive = !!((hello.enabled !== false || (gd && gd.why === "nosel")) && hello.route === "full" && gd && gd.held);
         if (tabNoteLive) tabNoteText = heldNote(gd.why);
+        // ★ (ر29-د) صفحة تحقّقٍ من الموقع تسبق الصفحة الحقيقية: الإضافة خاملةٌ فيها
+        if (hello.bot) tabNoteText = "هذه صفحة تحقّقٍ من الموقع، فلا تعمل الإضافة فيها حتى تفتح الصفحة نفسها.";
       } else {
         lab.textContent = "هذا التبويب";
         sw.classList.add("hidden");
@@ -131,7 +169,6 @@
       // اتجاه المحادثة لموقعٍ له محادثات (مصفوفة القدرات)، لا لمعرّفٍ مكتوب
       var caps = d && CMLConst.caps ? CMLConst.caps(d.id) : null;
       $("chatRow").classList.toggle("hidden", !!caps && !caps.chat.on);
-      saveBtn.disabled = !tabDomain;
       // تصحيح الفقرات: في صفحات المتون وحدها (مسارٌ كامل في نطاقٍ ذي متون)
       $("blkBox").classList.toggle("hidden", !(hello && hello.bodies && hello.route === "full"));
       blkTab = tab;
@@ -158,7 +195,8 @@
           if (chatrtlToggle) chatrtlToggle.checked = s.cml_chatrtl !== false;
         });
       })
-      .catch(function () { status.textContent = "تعذّر تحميل إعدادات الإضافة؛ أعد فتح هذه النافذة."; });
+      // ★ (ر28-ج2) كان السطر في حال نموذج التصحيح المحذوف: صار في التلميح السفلي
+      .catch(function () { var f = $("footHint"); if (f) { f.textContent = "تعذّر تحميل إعدادات الإضافة؛ أعد فتح هذه النافذة."; f.classList.remove("hidden"); } });
   }
 
   enabled.addEventListener("change", function () {
@@ -189,25 +227,6 @@
   if (chatrtlToggle) chatrtlToggle.addEventListener("change", function () {
     chrome.storage.local.set({ cml_chatrtl: chatrtlToggle.checked });
   });
-  saveBtn.addEventListener("click", function () {
-    var a = (src.value || "").trim(), b = (dst.value || "").trim();
-    if (!a || !b) { status.textContent = "املأ الحقلين."; return; }
-    if (!tabDomain) { status.textContent = "افتح صفحةً من مواقع Claude أولًا."; return; }
-    var max = CMLConst.TEXT_MAX || 300;
-    if (a.length > max || b.length > max * 2) { status.textContent = "أطول من الحدّ (" + chars(max) + " للنص، و" + chars(max * 2) + " للترجمة) — لا يُطبَّق."; return; }
-    // التصحيح لنطاق التبويب وحده، أمرًا جزئيًّا يطبّقه العامل تحت قفل المزامنة (كالخيارات)؛
-    // والنصُّ بمتغيّرات قاعدةٌ ذكية لا مطابقةٌ حرفية لن تصادف المعروض أبدًا
-    var op = /\{[A-Za-z_$][\w$]*\}/.test(a) ? { op: "rule", en: a, ar: b } : { op: "set", k: a, v: b };
-    chrome.runtime.sendMessage({ type: "terms-edit", d: tabDomain, lang: current, ops: [op] }, function (res) {
-      var bad = chrome.runtime.lastError || !res || res.error || !res.report ||
-                (res.report.set + res.report.rule) === 0;
-      if (bad) { status.textContent = op.op === "rule" ? "تعذّر الحفظ — تأكّد من نسخ كل {متغيّر} كما هو." : "تعذّر الحفظ."; return; } // لا نجاحَ معلَنًا بعد كتابةٍ فاشلة
-      status.textContent = "تم الحفظ ✓";
-      src.value = ""; dst.value = "";
-      setTimeout(function () { status.textContent = ""; }, 2500);
-    });
-  });
-
   // ---------- تصحيح فقرة (المرحلة ٢) ----------
   var blkTab = null, blkCur = null, blkStatus = $("blkStatus");
   function blkMsg(t) {
@@ -217,11 +236,6 @@
   // ★ في حقلٍ من اليمين تُرسم «<» و«>» معكوسةً بين نصّين عربيين فيبدو الإغلاق </a1> ذاتيًّا <a1/> والعكس:
   // يُعرض كل رمزٍ معزولًا من اليسار (LRI…PDI) ويُنزع العزل قبل أي فحصٍ أو حفظ (القوالب المخزَّنة بلا عزل)
   var LRI = String.fromCharCode(0x2066), PDI = String.fromCharCode(0x2069);
-  // ★ (ر8-د2) عدد الحروف بمعدوده (قاعدة arCount في صفحة الإعدادات): «300 حرف»، و«11 حرفًا»، و«5 أحرف»
-  function chars(n) {
-    var m = n % 100, s = n.toLocaleString("en");
-    return n === 1 ? "حرف واحد" : n === 2 ? "حرفان" : m >= 3 && m <= 10 ? s + " أحرف" : m >= 11 && m <= 99 ? s + " حرفًا" : s + " حرف";
-  }
   var PH_ANY = /<c(\d{1,4})>[\s\S]*?<\/c\1>|<\/?[abisgc]\d{1,4}\/?>/g;
   var ISO_RE = new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g");
   function isoTokens(s) { return String(s || "").replace(PH_ANY, function (t) { return LRI + t + PDI; }); }
@@ -242,9 +256,9 @@
         return;
       }
       if (res.ui) {
-        // عنوانٌ أو بندٌ من قاموس الواجهة: يُصحَّح بالنموذج العادي أعلاه
-        src.value = res.en; dst.value = res.ar || ""; dst.focus();
-        blkMsg("هذا نصٌّ من قاموس الواجهة — عدّله في «إضافة أو تصحيح ترجمة» أعلاه ثم احفظ.");
+        // عنوانٌ أو بندٌ من قاموس الواجهة: ★ (ر28-ج2 — القرار 140) يُصحَّح في الإعدادات («إدارة قاموس التعريب»، التصحيح اليدوي)، فالنموذج لم يعد
+        // في النافذة؛ ونصّه الإنجليزي في السطر معزولًا من اليسار (LRI…PDI) ليُنسخ كما هو
+        blkMsg("هذا نصٌّ من قاموس الواجهة: " + LRI + res.en + PDI + " — صحّحه من الإعدادات في «إدارة قاموس التعريب».");
         return;
       }
       blkCur = res;

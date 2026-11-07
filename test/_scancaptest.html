@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>scancap test</title>
+<!--
+  ★ (ر29-ز، ١٩ جمادى الأولى ١٤٤٨هـ) لا سقف عدد لغير المترجَم في «فحص الترجمة»: كان المحرّك يقصّ القائمتين عند 4,000 سطر (SCAN_CAP: يُبقي
+  المتغيّرات كاملة ويقصّ الثابتة المرتّبة)، فأسقط تصديرُ المالك في ١٨ جمادى الأولى خمسة أسطر بلا كلمة. والآن تُخزَّنان كاملتين ما دام حجمهما دون
+  CMLConst.SCAN_MAX_BYTES، وما جاوزه (لا حالة له اليوم) يُعدّ في النتيجة (omitted وomittedVars) فلا يسقط سطرٌ بصمت.
+  بالمحرّك الحقيقي وماسح فهرس الصفحات (scan:"llms") وقاموس الوثائق المشحون، على فهارس اصطناعية تُبنى هنا (عناوين «Zzq …»: لا نصَّ من الموقع):
+   ١) 4,005 عناوين ثابتة و3 بمتغيّرات (4,008 > 4,000) ⇒ القائمتان كاملتان: list + varList = missing = 4,008، وcapped=false وomitted=0؛
+   ٢) حدّ حجمٍ صغير يُضبط للاختبار وحده ⇒ القصّ بالحجم: capped=true، وomitted = missing − المعروض بعدده الصحيح، ومنه omittedVars،
+      والقائمتان بترتيبهما (أول الثابتة المرتّبة)، وحجمهما بالـUTF-8 دون الحدّ، وللمتغيّرات نصيبها؛
+   ٣) وفي الحدّ الافتراضي المشحون: لا قصّ لفحصٍ بهذا الحجم، والحدّ أكبر من 4,005 سطرٍ من 300 حرف (★ ر29-ط: ولا سقف طول في الماسح بعدُ،
+      فالطويل يمتحنه _scanlongtest.html).
+  العقد: document.title = "scancap N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1000px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vertical-align:top}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+</head>
+<body>
+<h1>اختبار «فحص الترجمة»: لا يُقصّ غير المترجَم بعددٍ، ولا يسقط سطرٌ بصمت</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<pre id="log"></pre>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+  var MOCK = makeChromeMock({ session: false });
+  window.__store = MOCK.localStore;
+  window.chrome = MOCK.chrome;
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dict-docs.js"></script>
+<script>
+  var L = globalThis.CLAUDE_L10N;
+  var HERE = location.pathname.replace(/[^\/]*$/, "");
+  L.meta = { scan: "llms", llms: "/__cml-scancap-fixture.txt", live: false, chat: false, hydrate: "none", routes: { full: [HERE, "/docs/en/"] } };
+  function pad(n) { return ("0000" + n).slice(-4); }
+  // فهرسٌ بـN عنوانًا ثابتًا وM عنوانًا بمتغيّر، بلا عناوين مجموعات (فلا يُحسب غير العناوين)
+  function fixture(n, m) {
+    var out = ["# Test index", "", "## English", ""];
+    for (var i = 1; i <= n; i++) out.push("- [Zzq untranslated page " + pad(i) + "](/docs/en/zzq-" + i + ".md)");
+    for (var j = 1; j <= m; j++) out.push("- [Zzq {count} untranslated items " + pad(j) + "](/docs/en/zzqv-" + j + ".md)");
+    out.push("");
+    return out.join("\n");
+  }
+  var FIXTURE = fixture(4005, 3);
+  var realFetch = window.fetch;
+  window.fetch = function (u, o) {
+    if (String(u && u.url || u).indexOf("/__cml-scancap-fixture.txt") >= 0)
+      return Promise.resolve(new Response(FIXTURE, { status: 200, headers: { "content-type": "text/plain" } }));
+    return realFetch.apply(window, arguments);
+  };
+</script>
+<script src="../extension/engine.js"></script>
+<script>
+(function () {
+  var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+  function check(name, expect, got) {
+    total++; var ok = String(expect) === String(got); if (ok) pass++;
+    var tr = document.createElement("tr");
+    [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+    var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+    tb.appendChild(tr);
+    document.title = "scancap " + pass + "/" + total + " …";
+  }
+  function done() { document.title = "scancap " + pass + "/" + total; }
+  var C = CMLConst, K = C.key("cml_scan_result", "docs");
+  function utf8(s) { return new TextEncoder().encode(s).length; }
+  // طلب فحصٍ جديد ثم انتظار نتيجته (بهوية الطلب: لا تُقرأ نتيجة الفحص السابق)
+  function scan(id) {
+    return new Promise(function (res) {
+      var before = window.__store[K] && window.__store[K].at;
+      chrome.storage.local.set({ cml_scan_request: { d: "docs", kind: "scan", at: Date.now(), id: id } });
+      var t0 = Date.now();
+      var poll = setInterval(function () {
+        var r = window.__store[K];
+        if ((!r || r.status !== "done" || r.at === before) && Date.now() - t0 < 20000) return;
+        clearInterval(poll);
+        res(r || {});
+      }, 100);
+    });
+  }
+  setTimeout(function () { run().then(done, function (e) { check("استثناء في الاختبار", "", String(e && (e.stack || e.message) || e).slice(0, 400)); done(); }); }, 300);
+
+  async function run() {
+    // ١) فوق السقف القديم (4,000): لا قصّ
+    var r = await scan("c1");
+    var list = r.list || [], vars = r.varList || [];
+    check("تمهيد: الفحص انتهى من فهرس الصفحات الاصطناعي", "done/llms/4008", r.status + "/" + r.source + "/" + r.found);
+    check("★ (ر29-ز) 4,008 سطرًا غير مترجَم (فوق السقف القديم 4,000) تُخزَّن كلها: الثابتة 4,005 والمتغيّرات 3، والعدّ الحقيقي يساوي المعروض",
+      "4005/3/4008/4008", list.length + "/" + vars.length + "/" + r.missing + "/" + r.shown);
+    check("★ (ر29-ز) ولا علامة قصّ ولا شيء خارج القائمتين", "false/0/0", !!r.capped + "/" + (r.omitted === undefined ? "?" : r.omitted) + "/" +
+      (r.omittedVars === undefined ? "?" : r.omittedVars));
+    check("★ (ر29-ز) وآخر الثابتة المرتّبة موجود (هو أول ما كان يسقطه القصّ)", "true/true",
+      (list.indexOf("Zzq untranslated page 4005") >= 0) + "/" + (list[list.length - 1] === "Zzq untranslated page 4005"));
+    var bytes = 0; list.concat(vars).forEach(function (s) { bytes += utf8(JSON.stringify(s)) + 1; });
+    check("★ (ر29-ز) الحدّ المشحون حدّ حجم (لا عدد) يسع 4,005 سطرٍ من 300 حرف (★ ر29-ط: والماسح بلا سقف طول)، وأكبر بكثيرٍ من هذا الفحص",
+      "true/true/true", (typeof C.SCAN_MAX_BYTES === "number") + "/" + (C.SCAN_MAX_BYTES >= 4005 * (300 + 3)) + "/" + (bytes * 10 < C.SCAN_MAX_BYTES));
+    check("★ (ر29-ز) ولا سقف عددٍ في الثوابت", "undefined", String(C.SCAN_CAP));
+
+    // ٢) حدّ حجمٍ صغير للاختبار وحده: القصّ بالحجم، والمقصوص معدود
+    var MAX = 6000, keep = C.SCAN_MAX_BYTES;
+    C.SCAN_MAX_BYTES = MAX;
+    FIXTURE = fixture(300, 200);
+    var r2 = await scan("c2");
+    C.SCAN_MAX_BYTES = keep;
+    var l2 = r2.list || [], v2 = r2.varList || [];
+    var b2 = 0; l2.concat(v2).forEach(function (s) { b2 += utf8(JSON.stringify(s)) + 1; });
+    check("★ (ر29-ز) فوق حدّ الحجم: علامة القصّ، والعدّ الحقيقي كما هو، وما بقي خارج القائمتين معدودٌ بعينه (missing − المعروض)",
+      "true/500/true/true", !!r2.capped + "/" + r2.missing + "/" + (r2.omitted === r2.missing - l2.length - v2.length) + "/" + (r2.omitted > 0));
+    check("★ (ر29-ز) ومنه ما فيه متغيّرات (omittedVars) بعينه، والمخزَّن دون الحدّ بايتاتٍ (UTF-8 كما في JSON)", "true/true/true",
+      (r2.omittedVars === 200 - v2.length) + "/" + (r2.omittedVars > 0) + "/" + (b2 <= MAX));
+    check("★ (ر29-ز) والقائمتان بترتيبهما: أول الثابتة المرتّبة، وللمتغيّرات نصيبها (نصف الحدّ على الأقل حين تزاحمها الثابتة)", "true/true/true",
+      (l2[0] === "Zzq untranslated page 0001") + "/" + (l2.every(function (s, i) { return s === "Zzq untranslated page " + pad(i + 1); })) + "/" +
+      (v2.length > 0 && v2[0] === "Zzq {count} untranslated items 0001"));
+
+    // ٣) (مراجعة ر29-ز) الحدّ بايتاتُ JSON بالـUTF-8 لا عدد الحروف: عناوين فيها علامتا تنصيص منحنيتان وثلاث نقاط (3 بايتات لكلٍّ منها) وعلامة
+    // تنصيص مستقيمة (تُهرَّب في JSON)، فلو عُدّ الحرف بايتًا واحدًا أو نُسي التهريب لتجاوز المخزَّنُ الحدَّ
+    var u2 = String.fromCharCode(0x201C), u3 = String.fromCharCode(0x201D), u4 = String.fromCharCode(0x2026);
+    C.SCAN_MAX_BYTES = MAX;
+    FIXTURE = fixture(300, 200).replace(/Zzq untranslated page/g, "Zzq " + u2 + "wide" + u3 + " \"q\" untranslated page" + u4);
+    var r3 = await scan("c3");
+    C.SCAN_MAX_BYTES = keep;
+    var l3 = r3.list || [], v3 = r3.varList || [];
+    var b3 = 0; l3.concat(v3).forEach(function (s) { b3 += utf8(JSON.stringify(s)) + 1; });
+    check("★ (مراجعة ر29-ز) والحدّ يُحسب ببايتات JSON بالـUTF-8 (حروفٌ متعددة البايتات وتنصيصٌ مهرَّب): المخزَّن دونه، والمقصوص معدود",
+      "true/true/true/true", (l3.length > 0 && l3[0].indexOf(u4) > 0) + "/" + (b3 <= MAX) + "/" + !!r3.capped + "/" +
+      (r3.omitted === r3.missing - l3.length - v3.length));
+    check("لا أخطاء جافاسكربت في الصفحة", 0, jsErrors);
+  }
+})();
+</script>
+</body>
+</html>

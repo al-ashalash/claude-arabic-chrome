@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>copy test</title>
+<!--
+  ★ (ر24-هـ، ١١ جمادى الأولى ١٤٤٨هـ — القرار 112) نسخ النص المعرَّب: فحص الاتجاه يرى الشاشة ولا يرى النسخ. الترجمة المختلطة ملفوفةٌ بعلامتي عزل
+  (RLI…PDI)، وعلامتا LRM وRLM تلاصقان بعض الرموز والأقواس والشرطة المائلة، فتنتقل مع النسخ وتُفسد أمرًا يُلصق في الطرفية («~/.claude»).
+  بالمحرّك الحقيقي وقاموسٍ مصطنع، بحدث نسخٍ بـDataTransfer: ما يصل الحافظة هو ما وضعه المعالج إن ألغى الحدث، وإلا نسخُ المتصفح الأصلي
+  (نصّ التحديد كما يسلسله، والمسافة غير الفاصلة مسافة؛ وقِيس في كروم بالمسار الحقيقي execCommand وقراءة الحافظة في تقرير المرحلة):
+   ١) الجملة العربية كما كُتبت في القاموس حرفًا حرفًا، ونصّ الموقع كما في المصدر، في المسارين (العقدة الواحدة bidiWrap وltrParens وltrSlash،
+      والكتلة ltrMarks وltrParens مع ذرّة شيفرة): جملةٌ كاملة، وجزءٌ منها، وعقدتان مترجمتان، ومترجمةٌ مع نصّ موقعٍ فيه علامةٌ من الموقع تبقى،
+      والشيفرة وحدها (لا يعمل المعالج)، وعلامةٌ كتبها المترجم في القاموس، ولافتةٌ لاتينية عزلناها (isoLabels)؛ وtext/html بلا علاماتنا وبالشيفرة
+      والرابط المطلق.
+   ٢) لا يمسّ المحادثة ولا القابل للتحرير ولا محتوى المستخدم: التحديد الذي يمسّها يُترك للنسخ الأصلي والجاسوس العامّ على 0 قراءة، والضابط بالبناء
+      نفسه بلا حماية يُنظَّف (والجاسوس يرى قراءته).
+   ٣) الشاشة على حالها (العلامات في DOM، ولا طفرة، والتحديد كما هو)، ومعالجُ الموقع الذي ألغى الحدث يُحترم، والإضافة المطفأة لا تعالج شيئًا.
+   ٤) (المراجعة المستقلة لـر24-هـ) وHTML نسختنا كنسخ المتصفح بنيةً ومحتوًى: الجدول والقائمة بحاويتهما (المحلّل في سياق body يُسقط ‎<td>‎ و‎<tr>‎
+      بلا جدولها فتلتصق الخلايا)، ولا يدخلها ما لا يُرسم أو لا يُحدَّد (user-select:none وvisibility وdisplay:none وstyle)؛ وتحديدٌ يبدأ داخل المحميّ،
+      أو فيه صورةٌ بنصّ alt أو عنصر إدخال أو حروفٌ ظاهرةٌ تحت text-transform، يُترك للنسخ الأصلي؛ وعقدةٌ عرّبناها ثم كتب الموقع فيها تبقى علامتها.
+  العقد: document.title = "copy N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right;word-break:break-word}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+.fx p{margin:0;font-size:16px}</style>
+<div id="__next"><div id="wrap" class="fx">
+  <h1 id="title">Copy test page</h1>
+  <p id="ui"><span id="u1">Install the tool in your home folder.</span> <span id="u2">Put the commands in their folder.</span> <span id="uS">Build&nbsp;zq&#x200E;-7</span></p>
+  <p id="ui3"><span id="u3">Open the notes file to edit it.</span></p>
+  <p id="hidP"><span id="h1">Install the tool in your home folder.</span><span id="hHid" style="display:none">Put the commands in their folder.</span> <span id="hS">Build zq&#x200E;-7</span></p>
+  <p id="isoP"><span id="iso">C#</span></p>
+  <p id="lnkP"><a id="lnk" href="/docs/zq/setup" title="Open the setup guide for Claude Code.">Open the setup guide for Claude Code.</a></p>
+  <p id="pc1"><span id="c1u">Install the tool in your home folder.</span> <span class="font-claude-message" id="chat">Settings</span></p>
+  <p id="pc2"><span id="c2u">Install the tool in your home folder.</span> <span class="font-plain-message" id="chatCtl">Settings</span></p>
+  <p id="pe1"><span id="e1u">Install the tool in your home folder.</span> <span contenteditable="true" id="ed">Settings</span></p>
+  <p id="pe2"><span id="e2u">Install the tool in your home folder.</span> <span id="edCtl">Settings</span></p>
+  <p id="pu1"><span id="s1u">Install the tool in your home folder.</span> <span data-user="1" id="usr">Settings</span></p>
+  <p id="pu2"><span id="s2u">Install the tool in your home folder.</span> <span data-other="1" id="usrCtl">Settings</span></p>
+  <p id="pc3"><span class="font-claude-message" id="chat3">Settings</span> <span id="c3u">Install the tool in your home folder.</span></p>
+  <p id="pe3"><span contenteditable="true" id="ed3">Settings</span> <span id="e3u">Install the tool in your home folder.</span></p>
+  <p id="pu3"><span data-user="1" id="usr3">Settings</span> <span id="s3u">Install the tool in your home folder.</span></p>
+  <table id="tb"><tbody><tr><td id="t1">Install the tool in your home folder.</td><td id="t2">Put the commands in their folder.</td></tr><tr><td id="t3">Build zq&#x200F;x</td><td id="t4">Open the notes file to edit it.</td></tr></tbody></table>
+  <ul id="ul"><li id="li1">Install the tool in your home folder.</li><li id="li2">Put the commands in their folder.</li></ul>
+  <p id="hx"><span id="x1">Install the tool in your home folder.</span><span id="xN" style="user-select:none"> 42 </span><button id="xB" style="user-select:none">Copy</button><span id="xV" style="visibility:hidden">Put the commands in their folder.</span><span id="xD" style="display:none">Open the notes file to edit it.</span><style id="xS">.zq-never{color:red}</style><span id="x2">Put the commands in their folder.</span></p>
+  <p id="im"><span id="m1">Install the tool in your home folder.</span> <img id="mImg" alt="zq diagram" src="data:image/gif;base64,R0lGODlhAQABAAAAACw="> <span id="m2">Settings</span></p>
+  <p id="fm"><span id="f1u">Install the tool in your home folder.</span> <input id="fIn" value="zq"> <span id="f2u">Settings</span></p>
+  <p id="ttp"><span id="tt1">Install the tool in your home folder.</span> <span id="ttV" style="text-transform:uppercase">zq word</span></p>
+  <p id="tth"><span id="tth1">Install the tool in your home folder.</span><span id="ttH" style="text-transform:uppercase;display:none">zq word</span><button id="ttB" style="text-transform:uppercase;user-select:none">zq word</button></p>
+  <p id="rw"><span id="rw0">Settings</span> <span id="rw1">Settings</span></p>
+  <div id="pz"><span id="z1">Install the tool in your home folder.</span><details id="zDet"><summary id="zSum">Settings</summary><p id="zIn">Put the commands in their folder.</p></details><div id="zCv" style="content-visibility:hidden"><p id="zCvp">Build zq&#x200E;-7</p></div><span id="z2">Open the notes file to edit it.</span></div>
+  <div class="article_body"><article id="art">
+    <p id="b1">Settings live in ~/.claude and use version 2.1.0 with <code id="cd1">claude doctor</code> (Claude Code).</p>
+    <p id="b2">Put files under src/ then run the build.</p>
+  </article></div>
+</div></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>
+var jsErrors = 0; window.onerror = function () { jsErrors++; };
+// الجاسوس العامّ (نموذج _blockprotspytest): كل getter يقرأ نصًّا، وكل عنصرٍ يحوي النصّ المحميّ، وتسلسل التحديد واستنساخه
+var SENT = new Set(), CTLS = new Set(), SPY_ON = false, HITS = {}, CHITS = 0;
+function hit(where, t) {
+  if (!SPY_ON) return;
+  var ok = false, ck = false;
+  if (t && t.nodeType === 3) { ok = SENT.has(t); ck = CTLS.has(t); }
+  else if (t && t.contains) {
+    SENT.forEach(function (s) { if (!ok && t !== s && t.contains(s)) ok = true; });
+    CTLS.forEach(function (s) { if (!ck && t !== s && t.contains(s)) ck = true; });
+  }
+  if (ok) HITS[where] = (HITS[where] || 0) + 1;
+  if (ck) CHITS++;
+}
+[[Node.prototype, "nodeValue"], [CharacterData.prototype, "data"], [Node.prototype, "textContent"], [HTMLElement.prototype, "innerText"],
+ [Element.prototype, "innerHTML"], [Element.prototype, "outerHTML"], [Text.prototype, "wholeText"], [HTMLElement.prototype, "outerText"]].forEach(function (x) {
+  var d = Object.getOwnPropertyDescriptor(x[0], x[1]); if (!d || !d.get) return;
+  Object.defineProperty(x[0], x[1], { configurable: true, enumerable: d.enumerable, get: function () { hit(x[1], this); return d.get.call(this); }, set: d.set });
+});
+function rangeHit(where, rg) { try { SENT.forEach(function (s) { if (rg.intersectsNode(s)) hit(where, s); }); CTLS.forEach(function (s) { if (rg.intersectsNode(s)) hit(where, s); }); } catch (e) {} }
+var RTS = Range.prototype.toString, RCC = Range.prototype.cloneContents, RCL = Range.prototype.cloneRange, STS = Selection.prototype.toString;
+Range.prototype.toString = function () { rangeHit("range", this); return RTS.call(this); };
+Range.prototype.cloneContents = function () { rangeHit("clone", this); return RCC.call(this); };
+Selection.prototype.toString = function () { if (this.rangeCount) rangeHit("selection", this.getRangeAt(0)); return STS.call(this); };
+function spyReport() { return JSON.stringify(HITS) === "{}" ? "0" : JSON.stringify(HITS); }
+["chat", "ed", "usr", "chat3", "ed3", "usr3"].forEach(function (id) { SENT.add(document.getElementById(id).firstChild); });
+["chatCtl", "edCtl", "usrCtl"].forEach(function (id) { CTLS.add(document.getElementById(id).firstChild); });
+</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script>CMLConst.HYDRATE_MAX_MS = 60000; CMLConst.HOLD_MAX_MS = 60000; CMLConst.HOLD_ABS_MS = 60000;</script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var C = String.fromCharCode, LRM = C(0x200E);
+var META = { scan: "none", live: false, chat: true, hydrate: "defer", intercom: true, bodies: true, isoLabels: true,
+             dirSel: ".article_body article, h1", bodySel: ".article_body", skipSel: "[data-user]" };
+// القاموس كما كُتب (والعلامة التي كتبها المترجم في u3 مبنيّةٌ بـfromCharCode)
+var UI = {
+  "Copy test page": "صفحة اختبار النسخ",
+  "Install the tool in your home folder.": "ثبّت الأداة (Claude Code) في ~/.claude ثم شغّل claude --version.",
+  "Put the commands in their folder.": "ضع الأوامر في commands/ داخل المشروع.",
+  "Open the notes file to edit it.": "افتح ملف " + LRM + ".md للتعديل.",
+  "Open the setup guide for Claude Code.": "افتح دليل إعداد Claude Code.",
+  "Settings": "الإعدادات",
+  "Copy": "نسخ",
+};
+var TR = {
+  "Settings live in ~/.claude and use version 2.1.0 with <c1>claude doctor</c1> (Claude Code).": "تُحفظ الإعدادات في ~/.claude وتستعمل الإصدار 2.1.0 مع <c1>claude doctor</c1> (Claude Code).",
+  "Put files under src/ then run the build.": "ضع الملفات في src/ ثم شغّل البناء.",
+};
+var HV = CMLShared.harvestBlocks(document, { body: META.bodySel });
+var BLOCKS = {}, HV_TPL = [];
+HV.forEach(function (h) { HV_TPL.push(h.tpl); if (Object.prototype.hasOwnProperty.call(TR, h.tpl)) BLOCKS[h.fp] = TR[h.tpl]; });
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) {
+  if (!msg || msg.type !== "bodies") { if (cb) cb(null); return; }
+  setTimeout(function () { if (cb) cb({ page: CMLShared.pageKey(META, msg.path), blocks: BLOCKS, keep: [] }); }, 200);
+} });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true, cml_chatrtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "privacy", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: UI, patterns: [], plurals: {} } } };
+</script>
+<link rel="stylesheet" href="../extension/base.css">
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function $(id) { return document.getElementById(id); }
+var MARKS = new RegExp("[" + C(0x061C) + C(0x200E) + C(0x200F) + C(0x202A) + "-" + C(0x202E) + C(0x2066) + "-" + C(0x2069) + "]", "g");
+var NBSP = new RegExp(C(0xA0), "g");
+function nMarks(s) { return (String(s).match(MARKS) || []).length; }
+// حروفٌ مرئية للتقرير: كل علامةٍ برمزها
+function show(s) { return String(s).replace(MARKS, function (m) { return "<" + m.charCodeAt(0).toString(16) + ">"; }).replace(/\n/g, "\\n"); }
+function plain(s) { return String(s).replace(MARKS, ""); }
+function tx(id) { var w = document.createTreeWalker($(id), NodeFilter.SHOW_TEXT), n; while ((n = w.nextNode())) if (/\S/.test(n.nodeValue)) return n; return null; }
+function lastTx(id) { var w = document.createTreeWalker($(id), NodeFilter.SHOW_TEXT), n, l = null; while ((n = w.nextNode())) if (/\S/.test(n.nodeValue)) l = n; return l; }
+function sel(rg) { var s = getSelection(); s.removeAllRanges(); s.addRange(rg); return rg; }
+function nodeRange(id) { var r = document.createRange(); r.selectNodeContents($(id)); return r; }
+function span(a, ao, b, bo) { var r = document.createRange(); r.setStart(a, ao); r.setEnd(b, bo); return r; }
+// نسخٌ بحدثٍ يحمل DataTransfer: ما يصل الحافظة ما وضعه المعالج إن ألغى الحدث، وإلا نسخ المتصفح الأصلي
+var COPY_SPY = false;
+function copyOf(rg, tgt) {
+  sel(rg);
+  var dt = new DataTransfer(), ev = new ClipboardEvent("copy", { clipboardData: dt, bubbles: true, cancelable: true, composed: true });
+  var t = tgt || (rg.startContainer.nodeType === 1 ? rg.startContainer : rg.startContainer.parentNode);
+  SPY_ON = COPY_SPY;
+  t.dispatchEvent(ev);
+  SPY_ON = false;
+  var out = { handled: ev.defaultPrevented, types: Array.prototype.slice.call(dt.types).join(",") };
+  out.text = out.handled ? dt.getData("text/plain") : getSelection().toString().replace(NBSP, " ");
+  out.html = out.handled ? dt.getData("text/html") : "";
+  return out;
+}
+var A1 = UI["Install the tool in your home folder."], A2 = UI["Put the commands in their folder."], A3 = UI["Open the notes file to edit it."];
+var SITE = "Build zq" + LRM + "-7";   // والمسافة غير الفاصلة في المصدر مسافةٌ كما يكتبها نسخ المتصفح الأصلي (قِيس بالمسار الحقيقي)
+var B1 = "تُحفظ الإعدادات في ~/.claude وتستعمل الإصدار 2.1.0 مع claude doctor (Claude Code).", B2 = "ضع الملفات في src/ ثم شغّل البناء.";
+(async function () {
+  await wait(300);
+  document.body.appendChild(document.createElement("next-route-announcer"));   // إشارة الترطيب (hydrate: "defer")
+  await wait(1500);
+  check("الكتلتان من الحصاد بقالبهما (الشيفرة ذرّة)", "2", Object.keys(BLOCKS).length + (Object.keys(BLOCKS).length !== 2 ? " " + JSON.stringify(HV_TPL) : ""));
+  // ===== الشاشة: العلامات في DOM في المسارين (bidiWrap وltrParens وltrSlash، وltrMarks وltrParens في الكتلة) =====
+  var v1 = tx("u1").nodeValue, v2 = tx("u2").nodeValue, vb1 = tx("b1").nodeValue, vb2 = tx("b2").nodeValue;
+  check("الشاشة: علاماتٌ في العقد المترجمة (عزلٌ وLRM في المسار الواحد، وLRM قبل «~/.claude» وحول القوسين وبعد «src/» في الكتلة)",
+        "true|true|true|true|" + A1 + "|" + B2,
+        (v1.charCodeAt(0) === 0x2067 && nMarks(v1) >= 4) + "|" + (v2.indexOf("commands/" + LRM) >= 0) + "|" + (vb1.indexOf(LRM + "~/.claude") >= 0) + "|" +
+        (vb2.indexOf("src/" + LRM) >= 0) + "|" + plain(v1) + "|" + plain(vb2));
+  var muts = 0, mo = new MutationObserver(function (l) { muts += l.length; });
+  mo.observe(document.getElementById("__next"), { subtree: true, childList: true, characterData: true, attributes: true });
+  // ===== ١) المسار الواحد =====
+  var r = copyOf(nodeRange("u1"));
+  check("★ (ر24-هـ) جملةٌ كاملة (العقدة الواحدة): المنسوخ هو العربية كما كُتبت في القاموس حرفًا حرفًا", show(A1), show(r.text));
+  var t1 = tx("u1"), s0 = t1.nodeValue.indexOf("(") - 1, e0 = t1.nodeValue.indexOf("~/.claude") + 9;
+  r = copyOf(span(t1, s0, t1, e0));
+  check("★ (ر24-هـ) جزءٌ من جملة يبدأ بعلامة LRM قبل القوس: «(Claude Code) في ~/.claude» بلا علامة", show("(Claude Code) في ~/.claude"), show(r.text));
+  r = copyOf(span(tx("u1"), 0, tx("u2"), tx("u2").nodeValue.length));
+  check("★ (ر24-هـ) عقدتان مترجمتان (والشرطة المائلة بعد «commands/»)", show(A1 + " " + A2), show(r.text));
+  r = copyOf(span(tx("u2"), 0, tx("uS"), tx("uS").nodeValue.length));
+  check("★ (ر24-هـ) مترجمةٌ مع نصّ موقعٍ لم نترجمه فيه علامةٌ من الموقع ومسافةٌ غير فاصلة: علامتنا تُحذف وعلامة الموقع تبقى في النصّ وفي HTML",
+        show(A2 + " " + SITE) + "|1", show(r.text) + "|" + nMarks(r.html));
+  r = copyOf(nodeRange("hidP"));
+  check("★ (ر24-هـ) وعقدةٌ منّا مخفيّة (display:none) بين عقدةٍ منّا ونصّ موقعٍ فيه علامة: محاذاة العلامات بالمرسوم وحده، فتُحذف علاماتنا وتبقى علامة الموقع",
+        show(A1 + " " + SITE), show(r.text));
+  r = copyOf(nodeRange("u3"));
+  check("★ (ر24-هـ) علامةٌ كتبها المترجم في القاموس (LRM قبل «.md») تُحذف كذلك: أدخلتها الإضافة لا الموقع", show(plain(A3)), show(r.text));
+  check("ولافتةٌ لاتينية عزلناها (isoLabels: LRI…PDI على نصّ الموقع) مكتوبةٌ في الشاشة", "true", tx("iso").nodeValue.charCodeAt(0) === 0x2066);
+  r = copyOf(nodeRange("iso"));
+  check("★ (ر24-هـ) واللافتة المعزولة تُنسخ كما في المصدر بلا علامتي العزل", "C#", show(r.text));
+  r = copyOf(nodeRange("lnk"));
+  check("★ (ر24-هـ) رابطٌ مترجم: النصّ بلا علامات، وHTML فيه الرابط مطلقًا والنصّ وسمته المترجمة (title) بلا علامات",
+        show(UI["Open the setup guide for Claude Code."]) + "|true|0|true",
+        show(r.text) + "|" + (r.html.indexOf('href="' + location.origin + '/docs/zq/setup"') >= 0) + "|" + nMarks(r.html) + "|" +
+        (r.html.indexOf("افتح دليل إعداد Claude Code.") >= 0 && r.html.indexOf('title="افتح دليل إعداد Claude Code."') >= 0 && nMarks($("lnk").title) === 2));
+  // ===== ١) الكتلة =====
+  r = copyOf(nodeRange("b1"));
+  check("★ (ر24-هـ) فقرة كتلةٍ كاملة بمسارٍ ورقم إصدار وشيفرةٍ سطرية وقوسٍ لاتيني: العربية كما كُتبت والشيفرة كما في المصدر", show(B1), show(r.text));
+  check("★ (ر24-هـ) وtext/html للفقرة بلا علامات، والشيفرة عنصرُ code كما هي", "0|true", nMarks(r.html) + "|" + /<code id="cd1">claude doctor<\/code>/.test(r.html));
+  // فاصل الفقرتين كما يسلسله المتصفح: من تسلسله للتحديد نفسه (ولا علامة في نصّ الموقع هنا، فما بين الجملتين فاصله وحده)
+  var rgB = span(tx("b1"), 0, lastTx("b2"), lastTx("b2").nodeValue.length);
+  sel(rgB);
+  var TB = plain(getSelection().toString()), SEP = TB.indexOf(B1) === 0 && TB.slice(-B2.length) === B2 ? TB.slice(B1.length, TB.length - B2.length) : "?";
+  r = copyOf(rgB);
+  check("★ (ر24-هـ) فقرتان من الكتلة (والشرطة المائلة بعد «src/»)، وفاصلهما كما يسلسله المتصفح", show(B1 + SEP + B2) + "|true", show(r.text) + "|" + /^\n+$/.test(SEP));
+  r = copyOf(nodeRange("cd1"));
+  check("★ (ر24-هـ) تحديدٌ داخل ذرّة الشيفرة وحدها (نصّ موقعٍ لم نترجمه): المعالج لا يعمل، والنسخ الأصلي كما هو", "false|claude doctor", r.handled + "|" + r.text);
+  var tvb = tx("b1"), sb = tvb.nodeValue.indexOf("~/.claude") - 1;
+  r = copyOf(span(tvb, sb, tvb, sb + 10));
+  check("★ (ر24-هـ) المسار وحده من فقرة الكتلة (LRM قبل «~»): «~/.claude» كما يُلصق في الطرفية", show("~/.claude"), show(r.text));
+  // ===== ٢) المحميّ: محادثة، وقابلٌ للتحرير، ومحتوى مستخدم — وضوابطها =====
+  COPY_SPY = true;
+  var pc = copyOf(span(tx("c1u"), 0, $("chat").firstChild, 8));
+  var pe = copyOf(span(tx("e1u"), 0, $("ed").firstChild, 8));
+  var pu = copyOf(span(tx("s1u"), 0, $("usr").firstChild, 8));
+  // (المراجعة المستقلة لـر24-هـ) ويبدأ التحديد داخل المحميّ وينتهي في عقدةٍ منّا: الحدّ الأول وأسلافه يُفحصان قبل أي قراءة (protAbove على الحدّ الأول)
+  var ps3 = [copyOf(span($("chat3").firstChild, 2, tx("c3u"), tx("c3u").nodeValue.length)), copyOf(span($("ed3").firstChild, 2, tx("e3u"), tx("e3u").nodeValue.length)),
+             copyOf(span($("usr3").firstChild, 2, tx("s3u"), tx("s3u").nodeValue.length))];
+  COPY_SPY = false;
+  check("★ (مراجعة ر24-هـ) تحديدٌ يبدأ داخل محادثةٍ أو قابلٍ للتحرير أو محتوى مستخدم وينتهي في عقدةٍ منّا: لا يعمل المعالج", "false|false|false",
+        ps3.map(function (x) { return x.handled; }).join("|"));
+  // (والمتصفح نفسه يقصّ التحديد عند حدّ التحرير: نسخه الأصلي لا يبلغ «Settings» في القابل للتحرير)
+  check("★ (ر24-هـ) تحديدٌ يمسّ محادثةً أو قابلًا للتحرير أو محتوى مستخدم: لا يعمل المعالج، والنسخ الأصلي كما هو (بعلاماتنا)", "false|false|false|true|true|true",
+        pc.handled + "|" + pe.handled + "|" + pu.handled + "|" + (nMarks(pc.text) > 0) + "|" + (nMarks(pe.text) > 0) + "|" + (nMarks(pu.text) > 0));
+  check("★ (ر24-هـ، AD-005) ولا يقرأ المعالج النصّ المحميّ بأي getter ولا بسلفٍ يحويه ولا بتسلسل التحديد أو استنساخه", "0", spyReport());
+  var pick = function (s) { return s.slice(0, A1.length); };
+  check("ونصّ ما قبل المحميّ في هذه الحالة هو نسخ المتصفح الأصلي (بعلاماتنا كما في الشاشة)", "true", nMarks(pick(pc.text)) > 0);
+  COPY_SPY = true;
+  var qc = copyOf(span(tx("c2u"), 0, $("chatCtl").firstChild, $("chatCtl").firstChild.nodeValue.length));
+  var qe = copyOf(span(tx("e2u"), 0, $("edCtl").firstChild, $("edCtl").firstChild.nodeValue.length));
+  var qu = copyOf(span(tx("s2u"), 0, $("usrCtl").firstChild, $("usrCtl").firstChild.nodeValue.length));
+  COPY_SPY = false;
+  check("★ (ر24-هـ، AD-005) والضوابط بالبناء نفسه بلا حماية: يعمل المعالج، والمنسوخ العربية كما كُتبت", "true|true|true|" + show(A1 + " " + UI.Settings),
+        qc.handled + "|" + qe.handled + "|" + qu.handled + "|" + [show(qc.text), show(qe.text), show(qu.text)].filter(function (x, i, a) { return a.indexOf(x) === i; }).join(" ~ "));
+  check("والجاسوس يرى قراءة المعالج في الضوابط (فالصفر في المحميّ ليس صفرًا فارغًا)", "true", CHITS > 0);
+  // ===== ٤) (المراجعة المستقلة لـر24-هـ) HTML كنسخ المتصفح بنيةً ومحتوًى، وحدود الحالات التي لا تُحاكى =====
+  // المتوقَّع نصًّا: تسلسل المتصفح نفسه (toString) وعلاماتنا وحدها محذوفةٌ من قيم عقدنا، والمسافة غير الفاصلة مسافة
+  var cleanOurs = function (rg, ids) { sel(rg); var s = getSelection().toString(); ids.forEach(function (id) { var v = tx(id).nodeValue; s = s.split(v).join(plain(v)); }); return s.replace(NBSP, " "); };
+  var parsed = function (html) { var d = document.createElement("div"); d.appendChild(document.createRange().createContextualFragment(html)); return d; };
+  var rgT = nodeRange("tb"), expT = cleanOurs(rgT, ["t1", "t2", "t4"]);
+  r = copyOf(rgT);
+  var pT = parsed(r.html);
+  check("★ (مراجعة ر24-هـ) جدولٌ كامل: النصّ بفواصل المتصفح وعلامة الموقع، وHTML جدولٌ يبقى بعد التحليل في سياق body (4 خلايا، لا خلايا ملتصقة)",
+        show(expT) + "|1|4|1", show(r.text) + "|" + pT.querySelectorAll("table").length + "|" + pT.querySelectorAll("td").length + "|" + nMarks(r.html));
+  r = copyOf(span(tx("t1"), 0, tx("t2"), tx("t2").nodeValue.length));
+  check("★ (مراجعة ر24-هـ) خليّتان من صفٍّ واحد: HTML ملفوفٌ بالصفّ وجسم الجدول والجدول كما يلفّه نسخ المتصفح", "true|2",
+        /^<table id="tb"><tbody><tr><td id="t1">/.test(r.html) + "|" + parsed(r.html).querySelectorAll("td").length);
+  var rgL = span(tx("li1"), 0, tx("li2"), tx("li2").nodeValue.length), expL = cleanOurs(rgL, ["li1", "li2"]);
+  r = copyOf(rgL);
+  check("★ (مراجعة ر24-هـ) بندان من قائمة: HTML ملفوفٌ بالقائمة، والنصّ بفاصل المتصفح", "true|2|" + show(expL),
+        /^<ul id="ul"><li id="li1">/.test(r.html) + "|" + parsed(r.html).querySelectorAll("ul > li").length + "|" + show(r.text));
+  r = copyOf(nodeRange("hx"));
+  check("★ (مراجعة ر24-هـ) ما لا يُرسم أو لا يُحدَّد لا يدخل HTML (رقم سطرٍ وزرٌّ بـuser-select:none، ونصٌّ بـvisibility:hidden، وdisplay:none، وstyle)، والنصّ كتسلسل المتصفح",
+        show(A1 + A2) + "|true|true|true|true|true|0",
+        show(r.text) + "|" + (r.html.indexOf(" 42 ") < 0) + "|" + (r.html.indexOf("<button") < 0 && r.html.indexOf("نسخ") < 0) + "|" + /<span id="xV"[^>]*><\/span>/.test(r.html) + "|" +
+        (r.html.indexOf('id="xD"') < 0 && r.html.indexOf(plain(A3)) < 0) + "|" + (r.html.indexOf("<style") < 0 && r.html.indexOf("zq-never") < 0) + "|" + nMarks(r.html));
+  r = copyOf(span($("pc1"), 0, $("pc1"), 1));
+  check("★ (مراجعة ر24-هـ) تحديدٌ بحدّين من العناصر ينتهي قبل المحادثة مباشرةً: نهايته بالهوية، فلا يُمشى ما بعدها ويعمل المعالج", "true|" + show(A1), r.handled + "|" + show(r.text));
+  var ia = copyOf(span(tx("m1"), 0, tx("m2"), tx("m2").nodeValue.length)), fa = copyOf(span(tx("f1u"), 0, tx("f2u"), tx("f2u").nodeValue.length)),
+      ta = copyOf(span(tx("tt1"), 0, tx("ttV"), tx("ttV").nodeValue.length));
+  check("★ (مراجعة ر24-هـ) وما لا يُحاكى يُترك للنسخ الأصلي: صورةٌ بنصّ alt، وعنصر إدخال، وحروفٌ ظاهرةٌ تحت text-transform", "false|false|false", ia.handled + "|" + fa.handled + "|" + ta.handled);
+  r = copyOf(nodeRange("tth"));
+  check("★ (مراجعة ر24-هـ) وحروفٌ تحت text-transform لا تُرسم (display:none) أو لا تُحدَّد: لا يكتبها أيٌّ من النسخين، فيعمل المعالج", "true|" + show(A1), r.handled + "|" + show(r.text));
+  var rgZ = nodeRange("pz"), expZ = cleanOurs(rgZ, ["z1", "z2"]);
+  r = copyOf(rgZ);
+  check("★ (مراجعة ر24-هـ) محتوى details مغلقٍ وcontent-visibility:hidden (وفيه علامة موقع) لا يكتبه أيٌّ من النسخين: يعمل المعالج بمحاذاة المرسوم، ولا يدخل HTML",
+        "true|" + show(expZ) + "|true|0", r.handled + "|" + show(r.text) + "|" + (r.html.indexOf(plain(A2)) < 0 && r.html.indexOf("zq") < 0 && r.html.indexOf("<summary") >= 0) + "|" + nMarks(r.html));
+  // ===== ٣) الشاشة على حالها، ومعالج الموقع، والإطفاء =====
+  mo.disconnect();
+  // (المراجعة المستقلة لـر24-هـ) عقدةٌ عرّبناها ثم كتب الموقع فيها نصًّا بعلامةٍ منه: ليست «لنا» بعد (lastWritten)، فعلامته تبقى
+  // (قبل أن يبلغ المراقبُ الطفرة — النسخ في المهمّة نفسها — وبعده)
+  $("rw1").firstChild.nodeValue = SITE;
+  var rw = copyOf(span(tx("rw0"), 0, tx("rw1"), tx("rw1").nodeValue.length));
+  await wait(400);
+  r = copyOf(span(tx("rw0"), 0, tx("rw1"), tx("rw1").nodeValue.length));
+  check("★ (مراجعة ر24-هـ) عقدةٌ عرّبناها ثم كتب الموقع فيها نصًّا بعلامة: علامة الموقع تبقى، وعقدتنا بجوارها بلا علامة (قبل المراقب وبعده)",
+        "true|" + show(UI.Settings + " " + SITE) + "|true|" + show(UI.Settings + " " + SITE), rw.handled + "|" + show(rw.text) + "|" + r.handled + "|" + show(r.text));
+  check("★ (ر24-هـ) لا يغيّر النسخ الشاشة: العلامات في DOM كما هي، ولا طفرة في الصفحة", "true|true|0",
+        (tx("u1").nodeValue === v1) + "|" + (tx("b1").nodeValue === vb1) + "|" + muts);
+  var rgS = span(tx("u1"), 2, tx("u2"), 5);
+  copyOf(rgS);
+  var gs = getSelection().getRangeAt(0);
+  check("والتحديد كما هو بعد النسخ", "true", gs.startContainer === tx("u1") && gs.startOffset === 2 && gs.endContainer === tx("u2") && gs.endOffset === 5);
+  var SITE_TAKE = true;
+  var siteH = function (e) { if (SITE_TAKE) { e.clipboardData.setData("text/plain", "SITE-OWN"); e.preventDefault(); } };
+  document.addEventListener("copy", siteH);
+  r = copyOf(nodeRange("u1"));
+  document.removeEventListener("copy", siteH);
+  check("★ (ر24-هـ) معالجٌ من الموقع ألغى الحدث قبلنا: يُترك ما وضعه وحده", "true|SITE-OWN|text/plain", r.handled + "|" + r.text + "|" + r.types);
+  var ch = {}; ch["cml_site.privacy"] = { newValue: false }; MOCK.localStore["cml_site.privacy"] = false;
+  MOCK.fireChanged(ch, "local");
+  await wait(600);
+  r = copyOf(nodeRange("u1"));
+  check("★ (ر24-هـ) والإضافة مطفأةٌ للموقع: الأصل في الشاشة، ولا يعمل المعالج", "Install the tool in your home folder.|false",
+        $("u1").textContent + "|" + r.handled);
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "copy " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "COPY: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

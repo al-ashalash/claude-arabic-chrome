@@ -7,7 +7,7 @@
     "languageNameNative": "العربية",
     "sourceLanguage": "en",
     "version": "2.0.0",
-    "count": 3049
+    "count": 3062
   },
   "_guide": {
     "ar": "قاموس أكاديمية Claude (academy.claude.com). أضِف داخل strings سطرًا: \"النص الإنجليزي كما يظهر\": \"الترجمة\"، ثم ابنِ بـ node tools/build.mjs. هنا واجهة الأكاديمية وعناوين الدورات والدروس والشروح وحالات الاستخدام ومسارات التعلّم وأقسام الدورات، حرفيًّا؛ والمتون والملخصات والأهداف تبقى إنجليزيةً إلى 3.0.0 (القرار 69)، ومعها ما تبقيه الشركة إنجليزيًّا في كل لغة (keep-en.json).",
@@ -51,6 +51,8 @@
     "A discussion guide for the AI Fluency Index · Claude Academy": "دليل لمناقشة مؤشر الطلاقة في الذكاء الاصطناعي · Claude Academy",
     "A few quick questions, then resources that fit how you work.": "بضعة أسئلة سريعة، ثم موارد تناسب طريقة عملك.",
     "A four-week playbook for the internal champion driving adoption across your organization.": "دليل عمل لأربعة أسابيع للمناصر الداخلي الذي يقود التبنّي على مستوى مؤسستك.",
+    "A hands-on build-along launching your first Cowork workflow, covering connectors, skills, permissions, and a scheduled weekly digest.": "تطبيق عملي تبني فيه خطوةً بخطوة أول سير عمل لك في Cowork وتطلقه، ويشمل الموصّلات والمهارات والأذونات وملخصًا أسبوعيًّا مجدولًا.",
+    "A hands-on intro to Claude Code: install the CLI, fix a live bug, teach it your codebase with claude.md, and scale agents via MCP.": "مقدمة عملية إلى Claude Code: ثبّت CLI، وأصلِح خطأً حقيقيًّا، وعرّفه بقاعدة تعليماتك البرمجية عبر claude.md، ووسّع عمل الوكلاء عبر MCP.",
     "A map of every file Claude Code reads: settings, agents, skills, and hooks.": "خريطة لكل ملف يقرؤه Claude Code: الإعدادات والوكلاء والمهارات والخطافات.",
     "A Multi-index RAG pipeline": "خط معالجة RAG متعدد الفهارس",
     "A Multi-Index RAG pipeline": "خط معالجة RAG متعدد الفهارس",
@@ -306,6 +308,7 @@
     "Build AI fluency across your campus. Courses, guides, and workflows for faculty, students, researchers, and the teams bringing Claude to their institution.": "عزّز الطلاقة في الذكاء الاصطناعي في أرجاء جامعتك. دورات وأدلة وسير عمل لأعضاء هيئة التدريس والطلاب والباحثين والفرق التي تُدخل Claude إلى مؤسساتها.",
     "Build an 'Ask the Company' agent": "إنشاء وكيل «اسأل الشركة»",
     "Build an 'Ask the Company' agent · Claude Academy": "إنشاء وكيل «اسأل الشركة» · Claude Academy",
+    "Build an accurate mental model of what large language models can and cannot do: next-token prediction, knowledge, working memory, steerability, and context limits.": "ابنِ نموذجًا ذهنيًّا دقيقًا لما تستطيع النماذج اللغوية الكبيرة فعله وما لا تستطيعه: التنبؤ بالوحدة اللغوية التالية، والمعرفة، والذاكرة العاملة، وقابلية التوجيه، وحدود السياق.",
     "Build analysis from browser charts and folder data": "إعداد تحليل من مخططات المتصفح وبيانات المجلد",
     "Build analysis from browser charts and folder data · Claude Academy": "إعداد تحليل من مخططات المتصفح وبيانات المجلد · Claude Academy",
     "Build Claude into your products. Go from first call to production with the API, Claude Console, and MCP.": "ادمج Claude في منتجاتك. انتقل من أول استدعاء إلى الإنتاج باستخدام API وClaude Console وMCP.",
@@ -348,6 +351,7 @@
     "Building with the Claude API · Claude Academy": "البناء باستخدام Claude API · Claude Academy",
     "Building your first managed agent": "بناء أول وكيل مُدار لك",
     "Building your first managed agent · Claude Platform 101 · Claude Academy": "بناء أول وكيل مُدار لك · Claude Platform 101 · Claude Academy",
+    "Building your first workflow with Cowork": "بناء أول سير عمل لك باستخدام Cowork",
     "Built-in tools": "الأدوات المدمجة",
     "Built-in tools · Claude Platform 101 · Claude Academy": "الأدوات المدمجة · Claude Platform 101 · Claude Academy",
     "By audience": "حسب الجمهور",
@@ -426,6 +430,8 @@
     "Claude Code security safeguards and best practices for safe use.": "ضمانات الأمان في Claude Code وأفضل الممارسات للاستخدام الآمن.",
     "Claude Code setup": "إعداد Claude Code",
     "Claude Code setup · Building with the Claude API · Claude Academy": "إعداد Claude Code · البناء باستخدام Claude API · Claude Academy",
+    "Claude Code: Advanced": "Claude Code: المستوى المتقدم",
+    "Claude Code: Foundations": "Claude Code: الأساسيات",
     "Claude cookbooks": "كتب وصفات Claude",
     "Claude couldn’t answer.": "تعذّرت على Claude الإجابة.",
     "Claude couldn’t create a diagram for this section. Try again.": "تعذّر على Claude إنشاء مخطط لهذا القسم. حاول مرة أخرى.",
@@ -828,6 +834,7 @@
     "Discernment for user experience": "التمييز في تجربة المستخدم",
     "Discernment for user experience · AI Fluency for builders · Claude Academy": "التمييز في تجربة المستخدم · الطلاقة في الذكاء الاصطناعي للمطوّرين · Claude Academy",
     "Dismiss": "تجاهل",
+    "Dive into a product": "تعمّق في أحد المنتجات",
     "Do": "افعل",
     "Docs and reference": "الوثائق والمراجع",
     "Document": "مستند",
@@ -914,6 +921,7 @@
     "Explore": "استكشاف",
     "Explore AI Fluency behaviors": "استكشاف سلوكيات الطلاقة في الذكاء الاصطناعي",
     "Explore courses without an account": "استكشف الدورات دون حساب",
+    "Explore the benefits of moving from single-player to multiplayer AI and learn how to prepare your team for the shift.": "استكشف فوائد الانتقال من الاستخدام الفردي للذكاء الاصطناعي إلى الاستخدام الجماعي، وتعلّم كيف تُهيّئ فريقك لهذا التحوّل.",
     "Explore what Claude can do for you": "استكشاف ما يمكن أن يقدّمه لك Claude",
     "Explore what Claude can do for you · Claude Academy": "استكشاف ما يمكن أن يقدّمه لك Claude · Claude Academy",
     "Explore!": "استكشف!",
@@ -1047,6 +1055,7 @@
     "Give me an example": "أعطني مثالًا",
     "Giving Claude context": "تزويد Claude بالسياق",
     "Global Privacy Control is on in your browser, so Academy treats you as having rejected all optional cookies, whatever you choose here.": "إعداد Global Privacy Control مفعّل في متصفحك، لذا تعاملك الأكاديمية على أنك رفضت كل ملفات تعريف الارتباط الاختيارية، أيًّا كان ما تختاره هنا.",
+    "Go deep on Claude Code power skills: context engineering, MCP, hooks and permissions, and agent orchestration in a real codebase.": "تعمّق في مهارات Claude Code المتقدمة: هندسة السياق، وMCP، والخطافات والأذونات، وتنسيق الوكلاء في قاعدة تعليمات برمجية حقيقية.",
     "Go deeper with Claude": "تعمّق أكثر مع Claude",
     "Go home": "الانتقال إلى الصفحة الرئيسية",
     "Going deeper": "التعمّق أكثر",
@@ -1068,6 +1077,7 @@
     "Hand Claude Cowork your first task · Introduction to Claude Cowork · Claude Academy": "إسناد مهمتك الأولى إلى Claude Cowork · مقدمة في Claude Cowork · Claude Academy",
     "Hand Claude Tag your first task": "إسناد مهمتك الأولى إلى Claude Tag",
     "Hand off whole tasks with Cowork": "أوكِل مهام كاملة عبر Cowork",
+    "Hand off work you can steer anywhere. Brief Claude on a task, step away, and come back to results ready for your review.": "أوكِل عملًا يمكنك توجيهه من أي مكان. اشرح المهمة لـ Claude، ثم ابتعد، وعُد لتجد نتائج جاهزة لمراجعتك.",
     "Hand off work you can steer anywhere. Brief Claude on a task, step away, and come back to results you can trust.": "أوكِل عملًا يمكنك توجيهه من أي مكان. اشرح المهمة لـ Claude، ثم ابتعد، وعُد لتجد نتائج يمكنك الوثوق بها.",
     "Handle a request while away from your keyboard": "التعامل مع طلب وأنت بعيد عن لوحة مفاتيحك",
     "Handle a request while away from your keyboard · Claude Academy": "التعامل مع طلب وأنت بعيد عن لوحة مفاتيحك · Claude Academy",
@@ -1287,6 +1297,7 @@
     "Learn the AI Fluency framework for collaborating with AI safely and effectively.": "تعلّم إطار الطلاقة في الذكاء الاصطناعي للتعاون معه بأمان وفعالية.",
     "Learn the Claude API": "تعلّم Claude API",
     "Learn the products": "تعرّف على المنتجات",
+    "Learn to collaborate with AI effectively, efficiently, ethically, and safely using the 4D framework: Delegation, Description, Discernment, and Diligence.": "تعلّم التعاون مع الذكاء الاصطناعي بفعالية وكفاءة وأمان وعلى نحوٍ أخلاقي، باستخدام إطار 4D: التفويض، والوصف، والتمييز، والعناية الواجبة.",
     "Learn to use AI safely, effectively, and with intention. Free courses, tutorials, and use cases from Anthropic’s education team.": "تعلّم استخدام الذكاء الاصطناعي بأمان وفعالية ووعي. دورات ودروس تعليمية وحالات استخدام مجانية من فريق التعليم في Anthropic.",
     "Learn to work and build with Claude": "تعلّم العمل والبناء مع Claude",
     "Learn what AI is good at, where it breaks down, and how to work with it effectively.": "تعرّف على ما يُجيده الذكاء الاصطناعي، وأين يتعثّر، وكيف تعمل معه بفعالية.",
@@ -2008,6 +2019,7 @@
     "Previous question": "السؤال السابق",
     "Primary": "أساسي",
     "Privacy choices": "خيارات الخصوصية",
+    "Privacy policy": "سياسة الخصوصية",
     "Proactivity: let Claude reply without being tagged": "الاستباقية: السماح لـ Claude بالرد دون الإشارة إليه",
     "Proactivity: let Claude reply without being tagged · Introduction to Claude Tag · Claude Academy": "الاستباقية: السماح لـ Claude بالرد دون الإشارة إليه · مقدمة في Claude Tag · Claude Academy",
     "Process batches of vendors with Cowork": "معالجة المورّدين على دفعات مع Cowork",
@@ -2735,6 +2747,7 @@
     "Upload failed": "فشل الرفع",
     "Usage analytics for Team and Enterprise plans": "تحليلات الاستخدام لخطتي Team وEnterprise",
     "Usage limit best practices": "أفضل الممارسات بشأن حدود الاستخدام",
+    "Usage policy": "سياسة الاستخدام",
     "Use artifacts to visualize and create AI apps without ever writing a line of code": "استخدام المُخرَجات لإنشاء تصوّرات مرئية وتطبيقات ذكاء اصطناعي دون كتابة سطر واحد من التعليمات البرمجية",
     "Use artifacts to visualize and create AI apps without ever writing a line of code · Claude Academy": "استخدام المُخرَجات لإنشاء تصوّرات مرئية وتطبيقات ذكاء اصطناعي دون كتابة سطر واحد من التعليمات البرمجية · Claude Academy",
     "Use case": "حالة استخدام",
@@ -3195,6 +3208,11 @@
       "b": 1
     },
     {
+      "en": "You’ll leave {title}. Your progress is saved. Re-enroll any time to pick up where you left off.",
+      "re": "^You’ll leave (.+?)\\. Your progress is saved\\. Re-enroll any time to pick up where you left off\\.$",
+      "ar": "ستنسحب من %T1. تقدّمك محفوظ. أعد التسجيل في الدورة متى شئت لتستأنف من حيث توقفت."
+    },
+    {
       "en": "You already have {max} Claude cards open on this page. Close a card to add another.",
       "re": "^You already have ([^\\s]*\\d[^\\s]*) Claude cards open on this page\\. Close a card to add another\\.$",
       "ar": "لديك بالفعل $1 من بطاقات Claude مفتوحة في هذه الصفحة. أغلق بطاقة لإضافة أخرى.",
@@ -3235,6 +3253,11 @@
       "re": "^There was a problem reading the folder “([^\\s]+(?:\\s[^\\s]+){0,3}?)”\\.$",
       "ar": "حدثت مشكلة في قراءة المجلد «$1».",
       "b": 1
+    },
+    {
+      "en": "Ask about {page}, or anything else on Academy.",
+      "re": "^Ask about (.+?), or anything else on Academy\\.$",
+      "ar": "اسأل عن %T1، أو عن أي شيء آخر في الأكاديمية."
     },
     {
       "en": "Word bank: Choose the word for blank {number}",
@@ -3325,6 +3348,11 @@
       "b": 1
     },
     {
+      "en": "Remove {section}, a section of {lesson}",
+      "re": "^Remove (.+?), a section of (.+)$",
+      "ar": "إزالة %T1، أحد أقسام %T2"
+    },
+    {
       "en": "You got {correct} of {total} correct.",
       "re": "^You got ([^\\s]+(?:\\s[^\\s]+){0,3}?) of ([^\\s]*\\d[^\\s]*) correct\\.$",
       "ar": "أجبت إجابة صحيحة عن $1 من $2.",
@@ -3347,6 +3375,16 @@
       "re": "^([^\\s]+(?:\\s[^\\s]+){0,3}?), Claude is working$",
       "ar": "$1، Claude يعمل",
       "b": 1
+    },
+    {
+      "en": "Mark “{title}” as not done",
+      "re": "^Mark “(.+)” as not done$",
+      "ar": "تحديد «%T1» كغير منجَز"
+    },
+    {
+      "en": "You’re enrolled in {courseTitle}",
+      "re": "^You’re enrolled in (.+)$",
+      "ar": "تم تسجيلك في %T1"
     },
     {
       "en": "Recording · Aug 13",
@@ -3375,6 +3413,11 @@
       "re": "^Delete feedback: ([^\\s]+(?:\\s[^\\s]+){0,3}?)$",
       "ar": "حذف الملاحظات: $1",
       "b": 1
+    },
+    {
+      "en": "Because you took {title}",
+      "re": "^Because you took (.+)$",
+      "ar": "لأنك درست %T1"
     },
     {
       "en": "“{name}” is too large.",
@@ -3437,6 +3480,11 @@
       "b": 1
     },
     {
+      "en": "Mark “{title}” as done",
+      "re": "^Mark “(.+)” as done$",
+      "ar": "تحديد «%T1» كمنجَز"
+    },
+    {
       "en": "{completed} of {total} completed",
       "re": "^([^\\s]+(?:\\s[^\\s]+){0,3}?) of ([^\\s]*\\d[^\\s]*) completed$",
       "ar": "اكتمل $1 من $2",
@@ -3491,6 +3539,11 @@
       "b": 1
     },
     {
+      "en": "You finished {courseTitle}",
+      "re": "^You finished (.+)$",
+      "ar": "أنهيت %T1"
+    },
+    {
       "en": "Feature {n} of {total}",
       "re": "^Feature ([^\\s]*\\d[^\\s]*) of ([^\\s]*\\d[^\\s]*)$",
       "ar": "الميزة $1 من $2",
@@ -3507,6 +3560,11 @@
       "re": "^([^\\s]*\\d[^\\s]*) files added$",
       "ar": "تمت إضافة $1 من الملفات",
       "b": 1
+    },
+    {
+      "en": "Play video: {item}",
+      "re": "^Play video: (.+)$",
+      "ar": "تشغيل الفيديو: %T1"
     },
     {
       "en": "React with {emoji}",
@@ -3561,6 +3619,11 @@
       "re": "^([^\\s]+(?:\\s[^\\s]+){0,3}?) unchecked$",
       "ar": "$1 غير محدد",
       "b": 1
+    },
+    {
+      "en": "Ask about {section}",
+      "re": "^Ask about (.+)$",
+      "ar": "اسأل عن %T1"
     },
     {
       "en": "{count} answered",
@@ -3629,6 +3692,11 @@
       "b": 1
     },
     {
+      "en": "Download {title}",
+      "re": "^Download (.+)$",
+      "ar": "تنزيل %T1"
+    },
+    {
       "en": "Blank {number}: {word}",
       "re": "^Blank ([^\\s]*\\d[^\\s]*): ([^\\s]+(?:\\s[^\\s]+){0,3}?)$",
       "ar": "الفراغ $1: $2",
@@ -3671,6 +3739,11 @@
       "b": 1
     },
     {
+      "en": "Next: {title}",
+      "re": "^Next: (.+)$",
+      "ar": "التالي: %T1"
+    },
+    {
       "en": "Step {number}",
       "re": "^Step ([^\\s]*\\d[^\\s]*)$",
       "ar": "الخطوة $1",
@@ -3681,6 +3754,11 @@
       "re": "^Quiz ([^\\s]*\\d[^\\s]*)$",
       "ar": "الاختبار القصير $1",
       "b": 1
+    },
+    {
+      "en": "Play {title}",
+      "re": "^Play (.+)$",
+      "ar": "تشغيل %T1"
     },
     {
       "en": "{count} min",

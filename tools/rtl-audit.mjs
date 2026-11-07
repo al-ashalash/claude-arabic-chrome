@@ -19,14 +19,49 @@
 //   node rtl-audit.mjs --domains=docs --widths=1366 --only=pricing
 //   node rtl-audit.mjs --gate [--baseline=rtl-audit-baseline.json]   # بوابة: خروجٌ 1 عند عيبٍ جديد
 //   node rtl-audit.mjs --write-baseline     # يحفظ بصمات العيوب الحالية خطَّ أساسٍ للبوابة
+//   node rtl-audit.mjs --domains=com --gate # claude.com: خارج التشغيل الافتراضي حتى يقرّر المالك أصنافه العالية (OPT_IN أدناه)
 // خيارات: --repo=<مستودع> --ext=<مجلد الإضافة> --out=<مجلد النتائج> --pages=<ملف JSON> --no-shots
-//         --chrome=<مسار> --max-h=<سقف ارتفاع اللقطة> --keep-going --verbose
+//         --chrome=<مسار> --max-h=<سقف ارتفاع اللقطة> --keep-going --verbose --skip-undecided-high
+//         --challenge-wait=<ثوانٍ> (ر29-ح): مهلة إعادة المحاولة مرةً بعد صفحة تحقّق (Cloudflare، بحالة 403 أو 503) قبل أن تُطبع «⊘ لم تُقَس»؛ 20 افتراضًا
+//         --plan (ر16-ج): يطبع خطة التشغيل JSON ويخرج بلا كروم ولا شبكة
+//         --selectors-only (ر29-د): بوابة بدء المرحلة — صفحةٌ أو صفحتان عامتان لكل نطاقٍ مشحون بعرض 1366 بلا إضافة، ولكل مفتاح محدِّدٍ مشحون
+//                          «يطابق» أو «لا يطابق»، وخروجٌ 1 عند أي سقوط (دقائق قليلة؛ sel-health.mjs SEL_PAGES)
+//         --census (ر29-د2): إحصاء مسارات المتن — كل صفحةٍ في llms.txt العام تحت مسار متن (الوثائق وClaude Code؛ ‎--domains=<d>‎ يضيّقه،
+//                   و‎--census-max=N‎ عيّنةٌ موزَّعة) بعرض 1366 بلا إضافة: صفحةٌ لا تطابق فيها حاوية المتن (bodyMain، أو bodySel بلا حاوية) شيئًا
+//                   سيحجزها الصمّام «nosel» — تُطبع بمسارها وحده ويُخرج 1. الأعداد والمسارات وحدها في census.json (نحو 3 ث للصفحة، أربعٌ معًا)
+//
+// ★ (ر16-ب، ٦ جمادى الأولى ١٤٤٨هـ) ثلاث إضافات:
+// ١) النطاق القادم (status.upcoming في جدول النطاقات — claude.com حتى CM-د) يُفحص كما سيبدو حين يُشغَّل، والحال الملتزمة لا تتغيّر: تُبنى نسخةٌ
+//    مؤقتة من الإضافة خارج المستودع (مجلدٌ في os.tmpdir) صفُّ النطاق فيها {full: true}، ويُضاف إلى قاموسه المبنيّ الفارغ نصوصٌ تجريبية قليلة
+//    بقيمٍ اصطناعية («نصٌّ تجريبي ١»…: لا ترجمة ولا نصّ موقع) على كلماتٍ عامة في الترويسة ليرى الفحص نصًّا عربيًّا. وتُحمَّل في كرومٍ خاصٍّ بها،
+//    وتُحذف عند الخروج. ويقول الملخّص وملف النتائج (switchedOn، وفي كل صفحة switchedOn: true) إن النطاق فُحص مشغَّلًا. والمشحونة كما كانت.
+//    ★ (ر28-ب) ومانيفست الحزمة لا يحمل مدخل النطاق القادم، فتضيفه النسخة من صفّه المشغَّل بمولّد البناء (manifest-entry.mjs) وتكتبه في switchedOn.<id>.entry.
+//    وصفحات النطاقات في FRESH_PROFILE (claude.com: زيارتها الثانية على 390 يحوّلها ملف تعريف الارتباط إلى claude.ai) يُفتح لكل تحميلٍ منها
+//    كرومٌ جديد بملفٍّ جديد، للمرجع وللمعرَّب.
+// ٢) الحالات التفاعلية: صفحةٌ في العيّنة (أو في --pages) قد تحمل widths (العروض التي تُفحص بها وحدها) وsteps: خطواتٌ تُنفَّذ كما هي في تحميل
+//    المرجع LTR وفي التحميل المعرَّب بعد ضبط الإطار وقبل القياس، ولكل حالةٍ وسمُها (tag) فبصماتها مع صفحتها. والخطوات (كلٌّ كائنٌ بمفتاحٍ واحد):
+//      {"click": "<css>", "n": 0}   ينقر العنصر الظاهر رقم n (من 0) مما يطابق المحدِّد، وينتظر ظهوره حتى 8 ث (timeout بالمللي ثانية)
+//      {"waitFor": "<css>", "n": 0} ينتظر ظهور عنصرٍ يطابقه
+//      {"scroll": "<css>", "n": 0}  يمرّر العنصر إلى وسط الإطار
+//      {"wait": <مللي ثانية>}
+//    والخطوة التي لا تجد عنصرها تُخفق بها الصفحة (خطأٌ يُسقط البوابة) — فلا تمرّ حالةٌ لم تُفتح.
+// ٣) خطّ الأساس بالنطاق: --write-baseline يكتب بصمات النطاقات التي فُحصت في هذا التشغيل وحدها، ويُبقي بصمات غيرها في الملف كما هي حرفًا بحرف
+//    (مدخلٌ بعد مدخل، بترتيبها)، ويكتب لكل نطاقٍ كُتب ختمَه في domains. ويرفض مع --only أو --widths (فحصٌ جزئيٌّ لنطاقٍ يُسقط بصماته الأخرى).
+//    والصنف العالي بلا قرارٍ يمنع الكتابة كما كان؛ وبـ--skip-undecided-high يُترك خارج خطّ الأساس (معلَّقًا لقرار المالك) ويُسرد، ويُكتب الباقي
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import zlib from "node:zlib";
 import crypto from "node:crypto";
+import vm from "node:vm";
 import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { sgn, ltrSideFlipped, sideNotMirrored, insideAtRest, islandDrift } from "./rtl-geom.mjs";
+import { CHALLENGE_PROBE } from "./cdp-lib.mjs";
+import { stopsRun } from "./rtl-baseline.mjs";
+import { contentScriptFor } from "./manifest-entry.mjs";
+// ★ (ر29-د) صحة المحدِّدات (sel-health.mjs): صنفٌ عالٍ في كل صفحة متن، ووضع ‎--selectors-only‎ بوابةً سريعة في بدء كل مرحلة
+import { selProbeSrc, isBodyRoute, pageMisses, selVerdict, missLine, latinPara, paraEl, SEL_PAGES, SEL_KEYS } from "./sel-health.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const argv = process.argv.slice(2);
@@ -65,10 +100,38 @@ const DOMAINS = domainsTable();
 const DMETA = Object.fromEntries(DOMAINS.map((d) => [d.id, d]));
 // لقطة CSS كل نطاق (لتصنيف «لقطة متقادمة»): ما يُولَّد منه ملف rtl-*.css المشحون
 const SNAP_DIR = { app: "sitecss", support: "sitecss-intercom", privacy: "sitecss-intercom", docs: "sitecss-docs", code: "sitecss-code",
-  legal: "sitecss-legal", academy: "sitecss-academy" };
+  legal: "sitecss-legal", academy: "sitecss-academy", com: "sitecss-com" };
+// ★ (ر24-ب4، بقية CX-007) جزر الورقة النقطية لكل نطاق (القواعد الحاملة لعلامة ‎--cml-island‎ في ‎*-point.css‎ من مجلد الإضافة المفحوص): لفحص أمانة الجزر.
+// full بمحدِّدها كما هو (بشرط بوابة html) للتحميل المعرَّب، وsite بلا مركّب html الأول للأصل (لا سمات لنا فيه، فيُجمع لكل ما يطابق الموقع
+// والمقارنةُ لا تقع إلا حيث كان العنصر جزيرةً في المعرَّب). والقراءة بمحلِّل المحرّك (parseCss) لا بدالّته الجديدة، فتصلح مع --ext لإضافةٍ أقدم
+function splitSelTop(s) {
+  const out = []; let depth = 0, q = null, cur = "";
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (q) { cur += c; if (c === "\\") cur += s[++i] || ""; else if (c === q) q = null; continue; }
+    if (c === '"' || c === "'") { q = c; cur += c; continue; }
+    if (c === "(" || c === "[") depth++; else if (c === ")" || c === "]") depth--;
+    if (c === "," && depth === 0) { out.push(cur); cur = ""; continue; }
+    cur += c;
+  }
+  if (cur.trim()) out.push(cur);
+  return out.map((x) => x.replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+const HTML_HEAD = /^html(?:\[[^\]]*\]|:not\((?:[^()]|\([^()]*\))*\))*\s+/;
+function pointIslandsOf(d) {
+  const f = (OUR_CSS[d] || []).find((x) => /-point\.css$/.test(x)); if (!f) return [];
+  let css; try { css = fs.readFileSync(path.join(EXT, f), "utf8"); } catch { return []; }
+  const out = [];
+  for (const r of R.parseCss(css).rules) {
+    if (r.ctx && r.ctx.length) continue;
+    if (!r.decls.some((x) => x.prop === "--cml-island")) continue;
+    for (const full of splitSelTop(r.sel)) { const site = full.replace(HTML_HEAD, ""); if (site && site !== full) out.push({ full, site }); }
+  }
+  return out;
+}
 const OUR_CSS = { app: ["rtl-overrides.css", "app-point.css"], support: ["rtl-intercom.css", "intercom-point.css"],
   privacy: ["rtl-intercom.css", "intercom-point.css"], docs: ["rtl-docs.css", "docs-point.css"], code: ["rtl-code.css", "code-point.css"],
-  legal: ["rtl-legal.css", "legal-point.css"], academy: ["rtl-academy.css", "academy-point.css"] };
+  legal: ["rtl-legal.css", "legal-point.css"], academy: ["rtl-academy.css", "academy-point.css"], com: ["rtl-com.css", "com-point.css"] };
 function snapshotSet(d) {
   const dir = path.join(REPO, "web", "code", SNAP_DIR[d] || "");
   const set = new Set();
@@ -89,6 +152,17 @@ const S = "https://support.claude.com/en/", P = "https://privacy.claude.com/en/"
 const CC = "https://code.claude.com/docs/en/";
 const LG = "https://www.anthropic.com/legal/";
 const AC = "https://academy.claude.com/";
+// ★ (ر16-ب) أزرار الحالات التفاعلية في claude.com (مقيسةٌ في ٦ جمادى الأولى ١٤٤٨هـ في LTR بلا إضافة): زرّ قائمة الجوال، وتبويبات المكوّن
+// Tabs (‎[role=tab]‎ داخل ‎__tabNav‎؛ والثاني في أول شريطٍ ظاهر هو n: 1)، و«التالي» في شريحة بطل العملاء (سهم «→» نفسه في com-point.css)، وزرّ
+// الفلاتر في مقالات الموارد (درج FilterDrawer) وفي قائمة الإضافات بالسوق (درج FilterHub، على 390 وحده)
+const COM_STATE = {
+  menu: 'header [class*="MenuToggle-module"][class*="__toggle"]',
+  tabsPage: "product/claude-code",
+  tab: '[class*="Tabs-module"][class*="__tabNav"] [role="tab"]',
+  carouselPage: "customers",
+  carouselNext: '[class*="CustomersHero-module"] button:has(svg > path[d^="M11.1465 4.64648C11.3417"])',
+  filters: 'button[class*="filtersButton"]',
+};
 const DEFAULT_PAGES = [
   { d: "app", tag: "login", url: "https://claude.ai/login" },
   { d: "support", tag: "home", url: S },
@@ -154,23 +228,139 @@ const DEFAULT_PAGES = [
   { d: "academy", tag: "api-lesson", url: AC + "courses/building-with-the-claude-api/system-prompts" },
   { d: "academy", tag: "all-filters", url: AC + "all" },
   { d: "academy", tag: "tutorial", url: AC + "tutorials/building-a-powerpoint-with-claude" },
-  { d: "academy", tag: "use-case-film", url: AC + "use-cases/account-research-brief" },
+  // ★ (ر29-ز، ١٩ جمادى الأولى ١٤٤٨هـ — صنف التوقيت bf7e1a7006ce، R29A) فيلم حالة الاستخدام حركةٌ متكرّرة بحركات الويب (Web Animations) تبدّل overflow عنصر
+  // ‎div.rbd‎ وتزيد عناصر الصفحة وتنقصها بنفسها، فكان التحميلان يُلتقطان في طورين مختلفين فيظهر الصنف تحت الحِمل ويغيب في غيره. freeze يوقف حركات
+  // الموقع (Animation.setPlaybackRate 0) قبل التنقّل في التحميلين كليهما، فيُقاسان في الطور نفسه: قِيس بلا إضافة كل ثانيتين 40 ث، فبقي عدد العناصر
+  // واحدًا وoverflow ‏visible، وكان بلا إيقافٍ يتبدّل (1,625–1,687 عنصرًا، وhidden قرب الثانية 22). وفي هذه الصفحة وحدها: إيقاف الحركات في كل الصفحات
+  // يغيّر ما تقيسه صفحاتٌ أخرى (حركات الظهور تقف في أولها)
+  { d: "academy", tag: "use-case-film", url: AC + "use-cases/account-research-brief", freeze: true },
   { d: "academy", tag: "collection", url: AC + "collections/ai-fluency" },
   { d: "academy", tag: "product-hub", url: AC + "products/claude" },
   { d: "academy", tag: "webinars", url: AC + "webinars" },
   { d: "academy", tag: "help-shell", url: AC + "help/faq" },
+  // ★ (ر16-ب، ٦ جمادى الأولى ١٤٤٨هـ) claude.com وسوقه (دراسة ر14 §٧ب): صفحةٌ لكل قالب — الرئيسة، والأسعار، وصفحتا منتج، وحلٌّ، والعملاء وقصةٌ
+  // مترجمة، والموارد ومقالةٌ مترجمة، والتواصل مع المبيعات، وموصلٌ وإضافةٌ ومنتجُ وكيلٍ من السوق، وPowered by Claude، وصفحة هيكل (دليل) — ثم
+  // الحالات التفاعلية بخطواتها. والنطاق قادم فيُفحص بنسخةٍ مشغَّلة مؤقتة (١ في الرأس)، وهو في OPT_IN فلا يدخل التشغيل الافتراضي إلا بـ--domains=com
+  ...COM_PAGES(),
 ];
+function COM_PAGES() {
+  const CM = "https://claude.com/";
+  // المحدِّدات بأسماء أصناف CSS Modules (بادئة الوحدة و‎__‎ اسم العنصر) بلا لاحقتها المتغيّرة، كما في com-point.css
+  const NAV_TRIGGER = 'header [class*="NavDropdown-module"][class*="__trigger"]';
+  return [
+    { d: "com", tag: "home", url: CM },
+    { d: "com", tag: "pricing", url: CM + "pricing" },
+    { d: "com", tag: "product-claude-code", url: CM + "product/claude-code" },
+    { d: "com", tag: "product-overview", url: CM + "product/overview" },
+    // ★ (ر16-ج) صفحة منتجٍ ثالثة بمكوّناتٍ لا تحملها الأخريان: المعاينة الحيّة المضمَّنة (EmbedFrame)، وقضبان البطاقات الجانبية (AsideRails)
+    // وبطاقاتها (MarginaliaCard) — وجد فيها مراجع ر16-ب أربعة أصنافٍ عالية فاتت «صفحةً لكل قالب»؛ وهي من الصفحات ذات الست عشرة ورقة
+    { d: "com", tag: "product-cowork", url: CM + "product/cowork" },
+    { d: "com", tag: "solutions-sales", url: CM + "solutions/sales" },
+    { d: "com", tag: "customers", url: CM + "customers" },
+    { d: "com", tag: "story-canva", url: CM + "customers/canva" },
+    { d: "com", tag: "resources", url: CM + "resources" },
+    { d: "com", tag: "article-auto-mode", url: CM + "resources/articles/auto-mode" },
+    { d: "com", tag: "contact-sales", url: CM + "contact-sales" },
+    { d: "com", tag: "connector", url: CM + "marketplace/connectors/10x-genomics-cloud" },
+    { d: "com", tag: "plugin", url: CM + "marketplace/plugins/rc" },
+    { d: "com", tag: "agent-product", url: CM + "marketplace/agents-products/rogo" },
+    { d: "com", tag: "powered-by-claude", url: CM + "partners/powered-by-claude" },
+    { d: "com", tag: "shell-guide", url: CM + "resources/guides/the-ai-investment-firm" },
+    // الحالات التفاعلية (دراسة ر14 §٧ب)
+    { d: "com", tag: "home-mobile-menu", url: CM, widths: [390], steps: [{ click: COM_STATE.menu }, { wait: 900 }] },
+    { d: "com", tag: "home-nav-dropdown", url: CM, widths: [1366], steps: [{ click: NAV_TRIGGER }, { wait: 900 }] },
+    { d: "com", tag: "tabs-second", url: CM + COM_STATE.tabsPage, steps: [{ click: COM_STATE.tab, n: 1 }, { wait: 900 }] },
+    { d: "com", tag: "carousel-next", url: CM + COM_STATE.carouselPage, steps: [{ click: COM_STATE.carouselNext }, { wait: 1200 }] },
+    { d: "com", tag: "resources-filter-drawer", url: CM + "resources/articles", steps: [{ click: COM_STATE.filters }, { wait: 1200 }] },
+    { d: "com", tag: "marketplace-filters", url: CM + "marketplace/plugins", widths: [390], steps: [{ click: COM_STATE.filters }, { wait: 1200 }] },
+  ];
+}
 let PAGES = DEFAULT_PAGES;
+// ★ (ر16-ب) نطاقاتٌ صفحاتُها في العيّنة ولا تدخل التشغيل الافتراضي (ولا البوابة الافتراضية) إلا بتسميتها في --domains: claude.com حتى يقرّر
+// المالك أصنافه العالية المعلّقة (RULES §8 — لا يدخل العالي خطّ الأساس إلا بقراره)، ثم يحذفه المنسِّق من هنا فتغطّيه البوابة الافتراضية
+const OPT_IN = new Set(["com"]);
 if (opt("pages", "")) PAGES = JSON.parse(fs.readFileSync(opt("pages", ""), "utf8"));
 const onlyDom = opt("domains", "") ? opt("domains", "").split(",") : null;
 if (onlyDom) PAGES = PAGES.filter((p) => onlyDom.includes(p.d));
+else if (!opt("pages", "")) PAGES = PAGES.filter((p) => !OPT_IN.has(p.d));
 if (opt("only", "")) { const re = new RegExp(opt("only", ""), "i"); PAGES = PAGES.filter((p) => re.test(p.tag) || re.test(p.url)); }
 const WIDTHS = opt("widths", "1366,390").split(",").map(Number).filter(Boolean);
+const widthsOf = (p) => (Array.isArray(p.widths) ? WIDTHS.filter((w) => p.widths.includes(w)) : WIDTHS);
 const UA_DESK = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
 const UA_MOB = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36";
 
+// ═══════════════════════ النطاق القادم: نسخةٌ مشغَّلة مؤقتة (١ في الرأس) ═══════════════════════
+const isUpcoming = (d) => !!(DMETA[d] && DMETA[d].status && DMETA[d].status.upcoming);
+// ★ (ر16-ب) نطاقاتٌ يُفتح لكل تحميلٍ من صفحاتها كرومٌ بملفٍّ جديد: claude.com يضع ملف تعريف ارتباطٍ يحوّل زيارته الثانية على 390 إلى claude.ai
+const FRESH_PROFILE = new Set(["com"]);
+// كلماتٌ عامة من ترويسة claude.com، وقيمها اصطناعية لا ترجمة: يكفي أن يرى الفحص نصًّا عربيًّا في الواجهة (فحص النص العربي المحسوب LTR ونحوه)
+const DUMMY_KEYS = ["Pricing", "Log in", "Contact sales", "Try Claude", "Solutions", "Resources", "Learn more", "Read more"];
+const SWITCHED = {};   // النطاق ⇒ ما بُني له (يُكتب في ملف النتائج)
+let ON_DIR = null;
+function switchedOnCopy(ids) {
+  if (ON_DIR) return ON_DIR;
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "cml-rtlaudit-on-"));
+  const rm = () => { try { fs.rmSync(dir, { recursive: true, force: true }); } catch {} };
+  process.on("exit", rm);
+  for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => { rm(); process.exit(130); });
+  fs.cpSync(EXT, dir, { recursive: true });
+  const cpath = path.join(dir, "cml-const.js");
+  let src = fs.readFileSync(cpath, "utf8");
+  for (const id of ids) {
+    // صفُّ النطاق وحده: من ‎id: "<id>"‎ إلى أول ‎status: { upcoming: true }‎ بعده، بلا صفٍّ آخر بينهما
+    const at = src.indexOf(`{ id: "${id}"`);
+    const st = at < 0 ? -1 : src.indexOf("status: { upcoming: true }", at);
+    if (at < 0 || st < 0 || src.slice(at + 1, st).includes("{ id: \"")) throw new Error(`لم أجد صفّ النطاق القادم ${id} في cml-const.js`);
+    src = src.slice(0, st) + "status: { full: true }" + src.slice(st + "status: { upcoming: true }".length);
+  }
+  fs.writeFileSync(cpath, src);
+  // التحقق من النسخة نفسها لا من النص: الجدول المحمَّل فيها يقول إن النطاق صار مشحونًا
+  const ctx = { console }; ctx.globalThis = ctx; ctx.self = ctx;
+  vm.createContext(ctx); vm.runInContext(src, ctx, { filename: cpath });
+  const C = Object.values(ctx).find((v) => v && typeof v === "object" && Array.isArray(v.DOMAINS) && typeof v.upcoming === "function");
+  for (const id of ids) {
+    if (!C || C.upcoming(id)) throw new Error(`النسخة المشغَّلة: النطاق ${id} ما زال قادمًا`);
+    const dictFile = (DMETA[id] && DMETA[id].dict) || `dict-${id}.js`;
+    const strings = Object.fromEntries(DUMMY_KEYS.map((k, i) => [k, "نصٌّ تجريبي " + String(i + 1).replace(/\d/g, (c) => "٠١٢٣٤٥٦٧٨٩"[c])]));
+    // يُلحق بقاموس النطاق المبنيّ (L10N.dicts.<اللغة>.strings) بعد إسناده؛ والمحرّك يقرؤه بعده في سكربتات المحتوى نفسها
+    fs.appendFileSync(path.join(dir, dictFile), `\n;(function(){var L=globalThis.CLAUDE_L10N,d=L&&L.dicts&&L.dicts[L.default||"ar"];if(!d)return;` +
+      `Object.assign(d.strings,${JSON.stringify(strings)});if(d.counts)d.counts.strings=Object.keys(d.strings).length;})();\n`);
+    // dir: مسار النسخة (ملف النتائج خارج التتبّع) — يرى به الفحص الذاتي للأدوات أنها بُنيت في مجلد النظام المؤقت وحُذفت عند الخروج (ر16-ج)
+    SWITCHED[id] = { status: { full: true }, dummyStrings: DUMMY_KEYS.length, copy: "os.tmpdir()", dir };
+  }
+  // ★ (ر28-ب، ٢٠ جمادى الأولى ١٤٤٨هـ — السؤال 2 على افتراضه) ومدخلُه في مانيفست النسخة: مانيفست الحزمة لا يحمل مدخل النطاق القادم (build.mjs
+  // ‏packageEntries)، فيُضاف هنا من صفّه المشغَّل بمولّد البناء نفسه (manifest-entry.mjs ‏contentScriptFor) في موضعه من ترتيب الجدول، ويُكتب في
+  // ملف النتائج (switchedOn.<id>.entry). وبلاه لا يُحقن المحرّك في صفحات النطاق، فيقيس الفحص الصفحة بلا إضافةٍ في التحميلين
+  const mpath = path.join(dir, "manifest.json"), mf = JSON.parse(fs.readFileSync(mpath, "utf8"));
+  mf.content_scripts = mf.content_scripts || [];
+  const order = C.DOMAINS.map((d) => d.id);
+  const domOf = (cs) => (C.DOMAINS.find((d) => JSON.stringify(d.matches) === JSON.stringify(cs.matches)) || {}).id;
+  for (const id of ids) {
+    let entry = mf.content_scripts.find((cs) => domOf(cs) === id);
+    if (!entry) {
+      entry = contentScriptFor(C.domain(id), C, dir);
+      const at = mf.content_scripts.findIndex((cs) => order.indexOf(domOf(cs)) > order.indexOf(id));
+      mf.content_scripts.splice(at < 0 ? mf.content_scripts.length : at, 0, entry);
+    }
+    SWITCHED[id].entry = { matches: entry.matches.slice(), js: entry.js.slice(), css: (entry.css || []).slice() };
+  }
+  fs.writeFileSync(mpath, JSON.stringify(mf, null, 2) + "\n");
+  return (ON_DIR = dir);
+}
+
+// ★ (ر16-ج) --plan: خطة التشغيل وحدها (الصفحات بعروضها ونطاقاتها، ونطاقات OPT_IN، والنطاق القادم الذي سيُفحص مشغَّلًا) JSON في سطرٍ واحد،
+// ثم الخروج قبل أي كرومٍ أو شبكة أو نسخةٍ مشغَّلة — يمتحن بها الفحص الذاتي للأدوات أن claude.com خارج التشغيل الافتراضي وداخلٌ بـ--domains=com
+// ★ (ر24-و، ثغرة اختبارٍ من مراجعة ر24-ب4) ومعها islands: جزر الورقة النقطية لكل نطاقٍ في الخطة كما يمرّرها التشغيل إلى الجامع (pointIslandsOf من
+// مجلد الإضافة المفحوص، ‎--ext‎) — فيمتحن الفحص الذاتي قراءتها بورقةٍ اصطناعية بلا كروم: الملف من OUR_CSS، والسياق @ مرفوض، والقائمة مقسومة، وما لا بوابة html له متروك
+if (flag("plan")) {
+  console.log(JSON.stringify({ pages: PAGES.map((p) => ({ d: p.d, tag: p.tag, widths: widthsOf(p) })), optIn: [...OPT_IN],
+    upcoming: [...new Set(PAGES.map((p) => p.d).filter(isUpcoming))],
+    islands: Object.fromEntries([...new Set(PAGES.map((p) => p.d))].map((d) => [d, pointIslandsOf(d)])) }));
+  process.exit(0);
+}
+
 // ═══════════════════════ كروم عبر أنبوب DevTools (مع الأحداث) ═══════════════════════
-async function launchChrome(withExt) {
+async function launchChrome(withExt, extDir = EXT) {
   const exe = findChrome(opt("chrome", ""));
   if (!exe) throw new Error("لم أجد كروم — مرّر --chrome=<المسار>");
   // ★ (ر5) الملف المؤقت يُحذف بعد خروج كروم فعلًا، ومعه احتياطٌ عند خروج العملية (cdp-lib tempProfile)
@@ -214,7 +404,7 @@ async function launchChrome(withExt) {
   }
   await send("Browser.getVersion");
   let extId = null;
-  if (withExt) extId = (await send("Extensions.loadUnpacked", { path: EXT })).id;
+  if (withExt) extId = (await send("Extensions.loadUnpacked", { path: extDir })).id;
   return { send, on: (f) => { listeners.add(f); return () => listeners.delete(f); }, close, extId };
 }
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -324,7 +514,8 @@ function scaleUp(img, k) {
 // يمشي DOM من body ويسجّل لكل عنصرٍ ظاهر: مفتاح مساره (فهارس الأبناء — يطابق نظيره بين
 // التحميلين)، ومستطيله بإحداثيات الصفحة، والاتجاه والمحاذاة والهوامش والحشوات والحدود والإزاحات
 // المحسوبة، ولكل «حاوية كتلة» نصَّها ومدى سطرها الأخير (أثر المحاذاة الفعلي لا قيمتها).
-function COLLECT(o) {
+// ★ (ر24-ب1) inRest: حكم «داخل عرض الصفحة في الراحة» من rtl-geom.mjs (insideAtRest) يُمرَّر نصُّه مع الجامع (الجامع يعمل في الصفحة فلا يستورد)
+function COLLECT(o, inRest) {
   var AR = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g, LA = /[A-Za-z]/g;
   function cnt(s, re) { var m = s.match(re); return m ? m.length : 0; }
   var de = document.documentElement, body = document.body, se = document.scrollingElement || de;
@@ -335,6 +526,28 @@ function COLLECT(o) {
   var SKIP = { SCRIPT: 1, STYLE: 1, NOSCRIPT: 1, TEMPLATE: 1, LINK: 1, META: 1, BR: 1, WBR: 1, SOURCE: 1, TRACK: 1 };
   var INLINE = { inline: 1, contents: 1, "inline list-item": 0 };
   var recs = [], blocks = {}, N = 0, MAX = o.max || 15000, truncated = false;
+  // ★ (ر24-ب2، CX-007) أحفاد كل جزيرةٍ بمواضعهم نسبةً إلى جذرها (لفحص أمانة الجزر): بسقفٍ للجزيرة وللصفحة، والنصّ لا يُقرأ
+  var IK = 0, IK_MAX = 4000, IK_PER = 80;
+  // ★ (ر24-ب4) جزر الورقة النقطية و‎[data-cml-noflip="ltr"]‎: يُجمع لجذرها أحفادُه كالجزر المسمّاة (بسقفٍ منفصل فلا تزاحمها)، ويستمر المشي فيها
+  // كما كان (فلا تتغيّر فحوصه الأخرى). في المعرَّب بمحدِّدها كاملًا (شرطها بسماتنا على html)، وفي الأصل بجزء الموقع منه
+  var extOn = de.getAttribute("data-cml") === "on";
+  var PIS = ['[data-cml-noflip="ltr"]', '[data-cml-noflip=""]'].concat((o.pisl || []).map(function (x) { return extOn ? x.full : x.site; }))
+    .filter(function (sel) { try { document.querySelector(sel); return true; } catch (e) { return false; } }).join(", ");
+  var PK = { n: 0 }, PK_MAX = 4000;
+  function islandKids(root, rr, B) {
+    var out = [], st = [[root, ""]];
+    B = B || null;
+    while (st.length && out.length < IK_PER && (B ? B.n < PK_MAX : IK < IK_MAX)) {
+      var top = st.pop(), node = top[0], i = 0, kids = [];
+      for (var c = node.firstElementChild; c; c = c.nextElementSibling) { kids.push([c, top[1] + "/" + i]); i++; }
+      for (var j = kids.length - 1; j >= 0; j--) st.push(kids[j]);
+      if (node === root) continue;
+      var cs2 = getComputedStyle(node); if (cs2.display === "none") continue;
+      var q = node.getBoundingClientRect(); if (!(q.width > 1.5 && q.height > 1.5)) continue;
+      out.push([top[1], r1(q.left - rr.left), r1(q.top - rr.top), r1(q.width), r1(q.height)]); if (B) B.n++; else IK++;
+    }
+    return out;
+  }
   function r1(v) { return Math.round(v * 10) / 10; }
   function px(v) { var f = parseFloat(v); return isNaN(f) ? null : r1(f); }
   function clsOf(el) { var c = el.getAttribute("class"); return c ? String(c).replace(/\s+/g, " ").trim().slice(0, 160) : ""; }
@@ -352,9 +565,15 @@ function COLLECT(o) {
     }
     return t.join(" ").replace(/\s+/g, " ").trim().slice(0, 300);
   }
+  // ★ (ر24-ب1) في سلفٍ ثابت (fixed، والعنصر نفسه منه): مستطيله في الإطار لا يتحرّك بالتمرير
+  function fixedIn(el) { for (var a = el; a && a !== de; a = a.parentElement) if (getComputedStyle(a).position === "fixed") return true; return false; }
   function clipState(el, r) {
     // 0: داخل الإطار، 1: يخرج عن عرض الصفحة بلا قاطع، 2: يقطعه سلفٌ ذو overflow
-    if (r.left >= -1 && r.right <= vw + 1) return 0;
+    // ★ (ر24-ب1، ١٢ جمادى الأولى ١٤٤٨هـ) والحكم «في الراحة» (insideAtRest في rtl-geom.mjs): يُردّ تمرير الصفحة الأفقي الحاضر، فالصفحة RTL التي
+    // يفتحها كروم الجوال مُمرَّرةً إلى طرفها الأيسر تُقاس كالمرجع LTR في الراحة. وكان الحكم بمستطيل الإطار كما هو، فعُدّ ما عند الحافّة اليمنى
+    // خارجًا (الأصناف العالية الثلاثة في مرجع الواجهة البرمجية بعرض 390: 7d57ba911b95 و82888338799f وbd3136185a6d، وaa34a354ad83 قبلها).
+    // وبلا تمريرٍ أفقي (‎sx = 0‎: المرجع LTR والعرض 1366 كلّه) الحكم هو هو حرفًا
+    if (inRest(r.left, r.right, sx && !fixedIn(el) ? sx : 0, vw)) return 0;
     for (var a = el.parentElement; a && a !== de; a = a.parentElement) {
       var cs = getComputedStyle(a);
       if (cs.overflowX !== "visible") { var ar = a.getBoundingClientRect(); if (r.left < ar.left - 1 || r.right > ar.right + 1) return 2; return 0; }
@@ -429,9 +648,12 @@ function COLLECT(o) {
         fd: cs.flexDirection, jc: cs.justifyContent, ovx: cs.overflowX,
         isl: island ? 1 : 0, da: el.getAttribute("dir"), dcm: el.getAttribute("data-cml-dir") ? 1 : 0, nf: el.hasAttribute("data-cml-noflip") ? 1 : 0,
         inl: inl(el), role: el.getAttribute("role") || "", lbl: (el.getAttribute("aria-label") || "").slice(0, 60),
+        tn: el.closest && el.closest('[translate="no"]') ? 1 : 0,   // ★ (ر29-د) لا يُترجم بقرار الموقع (فحص الفقرة اللاتينية يتركه)
         oob: vis ? clipState(el, r) : 0, blk: isBlock ? 1 : 0 };
       if (tag === "ul" || tag === "ol" || tag === "li") { rec.lst = cs.listStyleType; rec.lsp = cs.listStylePosition; }
       if (tag === "table" && vis && !island) { var tbx = tableBox(el, r); if (tbx) rec.tb = tbx; }
+      // (جزيرةٌ فيها نصٌّ معرَّب لا تُقارن: تغيّر النص يحرّك أحفادها بحقّ — والمقصود أمانة ما بقي كما رسمه الموقع)
+      if (!island && PIS && vis && el.matches && el.matches(PIS) && !(extOn && cnt(el.textContent || "", AR))) { rec.ik = islandKids(el, r, PK); rec.pk = 1; }
       if (vis && r.width <= 64 && r.height <= 64) rec.nm = nameTokens(el);
       if (tag === "input" || tag === "textarea") { var ph = el.getAttribute("placeholder") || el.value || ""; rec.ph = ph.slice(0, 80); rec.phar = cnt(ph, AR); rec.phla = cnt(ph, LA); }
       if (isBlock) {
@@ -444,6 +666,7 @@ function COLLECT(o) {
     if (island || tag === "svg" || tag === "math") {
       // الجزيرة: يُعدّ نصّها لكتلتها (لتمييز العربي داخل الشيفرة) بلا نزولٍ في عناصرها
       if (island && rec) { var t = el.textContent || ""; rec.iar = cnt(t, AR); rec.itxt = t.replace(/\s+/g, " ").trim().slice(0, 80); }
+      if (island && rec && !isl && tag !== "svg" && tag !== "math") rec.ik = islandKids(el, r);
       return;
     }
     var i = 0;
@@ -478,13 +701,16 @@ function COLLECT(o) {
       route: de.getAttribute("data-cml-route"), hold: de.hasAttribute("data-cml-hold") || de.hasAttribute("data-cml-boot"),
       live: !!live, liveBytes: live ? live.textContent.length : 0, wrapDir: wrap ? wrap.getAttribute("dir") : null, sheets: links,
       bodyDir: getComputedStyle(body).direction, recs: N, truncated: truncated,
-      challenge: /just a moment|attention required|verify you are human/i.test(document.title + " " + (body.innerText || "").slice(0, 300)) },
+      // ★ (ر29-ز — F3) والنصّ وحده بحالة 403 أو 503 كما في CHALLENGE_PROBE
+      challenge: (function () { var n = (performance.getEntriesByType("navigation") || [])[0] || {}; return n.responseStatus === 403 || n.responseStatus === 503; })() &&
+        /just a moment|attention required|verify you are human/i.test(document.title + " " + (body.innerText || "").slice(0, 300)) },
     recs: recs, blocks: blocks,
   };
 }
 
 // ═══════════════════════ تشغيل صفحة ═══════════════════════
 const T = (label, t0) => { if (VERBOSE) console.log(`    ⏱ ${label} ${((Date.now() - t0) / 1000).toFixed(1)}ث`); return Date.now(); };
+// صفحة التحقّق (CHALLENGE_PROBE): في cdp-lib.mjs منذ ر29-ط، تشترك فيها هذه الأداة وأداة اللقطة snapshot-css.mjs
 async function loadPage(b, page, width, isExt) {
   let tt = Date.now(); const who = isExt ? "ext" : "ref";
   const mobile = width < 600, vh = mobile ? 844 : 900;
@@ -504,9 +730,15 @@ async function loadPage(b, page, width, isExt) {
     await b.send("Emulation.setDeviceMetricsOverride", { width, height: vh, deviceScaleFactor: 1, mobile }, s);
     await b.send("Emulation.setUserAgentOverride", { userAgent: mobile ? UA_MOB : UA_DESK, acceptLanguage: "en-US,en" }, s);
     if (isExt) { await b.send("DOM.enable", {}, s); await b.send("CSS.enable", {}, s); }
+    // ★ (ر29-ز) حركات الموقع موقوفةٌ في التحميلين لصفحةٍ تتحرّك بنفسها (page.freeze، فيلم الأكاديمية): يُقاس الطور نفسه في المرجع والمعرَّب
+    if (page.freeze) { await b.send("Animation.enable", {}, s); await b.send("Animation.setPlaybackRate", { playbackRate: 0 }, s); }
     await b.send("Page.navigate", { url: page.url }, s);
     await until(b, s, "document.readyState === 'complete'", 30000);
     tt = T(who + " تحميل", tt);
+    // ★ (ر29-ح، ١٩ جمادى الأولى ١٤٤٨هـ — DX0-0 §٥) صفحة تحقّقٍ (Cloudflare) بدل الصفحة: تُعرف فور التحميل بحالتها وعنوانها، فلا تُنتظر الإضافة
+    // ولا الورقة الحيّة ولا الأوراق (كان تحميلها يستهلك نحو 117 ث من المهل ثم يُطبع سطرُها بعدّاد «عالٍ 0» كأنها قيست بلا عيب)
+    const chl = await evalIn(b, s, CHALLENGE_PROBE);
+    if (chl) return { s, targetId, snap: { meta: { challenge: true }, recs: [], blocks: [] }, img: null, sheetsById, off, H: vh, d: page.d, challenge: chl };
     let extState = null, liveWait = null;
     if (isExt) {
       extState = await until(b, s, `(function(){var h=document.documentElement;return h.getAttribute('data-cml')==='on'&&!h.hasAttribute('data-cml-hold')&&!h.hasAttribute('data-cml-boot')?'on':'';})()`, 15000);
@@ -537,16 +769,23 @@ async function loadPage(b, page, width, isExt) {
     const H = Math.max(vh, Math.min(docH || vh, MAX_H));
     await b.send("Emulation.setDeviceMetricsOverride", { width, height: H, deviceScaleFactor: 1, mobile }, s);
     await wait(700); await settle(b, s, 700, 6000);
+    // ★ (ر16-ب) خطوات الحالة التفاعلية (٢ في الرأس): بعد ضبط الإطار (فلا يغلقها تغيير مقاسه) وقبل القياس، كما هي في التحميلين
+    const stepsDone = page.steps ? await runSteps(b, s, page.steps) : null;
+    if (stepsDone) await settle(b, s, 700, 6000);
     const shellSel = (DMETA[page.d] && DMETA[page.d].meta && DMETA[page.d].meta.shellSel) || "";
     tt = T(who + " أوراق+إطار", tt);
     const routes = (DMETA[page.d] && DMETA[page.d].meta && DMETA[page.d].meta.routes) || null;
     // حارس المسار نفسه (SHARED.routeMode) لا مقارنة بادئةٍ خام: البادئة بشرطتها الختامية تُضاف للمسار قبل المقارنة (مراجعة المحرّك ٤)
     const forceShell = !!routes && SHARED.routeMode(routes, new URL(page.url).pathname) === "shell";
-    const snap = await evalIn(b, s, "(" + COLLECT.toString() + ")(" + JSON.stringify({ shellSel, forceShell, max: 15000 }) + ")", 120000);
+    const pisl = pointIslandsOf(page.d);
+    const snap = await evalIn(b, s, "(" + COLLECT.toString() + ")(" + JSON.stringify({ shellSel, forceShell, max: 15000, pisl }) + ", " + insideAtRest.toString() + ")", 120000);
     tt = T(who + " جمع", tt);
     snap.meta.docH = docH; snap.meta.H = H; snap.meta.extState = extState; snap.meta.liveWaitMs = liveWait; snap.meta.sheetsOk = !!sheetsOk;
+    if (stepsDone) snap.meta.steps = stepsDone;
     snap.meta.cssNet = { status: cssStatus.slice(0, 20), failed: netFail.slice(0, 10) };
     snap.meta.bodyMargin = await evalIn(b, s, "getComputedStyle(document.body).marginLeft");
+    // ★ (ر29-د) عدد ما يطابقه كل مفتاح محدِّدٍ للنطاق في هذه الصفحة (لا نصّ)
+    if (isExt) { try { snap.meta.selh = await evalIn(b, s, selProbeSrc(DMETA[page.d] && DMETA[page.d].meta)); } catch (e) { snap.meta.selh = null; } }
     let img = null;
     try {
       const shot = await b.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false }, s, 120000);
@@ -559,9 +798,25 @@ async function loadPage(b, page, width, isExt) {
   } catch (e) { off(); try { await b.send("Target.closeTarget", { targetId }); } catch {} throw e; }
 }
 async function closePage(b, run) { if (!run) return; try { run.off(); } catch {} try { await b.send("Target.closeTarget", { targetId: run.targetId }); } catch {} }
+// خطوات الحالة (٢ في الرأس): كلُّ خطوةٍ كائنٌ بمفتاحٍ واحد؛ والعنصر «الظاهر» ما له عرضٌ وارتفاع ولم يُخفَ، ورقمه n بترتيب المستند (واحدٌ في التحميلين)
+async function runSteps(b, s, steps) {
+  const done = [];
+  for (const st of steps) {
+    const kind = ["click", "waitFor", "scroll", "wait"].find((k) => st[k] != null);
+    if (!kind) throw new Error("خطوةٌ مجهولة في الحالة: " + JSON.stringify(st));
+    if (kind === "wait") { await wait(+st.wait); done.push("wait"); continue; }
+    const sel = String(st[kind]), n = +(st.n || 0);
+    const act = kind === "click" ? "e.click();" : kind === "scroll" ? "e.scrollIntoView({block:'center'});" : "";
+    const r = await until(b, s, `(function(){var v=[].slice.call(document.querySelectorAll(${JSON.stringify(sel)})).filter(function(e){var q=e.getBoundingClientRect();
+      return q.width>0&&q.height>0&&getComputedStyle(e).visibility!=='hidden';});var e=v[${n}];if(!e)return '';${act}return '${kind}:'+(${n}+1)+'/'+v.length;})()`, +(st.timeout || 8000));
+    if (!r) throw new Error(`خطوة الحالة أخفقت: لا عنصرَ ظاهرًا رقمه ${n} يطابق ${sel}`);
+    done.push(r);
+  }
+  return done;
+}
 
 // ═══════════════════════ المقارنة ═══════════════════════
-const sgn = (v, tol) => (v > tol ? 1 : v < -tol ? -1 : 0);
+// sgn وحكم الانقلاب في rtl-geom.mjs (يمتحنهما selftest-tools.mjs بلا كروم — ر16-ج)
 const clsSig = (c) => (c || "").split(" ").filter((t) => t && !/^(active|open|selected|hover|focus|is-|data-state|hidden|visible)/i.test(t)).sort().join(" ");
 function jacc(a, b) { const A = new Set(a.split(" ").filter(Boolean)), B = new Set(b.split(" ").filter(Boolean)); if (!A.size && !B.size) return 1; let i = 0; for (const x of A) if (B.has(x)) i++; return i / (A.size + B.size - i); }
 function samePair(a, b) { return a && b && a.t === b.t && (a.c === b.c || jacc(clsSig(a.c), clsSig(b.c)) >= 0.6); }
@@ -633,6 +888,18 @@ function compare(page, width, Rs, Es, PR) {
     if (B.arrowR && r.dir === "rtl") add({ check: "arrow-glyph", key: k, el: r, text: B.txt.slice(0, 90), sev: "medium",
       detail: "المحرف → (غير معكوس في خوارزمية الاتجاه) داخل نصٍّ عربي RTL يشير إلى الخلف — يُستبدل بـ← في القاموس" });
   }
+  // ★★ (ر29-د، ١٣ جمادى الأولى ١٤٤٨هـ — بعد ر29-أ F1) فقرةٌ غالبُ حروفها لاتيني (بلا عربيٍّ أو بأقلّه) محسوبةٌ direction:rtl في مسار متن (meta.bodyRoutes)،
+  // خارج جزر LTR والشيفرة وما يُبقيه الموقع بلا ترجمة (translate=no): الفحص كان أعمى عن عطل legal (فقراتٌ إنجليزية من اليمين وعلاماتها في الطرف
+  // الخطأ) لأنه هندسي. وبلا النظر في محدِّد المتن: يرى العطل ولو سقط المحدِّد نفسه. latinPara في sel-health.mjs (يمتحنه selftest-tools)
+  if (isBodyRoute(DMETA[page.d] && DMETA[page.d].meta, new URL(page.url).pathname, SHARED.routeMode)) {
+    for (const [k, B] of Object.entries(Es.blocks)) {
+      const r = EE.get(k); if (!r || r.dir !== "rtl" || r.isl || r.nf || r.tn || !paraEl(r.t, r.role)) continue;
+      if (!latinPara(B)) continue;
+      add({ check: "latin-rtl", key: k, el: r, text: B.txt.slice(0, 90), sev: "high", cls: "engine-gap",
+        why: "فقرةٌ إنجليزية في مسار متن تُعرض من اليمين: المتن لم يُعرف موضعه (محدِّد المتن أو الاتجاه) أو لم يُحسم اتجاه كتلتها",
+        detail: `فقرةٌ لاتينية (${B.la} حرفًا لاتينيًّا/${B.ar} عربيًّا) محسوبة direction:rtl — علامات الترقيم في الطرف الخطأ` });
+    }
+  }
   // عنصرٌ سطريٌّ LTR داخل كتلة RTL يحمل نصًّا عربيًّا (عزلٌ مقلوب)
   for (const r of Es.recs) {
     if (r.blk || r.dir !== "ltr" || r.isl) continue;
@@ -666,6 +933,15 @@ function compare(page, width, Rs, Es, PR) {
     if (/center|justify/.test(r.ta) && rSide === null) continue;
     add({ check: "align", key: k, el: r, text: B.txt.slice(0, 90), sev: r.t === "td" || r.t === "th" ? "medium" : "medium",
       detail: `كتلةٌ عربية RTL سطرُها الأخير ملاصقٌ لليسار (فراغ يسار ${Math.round(gapL)}px، يمين ${Math.round(gapR)}px؛ text-align:${r.ta})` });
+  }
+  // ---- ★ (ر24-ب2، CX-007) أمانة الجزر: هندسة ما داخل جزيرة LTR تساوي الأصل (قيمةٌ فيزيائية قُلبت داخلها تُزيح أحفادها) ----
+  for (const e of Es.recs) {
+    if (!e.ik || !e.ik.length) continue;
+    const r = PR.get(e.k); if (!samePair(r, e)) continue;
+    const g = islandDrift(r, e, 2);
+    if (!g) continue;
+    add({ check: "island-geometry", key: e.k, el: e, sev: "medium",
+      detail: `جزيرة LTR بمقاسها الأصلي وفيها ${g.n} من ${g.of} حفيدًا تغيّر موضعه أو مقاسه نسبةً إليها (أولهم ${g.first.p}: إزاحة ${g.first.dx}px، عرض ${g.first.dw}px)` });
   }
   // ---- ٣) الانعكاس الهندسي: جانب العنصر من حاويته يجب أن ينقلب ----
   for (const e of Es.recs) {
@@ -708,7 +984,9 @@ function compare(page, width, Rs, Es, PR) {
         const ra = r[a], rb = r[b2], ea = e[a], eb = e[b2];
         if ([ra, rb, ea, eb].some((v) => v === null || v === undefined)) continue;
         const d0 = ra - rb, d1 = ea - eb, tol = 2.9;
-        if (Math.abs(d0) < tol || sgn(d1, tol) !== -sgn(d0, tol)) continue;   // على جهته (أو متناظر): سليم
+        // ★ (ر16-ج) الحكم بإشارة الفرق نفسها (sgn) لا بـ‎|d0| < tol‎: فرقٌ يساوي التسامح تمامًا (pl=2.9 pr=0) إشارتُه صفر، فكان يمرّ إلى المقارنة
+        // و‎-0 === 0‎ فيُعدّ «انعكس» وحشوتُه هي هي قبل وبعد (الصنف 01ee2f7d7487 في claude.com)
+        if (!ltrSideFlipped(d0, d1, tol)) continue;   // على جهته (أو متناظر، أو على حدّ التسامح): سليم
         const mag = Math.abs(d0);
         add({ check: "box-mirrored-ltr", key: e.k, el: e, prop: fam, sev: mag >= 8 ? "medium" : "low",
           detail: `عنصرٌ اتجاهه LTR (نصٌّ إنجليزي) انعكس ${fam}: الأصل ${a}=${ra} ${b2}=${rb} ⇒ ${a}=${ea} ${b2}=${eb} — ما بقي LTR يبقى على جهته` });
@@ -723,9 +1001,9 @@ function compare(page, width, Rs, Es, PR) {
       if (fam === "inset" && (e.pos === "relative" || e.pos === "sticky") && ra === 0 && rb === 0) continue;
       const d0 = ra - rb, d1 = ea - eb;
       const tol = fam === "border" ? 0.9 : 2.9;
-      if (Math.abs(d0) < tol) continue;
       if (fam === "margin" && e.disp.startsWith("inline") && !e.disp.includes("block") && !e.disp.includes("flex") && !e.disp.includes("grid")) { /* هوامش السطري تُعدّ أيضًا */ }
-      if (sgn(d1, tol) !== sgn(d0, tol)) continue;                 // انقلب (أو صار متناظرًا)
+      // ★ (ر18) بإشارة الفرق (rtl-geom sideNotMirrored) لا بـ‎|d0| < tol‎: فرقٌ على حدّ التسامح تمامًا متناظرٌ لا يُحكم عليه (كخطأ box-mirrored-ltr في ر16-ج)
+      if (!sideNotMirrored(d0, d1, tol)) continue;                 // انقلب (أو صار متناظرًا، أو الأصل متناظر أو على حدّ التسامح)
       const re = new RegExp("(^|,)" + (fam === "inset" ? "(left|right|inset)" : fam) + "");
       if (e.inl && re.test(e.inl)) { add({ check: "box-not-mirrored", key: e.k, el: e, prop: fam, sev: "low", computed: true,
         detail: `${fam}: ${a}=${ea} ${b2}=${eb} (الأصل ${ra}/${rb}) من نمطٍ سطري يحسبه جافاسكربت الموقع` }); continue; }
@@ -1032,6 +1310,8 @@ function ourKind(w) { return /data-cml-rtl=/.test(w.sel) ? "generated" : "point"
 function classify(f, W, meta, decls) {
   const d = f.d, live = meta.rtl === "live";
   decls = decls || [];
+  // ★ (ر24-ب2) فحص أمانة الجزر حكمٌ على الجزيرة نفسها، فلا يُعدّ «جزيرةً مقصودة» كسائر ما فيها
+  if (f.check === "island-geometry") return { cls: "engine-gap", why: "قيمةٌ فيزيائية من أوراقنا أو من الموقع تغيّرت داخل جزيرة LTR (CX-007): الجزيرة يجب أن تبقى كالأصل" };
   if (f.el && (f.el.isl || f.el.nf)) return { cls: "intended-ltr", why: "جزيرة LTR (شيفرة/مرجع API/سطح محسوب)" };
   if (f.check === "h-overflow" && f.preExisting) return { cls: "site-preexisting", why: "التمرير موجود في الأصل LTR" };
   if (f.check === "arrow-glyph") return { cls: "dictionary", why: "المحرف في نصّ الترجمة نفسه" };
@@ -1180,6 +1460,128 @@ function evidenceCrop(Rimg, Eimg, Rrec, Erec, file) {
   fs.writeFileSync(file, encodePNG(sideBySide(scaleUp(a, k), scaleUp(e, k))));
 }
 
+// ═══════════════════════ ★ (ر29-د2) إحصاء مسارات المتن (‎--census‎) ═══════════════════════
+// لماذا (مراجعة ر29-د F2، و§٨ البند 3): كانت رئيسة وثائق المطوّرين ‎/docs/en/home‎ صفحةً بلا متنٍ تحت بادئة متن، فحجزها الصمّام وخمدت الإضافة فيها
+// كلها، ولم يكشفها إلا قياسٌ يدوي. فهذا الوضع يمرّ على كل صفحةٍ عامة يذكرها llms.txt الموقع تحت مسارات المتن، بلا إضافةٍ ولا نصّ: عدُّ ما تطابقه
+// حاوية المتن وحدها، فتُعرف الصفحة التي ستُحجز قبل أن تُشحن. والاستثناء (shell في bodyRoutes) لا يُضاف إلا بدليلٍ من صفحتها
+if (flag("census")) {
+  const doms = (onlyDom || ["docs", "code"]).filter((d) => DMETA[d] && DMETA[d].meta && DMETA[d].meta.bodyRoutes && !isUpcoming(d));
+  const MAX = +opt("census-max", "0") || 0, t0 = Date.now(), report = { at: new Date().toISOString(), width: 1366, domains: {} };
+  // ★ (مراجعة ر29-د2) وإحصاءٌ لم يفحص ما عليه لا ينجح: llms.txt لم يُقرأ (أو لا صفحة متنٍ فيه)، أو صفحةٌ تعذّرت (حجبٌ أو تحقّقٌ أو مهلة) — كان
+  // يقول «✓ كل صفحةٍ فيها حاوية متن» ويخرج 0 وقد فحص صفرًا (قِيس بوكيلٍ لا يصل: 0 صفحة، خروجٌ 0)، كما تُخفق ‎--selectors-only‎ بصفحةٍ لم تُحمَّل
+  let bad = 0, short = 0;
+  if (!doms.length) { console.log(`✗ الإحصاء: لا نطاق مشحونٌ له مسارات متن في الطلب (${(onlyDom || []).join("، ")}) — لا إحصاء`); process.exit(1); }
+  const b = await launchChrome(false);
+  try {
+    for (const d of doms) {
+      const meta = DMETA[d].meta, origin = DMETA[d].origin, llmsPath = typeof meta.llms === "string" && meta.llms.charAt(0) === "/" ? meta.llms : "/llms.txt";
+      let txt = "";
+      try { const r = await fetch(origin + llmsPath); txt = r.ok ? await r.text() : ""; } catch {}
+      const seen = new Set(), all = [];
+      for (const m of txt.matchAll(/\]\((https:\/\/[^)\s]+)\)/g)) {
+        let u; try { u = new URL(m[1]); } catch { continue; }
+        if (u.origin !== origin) continue;
+        const p = u.pathname.replace(/\.md$/, "");
+        if (seen.has(p) || !isBodyRoute(meta, p, SHARED.routeMode)) continue;
+        seen.add(p); all.push(p);
+      }
+      const step = MAX && all.length > MAX ? all.length / MAX : 1, list = [];
+      for (let i = 0; i < all.length && list.length < (MAX || all.length); i += step) list.push(all[Math.floor(i)]);
+      const rep2 = { llms: llmsPath, bodyPages: all.length, checked: 0, noBody: [], noSel: [], errors: [] };
+      report.domains[d] = rep2;
+      console.log(`إحصاء ${d}: ${all.length} صفحة متنٍ في ‎${llmsPath}‎، تُفحص ${list.length}`);
+      let k = 0;
+      const worker = async () => {
+        while (k < list.length) {
+          const p = list[k++];
+          const { targetId } = await b.send("Target.createTarget", { url: "about:blank" });
+          const { sessionId: s } = await b.send("Target.attachToTarget", { targetId, flatten: true });
+          try {
+            await b.send("Page.enable", {}, s);
+            await b.send("Emulation.setDeviceMetricsOverride", { width: 1366, height: 900, deviceScaleFactor: 1, mobile: false }, s);
+            await b.send("Emulation.setUserAgentOverride", { userAgent: UA_DESK, acceptLanguage: "en-US,en" }, s);
+            await b.send("Page.navigate", { url: origin + p }, s);
+            if (!(await until(b, s, "document.readyState === 'complete'", 30000))) throw new Error("لم يكتمل التحميل في 30 ث");
+            await settle(b, s, 1200, 15000);
+            if (await evalIn(b, s, "!!document.querySelector('script[src*=\"/cdn-cgi/challenge-platform/\"][src*=\"/orchestrate/\"]') || typeof window._cf_chl_opt !== 'undefined'"))
+              throw new Error("صفحة تحقّق");
+            const fin = await evalIn(b, s, "location.pathname");
+            const c = await evalIn(b, s, selProbeSrc(meta));
+            rep2.checked++;
+            // صفحةٌ حوّلها الموقع إلى مسارٍ ليس مسار متن (فهرسٌ أو صفحةٌ أخرى): لا يحكم فيها الصمّام
+            if (!isBodyRoute(meta, fin, SHARED.routeMode)) continue;
+            const main = c.bodyMain !== null && c.bodyMain !== undefined ? c.bodyMain : c.bodySel;
+            if (!(main > 0)) rep2.noBody.push(fin);
+            else if (!(c.bodySel > 0)) rep2.noSel.push(fin);
+          } catch (e) { rep2.errors.push(p + " (" + String(e.message).slice(0, 60) + ")"); }
+          finally { try { await b.send("Target.closeTarget", { targetId }); } catch {} }
+        }
+      };
+      await Promise.all([worker(), worker(), worker(), worker()]);
+      rep2.noBody.sort(); rep2.noSel.sort();
+      bad += rep2.noBody.length + rep2.noSel.length;
+      rep2.incomplete = !all.length || rep2.checked < list.length;
+      if (rep2.incomplete) short++;
+      if (!all.length) console.log(`  ✗ لم يُقرأ ‎${llmsPath}‎ أو لا صفحة متنٍ فيه: لا إحصاء لـ${d}`);
+      console.log(`  ${rep2.checked} فُحصت، و${rep2.noBody.length} بلا حاوية متن` + (rep2.noBody.length ? ": " + rep2.noBody.join(" ") : "") +
+        (rep2.noSel.length ? `، و${rep2.noSel.length} بلا محدِّد متن: ${rep2.noSel.join(" ")}` : "") + (rep2.errors.length ? `، و${rep2.errors.length} تعذّرت: ${rep2.errors.slice(0, 5).join("، ")}` : ""));
+    }
+  } finally { await b.close(); }
+  fs.mkdirSync(OUT, { recursive: true });
+  fs.writeFileSync(path.join(OUT, "census.json"), JSON.stringify(report, null, 1) + "\n");
+  const secs = Math.round((Date.now() - t0) / 1000);
+  console.log(bad ? `✗ الإحصاء: ${bad} صفحةً تحت مسار متنٍ بلا متن (سيحجزها الصمّام «nosel») في ${secs} ث — أهي فهرسٌ يُستثنى (shell) أم تغيّرت بنيتها؟`
+    : short ? `✗ الإحصاء ناقص: ${short} نطاقًا لم تُفحص صفحاته كلها (llms.txt لم يُقرأ، أو صفحاتٌ تعذّرت) في ${secs} ث — أعِده`
+    : `✓ الإحصاء: كل صفحةٍ تحت مسار متنٍ فيها حاويةُ متن، في ${secs} ث`);
+  process.exit(bad || short ? 1 : 0);
+}
+
+// ═══════════════════════ ★ (ر29-د) بوابة بدء المرحلة: صحة المحدِّدات وحدها (‎--selectors-only‎) ═══════════════════════
+// صفحتان عامتان لكل نطاقٍ مشحون (sel-health.mjs SEL_PAGES) بعرض 1366 بكرومٍ بلا إضافة: لكل مفتاح محدِّدٍ في جدول النطاقات «يطابق» أو «لا يطابق»،
+// والإبقاء في النطاق (صفحةٌ منه تكفي)، وخروجٌ 1 عند أي سقوطٍ أو صفحةٍ لم تُحمَّل (صفحة تحقّق أو حجب). بلا لقطاتٍ ولا قياس، ولا يُكتب شيء
+if (flag("selectors-only")) {
+  const list = SEL_PAGES.filter((p) => DMETA[p.d] && !isUpcoming(p.d) && (!onlyDom || onlyDom.includes(p.d)));
+  const t0 = Date.now(), rows = [];
+  let errs = 0;
+  console.log(`صحة المحدِّدات — ${list.length} صفحة عامة في ${new Set(list.map((p) => p.d)).size} نطاقات، بعرض 1366 بلا إضافة`);
+  const b = await launchChrome(false);
+  try {
+    for (const p of list) {
+      const meta = DMETA[p.d].meta, pPath = new URL(p.url).pathname;
+      let counts = null, err = null;
+      const { targetId } = await b.send("Target.createTarget", { url: "about:blank" });
+      const { sessionId: s } = await b.send("Target.attachToTarget", { targetId, flatten: true });
+      try {
+        await b.send("Page.enable", {}, s);
+        await b.send("Emulation.setDeviceMetricsOverride", { width: 1366, height: 900, deviceScaleFactor: 1, mobile: false }, s);
+        await b.send("Emulation.setUserAgentOverride", { userAgent: UA_DESK, acceptLanguage: "en-US,en" }, s);
+        await b.send("Page.navigate", { url: p.url }, s);
+        if (!(await until(b, s, "document.readyState === 'complete'", 30000))) throw new Error("لم يكتمل التحميل في 30 ث");
+        await settle(b, s, 1200, 15000);
+        // صفحة تحقّقٍ لا الصفحة نفسها: خطأٌ لا «يطابق» ولا «لا يطابق»
+        if (await evalIn(b, s, "!!document.querySelector('script[src*=\"/cdn-cgi/challenge-platform/\"][src*=\"/orchestrate/\"], form#challenge-form') || typeof window._cf_chl_opt !== 'undefined'"))
+          throw new Error("صفحة تحقّق (تحدٍّ) لا الصفحة نفسها");
+        counts = await evalIn(b, s, selProbeSrc(meta));
+      } catch (e) { err = e.message; errs++; }
+      finally { try { await b.send("Target.closeTarget", { targetId }); } catch {} }
+      if (!counts) { console.log(`✗ ${p.d.padEnd(8)} ${pPath}  تعذّر: ${err}`); continue; }
+      const optional = new Set(p.optional || []), c2 = Object.assign({}, counts);
+      for (const k of optional) c2[k] = null;   // للعلم: لا يُسقط البوابة
+      rows.push({ d: p.d, page: pPath, counts: c2 });
+      console.log(`• ${p.d.padEnd(8)} ${pPath.padEnd(58)} ` + SEL_KEYS.filter((k) => counts[k] !== null)
+        .map((k) => `${k} ${counts[k] > 0 ? "✓" : counts[k] < 0 ? "✗(محدِّدٌ لا يُحلَّل)" : "✗"}${optional.has(k) ? "(للعلم)" : ""}`).join("  "));
+    }
+  } finally { await b.close(); }
+  for (const d of DOMAINS.filter((x) => !isUpcoming(x.id) && !list.some((p) => p.d === x.id)).map((x) => x.id))
+    if (!onlyDom || onlyDom.includes(d)) console.log(`· ${d.padEnd(8)} لا صفحة في البوابة (لا محدِّدات متن${d === "app" ? "؛ وواجهته خلف الدخول" : ""})`);
+  const fails = selVerdict(rows);
+  for (const x of fails) console.log(missLine(x));
+  const secs = Math.round((Date.now() - t0) / 1000);
+  if (fails.length || errs) console.log(`✗ صحة المحدِّدات: ${fails.length} خللًا و${errs} صفحةً لم تُحمَّل، في ${secs} ث — هل تغيّرت بنية موقع؟ (ر29-أ F1)`);
+  else console.log(`✓ صحة المحدِّدات: ${rows.length} صفحة، كل مفتاحٍ مشحونٍ يطابق، في ${secs} ث`);
+  process.exit(fails.length || errs ? 1 : 0);
+}
+
 // ═══════════════════════ التشغيل ═══════════════════════
 const started = Date.now();
 fs.mkdirSync(OUT, { recursive: true });
@@ -1187,31 +1589,77 @@ if (DO_SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); fs.mkdirSync(path.join
 let commit = "";
 try { commit = spawnSync("git", ["-C", REPO, "rev-parse", "--short", "HEAD"], { encoding: "utf8" }).stdout.trim(); } catch {}
 const manifest = JSON.parse(fs.readFileSync(path.join(EXT, "manifest.json"), "utf8"));
-console.log(`فحص الاتجاه — الإضافة ${manifest.version} (${commit || "?"}) من ${EXT}\n${PAGES.length} صفحة × ${WIDTHS.join("/")} = ${PAGES.length * WIDTHS.length} تشغيلًا مزدوجًا`);
-
-const refB = await launchChrome(false), extB = await launchChrome(true);
-console.log("✓ كروم المرجع وكروم الإضافة (" + extB.extId + ")");
+const RUNS = PAGES.reduce((a, p) => a + widthsOf(p).length, 0);
+console.log(`فحص الاتجاه — الإضافة ${manifest.version} (${commit || "?"}) من ${EXT}\n${PAGES.length} صفحة بعروضها (${WIDTHS.join("/")}) = ${RUNS} تشغيلًا مزدوجًا`);
+// ★ (ر16-ب) النطاق القادم: نسخةٌ مشغَّلة مؤقتة (١ في الرأس)، ويُقال ذلك صراحةً هنا وفي ملف النتائج
+const UPCOMING_RUN = [...new Set(PAGES.map((p) => p.d).filter(isUpcoming))];
+const ON_EXT = UPCOMING_RUN.length ? switchedOnCopy(UPCOMING_RUN) : null;
+if (ON_EXT) console.log(`⚑ نطاقٌ قادم يُفحص مشغَّلًا: ${UPCOMING_RUN.join("، ")} — نسخةٌ مؤقتة من الإضافة خارج المستودع صفُّه فيها {full: true}، ` +
+  `و${DUMMY_KEYS.length} نصوص تجريبية بقيمٍ اصطناعية؛ والحال الملتزمة {upcoming: true} لا تتغيّر، والنسخة تُحذف عند الخروج`);
+// المتصفحات: زوجٌ مشترك (المرجع والإضافة كما هي) للنطاقات المشحونة، وكرومٌ للنسخة المشغَّلة؛ ولنطاقات FRESH_PROFILE زوجٌ جديد لكل تحميل
+const SHARED_B = {};
+async function browsersFor(d) {
+  const on = isUpcoming(d), dir = on ? ON_EXT : EXT;
+  if (FRESH_PROFILE.has(d)) return { ref: await launchChrome(false), ext: await launchChrome(true, dir), fresh: true };
+  if (!SHARED_B.ref) SHARED_B.ref = await launchChrome(false);
+  const k = on ? "on" : "ext";
+  if (!SHARED_B[k]) { SHARED_B[k] = await launchChrome(true, dir); console.log("✓ كروم المرجع وكروم الإضافة" + (on ? " المشغَّلة" : "") + " (" + SHARED_B[k].extId + ")"); }
+  return { ref: SHARED_B.ref, ext: SHARED_B[k], fresh: false };
+}
 const results = [];
+// ★ (ر29-د) صفوف صحة المحدِّدات لصفحات المتن، وخلل المحدِّد صنفٌ عالٍ بنطاقه ومفتاحه (sigOf: «selector|<المفتاح>»)
+const SEL_ROWS = [];
+function selFinding(d, tag, url, width, key, pPath) {
+  return { d, page: tag, url, width, check: "sel-health", prop: key, key: "b", el: { t: "selector", c: key }, sev: "high", cls: "selector-gap",
+    why: `محدِّد ${key} في جدول النطاقات لا يطابق شيئًا في مسار متن — تغيّرت بنية الموقع؟ (الصمّام يحجز الصفحة «nosel»)`,
+    detail: `${key} يطابق 0 عنصرٍ في ${pPath || "صفحات المتن كلها"}` };
+}
 const ATTR_CACHE = new Map();   // بصمة الصنف ⇒ نسبته (تُعاد في الصفحات التالية بلا نداءٍ جديد)
 try {
   for (const page of PAGES) {
-    for (const width of WIDTHS) {
+    for (const width of widthsOf(page)) {
       const t0 = Date.now();
       const tag = `${page.d}-${page.tag}-${width}`;
-      let Rrun = null, Erun = null;
+      let Rrun = null, Erun = null, BR = null, refB = null, extB = null;
       const entry = { d: page.d, tag: page.tag, url: page.url, width, findings: [], meta: null, refMeta: null, error: null, shot: null };
+      if (isUpcoming(page.d)) entry.switchedOn = true;
+      if (page.steps) entry.steps = page.steps;
       try {
+        BR = await browsersFor(page.d); refB = BR.ref; extB = BR.ext;
         [Rrun, Erun] = await Promise.all([loadPage(refB, page, width, false), loadPage(extB, page, width, true)]);
+        // ★ (ر29-ح) صفحة تحقّق: إعادةٌ واحدة بعد مهلة (التحدّي يتقطّع: في DX0-0 قِيست صفحة الدخول بعرض 1366 وحُجبت بعرض 390 في التشغيل نفسه)،
+        // فإن بقي فالسبب بعينه: أيُّ المتصفحين، وحالة المستند، وعنوانه — لا «0 عيوب»
+        if (Rrun.challenge || Erun.challenge) {
+          await closePage(refB, Rrun); await closePage(extB, Erun); Rrun = Erun = null;
+          await wait(+opt("challenge-wait", "20") * 1000);
+          [Rrun, Erun] = await Promise.all([loadPage(refB, page, width, false), loadPage(extB, page, width, true)]);
+          entry.challengeRetry = true;
+        }
+        if (Rrun.challenge || Erun.challenge) {
+          const c0 = Erun.challenge || Rrun.challenge;
+          const side = Rrun.challenge && Erun.challenge ? "المتصفحين كليهما (المرجع والمعرَّب)" : Rrun.challenge ? "متصفح المرجع (بلا إضافة)" : "متصفح الإضافة";
+          entry.challenge = { ref: !!Rrun.challenge, ext: !!Erun.challenge, status: c0.status, title: c0.title, retried: true };
+          entry.error = `لم تُقَس: صفحة تحقّق Cloudflare لا الصفحة (HTTP ${c0.status || "?"}، العنوان «${c0.title}») في ${side}، مرتين بينهما ` +
+            `${opt("challenge-wait", "20")} ث — يحجب الموقع كروم بلا واجهة من هذه الشبكة قبل أن يرسم الصفحة؛ لا أثر للإضافة فيه، وتُفحص في متصفح المالك`;
+          throw new Error(entry.error);
+        }
         entry.meta = Erun.snap.meta; entry.refMeta = Rrun.snap.meta;
         if (flag("dump")) { fs.mkdirSync(path.join(OUT, "dumps"), { recursive: true }); fs.writeFileSync(path.join(OUT, "dumps", tag + ".json"), JSON.stringify({ ref: Rrun.snap, ext: Erun.snap })); }
         const m = Erun.snap.meta;
-        if (m.challenge || Rrun.snap.meta.challenge) { entry.error = "تحدّي Cloudflare/حجب — الصفحة غير قابلة للوصول بلا واجهة"; throw new Error(entry.error); }
+        if (m.challenge || Rrun.snap.meta.challenge) { entry.challenge = { ref: !!Rrun.snap.meta.challenge, ext: !!m.challenge, late: true };
+          entry.error = "لم تُقَس: صفحة تحقّق Cloudflare ظهرت بعد التحميل (عنوانها أو نصّها) — يحجب الموقع كروم بلا واجهة؛ لا أثر للإضافة فيه"; throw new Error(entry.error); }
         if (m.cml !== "on") { entry.error = "المحرّك لم يعمل على الصفحة (data-cml≠on)"; }
         if (!Rrun.snap.meta.sheetsOk || !m.sheetsOk) { entry.error = `أوراق CSS لم تُطبَّق (${!Rrun.snap.meta.sheetsOk ? "المرجع" : "المعرَّب"}: ${JSON.stringify((!Rrun.snap.meta.sheetsOk ? Rrun : Erun).snap.meta.cssNet)}) — لا مقارنة`; throw new Error(entry.error); }
         entry.iconStats = {};
         const PR = pairTrees(Rrun.snap, Erun.snap);
         let F = compare(page, width, Rrun.snap, Erun.snap, PR).concat(iconChecks(page, width, Rrun.snap, Erun.snap, Rrun.img, Erun.img, entry.iconStats, PR));
         entry.pairing = { ext: Erun.snap.recs.length, ref: Rrun.snap.recs.length, paired: PR.size };
+        // ★ (ر29-د) صحة المحدِّدات في مسار متن: مفتاحٌ لازم (المتن والاتجاه ومنتقي اللغة) لا يطابق شيئًا صنفٌ عالٍ بنفسه؛ والإبقاء في النطاق بعد التشغيل
+        { const pPath = new URL(page.url).pathname;
+          if (isBodyRoute(DMETA[page.d] && DMETA[page.d].meta, pPath, SHARED.routeMode)) {
+            SEL_ROWS.push({ d: page.d, page: pPath, counts: m.selh || {}, entry });
+            for (const k of pageMisses(m.selh || {})) F.push(selFinding(page.d, page.tag, page.url, width, k, pPath));
+          } }
         // صفحةٌ: لقطة CSS متقادمة (للنطاقات بلا ورقة حيّة) أو الحيّة لم تعمل
         const siteSheets = (m.sheets || []).filter((u) => !/^chrome-extension:/.test(u));
         const miss = siteSheets.filter((u) => !SNAP[page.d].has(path.basename(u.split("?")[0])));
@@ -1267,15 +1715,33 @@ try {
           delete f.el; }
         entry.findings = F;
       } catch (e) { entry.error = entry.error || e.message; }
-      finally { await closePage(refB, Rrun); await closePage(extB, Erun); }
+      finally {
+        if (refB) await closePage(refB, Rrun);
+        if (extB) await closePage(extB, Erun);
+        if (BR && BR.fresh) await Promise.all([BR.ref.close(), BR.ext.close()]);
+      }
       const c = entry.findings.reduce((a, f) => (a[f.sev] = (a[f.sev] || 0) + 1, a), {});
-      console.log(`${entry.error ? "✗" : "•"} ${tag.padEnd(46)} ${((Date.now() - t0) / 1000).toFixed(0)}ث  عالٍ ${c.high || 0} متوسط ${c.medium || 0} منخفض ${c.low || 0}` +
+      // ★ (ر29-ح) الصفحة التي لم تُقَس (صفحة تحقّق) بلا عدّاد عيوب: «عالٍ 0» كان يوهم أنها قيست سليمة
+      if (entry.challenge) console.log(`⊘ ${tag.padEnd(46)} ${((Date.now() - t0) / 1000).toFixed(0)}ث  ${entry.error}`);
+      else console.log(`${entry.error ? "✗" : "•"} ${tag.padEnd(46)} ${((Date.now() - t0) / 1000).toFixed(0)}ث  عالٍ ${c.high || 0} متوسط ${c.medium || 0} منخفض ${c.low || 0}` +
         (entry.meta ? `  [${entry.meta.htmlDir || "-"}/${entry.meta.rtl || "-"} عناصر ${entry.meta.recs}${entry.meta.truncated ? "+" : ""}]` : "") + (entry.error ? "  " + entry.error : ""));
       results.push(entry);
-      if (!flag("keep-going") && entry.error && /CDP|كروم/.test(entry.error)) throw new Error(entry.error);
+      // ★ (ر27) صفحة التحقّق لا توقف التشغيل (stopsRun في rtl-baseline.mjs): رسالتها تذكر «كروم بلا واجهة»، وإخفاق كروم أو CDP يوقفه كما كان
+      if (!flag("keep-going") && stopsRun(entry)) throw new Error(entry.error);
     }
   }
-} finally { await Promise.all([refB.close(), extB.close()]); }
+} finally { await Promise.all(Object.values(SHARED_B).map((b) => b.close())); }
+// ★ (ر29-د) الإبقاء لازمٌ في النطاق لا في كل صفحة: لم يطابق في صفحات المتن المفحوصة كلها ⇒ صنفٌ عالٍ في أول صفحةٍ منها. وفي تشغيلٍ جزئي (‎--only‎ أو
+// ‎--pages‎) لا يُحكم به: صفحةٌ من الشرح وحدها في وثائق المطوّرين لا يطابقها إبقاء مرجع الواجهة البرمجية، فهو تنبيهٌ كاذب
+const SEL_KEEP_AGG = !opt("only", "") && !opt("pages", "");
+if (!SEL_KEEP_AGG && SEL_ROWS.length) console.log("ℹ صحة المحدِّدات: تشغيلٌ جزئي (‎--only‎/‎--pages‎) — الإبقاء في النطاق لا يُحكم به هنا (بوابته ‎--selectors-only‎ والتشغيل الكامل)");
+for (const x of SEL_KEEP_AGG ? selVerdict(SEL_ROWS.map((r) => ({ d: r.d, page: r.page, counts: r.counts }))) : []) {
+  if (x.key !== "keepSel") continue;
+  const row = SEL_ROWS.find((r) => r.d === x.d); if (!row) continue;
+  const f = Object.assign(selFinding(x.d, row.entry.tag, row.entry.url, row.entry.width, "keepSel", null), { count: 1, examples: ["b"] });
+  f.fp = fingerprint(f); f.sel = shortSel(f.el); f.path = "b"; delete f.el;
+  row.entry.findings.push(f);
+}
 
 // ---- التجميع عبر الصفحات: أصناف العيوب مرتّبةً بالأولوية ----
 const groups = new Map();
@@ -1298,6 +1764,8 @@ for (const e of results) for (const f of e.findings) {
 const CAUSES = [...causes.values()].map((c) => ({ d: c.d, sheet: c.sheet, sel: c.sel, decl: c.decl, ours: c.ours, cls: c.cls, sev: c.sev, why: c.sample,
   checks: [...c.checks], elements: c.elements, groups: c.groups.size, pages: [...c.pages] })).sort((a, b) => SEV_RANK[b.sev] - SEV_RANK[a.sev] || b.elements - a.elements);
 const report = { at: new Date().toISOString(), repo: REPO, commit, extVersion: manifest.version, widths: WIDTHS, ms: Date.now() - started,
+  // ★ (ر16-ب) النطاقات القادمة التي فُحصت بنسختها المشغَّلة المؤقتة (لا بالإضافة كما هي)
+  switchedOn: SWITCHED,
   totals: { pages: results.length, errors: results.filter((e) => e.error).length, findings: results.reduce((a, e) => a + e.findings.length, 0), groups: G.length },
   groups: G.map((g) => ({ fp: g.fp, d: g.d, check: g.check, prop: g.prop, sel: g.sel, sev: g.sev, cls: g.cls, why: g.why, rule: g.rule, pages: g.pages, widths: g.widths, count: g.count,
     detail: g.sample.detail, text: g.sample.text, crop: g.sample.crop, path: g.sample.path, css: g.sample.css, decls: g.sample.decls, url: g.sample.url, ltrRoot: g.sample.ltrRoot })),
@@ -1330,16 +1798,26 @@ function decisionOf(g) {
     (!x.page || (g.pages || []).every((p) => new RegExp(x.page).test(p)))) || null;
 }
 if (flag("write-baseline")) {
+  // ★ (ر16-ب) بالنطاق (٣ في الرأس): تُستبدل بصمات النطاقات التي فُحصت هنا وحدها، وما سواها يبقى في الملف كما هو مدخلًا مدخلًا وبترتيبه
+  if (opt("only", "") || opt("widths", "")) { console.error("\n✗ لا يُكتب خطّ الأساس من فحصٍ جزئي (--only أو --widths): يُسقط بصمات النطاق الأخرى"); process.exit(2); }
+  const failed = results.filter((e) => e.error);
+  if (failed.length) { console.error(`\n✗ لا يُكتب خطّ الأساس: ${failed.length} صفحة أخفقت (أصنافها غائبة): ${failed.map((e) => e.d + "-" + e.tag + "-" + e.width).join("، ")}`); process.exit(1); }
   const hiNoDecision = G.filter((g) => g.sev === "high" && !decisionOf(g));
   if (hiNoDecision.length) {
-    console.error(`\n✗ لا يُكتب خطّ الأساس: ${hiNoDecision.length} صنفٌ عالٍ بلا قرارٍ مسجَّل في ${decFile}`);
+    const skip = flag("skip-undecided-high");
+    console.error(`\n${skip ? "⚑ خارج خطّ الأساس (معلّقةٌ لقرار المالك)" : "✗ لا يُكتب خطّ الأساس"}: ${hiNoDecision.length} صنفٌ عالٍ بلا قرارٍ مسجَّل في ${decFile}`);
     for (const g of hiNoDecision) console.error(`  ${g.fp} ${g.d} ${g.check} ${g.sel} ×${g.count} — ${g.why}`);
-    process.exit(1);
+    if (!skip) process.exit(1);
   }
-  fs.writeFileSync(baseFile, JSON.stringify({ at: report.at, commit, extVersion: manifest.version,
-    fps: G.filter((g) => g.sev !== "info").map((g) => ({ fp: g.fp, sev: g.sev, d: g.d, check: g.check, sel: g.sel, count: g.count,
-      decision: (decisionOf(g) || {}).decision })) }, null, 1));
-  console.log("✓ خطّ الأساس: " + baseFile);
+  const ran = [...new Set(results.map((e) => e.d))];
+  const fresh = G.filter((g) => g.sev !== "info" && !hiNoDecision.includes(g)).map((g) => ({ fp: g.fp, sev: g.sev, d: g.d, check: g.check, sel: g.sel, count: g.count,
+    decision: (decisionOf(g) || {}).decision }));
+  const { mergeBaseline } = await import(pathToFileURL(path.join(TOOLCHAIN, "rtl-baseline.mjs")).href);
+  const oldText = fs.existsSync(baseFile) ? fs.readFileSync(baseFile, "utf8") : "";
+  const text = mergeBaseline(oldText, fresh, ran, { at: report.at, commit, extVersion: manifest.version },
+    (d) => Object.assign({ at: report.at, commit, extVersion: manifest.version }, SWITCHED[d] ? { switchedOn: true } : {}));
+  fs.writeFileSync(baseFile, text);
+  console.log(`✓ خطّ الأساس: ${baseFile} — ${fresh.length} بصمةً لـ${ran.join("، ")}، و${JSON.parse(text).fps.length - fresh.length} لغيرها كما كانت`);
 }
 if (flag("gate")) {
   let known = new Map();

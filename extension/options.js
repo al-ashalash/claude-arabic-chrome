@@ -75,7 +75,10 @@
   // DOM: معرّف موقعٍ أو "all". الافتراضي هنا التطبيق (قشور الاختبار تحمّل الصفحة بلا #domainSel
   // وتعتمد عليه)، و«الكل» الافتراضي للصفحة الحقيقية يُضبط في initDomainBar وحدها.
   var DOM = "app";
-  var ALL_IDS = C.DOMAINS.map(function (x) { return x.id; });
+  // ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) المواقع المشحونة وحدها (C.shipped): النطاق القادم (status.upcoming — claude.com حتى CM-د) لا يُعرض ولا يُعدّ
+  // في قسمٍ من الصفحة، فلا مفتاح لموقعٍ لا تعمل فيه الإضافة بعد. وكل قائمةٍ أدناه منها: الاختيار والجداول والترحيب و«حول» والفحص والمزامنة
+  var SHIPPED = C.shipped ? C.shipped() : C.DOMAINS;
+  var ALL_IDS = SHIPPED.map(function (x) { return x.id; });
   var SITE = (C.K && C.K.SITE_ON) || "cml_site";
   var ENG_SITE = (C.K && C.K.ENGINE_SITE) || "cml_engine_site";
   var SCOPED = { cml_overrides: 1, cml_user_patterns: 1, cml_scan_result: 1, cml_bad_rules: 1,
@@ -146,10 +149,15 @@
     }, 3000);
   }
   function norm(s) { return String(s || "").toLowerCase(); }
-  // ★ معقِّمٌ واحد لحدود النص (مراجعة كودكس ٢٤): تصحيحُ المستخدم محدودٌ بـ TEXT_MAX (المحرّك نفسه بلا سقف طول منذ ٢١ ربيع
-  // الآخر ١٤٤٨هـ، أما المزامنة فلا ترفع مفتاحًا فوقه ولا ترجمةً فوق ضعفه) — فحفظُ ما يتجاوزهما وعدٌ كاذب؛ يُرفض بسببه عند الحفظ والإضافة والاستيراد
+  // ★ (ر29-ي، ١٩ جمادى الأولى ١٤٤٨هـ — توجيه المالك: لا سقف طولٍ يُبقي نصَّ موقعٍ بالإنجليزية) لا حدَّ طولٍ لتصحيح المستخدم: كان ما فوق TEXT_MAX
+  // (300 حرف للنص و600 للترجمة) يُرفض عند الحفظ والإضافة ويُهمَل عند الاستيراد (مراجعة كودكس ٢٤: حفظُ ما لا تحمله المزامنة وعدٌ كاذب)، فنصُّ
+  // موقعٍ طويلٌ ترجمه المستخدم من «أمر الترجمة» يبقى بالإنجليزية. فيُحفظ على هذا الجهاز مهما طال، والوعد صادقٌ بقوله: TEXT_MAX صار حدَّ المزامنة
+  // وحدها (معقِّم cml-sync.js، وهو حدُّ أجهزة 1.0.0 و2.0.0 كذلك)، فما جاوزه لا يُرفع ويبقى على هذا الجهاز، وتقول ذلك رسالةُ الحفظ والاستيراد
+  // وقسمُ المزامنة. والحماية الباقية: حدُّ ملف الاستيراد (IMPORT_MAX_BYTES) وعدده، وحصة التخزين المحلي وخطؤها الصريح، والمعقِّم (applyTermEdits)
   var TEXT_CAP = C.TEXT_MAX || 300;
-  function tooLong(en, ar) { return String(en || "").length > TEXT_CAP || String(ar || "").length > TEXT_CAP * 2; }
+  function overSync(en, ar) { return String(en || "").length > TEXT_CAP || String(ar || "").length > TEXT_CAP * 2; }
+  var SYNC_LIMIT_TXT = "أطول من حدّ المزامنة (" + arCount(TEXT_CAP, N.char, true) + " للنص، و" + arCount(TEXT_CAP * 2, N.char, true) + " للترجمة)";
+  function localNote() { return " — ويبقى على هذا الجهاز وحده: " + SYNC_LIMIT_TXT + "، فانقله إلى أجهزتك الأخرى ملفًّا من «تصدير تصحيحاتك فقط»."; }
   function show(id, on) { var el = $(id); if (el) el.classList.toggle("hidden", !on); }
   function setText(id, t) { var el = $(id); if (el) el.textContent = t; }
   // ★ (ر8-د — N4) نصٌّ بمقاطع: السلسلة نصٌّ، و{ltr: …} مضيفٌ أو مسارٌ في <bdi dir="ltr"> — والفواصل العربية بين المعزولات خارجها، فلا
@@ -185,6 +193,16 @@
   // يحمله تُكتب أعدادُه بها أيضًا — لا «وجد 5 نصوص · ١٤ ربيع الآخر». يُطبَّق على السطر بعد تأليفه
   // من نصوصنا وحدها، وقبل ضمّ ما ليس منّا إليه (نصّ خطأٍ من المتصفح مثلًا). وفاصلُ المراتب «٬».
   var AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+  // ★ (ر29-د) صحة محدِّدات الصفحة التي فُحصت (r.sel من المحرّك): حجزُ «nosel» أو مفاتيح لا تطابق شيئًا في صفحة متن — بأسماء المفاتيح وحدها
+  // ★ (ر29-د2) وحاوية المتن الرئيسة (bodyMain) مفتاحٌ بنفسها
+  var SEL_NAME = { bodySel: "المتن", bodyMain: "حاوية المتن", dirSel: "الاتجاه", siteLangSel: "منتقي اللغة", keepSel: "ما يُبقى بالإنجليزية" };
+  function selNote(r) {
+    var x = r && r.sel;
+    if (!x || (!x.held && !(x.miss && x.miss.length))) return "";
+    var names = (x.miss || []).map(function (k) { return SEL_NAME[k] || k; }).join("، ");
+    return " ⚠ " + (x.held === "nosel" ? "لم تجد الإضافة متن الصفحة التي فُحصت فتركتها كما هي (تغيّرت بنية الموقع)" : "تغيّرت بنية الصفحة التي فُحصت") +
+      (names ? "، ومحدِّداتٌ لا تطابق شيئًا: " + names : "") + ".";
+  }
   function datedLine(s) {
     return String(s).replace(/(\d),(?=\d{3}(?!\d))/g, "$1٬").replace(/(\d)\.(?=\d)/g, "$1٫")
       .replace(/[0-9]/g, function (c) { return AR_DIGITS.charAt(+c); });
@@ -208,7 +226,7 @@
       getD(d, ["cml_overrides", "cml_user_patterns", C.K.SYNC_GEN], function (s) {
         if (typeof gen === "number" && (s[C.K.SYNC_GEN] || 0) !== gen) { cb("stale"); return; }
         var res = CMLShared.applyTermEdits(s.cml_overrides, s.cml_user_patterns, LANG, ops,
-          { textMax: TEXT_CAP, maxTerms: IMPORT_MAX_TERMS, maxRules: IMPORT_MAX_RULES });
+          { maxTerms: IMPORT_MAX_TERMS, maxRules: IMPORT_MAX_RULES }); // ★ (ر29-ي) بلا حدّ طول كمسار العامل (editLocal)
         var w = {};
         if (res.ovChanged) w.cml_overrides = res.overrides;
         if (res.patChanged) w.cml_user_patterns = res.patterns;
@@ -265,7 +283,7 @@
       var rv = (sr.varList || []).filter(function (x) { return !gone[x]; });
       var removed = ((sr.list || []).length - rp.length) + ((sr.varList || []).length - rv.length);
       if (!removed) return;
-      // `missing` هو العدد الحقيقي وقد يفوق المعروض (القصّ عند 4000)، فيُنقص بما حُذف فعلًا
+      // `missing` هو العدد الحقيقي وقد يفوق المعروض (حدّ الحجم، ★ ر29-ز)، فيُنقص بما حُذف فعلًا، ويبقى `omitted` كما هو (ليس في القائمتين)
       setD(d, { cml_scan_result: Object.assign({}, sr, {
         list: rp, varList: rv, missing: Math.max(0, (sr.missing || 0) - removed), shown: rp.length + rv.length,
       }) });
@@ -293,8 +311,8 @@
     var ps = $("privSites");
     if (ps) {
       ps.textContent = "";
-      C.DOMAINS.forEach(function (d, i) {
-        if (i) ps.appendChild(document.createTextNode(i === C.DOMAINS.length - 1 ? " و" : "، "));
+      SHIPPED.forEach(function (d, i) {
+        if (i) ps.appendChild(document.createTextNode(i === SHIPPED.length - 1 ? " و" : "، "));
         ps.appendChild(document.createTextNode("«" + d.name + "» ("));
         var b = document.createElement("bdi"); b.dir = "ltr"; b.textContent = C.siteLabel(d.id);
         ps.appendChild(b); ps.appendChild(document.createTextNode(")"));
@@ -415,7 +433,6 @@
     save.addEventListener("click", function () {
       var v = (inp.value || "").trim();
       if (!v) { flash($("termsStatus"), "اكتب الترجمة أولًا."); return; }
-      if (tooLong(en, v)) { flash($("termsStatus"), "تعذّر الحفظ: الترجمة أطول من " + arCount(TEXT_CAP * 2, N.char, true) + "، فلا تُطبَّق ولا تُزامَن."); return; }
       var isRule = VAR_TEST.test(en), same = !isRule && rowBase[en] !== undefined && v === rowBase[en];
       var ops;
       if (isRule) {
@@ -433,7 +450,7 @@
         renderTerms();
         if (same) { flash($("termsStatus"), "مطابقةٌ للقاموس، فلم تُحفظ تصحيحًا."); return; }
         dropFromScan(rowD, [en]);
-        flash($("termsStatus"), isRule ? "حُفظت قاعدةً ذكية تعمل مع كل القيم ✓" : "تم الحفظ ✓");
+        flash($("termsStatus"), (isRule ? "حُفظت قاعدةً ذكية تعمل مع كل القيم ✓" : "تم الحفظ ✓") + (overSync(en, v) ? localNote() : ""));
       });
     });
     acts.appendChild(save);
@@ -693,7 +710,7 @@
       var missing = [], missTotal = 0, missTrunc = 0;
       if (filter === "missing") {
         var pool = ((sr && sr.list) || []).concat((sr && sr.varList) || []);
-        // المعروض قد يكون أقل من الحقيقي (قُصّ عند 4000) — نُظهر الحقيقي في العنوان
+        // المعروض قد يكون أقل من الحقيقي (حدّ الحجم، ★ ر29-ز: لا حالة له اليوم) — نُظهر الحقيقي في العنوان
         missTotal = (sr && sr.missing) || pool.length;
         pool.forEach(function (k2) {
           if (q && norm(k2).indexOf(q) < 0) return;
@@ -782,7 +799,6 @@
       return;
     }
     if (!a || !b) { flash($("termsStatus"), "املأ الحقلين."); return; }
-    if (tooLong(a, b)) { flash($("termsStatus"), "تعذّر الحفظ: النص أطول من " + arCount(TEXT_CAP, N.char, true) + " أو الترجمة أطول من " + arCount(TEXT_CAP * 2, N.char, true) + "، فلا يُطبَّق ولا يُزامَن."); return; }
     var where = d === "app" && !isAll() ? "" : " إلى " + qn(d);
     // نصٌّ بمتغيّرات قاعدةٌ ذكية هنا كما في حفظ السطر والاستيراد (مسارٌ واحد)
     if (VAR_TEST.test(a)) {
@@ -791,14 +807,14 @@
       editTerms(d, [{ op: "rule", en: a, ar: b }], function (err) {
         if (err) { flash($("termsStatus"), "تعذّر الحفظ — " + err, true); return; }
         $("newSrc").value = ""; $("newDst").value = ""; renderTerms();
-        flash($("termsStatus"), "أُضيفت" + where + " قاعدةٌ ذكية تعمل مع كل القيم ✓");
+        flash($("termsStatus"), "أُضيفت" + where + " قاعدةٌ ذكية تعمل مع كل القيم ✓" + (overSync(a, b) ? localNote() : ""));
       });
       return;
     }
     editTerms(d, [{ op: "set", k: a, v: b }], function (err) {
       if (err) { flash($("termsStatus"), "تعذّر الحفظ — " + err, true); return; } // كان يعلن النجاح والمخزن خالٍ
       $("newSrc").value = ""; $("newDst").value = ""; renderTerms();
-      flash($("termsStatus"), "أُضيف التصحيح" + where + " ✓");
+      flash($("termsStatus"), "أُضيف التصحيح" + where + " ✓" + (overSync(a, b) ? localNote() : ""));
     });
   }
 
@@ -1068,7 +1084,7 @@
       "\n\n⚠ ملف الترجمة يغيّر نصوص الأزرار والتسميات — فلا تستورد إلا من مصدر تثق به.\n\nأتتابع؟";
     readGen(function (gen0) {
       if (!confirm(msg)) { flash(statusEl, "أُلغي الاستيراد."); return; }
-      var k2 = 0, sum = { plain: 0, pat: 0, skip: 0, capped: 0, blocks: 0 }, failed = null;
+      var k2 = 0, sum = { plain: 0, pat: 0, skip: 0, capped: 0, blocks: 0, local: 0 }, failed = null;
       (function next() {
         if (k2 >= sections.length || failed) {
           renderTerms(); renderBlocks(); renderStats();
@@ -1076,7 +1092,9 @@
           var m2 = "تم استيراد " + arCount(sum.plain + sum.pat, N.line, true) + " ✓";
           if (sum.pat) m2 += " (منها قواعد ذكية: " + arCount(sum.pat, N.rule) + ")";
           if (sum.blocks) m2 += " و" + arCount(sum.blocks, N.para);
-          if (sum.skip) m2 += " — وأُهمل ما لا يصلح (قاعدةٌ ذكية غير صالحة أو نصٌّ أطول من الحدّ: " + arCount(sum.skip, N.line) + ")";
+          // ★ (ر29-ي) لا يُهمَل سطرٌ لطوله: الطويل يُستورد ويبقى على هذا الجهاز ويُقال عدده (وحدُّ تصحيح الفقرة BLOCK_VAL_MAX باقٍ لمساحتها)
+          if (sum.local) m2 += " — ومنها " + arCount(sum.local, N.line) + " " + SYNC_LIMIT_TXT + " تبقى على هذا الجهاز وحده ولا تُرفع إلى مزامنة حسابك";
+          if (sum.skip) m2 += " — وأُهمل ما لا يصلح (قاعدةٌ ذكية غير صالحة، أو سطرٌ بلا ترجمة، أو تصحيح فقرةٍ أطول من حدّها: " + arCount(sum.skip, N.line) + ")";
           if (sum.capped) m2 += " — وما تجاوز الحدَّ الأقصى لم يُستورد: " + arCount(sum.capped, N.line);
           flash(statusEl, m2);
           return;
@@ -1084,7 +1102,7 @@
         var sec = sections[k2++];
         var afterPairs = function (res) {
           if (res.error) { failed = res.error; next(); return; }
-          sum.plain += res.plain; sum.pat += res.pat; sum.skip += res.skip; sum.capped += res.capped;
+          sum.plain += res.plain; sum.pat += res.pat; sum.skip += res.skip; sum.capped += res.capped; sum.local += res.local || 0;
           if (!sec.bkeys.length) { next(); return; }
           // تصحيحات الفقرات إلى مساحتها (مفاتيحُها بصمات، وقوالبها فُحصت في parseBlocks)
           editBlocks(sec.d, sec.bkeys.map(function (k) { return { op: "set", k: k, v: sec.blocks[k], cap: 1 }; }), function (err, rep) {
@@ -1101,30 +1119,47 @@
 
   function importInto(tgt, pairs, keys, done, gen) {
     // أمرٌ جزئي واحد للقسم كله (رأس editTerms): السقوف والمعقِّم يطبّقها العامل على قراءةٍ طازجة
-    var ops = [], taken = [], nSkip = 0;
+    var ops = [], taken = [], nSkip = 0, nLocal = 0;
     keys.forEach(function (k) {
       var v = pairs[k];
-      if (typeof v !== "string" || !v || tooLong(k, v)) { nSkip++; return; }   // لا يُطبَّق ولا يُزامَن
+      if (typeof v !== "string" || !v) { nSkip++; return; }
       if (VAR_TEST.test(k)) {
         if (!makePattern(k, v)) { nSkip++; return; }        // فشل حارس الأمان — تُتجاهل بأمان
         ops.push({ op: "rule", en: k, ar: v, cap: 1 });
       } else {
         ops.push({ op: "set", k: k, v: v, cap: 1 });        // السقف على الجديد لا على تحديث الموجود
       }
+      // ★ (ر29-ي) لا يُهمَل سطرٌ لطوله: يُستورد، وما جاوز حدّ المزامنة يبقى على هذا الجهاز ويُعدّ ليُقال
+      if (overSync(k, v)) nLocal++;
       taken.push(k);
     });
     editTerms(tgt, ops, function (err, rep) {
       if (err) { done({ error: err === "stale" ? STALE_MSG : "تعذّر الحفظ — امتلأت مساحة التخزين أو مُنعت الكتابة. لم يُحفظ هذا القسم." }); return; }
       dropFromScan(tgt, taken);
-      done({ plain: rep.set, pat: rep.rule, skip: nSkip + rep.skipped, capped: rep.capped });
+      done({ plain: rep.set, pat: rep.rule, skip: nSkip + rep.skipped, capped: rep.capped, local: nLocal });
     }, gen);
   }
 
+  // ★ (ر29-ك — توجيه المالك: لا يُخفى نصُّ موقعٍ عن تصديره ولا تُكتب له ترجمةٌ لا تطابق أبدًا) سطرُ نصٍّ في «أمر الترجمة»: النصُّ كما هو، إلا نصًّا
+  // فيه بياضٌ غير المسافة (سطرٌ جديد، جدولة، مسافةٌ خاصة كـ‎U+00A0‎) أو محرفُ تحكّم، أو يبدأ بعلامة اقتباس: يُكتب حرفيّةَ JSON بين علامتي اقتباس
+  // وكلُّ بياضٍ غير المسافة فيه مهرَّب (‎\n‎ و‎\t‎ و‎\u00a0 للمسافة U+00A0‎). فيبقى سطرًا واحدًا (عددُ الأسطر عددُ النصوص)، ويُنسخ قيمةً لحقل en فيفكّه الاستيراد
+  // (JSON.parse) إلى نصّ العقدة بعينه — مفتاحِ المحرّك بأسطره (textKey يقصّ ولا يضمّ). وكان يُصدَّر مضمومًا، فترجمته مفتاحٌ لا يطابق الصفحة أبدًا
+  var PROMPT_ESC = new RegExp("[^\\S ]|[\\u0000-\\u001f\\u007f]|^\"");
+  function promptLine(k) {
+    k = String(k);
+    if (!PROMPT_ESC.test(k)) return k;
+    return JSON.stringify(k).replace(/[^\S ]|\u007f/g, function (c) { return "\\u" + ("000" + c.charCodeAt(0).toString(16)).slice(-4); });
+  }
   // الأمر الكامل (التعليمات + النصوص لكل موقع) — يُكتب في الملف نفسه لا في الحافظة وحدها.
   // secs = [{d, keys, varKeys}]؛ والردّ المطلوب يحمل موقعه (domain أو domains) فيعود الاستيراد إليه
   function buildPrompt(secs) {
-    var many = secs.length > 1, total = 0;
-    secs.forEach(function (s) { total += s.keys.length + s.varKeys.length; });
+    var many = secs.length > 1, total = 0, escaped = false;
+    secs.forEach(function (s) {
+      total += s.keys.length + s.varKeys.length;
+      s.lines = s.keys.map(promptLine); s.varLines = s.varKeys.map(promptLine);
+      // (مراجعة ر29-ك) موضعًا بموضع في كل قائمة: كان يُبنى لكل سطرٍ ضمُّ القائمتين من جديد، فآلافُ الأسطر آلافُ مصفوفاتٍ بآلاف العناصر
+      if (s.lines.some(function (x, i) { return x !== s.keys[i]; }) || s.varLines.some(function (x, i) { return x !== s.varKeys[i]; })) escaped = true;
+    });
     var where = secs.map(function (s) { return C.siteLabel(s.d); }).join("، ");
     var fmt = many
       ? '{"domains": {' + secs.map(function (s) { return '"' + s.d + '": [{"en":"…","ar":"…"}]'; }).join(", ") + "}}"
@@ -1137,24 +1172,32 @@
       "2) تبقى إنجليزية كما هي: Claude، Anthropic، Cowork، Opus، Sonnet، Haiku، Fable، Max،",
       "   MCP، API، SDK، CLI، JSON، URL، PDF، CSV، GitHub، Google، Slack، Chrome، Windows،",
       "   macOS، Linux، iOS، Android، وأسماء الملفات والمسارات والتعليمات البرمجية.",
-      "3) أسماء الميزات الكبرى: تُكتب «الترجمة (English)» إذا كان النص عنوانًا أو زرًّا مستقلًّا",
-      "   — مثل: المشاريع (Projects)، المُخرَجات (Artifacts)، المهارات (Skills)،",
-      "   الموصّلات (Connectors)، الذاكرة (Memory)، البرمجة (Code)، العمل المشترك (Cowork).",
-      "   أما داخل الجُمل فتُستعمل العربية وحدها بلا قوسين.",
+      // ★ (ت14-هـ0، ٢٦ جمادى الأولى ١٤٤٨هـ — القرار 141 والقرار 142) لا يُجمع اسمٌ عربي ومقابله الإنجليزي بين قوسين في أي نص
+      "3) أسماء الميزات الكبرى بالعربية وحدها، بلا قوسين ولا مقابلٍ إنجليزي، في العناوين والأزرار والجُمل:",
+      "   المشاريع، والمُخرَجات، والمهارات، والموصّلات، والذاكرة، والبرمجة؛ ويبقى Cowork بحروفه.",
       "   ملاحظة: «Code» تعني «البرمجة» لا «الأكواد».",
       "4) إن كان النص علامة تجارية أو رمزًا برمجيًّا لا يُترجم، اجعل ترجمته مطابقة للأصل.",
       "5) حافظ على الرموز في مواضعها: %d و{...} والنقاط الثلاث … وعلامات مثل ×.",
       "6) وحّد ترجمة المصطلح الواحد في كل النصوص.",
+    ];
+    if (escaped) out.push(
+      "7) السطر الذي يبدأ بعلامة اقتباس \" نصٌّ مكتوبٌ بصيغة JSON، لأن فيه سطرًا جديدًا أو مسافةً خاصة أو لأنه يبدأ هو بعلامة اقتباس (\\n سطرٌ جديد، و\\u00a0 مسافةٌ لا تنكسر، و\\\" علامة اقتباس):",
+      "   ضعه قيمةً لحقل en كما هو حرفيًّا بعلامتي اقتباسه ورموزه، بلا علامتين أخريين، واكتب ar بصيغة JSON كذلك وفيها \\n في مواضعها.");
+    out.push(
       "",
       "أعد النتيجة **بصيغة JSON فقط** بلا أي شرح قبلها أو بعدها، وبهذا الشكل تمامًا" + (many ? " (كل موقعٍ تحت اسمه)" : "") + ":",
       fmt,
       "",
       "احرص أن يكون حقل en منسوخًا حرفيًّا بلا تغيير في علامات الترقيم أو المسافات،",
-      "وأن يكون عدد العناصر مساويًا لمجموع الأسطر أدناه (" + total + ").",
-    ];
+      "وأن يكون عدد العناصر مساويًا لمجموع الأسطر أدناه (" + total + ").");
+    // ★ (ر29-ز) لا يسقط سطرٌ بصمت: ما بقي خارج القائمة (حدّ الحجم، ولا حالة له اليوم) يُقال في أول الملف وفي قسم موقعه بعدده وطريق الحصول عليه
+    var omTotal = 0; secs.forEach(function (s) { omTotal += s.omitted || 0; });
+    if (omTotal) out.unshift("⚠ تنبيهٌ لك قبل اللصق: هذا الملف لا يضمّ كل غير المترجَم — بقي خارجه " + arCount(omTotal, N.line) +
+      " (التفصيل في قسم كل موقع أدناه). احذف هذا التنبيه من النص الملصق إن شئت.", "");
     secs.forEach(function (s) {
       if (many) out.push("", "## الموقع " + s.d + " — " + dname(s.d) + " (" + C.siteLabel(s.d) + ")");
-      out.push("", "### نصوص ثابتة (" + arCount(s.keys.length, N.line) + ")", "----------------------------------------", s.keys.join("\n"));
+      if (s.omitted) out.push("", "⚠ " + omittedNote(s.omitted, s.r));
+      out.push("", "### نصوص ثابتة (" + arCount(s.keys.length, N.line) + ")", "----------------------------------------", s.lines.join("\n"));
       if (s.varKeys.length) {
         out.push("",
           "### نصوص فيها متغيّرات (" + arCount(s.varKeys.length, N.line) + ")",
@@ -1164,7 +1207,7 @@
           "- لا تحذف متغيّرًا ولا تخترع متغيّرًا غير موجود في الأصل.",
           "مثال: \"Delete {count} chats?\" ← \"حذف {count} محادثة؟\"",
           "----------------------------------------",
-          s.varKeys.join("\n"));
+          s.varLines.join("\n"));
       }
     });
     return out.join("\n");
@@ -1179,7 +1222,8 @@
     var url = null;
     try { url = chrome.runtime.getURL("bodies/" + d + "/" + LANG + "/index.json"); } catch (e) {}
     if (!url || typeof fetch !== "function") { COVER[d] = null; cb(null); return; }
-    fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (x) {
+    // (ر24-د2) ملفٌّ من الحزمة نفسها (chrome.runtime.getURL أعلاه)، وcredentials:"omit" لبوابة الجلب (fetch-gate.mjs) إذ الرابط في متغيّر
+    fetch(url, { credentials: "omit" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (x) {
       if (!x || typeof x !== "object") COVER[d] = null;
       else COVER[d] = {
         pages: typeof x.pages === "number" ? x.pages : (Array.isArray(x.shards) ? x.shards.length : 0),
@@ -1213,6 +1257,8 @@
     var L = DICT[d], c = L && L.dicts && L.dicts[LANG] && L.dicts[LANG].counts;
     return c && typeof c === "object" ? c : null;
   }
+  // ★ (ر24-د2، مراجعة ر24-د) وهو ممرُّ كل عددٍ مخزَّن إلى سطرٍ يُبنى innerHTML (نتيجة الفحص found وmissing، وcount المزامنة): نصٌّ في التخزين كان يُكتب
+  // كما هو، لأن toLocaleString للنصّ يعيده نفسه، فيصير وسمًا؛ وما ليس عددًا يُكتب 0
   function numOf(n) { return (Number(n) || 0).toLocaleString("en"); }
   // الكلمات مقرَّبةً في خلية الجدول: «≈ 298 ألفًا»، و«≈ 1.03 مليون»، وما دون الألف بعدده
   // ★ (ر8-د، المراجعة) وما يُقرَّب إلى ألف ألف (999,500 فأكثر) يُكتب بالمليون لا «1,000 ألف»
@@ -1281,8 +1327,8 @@
             } else if (F) {
               // تسمياتٌ لا تحتاج مطابقة المعدود («وجد 5 عنوانًا» كانت خطأً)، وبتاريخٍ هجري فأرقام السطر أرقامُه
               html = datedLine("قاموس " + esc(qn(d)) + ": " + sz(d) + " · آخر فحص (" + esc(hDate(r.at)) + "): " +
-                (r.source === "llms" ? "العناوين" : "النصوص") + " <b>" + r.found.toLocaleString("en") + "</b>، وغيرُ المترجَم منها <b>" +
-                (r.missing || 0).toLocaleString("en") + "</b>.") +
+                (r.source === "llms" ? "العناوين" : "النصوص") + " <b>" + numOf(r.found) + "</b>، وغيرُ المترجَم منها <b>" +
+                numOf(r.missing) + "</b>.") +
                 ((r.missing || 0)
                   ? " <b>لترجمتها:</b> «تنزيل أمر الترجمة» ثم «استيراد الترجمات» أدناه، أو اختر «غير المترجَم» في التصفية."
                   : " المصدر مطابق لآخر فحص ✓");
@@ -1296,8 +1342,8 @@
             // نصوص التطبيق وعناوين الوثائق كلٌّ باسمه — لا تُجمع في «نصًّا» واحدة
             var parts = scanned.map(function (x) {
               var rx = per[x].cml_scan_result;
-              return esc(qn(x)) + ": " + (rx.source === "llms" ? "العناوين" : "النصوص") + " <b>" + rx.found.toLocaleString("en") +
-                "</b>، وغيرُ المترجَم منها <b>" + Math.min(rx.missing || 0, rx.found).toLocaleString("en") + "</b>";
+              return esc(qn(x)) + ": " + (rx.source === "llms" ? "العناوين" : "النصوص") + " <b>" + numOf(rx.found) +
+                "</b>، وغيرُ المترجَم منها <b>" + numOf(Math.min(rx.missing || 0, rx.found)) + "</b>";
             });
             html = "في " + esc(arCount(ids.length, N.site, true)) + ": " + sizeHtml(tot) + ". " +
               (F ? "الدائرتان على المواقع المفحوصة وحدها — " + parts.join("؛ ") + "."
@@ -1306,7 +1352,7 @@
           }
           ids.forEach(function (d) {
             var br = per[d][C.K.BAD_RULES];
-            var n = br ? (br.patterns || 0) + (br.plurals || 0) : 0;
+            var n = br ? (Number(br.patterns) || 0) + (Number(br.plurals) || 0) : 0; // ★ (ر24-د2) أعدادٌ لا نصوص: السطر يُكتب innerHTML
             // القواعد الفاسدة تُصرَّح لا تُبتلع: المحرك يعدّها في compile ويكتبها متى تغيّرت
             if (n) html += "<br>⚠ " + (isAll() ? esc(qn(d)) + ": " : "") + "<b>" + n + "</b> من قواعدك المحفوظة تالفةٌ لا تُطبَّق — أعد استيرادها، أو احذفها من «تصحيحاتك».";
           });
@@ -1730,14 +1776,30 @@
     if (nVars) msg += " ومنها ما فيه متغيّرات، فيُحوَّل عند ترجمته إلى قاعدةٍ ذكية: " + arCount(nVars, noun) + ".";
     // ★ (ر8-د — N6) ما يبقى بالإنجليزية بقاعدة النطاق (أسماء المنتجات والنماذج والرموز…) مغطًّى لا «غير مترجَم»، وعددُه هنا وحده
     if (r.kept) msg += " ومنها ما يبقى بالإنجليزية عمدًا (أسماء المنتجات والنماذج ونحوها) فيُعدّ مترجَمًا: " + arCount(r.kept, noun) + ".";
-    if (r.capped) msg += " (عُرض أول 4000 نصّ)";
+    // ★ (ر29-ز) لا سقف عدد: وما بقي خارج القائمة لحدّ الحجم (ولا حالة له اليوم) يُقال بعدده وطريق الحصول عليه، لا «عُرض أول 4000»
+    var om = scanOmitted(r);
+    if (om) msg += " ⚠ " + omittedNote(om, r);
     // إخفاق الجلب يعني نتيجةً ناقصة — والسكوت عنه يجعل «تمّ» يبدو اكتمالًا وليس به
     if (r.failed) msg += " ⚠ تعذّر جلب " + arCount(r.failed, N.file, true) + "، فالنتيجة ناقصة — أعد الفحص.";
     msg += " آخر فحص: " + hDateTime(r.at) + ".";
     msg += r.missing
       ? " غيرُ المترجَم في «إدارة قاموس التعريب» أدناه — النِّسَب والقائمة وأدوات الترجمة."
       : " المصدر مطابق لأحدث نسخة من الموقع ✓";
+    msg += selNote(r);   // ★ (ر29-د)
     status(datedLine(msg));
+  }
+
+  // ★ (ر29-ز، ١٩ جمادى الأولى ١٤٤٨هـ) ما بقي من غير المترجَم خارج قائمتي الفحص: عددُه في النتيجة (omitted، حدّ الحجم SCAN_MAX_BYTES)، وفي
+  // نتيجةٍ خزّنها محرّكٌ أقدم (سقف 4,000 سطر، بلا omitted) فرقُ العدد الحقيقي عن المخزَّن — فلا يُفهم الملف كاملًا وليس به
+  function scanOmitted(r) {
+    if (!r || r.status !== "done") return 0;
+    if (typeof r.omitted === "number") return Math.max(0, r.omitted);
+    return r.capped ? Math.max(0, (r.missing || 0) - ((r.list || []).length + (r.varList || []).length)) : 0;
+  }
+  function omittedNote(om, r) {
+    return "بقي خارج القائمة " + arCount(om, N.line) + " غير مترجَم" + (r && r.omittedVars ? " (منها " + arCount(r.omittedVars, N.line) + " فيها متغيّرات)" : "") +
+      "، لأن نتيجة الفحص جاوزت حدّ ما يُخزَّن منها (" + Math.round((C.SCAN_MAX_BYTES || 0) / 1048576) + " م.ب)؛ وهي التالية في الترتيب الأبجدي لما في القائمة." +
+      " وللحصول عليها: ترجم ما في القائمة واستورده، ثم أعد «فحص الترجمة» ونزّل «أمر الترجمة» من جديد، فيظهر الباقي.";
   }
 
   // «تنزيل أمر الترجمة»: للموقع المختار، أو ملفٌّ واحد بأقسامٍ لكل موقعٍ له نتيجة في «الكل»
@@ -1752,7 +1814,7 @@
         var r = per[d][C.K.SCAN_RESULT];
         if (r && r.status === "done") scannedAny = true;
         var plain = (r && r.list) || [], vars = (r && r.varList) || [];
-        if (plain.length || vars.length) { secs.push({ d: d, keys: plain, varKeys: vars }); n += plain.length + vars.length; }
+        if (plain.length || vars.length) { secs.push({ d: d, keys: plain, varKeys: vars, omitted: scanOmitted(r), r: r }); n += plain.length + vars.length; }
       });
       if (!secs.length) {
         flash(st, scannedAny ? "لا نصوص غير مترجَمة في آخر فحص" + (isAll() ? " للمواقع المفحوصة" : "") + "."
@@ -1760,8 +1822,10 @@
         return;
       }
       download("أمر-ترجمة-كلود" + fileSuffix() + ".txt", buildPrompt(secs), "text/plain;charset=utf-8");
+      var omAll = 0; secs.forEach(function (s) { omAll += s.omitted; });
       flash(st, "نُزّل الملف (" + arCount(n, N.text) + (secs.length > 1 ? " من " + arCount(secs.length, N.site, true) : "") +
-        ") وفيه الأمر كاملًا — ألصقه في محادثةٍ مع Claude.");
+        ") وفيه الأمر كاملًا — ألصقه في محادثةٍ مع Claude." +
+        (omAll ? " ⚠ وبقي خارجه " + arCount(omAll, N.line) + "، وطريقُ الحصول عليها مكتوبٌ في أوله." : ""), !!omAll);
     });
   }
 
@@ -1926,6 +1990,7 @@
     msg += " وفي التنسيقات التي يكتبها الموقع في عناصره مباشرةً فُحص " + arCount((r.inlineChecked || 0), N.elem) + "، في " +
       (r.inlinePhysical || 0).toLocaleString("en") + " منها يمينٌ أو يسار — وهذه لا تمسّها الإضافة عمدًا.";
     if (r.at) msg += " آخر فحص: " + hDateTime(r.at) + ".";
+    msg += selNote(r);   // ★ (ر29-د)
     if (!st.dataset.flashing) st.textContent = r.at ? datedLine(msg) : msg;
     if (!box) return;
     if (!unc) { box.classList.add("hidden"); return; }
@@ -2047,6 +2112,23 @@
       el.appendChild(tbl);
     });
   }
+  // ★ (ر29-ي) ما يبقى على هذا الجهاز وحده: تصحيحاتٌ وقواعد أطول من حدّ المزامنة في المواقع كلها (معقِّم cml-sync.js لا يرفعها) — تُعدّ وتُقال، فلا
+  // يغيب شيءٌ عن الأجهزة الأخرى بصمت
+  function renderLocalOnly() {
+    var el = $("syncLocalLine");
+    if (!el) return;
+    readMany(ALL_IDS, ["cml_overrides", "cml_user_patterns"], function (per) {
+      var n = 0;
+      ALL_IDS.forEach(function (d) {
+        var ov = ((per[d] || {}).cml_overrides || {})[LANG] || {};
+        Object.keys(ov).forEach(function (k) { if (overSync(k, ov[k])) n++; });
+        var ps = (per[d] || {}).cml_user_patterns;
+        (Array.isArray(ps) ? ps : []).forEach(function (p) { if (p && overSync(p.en, p.ar)) n++; });
+      });
+      el.textContent = n ? "ويبقى على هذا الجهاز وحده ما كان " + SYNC_LIMIT_TXT + " من تصحيحاتك وقواعدك: " + arCount(n, N.fix) +
+        "، فلا يُرفع إلى حسابك؛ انقله إلى أجهزتك الأخرى ملفًّا من «تصدير تصحيحاتك فقط»." : "";
+    });
+  }
   function renderSync() {
     renderSyncDomains();
     var off = $("syncOff"), on = $("syncOn");
@@ -2057,6 +2139,7 @@
       if (on) on.classList.toggle("hidden", !enabled);
       renderWipeBox(enabled); // قسميٌّ: يُرسم في الحالين قبل أي خروج مبكر
       if (!enabled) return;
+      renderLocalOnly();
       var st = s[C.K.SYNC_STATE];
       var line = $("syncStateLine"), fill = $("syncBarFill");
       if (!line) return;
@@ -2065,7 +2148,7 @@
       if (st && st.status === "ok") {
         var kb = Math.round((st.bytes || 0) / 100) / 10; // بمنزلة عشرية: اللقطات الصغيرة لا تظهر صفرًا
         line.innerHTML = datedLine(esc(pre) + "آخر رفع " + esc(hDateTime(st.at)) + " — <b>" +
-          (st.count || 0).toLocaleString("en") + "</b> من تصحيحاتك وقواعدك، <b>" +
+          numOf(st.count) + "</b> من تصحيحاتك وقواعدك، <b>" +
           kb.toLocaleString("en") + "</b> كيلوبايت من " + SYNC_TOTAL_KB.toLocaleString("en") + " كيلوبايت. وحالُ سائر المواقع في الجدول أدناه.");
         if (fill) { fill.style.width = pct(st.bytes) + "%"; fill.style.background = "var(--brand)"; }
       } else if (st && st.status === "overflow") {
@@ -2211,7 +2294,7 @@
   // فايرفوكس MV3 لا يمنح أذوناتِ مواقع سكربتات المحتوى عند التثبيت؛ فنكشف الحال هنا ونعرض زرّ منح.
   // الخطأ الآمن «لا لوحة»: لوحةٌ كاذبة في كروم أسوأُ من غيابها في فايرفوكس.
   var FF_ORIGINS = [];
-  C.DOMAINS.forEach(function (d) { d.matches.forEach(function (m) { if (FF_ORIGINS.indexOf(m) < 0) FF_ORIGINS.push(m); }); });
+  SHIPPED.forEach(function (d) { d.matches.forEach(function (m) { if (FF_ORIGINS.indexOf(m) < 0) FF_ORIGINS.push(m); }); });
   function isFirefox() {
     try {
       return typeof browser !== "undefined" && browser.runtime &&
@@ -2640,7 +2723,8 @@
       o.textContent = o.value === "all" ? "المواقع كلها — " + arCount(ALL_IDS.length, N.site) : optText(o.value);
     }
   }
-  function validDom(v) { return v === "all" || !!C.domain(v); }
+  // ★ (ر15) موقعٌ مشحون (لا القادم): اختيارٌ محفوظ أو تسليمٌ من النافذة لموقعٍ لا يُعرض يعود إلى «المواقع كلها»
+  function validDom(v) { return v === "all" || ALL_IDS.indexOf(v) >= 0; }
   function initDomainBar() {
     var sel = $("domainSel");
     if (!sel) return; // قشور الاختبار بلا الرأس: تبقى على التطبيق
@@ -2772,7 +2856,7 @@
   function fillKeep(id) {
     var ke = $(id);
     if (!ke) return;
-    var ens = C.DOMAINS.map(function (d) { return d.status && !d.status.full && d.status.en; }).filter(Boolean)
+    var ens = SHIPPED.map(function (d) { return d.status && !d.status.full && d.status.en; }).filter(Boolean)
       .concat(["ما غيّرته المواقع أو أضافته بعد إعداده"]);
     ke.textContent = "وتبقى بالإنجليزية في هذا الإصدار " + ens.map(function (t, i) { return i ? "و" + t : t; }).join("، ") + ".";
   }
@@ -2791,7 +2875,7 @@
       // اسم المضيف معزولٌ اتجاهيًّا: خلطُه بالعربية في سطرٍ واحد كان يقلب ترتيب السطر
       // ★ (ر8-د — N2) وحالُ كل موقعٍ في هذا الإصدار من جدول النطاقات (status: كاملٌ، أو جزئيٌّ بسببه) — مصدرٌ واحد للقائمة وللجملة تحتها
       var partial = 0;
-      C.DOMAINS.forEach(function (d) {
+      SHIPPED.forEach(function (d) {
         var stt = d.status || {};
         el.appendChild(document.createElement("br"));
         el.appendChild(document.createTextNode("• " + d.name + " — "));

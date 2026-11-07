@@ -96,7 +96,29 @@ function fetchSheet(url) {
       return t;
     }, function (e) { clearTimeout(timer); throw e; });
 }
-function buildLive(sheets, fp, pageHost, domainId, cb) {
+// ★ (ر24-ب4، بقية CX-007) جزر الورقة النقطية للنطاق (القواعد الحاملة لعلامة ‎--cml-island‎) تدخل استثناء القيم الفيزيائية في الورقة الحيّة
+// كما تدخله في اللقطة (gen-rtl). والورقة من نسخة الحزمة نفسها لا من الشبكة، واسمها من مدخل النطاق في المانيفست (لا جدولَ ثانيًا يُنسى).
+// وما تعذّرت قراءته يُبنى بلا جزرها كما كان قبلها، ولا يُحفظ الإخفاق فيُعاد في الطلب التالي
+var pointIslandsMemo = Object.create(null);
+function pointIslands(domainId) {
+  if (pointIslandsMemo[domainId]) return pointIslandsMemo[domainId];
+  var file = null;
+  try {
+    var dom = (CMLConst.DOMAINS || []).filter(function (d) { return d.id === domainId; })[0];
+    var cs = (chrome.runtime.getManifest() || {}).content_scripts || [];
+    for (var i = 0; dom && i < cs.length && !file; i++) {
+      if (!cs[i].matches || !dom.matches || cs[i].matches[0] !== dom.matches[0]) continue;
+      (cs[i].css || []).forEach(function (f) { if (/-point\.css$/.test(f)) file = f; });
+    }
+  } catch (e) { file = null; }
+  if (!file) return Promise.resolve([]);
+  var p = fetch(chrome.runtime.getURL(file)).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+    .then(function (t) { var x = CMLRtl.islandSelectors(t); return x.errors.length ? [] : x.sels; })
+    .catch(function () { delete pointIslandsMemo[domainId]; return []; });
+  pointIslandsMemo[domainId] = p;
+  return p;
+}
+function buildLive(sheets, fp, pageHost, domainId, cb, islands) {
   // ذاكرةٌ لكل نطاق (التطبيق على مفتاحه القديم): تبويبان على نطاقين لا يتقاذفان خانةً واحدة
   var LIVE_KEY = CMLConst.key(CMLConst.K.RTL_LIVE, domainId);
   chrome.storage.local.get([LIVE_KEY], function (r) {
@@ -119,12 +141,12 @@ function buildLive(sheets, fp, pageHost, domainId, cb) {
       var recs = texts.map(function (t, j) { return { text: t, base: sheets[j].url || null, media: sheets[j].media }; });
       // ★ الرميةُ تُلتقط: كانت تترك القفل قائمًا فتُبتلع كل الطلبات اللاحقة بلا ردّ
       var built = null;
-      try { built = CMLRtl.buildLiveSheet(recs, {}); } catch (e) { built = null; }
+      try { built = CMLRtl.buildLiveSheet(recs, {}, { islands: islands }); } catch (e) { built = null; }
       // ★ ورقةٌ مضمَّنة شاذّة (أخطاء تحليلٍ فوق البوابة في CSS مولَّدٍ بالجافاسكربت مثلًا) لا تُسقط الورقة الحيّة كلّها:
       // يُعاد البناء من الروابط وحدها — وهو ما كان يُبنى قبل ضمّ المضمَّنة، فلا يسوء نطاقٌ بضمّها
       var linkRecs = recs.filter(function (r, j) { return !!sheets[j].url; });
       if (!built && linkRecs.length && linkRecs.length < recs.length) {
-        try { built = CMLRtl.buildLiveSheet(linkRecs, {}); } catch (e) { built = null; }
+        try { built = CMLRtl.buildLiveSheet(linkRecs, {}, { islands: islands }); } catch (e) { built = null; }
       }
       // بناءٌ أخفق (بوابتا الصحّة، @import) ⇒ لا نكتب شيئًا فتبقى ورقةُ اللقطة عاملة
       var bytes = built ? utf8Len(built.css) : 0;
@@ -174,12 +196,21 @@ function dropAllLive(cb) {
   chrome.storage.local.remove(keys, function () { void chrome.runtime.lastError; cb(); });
 }
 
+// ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) نطاقُ صفحةٍ مرسِلة — والنطاق القادم (status.upcoming: claude.com حتى CM-د) ليس نطاقًا عاملًا: محرّكه خاملٌ
+// لا يرسل شيئًا، وهذا حارسٌ ثانٍ خلفه فلا يُبنى له خطٌّ ولا ورقةٌ حيّة ولا تُرسل له قطعة
+function liveDomOf(url) {
+  var d = CMLConst.domainOfUrl(url);
+  return d && !(CMLConst.upcoming && CMLConst.upcoming(d.id)) ? d : null;
+}
 function validLiveRequest(msg, sender) {
   if (!msg || typeof msg.fp !== "string" || !Array.isArray(msg.sheets)) return null;
   var pageHost = sender && sender.tab && hostOf(sender.url || "");
-  var dom = pageHost && CMLConst.domainOfUrl(sender.url);
+  var dom = pageHost && liveDomOf(sender.url);
   if (!dom || !dom.meta || !dom.meta.live) return null;
-  if (!msg.sheets.length || msg.sheets.length > CMLConst.RTL_LIVE_SHEETS_MAX) return null;
+  // ★ (ر16-ج، ٦ جمادى الأولى ١٤٤٨هـ) سقف عدد الأوراق: سقفُ النطاق إن أعلنه في meta (liveSheetsMax — claude.com وحده، مقيسٌ من قوالبه)،
+  // وإلا السقف العام RTL_LIVE_SHEETS_MAX كما كان لكل نطاقٍ آخر
+  var sheetsMax = typeof dom.meta.liveSheetsMax === "number" && dom.meta.liveSheetsMax > 0 ? dom.meta.liveSheetsMax : CMLConst.RTL_LIVE_SHEETS_MAX;
+  if (!msg.sheets.length || msg.sheets.length > sheetsMax) return null;
   var out = [];
   for (var i = 0; i < msg.sheets.length; i++) {
     var x = msg.sheets[i];
@@ -347,11 +378,11 @@ function writeFontData(rec, done) {
 }
 // صفحةٌ في نطاقٍ معروف (سكربت المحتوى في الإقلاع) — الإطار الأعلى وحده يرسل، والنطاق من عنوان المرسل نفسه
 function fromKnownTab(sender) {
-  return !!(sender && sender.tab && hostOf(sender.url || "") && CMLConst.domainOfUrl(sender.url));
+  return !!(sender && sender.tab && hostOf(sender.url || "") && liveDomOf(sender.url));
 }
 
 function validBodiesRequest(msg, sender) {
-  var dom = sender && sender.tab && hostOf(sender.url || "") && CMLConst.domainOfUrl(sender.url);
+  var dom = sender && sender.tab && hostOf(sender.url || "") && liveDomOf(sender.url);
   if (!dom || !dom.meta || !dom.meta.bodies || !msg) return null;
   var path = typeof msg.path === "string" && msg.path.length <= 2048 && msg.path.charAt(0) === "/" ? msg.path : null;
   var lang = typeof msg.lang === "string" && /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/.test(msg.lang) ? msg.lang : null;
@@ -459,8 +490,13 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     // البصمة يحسبها العامل من المجموعة التي تحقّق منها — لا ما يدّعيه الطلب
     // ورقمُ مراجعة المحرّك فيها (فحص الاتجاه الشامل، ق١): ورقةٌ بناها محرّكٌ سابق لا تُعاد من الذاكرة بعد التحديث
     // والمضمَّنة ببصمة نصّها المتحقَّق منه: تغيّر CSS الموقع المضمَّن يعيد البناء كتغيّر عنوان ورقة
-    var fpW = CMLRtl.fnv1a("r" + (CMLRtl.REV || 1) + "|" + req.sheets.map(liveKey).join("|"));
-    buildLive(req.sheets, fpW, req.pageHost, req.domain, function (payload) { try { sendResponse(payload); } catch (e) {} });
+    // ★ (ر24-ب4) وبصمةُ جزر الورقة النقطية: تغيّرُها في تحديثٍ للإضافة يعيد البناء ولو بقي رقم المراجعة وأوراق الموقع كما هي
+    pointIslands(req.domain).then(function (islands) {
+      var fpW = CMLRtl.fnv1a("r" + (CMLRtl.REV || 1) + "|" + (islands.length ? "i" + CMLRtl.fnv1a(islands.join("\n")) + "|" : "") +
+        req.sheets.map(liveKey).join("|"));
+      try { buildLive(req.sheets, fpW, req.pageHost, req.domain, function (payload) { try { sendResponse(payload); } catch (e) {} }, islands); }
+      catch (e) { try { sendResponse(null); } catch (e2) {} } // رميةٌ داخل الوعد لا تُبتلع بلا ردّ (فيبقى طلب المحرّك معلَّقًا)
+    });
     return true; // ردٌّ غير متزامن
   }
   return false;

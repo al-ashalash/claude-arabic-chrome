@@ -19,6 +19,7 @@
   html[data-cml="on"] article :is(ol, ul):dir(ltr) { padding-left: 16px !important; padding-right: 0 !important; }
   html[data-cml="on"] article li:dir(ltr) {
     direction: ltr !important; text-align: start !important;
+    --cml-island: ltr;
     margin-left: 15px !important; margin-right: 0 !important;
   }
   html[data-cml="on"] .intercom-interblocks-collapsible-section details > div:not(:first-child):dir(ltr) {

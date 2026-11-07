@@ -53,8 +53,11 @@ const OFL_TITLE = "SIL OPEN FONT LICENSE Version 1.1";
 const FONT_URL_RE = /^https:\/\/fonts\.gstatic\.com\/s\/[a-z0-9]+\/v\d+\/[A-Za-z0-9_-]+\.woff2$/;
 const licenceUrlRe = (commit) => new RegExp("^https://raw\\.githubusercontent\\.com/google/fonts/" + commit + "/ofl/[a-z0-9]+/OFL\\.txt$");
 // لقطة CSS كل نطاق (مجلد العمل وحده؛ لا تُنشر) — كما في rtl-audit.mjs
+// ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) وclaude.com لقطتُه sitecss-com، أُنشئت في ر16-أ مع ورقة قلبه، ففحص انجراف عائلاته يعمل
 const SNAP_DIR = { app: "sitecss", support: "sitecss-intercom", privacy: "sitecss-intercom", docs: "sitecss-docs", code: "sitecss-code",
-  legal: "sitecss-legal", academy: "sitecss-academy" };
+  legal: "sitecss-legal", academy: "sitecss-academy", com: "sitecss-com",
+  // ★ (ر20-ب، ١٢ جمادى الأولى ١٤٤٨هـ) وبوابة Anthropic القادمة لقطتُها sitecss-portal، تُنشأ في CN2 مع ورقة قلبها: إلى ذلك يُذكر فحص انجرافها متروكًا
+  portal: "sitecss-portal" };
 const snapPath = (dir) => path.resolve(HERE, "..", dir); // code/<لقطة> في العمل، و <الجذر>/<لقطة> في النشر إن أنشأها المساهم
 const BLOCK_0590 = /[\u0590-\u05FF]/; // الكتلة ممنوعةٌ في نصوص المشروع كلها (قاعدة المالك)
 
@@ -710,11 +713,11 @@ const UTIL_SEL = /^\.(?:[\w-]|\\.)+$/; // صنفٌ واحدٌ بلا سلالة�
 const TYPE_UTIL = (sel) => UTIL_SEL.test(sel) && /^(?:text|font)-/.test(sel.slice(1).replace(/^(?:\\!|(?:[\w-]|\\[^:])*?\\:)+/, ""));
 const IGNORED_VARS = new Set(["--tw-leading"]); // أدوات leading-* تُمثَّل بـ line-height:1 وحده (أضيقها)
 const SITE_OF_DIR = { sitecss: "claude.ai", "sitecss-intercom": "support/privacy", "sitecss-docs": "platform docs", "sitecss-code": "code docs",
-  "sitecss-legal": "legal documents", "sitecss-academy": "academy" };
+  "sitecss-legal": "legal documents", "sitecss-academy": "academy", "sitecss-com": "claude.com" };
 // ملف الإصلاحات النقطية لكل لقطة (كما في build.mjs POINT): فيه العلاج النقطي للقصّ المعلَّق على سمة الخط
-// (ر3: legal-point.css بلا قاعدةٍ على سمة الخط، فلا يدخل بصمتي العلاج ولا تتغيّر المعايرة؛ وكذلك academy-point.css في ر4)
+// (ر3: legal-point.css بلا قاعدةٍ على سمة الخط، فلا يدخل بصمتي العلاج ولا تتغيّر المعايرة؛ وكذلك academy-point.css في ر4، وcom-point.css في ر16-أ)
 export const POINT_CSS = { sitecss: "app-point.css", "sitecss-intercom": "intercom-point.css", "sitecss-docs": "docs-point.css", "sitecss-code": "code-point.css",
-  "sitecss-legal": "legal-point.css", "sitecss-academy": "academy-point.css" };
+  "sitecss-legal": "legal-point.css", "sitecss-academy": "academy-point.css", "sitecss-com": "com-point.css" };
 
 // ---- ١ب. العلاج النقطي للقصّ كما هو في *-point.css (المصدر الوحيد؛ لا نسخة هنا) ----
 // كل قاعدةٍ في ملفٍّ من POINT_CSS يحمل تمهيدها [<attr>] (C.FONT_ATTR) علاجٌ: محدِّداتها ما في :is(…) (أو التمهيد بلا
@@ -890,7 +893,8 @@ export function clampCovers(entry, prelude) {
 
 // ---- ١د. حصر مواضع القطع ← fonts.clamp.json (ما يقيسه measure في عناصر القطع) ----
 const INVENTORY_DIR = { "claude.ai": "sitecss", support: "sitecss-intercom", privacy: "sitecss-intercom", "support+privacy": "sitecss-intercom",
-  "platform docs": "sitecss-docs", "code docs": "sitecss-code", "legal documents": "sitecss-legal", academy: "sitecss-academy" };
+  "platform docs": "sitecss-docs", "code docs": "sitecss-code", "legal documents": "sitecss-legal", academy: "sitecss-academy",
+  "claude.com": "sitecss-com" };
 export function clampDataFrom(inv, sourceName = "inventory.json") {
   if (!Array.isArray(inv)) throw new Error("الحصر ليس مصفوفة مدخلات");
   const ctx = {}, skipped = {}, unknown = new Set();

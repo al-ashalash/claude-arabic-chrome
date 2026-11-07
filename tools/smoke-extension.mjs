@@ -22,7 +22,13 @@ import { tempProfile } from "./cdp-lib.mjs";
 
 // عدد المواقع وأسماؤها من الجدول نفسه (لا «الأربعة» مكتوبةً — تصدق متى زيد موقع)
 await import(pathToFileURL(path.join(EXT, "cml-const.js")).href);
-const IDS = globalThis.CMLConst.DOMAINS.map((d) => d.id);
+// ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) المواقع المشحونة تعرضها الإعدادات؛ والنطاق القادم (status.upcoming — claude.com حتى CM-د) مطابقته في المانيفست
+// ومحرّكه خاملٌ تمامًا (القسم ٤هـ)، فالمداخل ثمانية والمعروض سبعة.
+// ★ (ر28-ب، ٢٠ جمادى الأولى ١٤٤٨هـ — السؤال 2 على افتراضه) ومانيفست الحزمة يحجب مدخلي النطاقين القادمين (claude.com وبوابة Anthropic): فالمداخل سبعة هي
+// مضيفات 2.0.0 بأعيانها، والمعروض سبعة، ولا يُحقن في صفحات القادمَين شيء (القسمان ٤هـ و٤و)
+const ALL_IDS = globalThis.CMLConst.DOMAINS.map((d) => d.id);
+const IDS = globalThis.CMLConst.shipped().map((d) => d.id);
+const UPCOMING = ALL_IDS.filter((d) => globalThis.CMLConst.upcoming(d));
 
 const argv = process.argv.slice(2);
 const chromeArg = (argv.find((a) => a.startsWith("--chrome=")) || "").slice(9) || process.env.CHROME || "";
@@ -49,7 +55,7 @@ const tmp = prof.root;
 function makeCert() {
   const key = path.join(tmp, "k.pem"), crt = path.join(tmp, "c.pem");
   const r = spawnSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", key, "-out", crt, "-days", "2",
-    "-subj", "/CN=cml-smoke", "-addext", "subjectAltName=DNS:claude.ai,DNS:support.claude.com,DNS:privacy.claude.com,DNS:platform.claude.com,DNS:code.claude.com,DNS:www.anthropic.com,DNS:academy.claude.com"],
+    "-subj", "/CN=cml-smoke", "-addext", "subjectAltName=DNS:claude.ai,DNS:support.claude.com,DNS:privacy.claude.com,DNS:platform.claude.com,DNS:code.claude.com,DNS:www.anthropic.com,DNS:academy.claude.com,DNS:claude.com,DNS:portal.anthropic.com"],
     { encoding: "utf8", env: Object.assign({}, process.env, { MSYS_NO_PATHCONV: "1" }) });
   if (r.status !== 0 || !fs.existsSync(key)) return null;
   return { key: fs.readFileSync(key), cert: fs.readFileSync(crt) };
@@ -103,16 +109,28 @@ const PAGES = {
 
 // ★ وثائق Claude Code (Mintlify): صفحةٌ برابط ورقةٍ من الأصل نفسه وورقة <style> في المتن (CSS الموقع الخاص فيها
 // إعلانٌ فيزيائي — تقلبه الورقة الحيّة وحدها بعد ضمّ المضمَّنة)، وإشارة الترطيب (next-route-announcer) بعد لحظة
+// ★ (ر27-ب، ٢٠ جمادى الأولى ١٤٤٨هـ) ببناء Mintlify الجديد (الفحص الحيّ ر27، D1): لا next-route-announcer؛ سكربتٌ مضمَّن في <head> يكتب
+// <html data-current-path> أثناء التحليل، ثم يعيد مكوّن المسار كتابتها في إيداع ترطيب الجذر (هنا بعد 1200 مث) — إشارة "attr" لصفّ Claude Code
 function codePage(title) {
-  return '<!doctype html><html lang="en"><head><link rel="stylesheet" href="/docs/_next/static/chunks/zq.css"></head><body>' +
+  return '<!doctype html><html lang="en"><head><script>document.documentElement.setAttribute("data-current-path","/en/overview");</script>' +
+    '<link rel="stylesheet" href="/docs/_next/static/chunks/zq.css"></head><body>' +
     '<header id="navbar"><a id="cta" href="#">Open Claude Code</a></header><main id="content-container"><div id="content-area">' +
     // (العنصر خارج #content: المتن يأخذ dir لكل كتلة بحسب نصّها، فالإنجليزي LTR يُبقي هامشه يسارًا بحق)
     '<h1 id="h">' + title + '</h1><div id="zq" class="zqcode">Zq</div><div id="content"><p>Zq body text</p></div></div>' +
     '<style data-custom-css-path="style.css">.zqcode{margin-left:7px}</style></main>' +
     '<div id="chat-content"><p id="ans">Overview</p></div>' +
-    '<script>setTimeout(function(){document.body.appendChild(document.createElement("next-route-announcer"));},1200);</script></body></html>';
+    '<script>setTimeout(function(){document.documentElement.setAttribute("data-current-path","/en/overview");},1200);</script></body></html>';
+}
+// ★ (ر29-د2، ١٤ جمادى الأولى ١٤٤٨هـ — مراجعة ر29-د F4) صفحةٌ غيّر الموقع اسم حاوية متنها (‎#content‎ ⇐ ‎#content-zq‎) وبقي الرأس والفهرس (‎#header‎
+// و‎#table-of-contents‎) يطابقان محدِّد المتن المركّب، وفي الرأس عنوانٌ يعرّبه القاموس المشحون: الصمّام يسأل عن الحاوية الرئيسة (meta.bodyMain) فيحجزها
+function codeRenamedPage() {
+  return '<!doctype html><html lang="en"><head><title>Zq Renamed - Claude Code Docs</title></head><body>' +
+    '<main><div id="header"><h1 id="crH1">Overview</h1></div><div id="content-zq"><p id="crP">Zq renamed body paragraph in an English sentence.</p></div>' +
+    '<div id="table-of-contents"><ul><li><a href="#crH1">Overview</a></li></ul></div></main>' +
+    '<script>setTimeout(function(){document.body.appendChild(document.createElement("next-route-announcer"));},600);</script></body></html>';
 }
 PAGES["code.claude.com"] = {
+  "/docs/en/zq-renamed": codeRenamedPage(),
   "/docs": codePage("Overview"),
   "/docs/en/overview": codePage("Overview"),
   "/docs/xx/overview": codePage("Overview"),
@@ -134,31 +152,76 @@ PAGES["code.claude.com"] = {
 // ★ (ر3، ٢٨ ربيع الآخر ١٤٤٨هـ) الوثائق القانونية في www.anthropic.com/legal: صفحةٌ اصطناعية بأصناف CSS Modules كأصناف الموقع (غلافٌ
 // إنجليزي، ورأس الوثيقة بتاريخه، ومنتقي لغة الوثيقة بقيمته المختارة، ومتنٌ بلا قطعةٍ في الحزمة بعد)، وإشارة الترطيب بعد لحظة؛
 // والأرشيف خاملٌ بحارس المسار (المسارات الخمسة بأعيانها)
+// ★ (ر29-ج، ١٣ جمادى الأولى ١٤٤٨هـ) ببنية الصفحات الجديدة (ر29-أ F1) وجزءٍ مجزَّأ مختلَق: الترويسة HeaderLayout، ورأس الوثيقة LegalArticleHero
+// بمنتقي اللغة Select (قيمته ‎<span>‎ بلا صنف وأيقونته)، والمتن LegalArticlePage__Content
 function legalPage() {
+  // ★ (ر29-ح، ١٩ جمادى الأولى ١٤٤٨هـ — DX0-0 §٥) بصيغة الأصناف الجديدة ‎<بصمة>_<اسم>‎ (بلا اسم وحدة) وبصماتٍ مختلَقة، والترويسة ابنٌ مباشر لـ<body>
+  // بسمتها data-site-nav، والمتن ابن المقالة المباشر ذو الصنف ‎_Content‎ (وغلاف عنوان الرأس ‎_Content‎ أيضًا وليس ابنها)
   return '<!doctype html><html lang="en"><head><title>Zq Policy \\ Anthropic</title></head><body>' +
-    '<header class="SiteHeader-module-scss-module__zq__root" id="lgHdr"><a href="#">Zq Header</a></header>' +
-    '<article class="LegalPageDetail-module-scss-module__zq__legal-page"><header class=""><h1 id="lgH1">Zq Policy</h1>' +
-    '<div class="LegalPageDetail-module-scss-module__zq__metadata"><span>Effective <time id="lgDate">October 8, 2026</time></span>' +
-    '<div class="LegalPageDetail-module-scss-module__zq__language-options"><div class="css-zq-container"><div class="css-zq-singleValue" id="lgLang">English</div></div></div>' +
-    '</div></header><div class="LegalPageDetail-module-scss-module__zq__body" id="lgBody"><p>Zq body paragraph.</p></div></article>' +
+    '<header class="zq0aB1_root" data-site-nav="" id="lgHdr"><a href="#">Zq Header</a></header>' +
+    '<main id="main-content"><article class="zq0aB2_Article"><header class="zq0aB3_Header"><div class="zq0aB3_Content">' +
+    '<h1 class="zq0aB3_Title" id="lgH1">Zq Policy</h1></div>' +
+    '<ul class="zq0aB3_Metalist"><li class="zq0aB3_Metadata">Effective <time id="lgDate">October 8, 2026</time></li>' +
+    '<li class="zq0aB3_Metadata"><button type="button" class="zq0aB6_button zq0aB4_trigger zq0aB3_LanguageSelect">' +
+    '<span id="lgLang">English</span><span aria-hidden="true" class="zq0aB4_icon"></span></button></li></ul></header>' +
+    '<div class="zq0aB7_content zq0aB2_Content" id="lgBody"><div class="zq0aB5_body"><p>Zq body paragraph.</p></div></div></article></main>' +
     '<script>setTimeout(function(){document.body.appendChild(document.createElement("next-route-announcer"));},600);</script></body></html>';
 }
 // ووثيقةٌ يبدأ منتقيها بلغةٍ أخرى من التحميل الأول (الخادم يختار لغة بلد الزائر إن وُجدت ترجمتها — دراسة ر3 §0)
+// ★ (ر29-د، ١٣ جمادى الأولى ١٤٤٨هـ — بعد ر29-أ F1) وثيقةٌ بالبنية القديمة (LegalPageDetail، كما في 2.0.0 قبل إعادة بناء الموقع): محدِّد المتن لا
+// يطابقها، وفيها تاريخٌ يعرّبه نمط القاموس المبنيّ داخل جملةٍ إنجليزية — صمّام «nosel» يحجزها فتبقى كما هي (لا قلب ولا ترجمة)
+function legalOldPage() {
+  return '<!doctype html><html lang="en"><head><title>Zq Old Policy \\ Anthropic</title></head><body>' +
+    '<header class="SiteHeader-module-scss-module__zq9aB1__header"><a href="#">Zq Header</a></header>' +
+    '<main><div class="LegalPageDetail-module-scss-module__zq9aB2__body" id="lgOld"><h1 id="lgOldH1">Zq Old Policy</h1>' +
+    '<p id="lgOldP">Zq old body paragraph is effective from <time id="lgOldDate">October 8, 2026</time> in an English sentence.</p></div></main>' +
+    '<script>setTimeout(function(){document.body.appendChild(document.createElement("next-route-announcer"));},600);</script></body></html>';
+}
 PAGES["www.anthropic.com"] = { "/legal/privacy": legalPage(), "/legal/archive/zq": legalPage(),
-  "/legal/cookies": legalPage().replace(">English</div>", ">Zq Other</div>") };
+  "/legal/cookies": legalPage().replace(">English</span>", ">Zq Other</span>"), "/legal/consumer-terms": legalOldPage() };
 
 // ★ (ر4، ٢٨ ربيع الآخر ١٤٤٨هـ) الأكاديمية في academy.claude.com: صفحة درسٍ اصطناعية (ترويسة، وmain بعنوانٍ وملخصٍ إنجليزي ومتنٍ
 // ‎article.mdx-article‎، وتذييلٌ بمنتقي اللغة)، والموقع يكتب لغة واجهته في <html lang> بعد التحميل (أثر IntlProvider عند التركيب) —
-// إشارة الترطيب "lang"؛ وصفحة لغةٍ أخرى ‎/<لغة>/…‎ خاملةٌ بحارس المسار
+// إشارة الترطيب "lang"؛ وصفحة لغةٍ أخرى ‎/<لغة>/…‎ خاملةٌ بحارس المسار.
+// ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) وفي المتن عنوانٌ يطابق نصَّ واجهةٍ في القاموس المشحون («Courses»)، وقائمة «في هذه الصفحة» ببندٍ كذلك («Resources»):
+// جذرا المتن (meta.bodySel) يُحكمان معًا، فلا يكتب فيهما قاموس الواجهة في الدرس المحجوب
 function academyPage() {
   return '<!doctype html><html lang="en"><head><title>Zq Lesson · Claude Academy</title></head><body>' +
     '<header class="fixed" id="acHdr"><span>Claude Academy</span></header>' +
     '<main><h1 id="acH1">Zq Lesson</h1><p class="text-lede" id="acSum">Zq summary of the lesson.</p>' +
-    '<article class="mdx-article" id="acArt"><p>Zq body paragraph.</p></article></main>' +
+    '<article class="mdx-article" id="acArt"><h2 id="acH2">Courses</h2><p id="acP">Zq body paragraph.</p></article>' +
+    '<nav aria-label="On this page"><ul id="acToc"><li><a href="#zq">Resources</a></li></ul></nav></main>' +
     '<footer><div data-cds="Combobox"><button role="combobox"><span id="acPick">English</span></button></div></footer>' +
     '<script>window.addEventListener("load",function(){setTimeout(function(){document.documentElement.lang="en";},300);});</script></body></html>';
 }
 PAGES["academy.claude.com"] = { "/courses/zq/zq-lesson": academyPage(), "/xx/courses": academyPage() };
+
+// ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) claude.com: صفحةٌ اصطناعية بهيئة الموقع (ترويسة data-cta-section="nav" وmain#main-content ولافتة موافقة وتذييل
+// بمنتقي اللغة) على مسارٍ مترجَمٍ بعينه في القائمة المولَّدة، وعنوانٌ بذيل الموقع، ووجهُ خطٍّ بعائلة الموقع، وإشارة الترطيب بعد لحظة. والنطاق قادم:
+// لا يتغيّر فيها شيء (لا سمة ولا إمساك ولا خط ولا عنوان ولا تعريب)، والنافذة تُجاب بأنه قادم
+function comPage() {
+  return '<!doctype html><html lang="en"><head><title>Pricing | Claude by Anthropic</title>' +
+    '<style>@font-face{font-family:"anthropicSans";src:local("Arial"),local("DejaVu Sans"),local("Liberation Sans");font-weight:300 800}' +
+    'body{font-family:"anthropicSans",system-ui}</style></head><body>' +
+    '<header data-cta-section="nav"><a id="cmNav" href="#">Settings</a></header>' +
+    '<main id="main-content"><h1 id="cmH1">Pricing</h1><p id="cmP">Zq body paragraph.</p></main>' +
+    '<div class="ConsentContainer-module-scss-module__zq__root"><button>Accept all</button></div>' +
+    '<footer data-cta-section="footer"><span id="cmFt">Settings</span></footer>' +
+    '<script>setTimeout(function(){document.body.appendChild(document.createElement("next-route-announcer"));},400);</script></body></html>';
+}
+PAGES["claude.com"] = { "/pricing": comPage(), "/marketplace/zq-connector": comPage() };
+// ★ (ر20-ب، ١٢ جمادى الأولى ١٤٤٨هـ) بوابة Anthropic (portal.anthropic.com): صفحة دخولٍ اصطناعية بهيئة الموقع (Next.js بنظام التصميم CDS: زرٌّ ونموذج
+// بريدٍ بمعرّفات اختبارٍ كمعرّفاتها، وعنوانٌ ببريدٍ LTR، ووجهُ خطٍّ بعائلة الموقع، وإشارة الترطيب) في صفحتين من صفحاتها العامة الأربع: النطاق
+// القادم خاملٌ تمامًا، والنافذة تُجاب بأنه قادم
+function portalPage() {
+  return '<!doctype html><html lang="en-US"><head><title>Zq Sign in</title>' +
+    '<style>@font-face{font-family:"anthropicSans";src:local("Arial"),local("DejaVu Sans"),local("Liberation Sans");font-weight:300 800}' +
+    'body{font-family:"anthropicSans",system-ui}</style></head><body>' +
+    '<main data-cds="root"><h1 id="ptH1">Settings</h1><form><input data-testid="email"><button data-testid="continue" id="ptGo">Settings</button></form>' +
+    '<p id="ptP">Settings <span dir="ltr">zq</span></p></main>' +
+    '<script>setTimeout(function(){document.body.appendChild(document.createElement("next-route-announcer"));},400);</script></body></html>';
+}
+PAGES["portal.anthropic.com"] = { "/login": portalPage(), "/magic-link": portalPage() };
 
 // ---- قناة CDP بالأنابيب (fd3 للكتابة، fd4 للقراءة، رسائل بفاصل \0) ----
 function pipeCdp(proc) {
@@ -413,6 +476,20 @@ try {
     const cgate = await until(cod.sessionId, "document.getElementById('h').textContent !== 'Overview'", 8000);
     check("★ وثائق Claude Code: بعد إشارة الترطيب يُعرَّب الرأس، وجواب المساعد (#chat-content) لا يُمسّ", "true/Overview",
       !!cgate + "/" + (await evalIn(cod.sessionId, "document.getElementById('ans').textContent")));
+    // ★ (ر27-ب) والبوابة فتحتها إشارة "attr" بالقاموس المبنيّ (كتابة الموقع لـdata-current-path بعد التحليل) لا السقف (20 ث)
+    const codeGate = await evalIn(opt.sessionId, `new Promise(function (r) {
+      chrome.tabs.query({}, function (tabs) {
+        var left = tabs.length, out = "none-answered";
+        tabs.forEach(function (t) {
+          chrome.tabs.sendMessage(t.id, { type: "cml-hello" }, { frameId: 0 }, function (res) {
+            void chrome.runtime.lastError;
+            if (res && res.domain === "code") out = res.text;
+            if (--left === 0) r(out);
+          });
+        });
+      });
+    })`);
+    check("★ (ر27-ب) وثائق Claude Code: بوابة النصوص فتحتها إشارة attr (كتابة الموقع لـdata-current-path بعد التحليل)، لا السقف", "open:attr", codeGate);
     const croot = await openPage("https://code.claude.com/docs");
     const cron = await until(croot.sessionId, "document.documentElement.getAttribute('data-cml')==='on'", 8000);
     check("★ وثائق Claude Code: ‎/docs‎ بعينه كامل (routes.exact)", "true/full", !!cron + "/" + (await evalIn(croot.sessionId, "document.documentElement.getAttribute('data-cml-route')")));
@@ -422,6 +499,18 @@ try {
     const cmd = await openPage("https://code.claude.com/docs/en/overview.md");
     await until(cmd.sessionId, READY, 8000); await wait(1500);
     check("★ وثائق Claude Code: نسخة ‎.md‎ الخام خاملة تمامًا", "null/null/null/null", await evalIn(cmd.sessionId, INERT));
+    // ★ (ر29-د2، مراجعة ر29-د F4) حاوية المتن تغيّر اسمها وبقي الرأس والفهرس يطابقان المحدِّد المركّب ⇒ بعد استقرار الصفحة محجوزةٌ «nosel» بالإضافة
+    // الحقيقية (meta.bodyMain من القاموس المبنيّ): لا قلب ولا lang=ar ولا data-cml، والعنوان في الرأس على أصله، والفقرة LTR
+    const crn = await openPage("https://code.claude.com/docs/en/zq-renamed");
+    const crnHeld = await until(crn.sessionId, "document.readyState==='complete' && document.documentElement.getAttribute('data-cml-held')==='nosel'", 12000);
+    check("★ (ر29-د2) وثائق Claude Code: حاوية المتن ‎#content‎ تغيّر اسمها وبقي الرأس والفهرس ⇒ محجوزةٌ «nosel»، لا قلب ولا ترجمة", "true/held/null/en/null/Overview/ltr",
+      !!crnHeld + "/" + (await evalIn(crn.sessionId, "document.documentElement.getAttribute('data-cml-body')")) + "/" +
+      (await evalIn(crn.sessionId, "String(document.documentElement.getAttribute('dir'))")) + "/" +
+      (await evalIn(crn.sessionId, "document.documentElement.lang")) + "/" +
+      (await evalIn(crn.sessionId, "String(document.documentElement.getAttribute('data-cml'))")) + "/" +
+      (await evalIn(crn.sessionId, "document.getElementById('crH1').textContent")) + "/" +
+      (await evalIn(crn.sessionId, "getComputedStyle(document.getElementById('crP')).direction")));
+    await cdp.send("Target.closeTarget", { targetId: crn.targetId }).catch(() => {});
     // ٤ج) ★ (ر3) الوثائق القانونية بالإضافة الحقيقية: المسار بعينه كامل بقاموسه المبنيّ (نمط التاريخ) وأوراقه (legal-point.css: الغلاف LTR،
     // ولا تنبيه بلا كتلةٍ معرَّبة)، ومنتقي لغة الصفحة بلغةٍ أخرى يُخمدها، والأرشيف خامل
     const lg = await openPage("https://www.anthropic.com/legal/privacy");
@@ -449,6 +538,19 @@ try {
     const lggOn = await until(lgg.sessionId, "document.documentElement.getAttribute('data-cml')==='on'", 6000);
     check("★ الوثائق القانونية: ثم English في المنتقي ⇒ تعمل", "true/rtl/8 أكتوبر 2026",
       !!lggOn + "/" + (await evalIn(lgg.sessionId, "document.documentElement.dir")) + "/" + (await evalIn(lgg.sessionId, "document.getElementById('lgDate').textContent")));
+    // ★ (ر29-د) البنية القديمة: محدِّد المتن لا يطابق شيئًا في مسار متن ⇒ بعد استقرار الصفحة (سقف الحارس 2.5 ث من التحميل) محجوزةٌ «nosel»: لا قلب
+    // ولا lang=ar ولا data-cml، والتاريخ داخل الجملة على أصله، والفقرة LTR — فعطلٌ قادمٌ في بنية الموقع يؤول إلى صفحةٍ إنجليزية كما هي
+    const lgo = await openPage("https://www.anthropic.com/legal/consumer-terms");
+    const lgoHeld = await until(lgo.sessionId, "document.readyState==='complete' && document.documentElement.getAttribute('data-cml-held')==='nosel'", 12000);
+    check("★ (ر29-د) الوثائق القانونية بالبنية القديمة: محجوزةٌ «nosel»، والصفحة لا تُقلب ولا يُترجم فيها شيء", "true/held/null/en/null/October 8, 2026/ltr/Zq Old Policy",
+      !!lgoHeld + "/" + (await evalIn(lgo.sessionId, "document.documentElement.getAttribute('data-cml-body')")) + "/" +
+      (await evalIn(lgo.sessionId, "String(document.documentElement.getAttribute('dir'))")) + "/" +
+      (await evalIn(lgo.sessionId, "document.documentElement.lang")) + "/" +
+      (await evalIn(lgo.sessionId, "String(document.documentElement.getAttribute('data-cml'))")) + "/" +
+      (await evalIn(lgo.sessionId, "document.getElementById('lgOldDate').textContent")) + "/" +
+      (await evalIn(lgo.sessionId, "getComputedStyle(document.getElementById('lgOldP')).direction")) + "/" +
+      (await evalIn(lgo.sessionId, "document.getElementById('lgOldH1').textContent")));
+    await cdp.send("Target.closeTarget", { targetId: lgo.targetId }).catch(() => {});
     const lga = await openPage("https://www.anthropic.com/legal/archive/zq");
     await until(lga.sessionId, READY, 8000); await wait(1500);
     check("★ الوثائق القانونية: الأرشيف خاملٌ تمامًا (الوثائق الخمس بأعيانها)", "null/null/null/null", await evalIn(lga.sessionId, INERT));
@@ -480,6 +582,15 @@ try {
     while (acGate === "wait" && Date.now() - t0g < 8000) { await wait(250); acGate = await evalIn(opt.sessionId, AC_GATE); }
     check("★ الأكاديمية: بوابة النصوص فتحتها كتابة الموقع لـ<html lang> ثم الخمول (hydrateSignal \"lang\")، ولغة الصفحة ar بعدها", "open:lang+idle/ar",
       acGate + "/" + (await until(ac.sessionId, "document.documentElement.lang==='ar' && 'ar'", 4000)));
+    // ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) متون الأكاديمية بوضع الكتلة والحزمة بلا قطعة (فهرس bodies/academy/ar فارغ): العامل الحقيقي يجيب «لا قطعة»
+    // فيُحكم الدرس بقطعةٍ فارغة بعد فتح البوابة فيُحجب «none» (القرار 84)، والمتن وقائمة «في هذه الصفحة» على أصلهما LTR كما في 2.0.0 (جزيرة
+    // academy-point.css غير «tr») — ولو طابق عنوانُ المتن وبندُ القائمة نصَّي واجهةٍ في القاموس المشحون
+    const acHeld = await until(ac.sessionId, "document.documentElement.getAttribute('data-cml-body')==='held' && document.documentElement.getAttribute('data-cml-held')", 6000);
+    check("★ (ر13) الأكاديمية: الحزمة بلا قطعة متون ⇒ الدرس محجوبٌ «none» بعد فتح البوابة، ومتنه وقائمة «في هذه الصفحة» على أصلهما LTR ولو طابق نصُّهما القاموس",
+      "none/Courses|Zq body paragraph.|Resources/ltr/ltr",
+      acHeld + "/" + (await evalIn(ac.sessionId, "['acH2','acP','acToc'].map(function(i){return document.getElementById(i).textContent;}).join('|')")) + "/" +
+      (await evalIn(ac.sessionId, "getComputedStyle(document.getElementById('acArt')).direction")) + "/" +
+      (await evalIn(ac.sessionId, "getComputedStyle(document.getElementById('acToc')).direction")));
     const acx = await openPage("https://academy.claude.com/xx/courses");
     await until(acx.sessionId, READY, 8000); await wait(1500);
     check("★ الأكاديمية: صفحة ‎/<لغة>/…‎ خاملةٌ تمامًا (حارس المسار)", "null/null/null/null", await evalIn(acx.sessionId, INERT));
@@ -487,6 +598,69 @@ try {
     const acoff = await until(ac.sessionId, "document.documentElement.getAttribute('data-cml')===null", 6000);
     check("★ الأكاديمية: الموقع يكتب لغةً أخرى في <html lang> ⇒ خمولٌ تام (حارس siteLang)", "true/null/xx",
       !!acoff + "/" + (await evalIn(ac.sessionId, "String(document.documentElement.getAttribute('dir'))")) + "/" + (await evalIn(ac.sessionId, "document.documentElement.lang")));
+    // ٤هـ) ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) claude.com بالإضافة الحقيقية: النطاق قادم — المانيفست يطابق المضيف (مدخلٌ لكل نطاق) ومحرّكه خاملٌ تمامًا في
+    // صفحةٍ مترجمةٍ بعينها في القائمة المولَّدة وفي السوق: لا سمة ولا نافذة إقلاعٍ ولا إمساك ولا خط ولا عنوان ولا تعريب، ولو ظهرت إشارة الترطيب
+    // ★ (ر28-ب، ٢٠ جمادى الأولى ١٤٤٨هـ — السؤال 2 على افتراضه) ومانيفست الحزمة يحجب مدخلي القادمَين (build.mjs ‏packageEntries): مداخله السبعة هي مضيفات
+    // 2.0.0 بأعيانها وبترتيبها، لكلٍّ قاموس نطاقه المشحون، ولا مدخل يطابق مضيف نطاقٍ قادم أو يحقن قاموسه، والإذن storage وحده بلا host_permissions. فلا
+    // يُحقن في صفحات claude.com وبوابة Anthropic شيء: لا سمة ولا عنصر منّا، ولا محرّك يجيب النافذة
+    const mfx = JSON.parse(fs.readFileSync(path.join(EXT, "manifest.json"), "utf8"));
+    const HOSTS_200 = [["https://claude.ai/*", "https://*.claude.ai/*"], ["https://support.claude.com/en/*"], ["https://privacy.claude.com/en/*"],
+      ["https://www.anthropic.com/legal/*"], ["https://academy.claude.com/*"], ["https://platform.claude.com/*"], ["https://code.claude.com/docs*"]];
+    const CT = globalThis.CMLConst;
+    const upHits = mfx.content_scripts.filter((c) => UPCOMING.some((u) => c.js.includes(CT.domain(u).dict) || c.matches.some((m) => CT.domain(u).matches.includes(m)))).length;
+    check("★ المانيفست: سبعة مداخل هي مضيفات 2.0.0 بأعيانها وبترتيبها، لكلٍّ قاموس نطاقه المشحون؛ والقادمان com وportal بلا مدخلٍ ولا قاموسٍ محقون، والإذن storage وحده",
+      "7/" + JSON.stringify(HOSTS_200) + "/" + IDS.join(",") + "/com,portal/0/storage/0",
+      mfx.content_scripts.length + "/" + JSON.stringify(mfx.content_scripts.map((c) => c.matches)) + "/" +
+      mfx.content_scripts.map((c) => { const d = CT.DOMAINS.find((x) => c.js.includes(x.dict)); return d ? d.id : "?"; }).join(",") + "/" +
+      UPCOMING.join(",") + "/" + upHits + "/" + (mfx.permissions || []).join(",") + "/" + (mfx.host_permissions || []).length);
+    const COM_STATE = "(function(){var h=document.documentElement;if(!h)return 'no-document';var n=0;document.fonts.forEach(function(f){if(/^U\\+600-6FF/i.test(f.unicodeRange))n++;});" +
+      "return ['data-cml','dir','lang','data-cml-boot','data-cml-hold','data-cml-route','data-cml-font','data-cml-rtl'].map(function(a){return String(h.getAttribute(a));}).join('/')" +
+      "+'|'+document.title+'|'+['cmNav','cmH1','cmFt'].map(function(i){return document.getElementById(i).textContent;}).join(',')+'|'+getComputedStyle(h).visibility+'|'+n" +
+      "+'|'+document.querySelectorAll('[data-cml],[data-cml-dir],style[id^=cml],link[href^=chrome-extension]').length;})()";
+    for (const p of ["/pricing", "/marketplace/zq-connector"]) {
+      const cm = await openPage("https://claude.com" + p);
+      await until(cm.sessionId, "document.readyState==='complete' && !!document.querySelector('next-route-announcer')", 8000); await wait(1500);
+      check("★ claude.com" + p + ": المضيف محجوبٌ عن المانيفست فلا يُحقن فيه شيء (لا سمة ولا إمساك ولا خط عربي ولا عنوان ولا تعريب ولا عنصرٌ منّا)",
+        "null/null/en/null/null/null/null/null|Pricing | Claude by Anthropic|Settings,Pricing,Settings|visible|0|0", await evalIn(cm.sessionId, COM_STATE));
+    }
+    const comHello = await evalIn(opt.sessionId, `new Promise(function (r) {
+      chrome.tabs.query({}, function (tabs) {
+        var left = tabs.length, out = "none-answered";
+        tabs.forEach(function (t) {
+          chrome.tabs.sendMessage(t.id, { type: "cml-hello" }, { frameId: 0 }, function (res) {
+            void chrome.runtime.lastError;
+            if (res && res.domain === "com") out = res.upcoming + "/" + res.enabled;
+            if (--left === 0) r(out);
+          });
+        });
+      });
+    })`);
+    check("★ claude.com: لا محرّك في صفحاته يجيب النافذة (لا حقن)", "none-answered", comHello);
+    // ٤و) ★ (ر20-ب، ١٢ جمادى الأولى ١٤٤٨هـ) بوابة Anthropic بالإضافة الحقيقية: خاملةٌ تمامًا في صفحتين من صفحاتها العامة، ولو ظهرت إشارة الترطيب
+    // (★ ر28-ب: ومضيفها محجوبٌ عن المانيفست، فلا يُحقن فيها شيء)
+    const PT_STATE = "(function(){var h=document.documentElement;if(!h)return 'no-document';var n=0;document.fonts.forEach(function(f){if(/^U\\+600-6FF/i.test(f.unicodeRange))n++;});" +
+      "return ['data-cml','dir','lang','data-cml-boot','data-cml-hold','data-cml-route','data-cml-font','data-cml-rtl'].map(function(a){return String(h.getAttribute(a));}).join('/')" +
+      "+'|'+document.title+'|'+['ptH1','ptGo','ptP'].map(function(i){return document.getElementById(i).textContent;}).join(',')+'|'+getComputedStyle(h).visibility+'|'+n" +
+      "+'|'+document.querySelectorAll('[data-cml],[data-cml-dir],style[id^=cml],link[href^=chrome-extension]').length;})()";
+    for (const p of ["/login", "/magic-link"]) {
+      const pt = await openPage("https://portal.anthropic.com" + p);
+      await until(pt.sessionId, "document.readyState==='complete' && !!document.querySelector('next-route-announcer')", 8000); await wait(1500);
+      check("★ portal.anthropic.com" + p + ": المضيف محجوبٌ عن المانيفست فلا يُحقن فيه شيء (لا سمة ولا إمساك ولا خط عربي ولا عنوان ولا تعريب ولا عنصرٌ منّا)",
+        "null/null/en-US/null/null/null/null/null|Zq Sign in|Settings,Settings,Settings zq|visible|0|0", await evalIn(pt.sessionId, PT_STATE));
+    }
+    const ptHello = await evalIn(opt.sessionId, `new Promise(function (r) {
+      chrome.tabs.query({}, function (tabs) {
+        var left = tabs.length, out = "none-answered";
+        tabs.forEach(function (t) {
+          chrome.tabs.sendMessage(t.id, { type: "cml-hello" }, { frameId: 0 }, function (res) {
+            void chrome.runtime.lastError;
+            if (res && res.domain === "portal") out = res.upcoming + "/" + res.enabled + "/" + res.route;
+            if (--left === 0) r(out);
+          });
+        });
+      });
+    })`);
+    check("★ بوابة Anthropic: لا محرّك في صفحاتها يجيب النافذة (لا حقن)", "none-answered", ptHello);
     // ٥) نطاقٌ غير مشمول في المانيفست: مركز الخصوصية بلغةٍ أخرى لا يُحقن
     const priv = await openPage("https://privacy.claude.com/en/");
     const pon = await until(priv.sessionId, "document.documentElement.getAttribute('data-cml')==='on'", 8000);
@@ -507,7 +681,9 @@ try {
       });
     })`);
     // (والتبويبان الخامان ‎.md‎ لا يجيبان أصلًا: المحرّك لم يعمل فيهما)
-    check("★ النافذة: كل تبويبٍ يُجيب بنطاقه وحال حارسه", "academy:full,academy:inactive,app:full,code:full,code:full,code:inactive,docs:full,docs:inactive,legal:full,legal:full,legal:inactive,privacy:full,support:full",
+    // (ر15) وتبويبا claude.com كانا يجيبان «inactive» (النطاق قادم: محرّكه خامل)، (ر20-ب) وتبويبا بوابة Anthropic كذلك
+    // ★ (ر28-ب) والقادمان محجوبان عن المانيفست الآن، فتبويباتهما الأربعة لا تجيب أصلًا
+    check("★ النافذة: كل تبويبٍ يُجيب بنطاقه وحال حارسه، وتبويبات القادمَين المحجوبين لا تجيب", "academy:full,academy:inactive,app:full,code:full,code:full,code:inactive,docs:full,docs:inactive,legal:full,legal:full,legal:inactive,privacy:full,support:full",
       JSON.parse(hello || "[]").join(","));
     // ★ وفي الردّ حال الخط (م٨): تبويب التطبيق «ok» (وجهٌ معكوس، والمحرّك كتب ترجمته في عنصرٍ بعائلته)
     const fontHello = await evalIn(opt.sessionId, `new Promise(function (r) {

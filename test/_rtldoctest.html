@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>rtl doctor test</title>
+<!--
+  ★ (ر30-ب2، ١٤ جمادى الأولى ١٤٤٨هـ — R29B §٤ وR30B §٦ و§٨) «فحص الاتجاه» (طبيب الاتجاه في engine.js) بالمحرّك الحقيقي في مدخل التطبيق، على ورقة موقعٍ
+  اصطناعية (assets/rtldoc/site-Zq7Dc1.css) وبصمات لقطةٍ قديمة تُبنى هنا من الورقة نفسها بلا قاعدة ‎.zq-d-new‎:
+   ١) الأساس «snapshot» والورقة الحيّة لم تُطبَّق: القائمة المتفاوتة التخصيص (‎.zq-d-mix, #zq-d-id‎) تُبصم جزءًا جزءًا كما يقسمها القلب فلا تظهر ثغرة،
+      والقائمة التي جزؤها واعٍ بالاتجاه يُحكم على جزئها الآخر، ولكل جزءٍ حارسُ متغيّرات الموقع؛ والثغرة الوحيدة ‎.zq-d-new‎؛ والتدرّج بزاوية وموضعُ بلاطته لا ينقلب (‎.zq-d-grad‎) عجزٌ لا ثغرة (R13)؛
+   ٢) الأساس «live» بعد أن تُطبَّق الورقة الحيّة المبنيّة من الورقة نفسها بوسيط رابطها: لا ثغرة (‎.zq-d-new‎ تقلبه الحيّة)، وعدد البصمات بصماتُ الحيّة؛
+   ٣) ورقةٌ تُضاف بعد البناء والحيّة القديمة مطبَّقة: الأساس «live-stale»؛
+   ٤) (ر29-هـ) ورقةٌ مربوطة بوسيط screen (‎assets/rtldoc/screen-Zq7Dc3.css‎) لا سياق وسيطٍ في بصماتها في الأساس الحيّ، كما يبنيها المحرّك الحيّ (M5)؛
+      وورقةٌ حيّة تعذّر جلبها في الفحص (404) تُرجع الأساس إلى «snapshot»، فلا تُبنى بصماتٌ حيّة ناقصة (M12).
+   ٥) (ر24-د2، مراجعة ر24-د F-05) ورقةٌ تحوّل إلى أصلٍ آخر لا يُتبع تحويلها ولا يُطلب هدفها وتُعدّ متعذّرة (مسارات __redirect في خادم المشغّل)، وhttp مرفوض.
+  العقد: document.title = "rtldoc N/N".
+-->
+<!-- (أنماط الصفحة نفسها منطقية: الطبيب يحلّل أوراق <style> المضمَّنة أيضًا) -->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:start}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<!-- (بوسيطٍ: الورقة الحيّة تجعله سياقًا على قواعدها، فبصمات الأساس الحيّ بسياقه) -->
+<link rel="stylesheet" href="assets/rtldoc/site-Zq7Dc1.css" media="(min-width: 1px)">
+<link rel="stylesheet" href="assets/rtldoc/screen-Zq7Dc3.css" media="screen">
+<h1>«فحص الاتجاه»</h1>
+<p>Hello</p>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script>
+var REQS = [];
+var MOCK = makeChromeMock({
+  session: false,
+  sendMessage: function (msg, cb) { if (msg && msg.type === "rtlcss") REQS.push({ msg: msg, cb: cb }); else if (cb) cb(null); },
+});
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "app", meta: CMLConst.domain("app").meta, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Hello": "مرحبا" }, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+var runN = 0;
+function doctor() {
+  delete MOCK.localStore.cml_rtldoc_result;
+  chrome.storage.local.set({ cml_rtldoc_request: { d: "app", kind: "rtl", at: Date.now(), id: "zq" + (++runN) } });
+  return new Promise(function (res) {
+    var t0 = Date.now();
+    (function poll() {
+      var d = MOCK.localStore.cml_rtldoc_result;
+      if (d && d.status !== "running") return res(d);
+      if (Date.now() - t0 > 12000) return res(d || null);
+      setTimeout(poll, 100);
+    })();
+  });
+}
+function listOf(d) { return ((d && d.list) || []).map(function (x) { return x.sel + " " + x.prop; }).join(" | "); }
+function unflipOf(d, sel) { return ((d && d.unflippable) || []).filter(function (x) { return x.sel === sel; }).map(function (x) { return x.prop + ":" + x.reason; }).join(","); }
+
+async function main() {
+  var txt = await (await fetch("assets/rtldoc/site-Zq7Dc1.css")).text();
+  var scr = await (await fetch("assets/rtldoc/screen-Zq7Dc3.css")).text();
+  // بصمات «اللقطة»: الورقة نفسها بلا القاعدة الجديدة، بالمحرّك نفسه (كما يبنيها gen-rtl من لقطة الموقع)
+  // (ومراجعة ر30-ب2: وفي اللقطة جزءٌ واحد من القائمة المتفاوتة ‎.zq-d-part, #zq-d-part2‎، فجزؤها الآخر وحده ثغرة)
+  var snap = CMLRtl.buildLiveSheet([{ text: txt.replace(/\.zq-d-new\{[^}]*\}/, "").replace(".zq-d-part, #zq-d-part2{", ".zq-d-part{") }, { text: scr }], {}, {});
+  globalThis.CMLRtlCoverage = { keys: snap.coverage };
+  await wait(400);
+  check("الإقلاع طلب بناءً حيًّا واحدًا (يُمسك ردّه)، وورقة اللقطة هي المطبَّقة", "1|v2", REQS.length + "|" + document.documentElement.getAttribute("data-cml-rtl"));
+
+  var a = await doctor();
+  check("★ (ر30-ب2) الأساس «snapshot» قبل الورقة الحيّة، وبصماته بصمات اللقطة", "done|snapshot|" + snap.coverage.length,
+    (a && a.status) + "|" + (a && a.basis) + "|" + (a && a.shipped));
+  check("★ (ر30-ب2) القائمة المتفاوتة التخصيص تُبصم جزءًا جزءًا (لا ثغرةٌ كاذبة)، والقائمة ذات الجزء الواعي يُحكم على جزئها الآخر: الثغرة الوحيدة ‎.zq-d-new‎",
+    ".zq-d-new padding-left | #zq-d-part2 margin-left|2", listOf(a) + "|" + (a && a.uncovered));
+  check("★ (مراجعة ر30-ب2) قائمةٌ مقسومة غُطّي أحد جزأيها: ثغرةٌ واحدة باسم الجزء الذي لم يُقلب وحده، لا بالقائمة كلها ولا تغطيةٌ بجزئها المغطّى", "#zq-d-part2|margin-left|8px",
+    ((a && a.list) || []).filter(function (x) { return /zq-d-part/.test(x.sel); }).map(function (x) { return x.sel + "|" + x.prop + "|" + x.value; }).join(" ; "));
+  check("★ (ر30-ب2، R13) التدرّج بزاوية وموضعُ بلاطته لا ينقلب: عجزٌ (gradient-angle) لا ثغرة", "background-image:gradient-angle|false",
+    unflipOf(a, ".zq-d-grad") + "|" + /zq-d-grad/.test(listOf(a)));
+  check("★ (ر30-ب2) ولكل جزءٍ من القائمة المقسومة حارسُه: مستهلك المكوّن وحده متروكٌ للموقع، وقائمته مع جزءٍ يُقلب فيزيائيةٌ مغطّاة", "1",
+    String(a && a.siteRtl));
+
+  // الورقة الحيّة: يردّ «العامل» بالمحرّك نفسه على الورقة كاملةً
+  var rq = REQS[0].msg.sheets[0], rq2 = REQS[0].msg.sheets[1] || {};
+  var built = CMLRtl.buildLiveSheet([{ text: txt, base: rq.url, media: rq.media }, { text: scr, base: rq2.url, media: rq2.media }], {}, {});
+  REQS[0].cb({ css: built.css });
+  await wait(200);
+  check("الورقة الحيّة مطبَّقة، وطلبها بوسيط الرابط", "live|true|(min-width: 1px)", document.documentElement.getAttribute("data-cml-rtl") + "|" + !!document.getElementById("cml-live-rtl") + "|" + rq.media);
+  var b = await doctor();
+  check("★ (ر30-ب2) الأساس «live» والورقة الحيّة مطبَّقة، وبصماته بصمات الحيّة", "done|live|" + built.coverage.length,
+    (b && b.status) + "|" + (b && b.basis) + "|" + (b && b.shipped));
+  check("★ (ر30-ب2) ما تقلبه الحيّة وليس في اللقطة لا يظهر ثغرة", "|0", listOf(b) + "|" + (b && b.uncovered));
+  check("وعجز التدرّج كما هو في الأساس الحيّ", "background-image:gradient-angle", unflipOf(b, ".zq-d-grad"));
+  check("★ (ر29-هـ، M5) الورقة المربوطة بوسيط screen: بلا سياق وسيطٍ في بصمتها كما يبنيها المحرّك الحيّ، فلا ثغرة لها في الأساس الحيّ", "screen|false|2",
+    rq2.media + "|" + /zq-d-scr/.test(listOf(b)) + "|" + (b && b.files));
+
+  // ورقةٌ تُضاف بعد البناء: الحيّة القديمة مطبَّقة حتى يُعاد البناء
+  var ln = document.createElement("link"); ln.rel = "stylesheet"; ln.href = "assets/rtldoc/extra-Zq7Dc2.css";
+  document.head.appendChild(ln);
+  await new Promise(function (r) { ln.onload = r; setTimeout(r, 1500); });
+  await wait(600);
+  var c = await doctor();
+  check("★ (ر30-ب2) أوراق الموقع تبدّلت منذ بناء الحيّة: الأساس «live-stale»", "done|live-stale|3",
+    (c && c.status) + "|" + (c && c.basis) + "|" + (c && c.files));
+
+  // ★ (ر29-هـ، M12) ورقةٌ حيّة لا تُجلب في الفحص (404): لا تُبنى بصماتٌ حيّة من بعض الأوراق، فالأساس اللقطة
+  var gone = document.createElement("link"); gone.rel = "stylesheet"; gone.href = "assets/rtldoc/missing-Zq7Dc4.css";
+  document.head.appendChild(gone);
+  await new Promise(function (r) { gone.onload = gone.onerror = r; setTimeout(r, 1500); });
+  await wait(600);
+  var e = await doctor();
+  check("★ (ر29-هـ، M12) ورقةٌ حيّة تعذّر جلبها في الفحص: الأساس «snapshot» وبصماته بصمات اللقطة، لا حيّةٌ ناقصة", "done|snapshot|1|" + snap.coverage.length,
+    (e && e.status) + "|" + (e && e.basis) + "|" + (e && e.failed) + "|" + (e && e.shipped));
+  // ★ (ر24-د2، مراجعة ر24-د F-05) ورقةٌ على مضيفٍ مسموح (أصل الصفحة) تحوّل (302) إلى أصلٍ آخر (localhost، والهدف يخدم الورقة بـACAO:* فلو اتُّبع التحويل
+  // لقُرئت): يطلبها الفحص ولا يتبع التحويل — فلا يُطلب الهدف أصلًا — وتُعدّ متعذّرة. (‎type="text/plain"‎: المتصفح لا يجلب الرابط بنفسه، والفحص يقرؤه كسائر الروابط)
+  var tok = "rd" + Date.now().toString(36);
+  var rd = document.createElement("link"); rd.rel = "stylesheet"; rd.type = "text/plain"; rd.href = "/__redirect/" + tok + "/zq-d-redir.css";
+  document.head.appendChild(rd);
+  await wait(300);
+  var h0 = await (await fetch("/__hits/" + tok, { cache: "no-store" })).json();
+  var f = await doctor();
+  var h1 = await (await fetch("/__hits/" + tok, { cache: "no-store" })).json();
+  check("★ (ر24-د2، F-05) ورقةٌ تحوّل إلى أصلٍ آخر: طلبها الفحص ولم يتبع التحويل (الهدف لم يُطلب) وعُدّت متعذّرة", "0|1|0|done|2",
+    h0.redirect + "|" + (h1.redirect - h0.redirect) + "|" + h1.target + "|" + (f && f.status) + "|" + (f && f.failed));
+  check("★ (ر24-د2، F-05) حكم روابط الفحصين (scanUrlOk): http لـclaude.ai مرفوض وhttps مقبول، وhttp لأصل صفحة الاختبار وحده (لا مضيفٌ محليٌّ آخر)", "null|https://claude.ai/x.css|ok|null",
+    [CMLShared.scanUrlOk("http://claude.ai/x.css", location), CMLShared.scanUrlOk("https://claude.ai/x.css", location),
+     CMLShared.scanUrlOk("assets/x.css", location) ? "ok" : "no", CMLShared.scanUrlOk("http://localhost:" + location.port + "/x.css", location)].map(String).join("|"));
+  check("لا أخطاء JS في الصفحة", "0", String(jsErrors));
+  document.title = "rtldoc " + pass + "/" + total;
+  var h = document.createElement("p"); h.className = pass === total ? "ok" : "bad";
+  h.textContent = "RTLDOC: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+}
+main().catch(function (e) { check("استثناء", "none", String(e && e.message || e)); document.title = "rtldoc " + pass + "/" + total; });
+</script>

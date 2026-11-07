@@ -427,9 +427,10 @@ function attrs(w) {
   check("(ر6-ب) نطاقٌ بلا عتبة: لا حارس، فالصفحة نفسها تُعرَّب كما كانت (ست فقرات عربية والعنوان والخلية)", "tr/6/الإعدادات/نعم",
         [GO.documentElement.getAttribute("data-cml-body") || "-", goAr, got("gh"), got("gtd")].join("/"));
   // ★ (ر6-د، القرار 83) العتبة في جدول النطاقات: 5٪ في مواقع المتون الخمسة كلها، ولا عتبة فيما لا متون له
-  check("★ (ر6-د، القرار 83) العتبة في جدول النطاقات: 0.05 في مواقع المتون الخمسة كلها (code وdocs وsupport وprivacy وlegal)، ولا عتبة في app وacademy",
-        "0.05/0.05/0.05/0.05/0.05/-/-",
-        ["code", "docs", "support", "privacy", "legal", "app", "academy"].map(function (d) { var v = gd.CMLConst.domain(d).meta.bodyGuard; return v === undefined ? "-" : v; }).join("/"));
+  // ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) والأكاديمية سادسة مواقع المتون (متونها بوضع الكتلة في 3.0.0)، فالعتبة فيها كذلك (القرار 83: «لكل مواقع المتون»)
+  check("★ (ر6-د، القرار 83؛ ر13) العتبة في جدول النطاقات: 0.05 في مواقع المتون الستة كلها (code وdocs وsupport وprivacy وlegal وacademy)، ولا عتبة في app",
+        "0.05/0.05/0.05/0.05/0.05/0.05/-",
+        ["code", "docs", "support", "privacy", "legal", "academy", "app"].map(function (d) { var v = gd.CMLConst.domain(d).meta.bodyGuard; return v === undefined ? "-" : v; }).join("/"));
   // ★ (ر6-د) موقعٌ يُبقي الصفحات السابقة في المستند مخبوءةً بنمطٍ مضمَّن (وثائق المطوّرين، Next.js: ‎display: none !important‎ على مُغلِّفها) —
   // مقيسٌ في ر6-د: كانت كتل المخبوءة تُعدّ في حكم الحاضرة (batch-processing: «tr» 9 من 250 تحميلًا، و«held» 519 من 859 بعد تنقّل)، ويُكتب فيها
   // بحال الحاضرة فيظهر عند الرجوع عنوانُ صفحةٍ محجوبة عربيًّا حتى يُحكم لها

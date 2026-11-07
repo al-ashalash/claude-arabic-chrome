@@ -27,9 +27,21 @@
     // ★ (ر8-ب) مسجّل الجلب: كل طلبٍ يطلبه المحرّك بخياراته — فيُمتحن أن حزم الفحص وورقة «فحص الاتجاه» تُجلب بلا بيانات اعتماد
     // (credentials:"omit"، مراجعة ر8-أ، F15)، وأن الجلب بها من أصل الصفحة نفسه ما زال يعمل
     var FETCHES = [], realFetch = window.fetch;
+    // ★ (مراجعة ر24-د2، F-05) حزمةٌ تحوّل إلى أصلٍ آخر: يُلحَق اسمٌ بنصّ ملف الدخول حين يجلبه الزحف (لا تُمسّ ملفات assets/v1 المشتركة مع
+    // _swtest و_scanlocktest)، وجلبُ ذلك الاسم يُوجَّه بخيارات المحرّك نفسها إلى ‎/__redirect/‎ في أصل الصفحة، فيحوّله الخادم (302) إلى localhost
+    // الذي يخدم الملف بـACAO:* — فلو اتُّبع التحويل لقُرئ. والمنتظر: لا يُطلب الهدف أصلًا ويُعدّ الملف متعذّرًا (failed)
+    var RTOK = "sc" + Date.now().toString(36), REDIR_NAME = "zqredir-Rd7Kq2Wx.js";
     window.fetch = function (u, o) {
-      FETCHES.push({ u: String(u && u.url || u), c: o && o.credentials });
-      return realFetch.apply(window, arguments);
+      var s = String(u && u.url || u);
+      FETCHES.push({ u: s, c: o && o.credentials });
+      if (s.slice(-REDIR_NAME.length) === REDIR_NAME) return realFetch.call(window, "/__redirect/" + RTOK + "/" + REDIR_NAME, o);
+      var p = realFetch.apply(window, arguments);
+      if (/\/assets\/v1\/index-abc123def\.js$/.test(s)) p = p.then(function (r) {
+        return r.text().then(function (t) {
+          return new Response(t + '\nvar zqRedir = "' + REDIR_NAME + '";\n', { status: r.status, headers: { "Content-Type": "text/javascript" } });
+        });
+      });
+      return p;
     };
   </script>
   <script src="../extension/cml-const.js"></script>
@@ -74,6 +86,9 @@
       ['Anthropic Console', 'Ayu Dark']
         .forEach(function (w) { check(list.indexOf(w) < 0, 'kept-English name listed as missing: ' + w); });
       check(r.kept === 2, 'kept count in the result: ' + r.kept);
+      // ★ (ر29-ز) ماسح الحزم يكتب ما بقي خارج القائمتين كماسح الفهرس (omitted، صفرٌ هنا) والقائمتان كاملتان: العدّ الحقيقي يساوي المعروض
+      check(r.omitted === 0 && r.omittedVars === 0 && r.capped === false && r.missing === list.length + vars.length,
+        'bundle scan omitted/capped/missing: ' + r.omitted + '/' + r.omittedVars + '/' + r.capped + '/' + r.missing + '/' + (list.length + vars.length));
 
       // التصنيف الذكي: نصّ فيه متغيّر يذهب إلى varList لا list
       check(vars.indexOf('Zzq delete {count} items now') >= 0, 'variable string not in varList');
@@ -100,7 +115,8 @@
       // الشبح (404 دائمة — اسمٌ يشبه الملفات داخل النصوص): يُحصى بهدوء ولا يُعدّ
       // نقصًا — فقد كان إنذار «النتيجة ناقصة، أعد الفحص» الكاذب يظهر أبديًّا
       check(r.ghosts === 1, 'ghost 404 not counted as ghost: ' + r.ghosts);
-      check(r.failed === 0, 'ghost wrongly counted as failed: ' + r.failed);
+      // (مراجعة ر24-د2) والإخفاق الواحد هو الحزمة المحوَّلة أدناه، لا الشبح
+      check(r.failed === 1, 'ghost wrongly counted as failed (the one failure is the redirected bundle): ' + r.failed);
 
       // ★ (ر8-ب) حزم الفحص كلها جُلبت بلا بيانات اعتماد (الملفات الأربعة والشبح)، والفحص أعلاه نجح بها من أصل الصفحة
       var scanF = FETCHES.filter(function (f) { return /\.js$/.test(f.u); });
@@ -120,9 +136,21 @@
         check(!!d && d.status === 'done' && d.files === 1 && d.failed === 0 && d.physical >= 4 && d.uncovered >= 4,
           'rtl doctor did not fetch and parse the page sheet: ' +
           JSON.stringify(d ? { status: d.status, files: d.files, failed: d.failed, physical: d.physical, uncovered: d.uncovered, error: d.error } : null));
+        // ★ (ر29-ب) حارسا المولّد في الطبيب: الفيزيائيّ أربعةٌ لا ستة — قاعدة ‎:lang(ar)‎ واعيةٌ بالاتجاه، ومستهلك المتغيّر الذي يبدّله الموقع تحت RTL
+        // يُحصى في siteRtl — ولا يظهر أيٌّ منهما فجوة
+        var dl = (d && d.list) || [];
+        check(!!d && d.physical === 4 && d.uncovered === 4 && d.siteRtl === 1 &&
+          !dl.some(function (x) { return /zzq-scan-[lf]\b/.test(x.sel); }),
+          'rtl doctor guards (lang rule and RTL-swapped variable): ' +
+          JSON.stringify(d ? { physical: d.physical, uncovered: d.uncovered, siteRtl: d.siteRtl, list: dl.map(function (x) { return x.sel + ' ' + x.prop; }) } : null));
         var cssF = FETCHES.filter(function (f) { return /\.css$/.test(f.u); });
         check(cssF.length === 1 && cssF[0].c === 'omit', 'rtl doctor fetch without credentials:"omit": ' + JSON.stringify(cssF));
-        report();
+        // ★ (مراجعة ر24-د2، F-05) حزمةٌ تحوّل إلى أصلٍ آخر: طلبها الزحف (ومعها جولة الإعادة) ولم يتبع التحويل — الهدف لم يُطلب — وعُدّت متعذّرة
+        realFetch.call(window, "/__hits/" + RTOK, { cache: "no-store" }).then(function (x) { return x.json(); }).then(function (h) {
+          check(h.redirect >= 1 && h.target === 0 && r.failed === 1, 'bundle redirect to another origin followed or not counted as failed: ' +
+            JSON.stringify(h) + ' failed=' + r.failed);
+          report();
+        }, function (e) { check(false, 'redirect hits unreadable: ' + e); report(); });
       }, 200);
 
       function report() {

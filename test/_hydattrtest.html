@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>hydattr test</title>
+<!--
+  اختبار إشارة الترطيب "attr" (meta.hydrateSignal = "attr" مع meta.hydrateAttr، وثائق Claude Code — ر27-ب، ٢٠ جمادى الأولى ١٤٤٨هـ):
+  انتقل الموقع إلى بناء Mintlify الجديد (Vite وReact 19 بلا Next.js) فلا next-route-announcer أبدًا، وكانت النصوص تنتظر السقف (20 ث). الموقع
+  يكتب <html data-current-path> بسكربتٍ مضمَّن أثناء التحليل، ثم يعيد مكوّن المسار كتابتها في إيداع ترطيب الجذر (قِيس بخطّاف إيداعات React).
+   ١) الصفحة: كتابة السمة أثناء التحليل ليست إشارة، ولا كتابة سمةٍ أخرى على <html> بعده: بعد load والخمول الصفحة ممسوكة والنص لم يُمسّ والبوابة
+      تنتظر؛ ثم الموقع يكتب السمة (إيداع ترطيب الجذر، وما بقي بعده غير مرطَّبٍ حدٌّ فارغ — قِيس) ⇒ تُعرَّب خلال حدٍّ قصير بعد الإشارة لا قبلها، بلا
+      انتظار الخمول، والبوابة «open:attr»، والإمساك ينتهي مع أول ظهورٍ عربي؛ وجدول النطاقات: صف Claude Code بهذه الإشارة وسائر الصفوف كما هي.
+   ٢) الإطار ?frame=cap: لا كتابة من الموقع بعد التحليل ⇒ السقف يفتح البوابة كما كان (التعريب عند السقف 1500 مث، لا قبله).
+   ٣) الإطار ?frame=next: صفٌّ بالإشارة الافتراضية (Next.js، next-route-announcer): كتابة السمة بعد التحليل لا تفتح البوابة، والعنصر يفتحها كما كان.
+  الطافرة: حذف نداء الإشارة (hydrationSignal("attr")) أو إسقاط hydrateAttr من صف Claude Code يُخفق الفحوص الحرجة.
+  العقد: document.title = "hydattr N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+iframe{width:600px;height:100px;border:1px solid #999}</style>
+<link rel="stylesheet" href="../extension/base.css">
+<div id="root"><main id="content-container"><p id="t">Contact Support</p></main></div>
+<script>
+var FM = /[?&]frame=(cap|next)/.exec(location.search), FRAME = FM ? FM[1] : null;
+var T0 = performance.now(), jsErrors = 0;
+window.onerror = function () { jsErrors++; };
+// زمن أول تعريبٍ للنص (من بدء الصفحة)
+window.__tr = null;
+new MutationObserver(function () {
+  if (window.__tr === null && document.getElementById("t").textContent !== "Contact Support") window.__tr = performance.now() - T0;
+}).observe(document.getElementById("t"), { childList: true, characterData: true, subtree: true });
+</script>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+// المحرّك يجيب «cml-hello» على runtime.onMessage — قشرةٌ تلتقط مستمعه فنسأله عن البوابة
+var HELLO = [];
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { HELLO.push(fn); } };
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "code",
+  meta: FRAME === "next" ? { scan: "none", live: false, chat: false, hydrate: "defer" }
+                         : { scan: "none", live: false, chat: false, hydrate: "defer", hydrateSignal: "attr", hydrateAttr: "data-current-path" },
+  default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Contact Support": "التواصل مع الدعم" }, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-const.js"></script>
+<script>
+if (FRAME === "cap") { CMLConst.HOLD_MAX_MS = 300; CMLConst.HOLD_ABS_MS = 4000; CMLConst.HYDRATE_MAX_MS = 1500; }
+else { CMLConst.HOLD_MAX_MS = 60000; CMLConst.HOLD_ABS_MS = 60000; CMLConst.HYDRATE_MAX_MS = 60000; }
+</script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+// كسكربت Mintlify المضمَّن في <head>: يكتب السمة أثناء التحليل (بعد المحرّك، كما في الموقع: المحرّك عند بدء المستند)
+window.__parseState = document.readyState;
+document.documentElement.setAttribute("data-current-path", "/en/overview");
+</script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g"), ""); }
+function hello() { var out = null; HELLO.forEach(function (fn) { fn({ type: "cml-hello" }, {}, function (r) { out = r; }); }); return out; }
+// مُجدوِلٌ مشغول كمُجدوِل React: مهمّةٌ تعمل ~4 مث ثم تنشر التالية عبر MessageChannel حتى «until» — فلا فترة خمولٍ بينها
+function busyUntil(until) {
+  return new Promise(function (done) {
+    var ch = new MessageChannel();
+    ch.port1.onmessage = function () {
+      var s = performance.now(); while (performance.now() - s < 4) {}
+      if (performance.now() < until) ch.port2.postMessage(0); else { ch.port1.close(); done(); }
+    };
+    ch.port2.postMessage(0);
+  });
+}
+var H = document.documentElement;
+function txt() { return noBidi(document.getElementById("t").textContent); }
+function loaded() { return new Promise(function (r) { if (document.readyState === "complete") r(); else window.addEventListener("load", r, { once: true }); }); }
+
+if (FRAME) (async function () {
+  var R = {};
+  await loaded();
+  await wait(500); // بعد load وفترات خمول
+  if (FRAME === "cap") {
+    var t0 = performance.now();
+    while (window.__tr === null && performance.now() - t0 < 6000) await wait(100);
+    R.tr = window.__tr; R.final = txt();
+  } else {
+    H.setAttribute("data-current-path", "/en/overview");
+    await wait(600);
+    R.afterAttr = txt() + "|" + H.getAttribute("data-cml-hold");
+    document.body.appendChild(document.createElement("next-route-announcer"));
+    await wait(400);
+    R.afterAnn = txt() + "|" + H.getAttribute("data-cml-hold");
+  }
+  R.errors = jsErrors;
+  window.__res = R;
+})();
+else (async function () {
+  await loaded();
+  H.setAttribute("data-page-mode", "none"); // سمةٌ أخرى على <html> بعد التحليل ليست الإشارة
+  await wait(600);
+  // ١) قبل كتابة الموقع بعد التحليل
+  check("★ كتابة السمة أثناء التحليل وكتابة سمةٍ أخرى بعده ليستا إشارة: بعد load والخمول الصفحة ممسوكة والنص لم يُمسّ والبوابة تنتظر",
+        "loading/1/Contact Support/wait", window.__parseState + "/" + H.getAttribute("data-cml-hold") + "/" + txt() + "/" + (hello() || {}).text);
+  // الموقع يعيد كتابة السمة في إيداع ترطيب جذره (مكوّن المسار)، والخيط بعده مشغولٌ بعمل الصفحة (مُجدوِل React): البوابة لا تنتظر خموله
+  var sigAt = performance.now() - T0;
+  var busy = busyUntil(performance.now() + 1500);
+  H.setAttribute("data-current-path", "/en/overview");
+  await wait(600);
+  check("★ كتابة الموقع للسمة بعد التحليل (إيداع ترطيب الجذر): تُعرَّب والخيط ما زال مشغولًا، والبوابة بإشارة attr", "التواصل مع الدعم/open:attr",
+        txt() + "/" + (hello() || {}).text);
+  check("★ أول تعريبٍ بعد الإشارة لا قبلها، وخلال حدٍّ قصير منها (أقل من 500 مث)", "true/true",
+        (window.__tr !== null && window.__tr > sigAt) + "/" + (window.__tr !== null && window.__tr - sigAt < 500));
+  await busy;
+  check("والإمساك انتهى مع أول ظهورٍ عربي، والاتجاه RTL", "null/visible/rtl", H.getAttribute("data-cml-hold") + "/" + getComputedStyle(H).visibility + "/" + H.getAttribute("dir"));
+  // جدول النطاقات الحقيقي: صف Claude Code بالإشارة المقيسة والسقف احتياطًا، وسائر الصفوف المشحونة كما كانت
+  var CM = (CMLConst.domain("code") || {}).meta || {};
+  check("★ جدول النطاقات: وثائق Claude Code بترطيبٍ مؤجَّل وإشارة attr بسمة data-current-path والسقف 20 ث احتياطًا", "defer/attr/data-current-path/20000",
+        CM.hydrate + "/" + CM.hydrateSignal + "/" + CM.hydrateAttr + "/" + CM.hydrateMaxMs);
+  check("★ جدول النطاقات: الصفوف الأخرى بإشاراتها كما كانت، ولا hydrateAttr في غير Claude Code",
+        "app:none/-/-/-,support:defer/-/-/-,privacy:defer/-/-/-,legal:defer/-/-/-,academy:defer/lang/-/-,docs:defer/idle/-/20000",
+        ["app", "support", "privacy", "legal", "academy", "docs"].map(function (id) {
+          var m = (CMLConst.domain(id) || {}).meta || {};
+          return id + ":" + (m.hydrate || "-") + "/" + (m.hydrateSignal || "-") + "/" + (m.hydrateAttr || "-") + "/" + (m.hydrateMaxMs || "-");
+        }).join(","));
+  async function frame(kind, ms) {
+    var fr = document.createElement("iframe");
+    fr.src = location.pathname + "?frame=" + kind + "&cdp";
+    document.body.appendChild(fr);
+    var t0 = performance.now(), R = null;
+    while (performance.now() - t0 < (ms || 8000)) {
+      await wait(100);
+      try { R = fr.contentWindow.__res; if (R) break; } catch (e) {}
+    }
+    return R || {};
+  }
+  var K = await frame("cap");
+  // (الإطار الداخلي لا يجيب «cml-hello» — الصفحة الأعلى وحدها — فحاله بزمن التعريب ونصّه والإمساك)
+  check("★ إطار cap: لا كتابة من الموقع بعد التحليل ⇒ السقف يفتح البوابة (1500 مث، لا انتظار بلا حد)", "true|التواصل مع الدعم",
+        (K.tr !== null && K.tr !== undefined && K.tr >= 1400 && K.tr < 4000) + "|" + K.final);
+  var N = await frame("next");
+  check("★ إطار next (صفٌّ بإشارة Next.js الافتراضية): كتابة السمة بعد التحليل لا تفتح البوابة (النص على أصله والصفحة ممسوكة)", "Contact Support|1", N.afterAttr);
+  check("★ إطار next: وnext-route-announcer يفتحها كما كان (تُعرَّب وينتهي الإمساك)", "التواصل مع الدعم|null", N.afterAnn);
+  check("لا أخطاء JS غير ملتقطة (الصفحة والإطاران)", "0", jsErrors + (K.errors || 0) + (N.errors || 0));
+  document.title = "hydattr " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "HYDATTR: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})().catch(function (e) { jsErrors++; document.title = "hydattr 0/1"; var p = document.createElement("pre"); p.textContent = String(e && e.stack || e); document.body.appendChild(p); });
+</script>

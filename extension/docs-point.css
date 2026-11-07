@@ -14,10 +14,12 @@ html[data-cml="on"] .stldocs-root :is(.stldocs-properties, .stldocs-property, .s
   .text-code, [data-cds="Badge"], [data-cds="SplitDropdownButton"], h5:not(:has(a)), .rounded-card > .border-b > :not(:has(> .truncate)), [class*="stldocs-expander-margin-shift"]),
 html[data-cml="on"] .stldocs-root [data-testid="docs-page-banner"] {
   direction: ltr;
+  --cml-island: ltr;
 }
 /* وإن عاد المرجع مسار «هيكل فقط» (routes.shell مع shellSel) بقي كلُّه على أصله LTR كما كان قبل S7-B (_routetest يفحص الآلية) */
 html[data-cml="on"][data-cml-route="shell"] .stldocs-root {
   direction: ltr;
+  --cml-island: ltr;
 }
 /* وفي الشاشة الضيقة (دون md في Tailwind، 48rem) حشوة المحتوى اليسرى 8px بعد القلب (‎p-8 pr-2‎) فالإزاحة السالبة (24px) كانت تُخرج
    الشجرة من يسار الصفحة فيتمرّر المرجع أفقيًّا 16px (قِيس على 390px)؛ فتبقى الأسهم داخل العمود هناك. وفي md فما فوق الحشوة 40px
@@ -43,6 +45,7 @@ html[data-cml="on"] .stldocs-root h4:is([dir="rtl"], [dir="auto"]:dir(rtl)) [dat
 /* الشيفرة داخل الوصف المعرَّب تبقى LTR معزولةً ولو كان المحرّك المبسّط (v1، بلا rtl-docs.css): «user_ids[]» لا يُرسم «[]user_ids» */
 html[data-cml="on"] .stldocs-root .stldocs-content code {
   direction: ltr;
+  --cml-island: ltr;
   unicode-bidi: isolate;
 }
 /* ★ (ر5-د، ٢٩ ربيع الآخر ١٤٤٨هـ — مراجعة ر5-ج R9) محاذاة أعمدة جداول Markdown في النثر: يكتبها الموقع نمطًا سطريًّا على الخلية
@@ -64,6 +67,20 @@ html[data-cml="on"] .stldocs-root .stldocs-content code {
    أولُ أبنائه الشعار في الرأس والتذييل وحدهما (:has في قاعدةٍ وحدها). والسمة نفسها لا تُمسّ، فبلا الإضافة أو بإطفاء القلب تبقى الشارة كأصلها */
 html[data-cml="on"][dir="rtl"] :is(header, footer) [dir="ltr"]:has(> svg[data-cds="Spark"]:first-child) {
   direction: rtl;
+}
+
+/* ★ (ر29-ح، ١٩ جمادى الأولى ١٤٤٨هـ — DX0-0 §٥، صنفا فحص الاتجاه 5d77ad4d3787 و6ce3e39959fb) أوصاف خصائص المرجع (‎.prose‎ داخل
+   ‎.stldocs-property‎، وهي جزيرة LTR أعلاه) نصٌّ مطبعيّ من أوراق الموقع الطبقية: الشيفرة السطرية ‎@layer components code:not(pre code)
+   {padding:.0625em .25em; border:1px solid …}‎، والقوائم ‎:is(ul, ol){padding-inline-start:2em}‎ وبنودها، وهي تغلب تصفيره العام ‎@layer base
+   *{margin:0; padding:0; border:0 solid}‎ بترتيب الطبقات. والورقة الحيّة تبثّ ذلك التصفير منطقيًّا خارج الطبقات بتخصيص سلّمها
+   (‎:where(*){padding-inline:0}‎ وأخواتها) فيغلب قواعد الموقع الطبقية داخل الجزيرة: كانت الشيفرة بلا حشوةٍ أفقية ولا حدٍّ جانبي (‎3.15px → 0‎
+   و‎1px → 0‎ في الجهتين، 31 عنصرًا في صفحة النماذج بعرضي 1366 و390) فيلتصق نصّها بحافتي خلفيتها، والقوائم وبنودها بلا إزاحة (28px و7px → 0).
+   فداخل هذه الأوصاف يُرجَع المحور السطري (الحشوة والهامش وعرض الحدّ) إلى طبقات الموقع نفسها بـ‎revert-layer‎: تُطرح القواعد غير الطبقية
+   (أوراقنا المولَّدة، وتخصيص هذه القاعدة يعلو سلّمها) فيحسمه الموقع كما في الأصل، والجزيرة LTR فالمنطقيّ فيها هو الفيزيائيّ الأصلي */
+html[data-cml="on"]:not(#cml0#cml1#cml2#cml3) .stldocs-root .stldocs-property .prose :where(*) {
+  padding-inline: revert-layer;
+  margin-inline: revert-layer;
+  border-inline-width: revert-layer;
 }
 
 /* ★ العلاج النقطي للقصّ مع الخط العربي المضاف (DESIGN-fonts §٤.٦؛ قرار المالك — الخيار ٢، ١٩ ربيع الآخر ١٤٤٨هـ).
@@ -124,7 +141,7 @@ html[data-cml="on"][dir="rtl"] :is(header, footer) [dir="ltr"]:has(> svg[data-cd
 } /* نهاية علاج القطع بعدد الأسطر */
 
 /* ── مرآة --cml-ff: مولَّدة من لقطة sitecss-docs/ بـ «node web/code/toolchain/fonts.mjs clamp-css»، فلا تُحرَّر باليد. ──
-   تعريف متغيّرٍ لا يقرؤه إلا علاج القطع (المعلَّق على السمة)، فلا أثر له في الرسم: 59 قاعدة بترتيب أوراق الموقع وطبقاته (properties، cds-card، theme، base، components، utilities)، وأُسقط من القوائم الحرفية 77 اسمًا غير معروف (0 منها أولُ قائمته)؛ ثم 56 محدِّدًا لما تحت الجذور يعلن له الموقع خطًّا قد يحمل وجهنا. */
+   تعريف متغيّرٍ لا يقرؤه إلا علاج القطع (المعلَّق على السمة)، فلا أثر له في الرسم: 45 قاعدة بترتيب أوراق الموقع وطبقاته (properties، cds-card، theme، base، components، utilities)، وأُسقط من القوائم الحرفية 77 اسمًا غير معروف (0 منها أولُ قائمته)؛ ثم 41 محدِّدًا لما تحت الجذور يعلن له الموقع خطًّا قد يحمل وجهنا. */
 @layer cml-point {
 @layer cml-ua, properties, cds-card, theme, base, components, utilities;
 @layer cml-ua{:where(code,kbd,samp,pre,tt,xmp,listing,plaintext,textarea){--cml-ff:monospace}:where(math){--cml-ff:math}}
@@ -157,30 +174,15 @@ html[data-cml="on"][dir="rtl"] :is(header, footer) [dir="ltr"]:has(> svg[data-cd
  .text-code-medium{--cml-ff:var(--cds-font-mono)}
  .text-code-regular{--cml-ff:var(--cds-font-mono)}
  .text-code-semibold{--cml-ff:var(--cds-font-mono)}
- .font-display{--cml-ff:var(--font-ui-serif)}
- .font-heading{--cml-ff:var(--font-ui-serif)}
- .font-title{--cml-ff:var(--font-ui-serif)}
- .font-xl-bold{--cml-ff:var(--font-ui)}
- .\!font-base{--cml-ff:var(--font-ui)!important}
- .font-base{--cml-ff:var(--font-ui)}
- .font-base-bold{--cml-ff:var(--font-ui)}
- .font-claude-response-body{--cml-ff:var(--font-claude-response)}
- .font-claude-response-code{--cml-ff:var(--font-mono)}
- .font-large{--cml-ff:var(--font-ui)}
- .font-large-bold{--cml-ff:var(--font-ui)}
- .font-small{--cml-ff:var(--font-ui)}
- .font-small-bold{--cml-ff:var(--font-ui)}
  .text-code{--cml-ff:var(--cds-font-mono)}
  .font-\[N\]{--cml-ff:N}
- .font-claude-response{--cml-ff:var(--font-claude-response)}
  .font-inherit{--cml-ff:inherit}
  .font-mono{--cml-ff:var(--cds-font-mono)}
  .font-mono-ui{--cml-ff:var(--cds-font-mono-ui)}
  .font-sans{--cml-ff:var(--cds-font-sans)}
  .font-sans-display{--cml-ff:var(--cds-font-sans-display)}
- .font-ui{--cml-ff:var(--font-ui)}
- .font-ui-serif{--cml-ff:var(--font-ui-serif)}
  .font-voice{--cml-ff:var(--cds-font-voice)}
+ .\[font\:inherit\]{--cml-ff:inherit}
  .\[\&_code\]\:\!text-code code{--cml-ff:var(--cds-font-mono)!important}
  .\[\&_pre\]\:\!text-code pre{--cml-ff:var(--cds-font-mono)!important}
  html,body{--cml-ff:var(--font-ui)}
@@ -188,11 +190,12 @@ html[data-cml="on"][dir="rtl"] :is(header, footer) [dir="ltr"]:has(> svg[data-cd
 }
 .cds-root[data-font]{--cml-ff:var(--cds-font-sans)}
 [data-cds=Icon]:not(svg){--cml-ff:var(--font-anthropicons,Anthropicons-Variable)}
-.anthropicmono_cbe48008-module__LaA-xG__className{--cml-ff:anthropicMono, anthropicMono Fallback, ui-monospace, SFMono-Regular, Menlo, Monaco, monospace}
-.anthropicsans_a7151b9f-module__RC1Wfa__className{--cml-ff:anthropicSans, anthropicSans Fallback, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif}
-.anthropicsansitalic_718e040e-module__w1e6hq__className{--cml-ff:anthropicSansItalic}
-.anthropicserif_80ca7d24-module__Iptpla__className{--cml-ff:anthropicSerif, anthropicSerif Fallback, Georgia, Times New Roman, Times, serif}
-.anthropicserifitalic_a4d75010-module__80Z3Oa__className{--cml-ff:anthropicSerifItalic}
+.LaA-xG_className{--cml-ff:anthropicMono, anthropicMono Fallback, ui-monospace, SFMono-Regular, Menlo, Monaco, monospace}
+.RC1Wfa_className{--cml-ff:anthropicSans, anthropicSans Fallback, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif}
+.w1e6hq_className{--cml-ff:anthropicSansItalic}
+.Iptpla_className{--cml-ff:anthropicSerif, anthropicSerif Fallback, Georgia, Times New Roman, Times, serif}
+._80Z3Oa_className{--cml-ff:anthropicSerifItalic}
+[data-cds-fizzy-lake~=icons] [data-cds=Icon]:not(svg){--cml-ff:"Anthropicons-FizzyLake", var(--font-anthropicons,Anthropicons-Variable)}
 html,body{--cml-ff:var(--font-ui)}
 .font-system{--cml-ff:var(--font-system)}
 html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) code,
@@ -223,34 +226,19 @@ html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-cla
 html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .text-code-medium,
 html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .text-code-regular,
 html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .text-code-semibold,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-display,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-heading,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-title,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-xl-bold,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .\!font-base,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-base,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-base-bold,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-claude-response-body,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-claude-response-code,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-large,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-large-bold,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-small,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-small-bold,
 html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .text-code,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-claude-response,
 html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-mono,
 html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-mono-ui,
 html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-sans,
 html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-sans-display,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-ui,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-ui-serif,
 html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-voice,
 html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .font-system,
 html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .cds-root[data-font],
 html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) [data-cds=Icon]:not(svg),
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .anthropicmono_cbe48008-module__LaA-xG__className,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .anthropicsans_a7151b9f-module__RC1Wfa__className,
-html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .anthropicserif_80ca7d24-module__Iptpla__className {
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .LaA-xG_className,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .RC1Wfa_className,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) .Iptpla_className,
+html[data-cml="on"][data-cml-font] :is([class*="line-clamp-"], [style*="line-clamp"]) [data-cds=Icon]:not(svg):is([data-cds-fizzy-lake~=icons] [data-cds=Icon]:not(svg)) {
   font-family: "cml-ar-compact", "cml-ar-today", var(--cml-ff) !important;
 }
 }

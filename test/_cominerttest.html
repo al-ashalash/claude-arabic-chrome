@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<script>
+  // أصل الملفات قبل نقل العنوان إلى مسار الصفحة: الروابط النسبية أدناه تُحسم به لا بالمسار الجديد
+  document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');
+</script>
+<title>Zq Plans | Claude by Anthropic</title>
+<!--
+  ★ خمول النطاق القادم (ر15، ٦ جمادى الأولى ١٤٤٨هـ): claude.com في جدول النطاقات بصيغة status {upcoming: true} حتى يُشحن قاموسه (CM-د)، ومطابقته
+  في المانيفست (فيأتي إذن المضيف مع الإصدار الذي يحمله). فالمحرّك على صفحةٍ مترجمةٍ بعينها، بقاموسٍ فيه نصوص الصفحة نفسها وإشارةِ ترطيبٍ تظهر،
+  لا يغيّر شيئًا مما يراه المستخدم: لا سمة على <html> (ولا نافذة إقلاعٍ ولا إمساكٌ يخفي الصفحة) ولا اتجاه ولا تعريب ولا عنوان ولا خط، ولا يقرأ
+  الإعدادات ولا يرسل إلى عامل الخدمة شيئًا، ولا يتبع التنقّل ولا تغيّر الإعدادات. ويجيب النافذة وحدها بأنه قادم، والنافذة تقول ذلك ولا مفتاح فيها.
+  صفحةٌ عليا لا إطار: النافذة لا تسأل إلا الإطار الأعلى. محتوى اصطناعي من صنع المشروع يحاكي بنية claude.com.
+  العقد: document.title الختامي = "cominert N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1100px;margin:auto}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}
+#tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<link rel="stylesheet" href="../extension/base.css">
+<header data-cta-section="nav" id="nav"><a href="#" id="navA">Pricing</a> <button aria-label="Zq menu" id="navB">x</button></header>
+<main id="main-content"><h1 id="h1">Zq Plans</h1><p id="p1">Pricing</p></main>
+<footer data-cta-section="footer"><span id="ft">Pricing</span></footer>
+<p id="wake">-</p>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var HOME = location.pathname + location.search;
+var CM = CMLConst.domain("com");
+var CALLS = { get: 0, send: 0, listen: 0 };
+var MOCK = makeChromeMock({ session: false, sendMessage: function (m, cb) { CALLS.send++; if (cb) cb(null); } });
+var realGet = MOCK.chrome.storage.local.get;
+MOCK.chrome.storage.local.get = function () { CALLS.get++; return realGet.apply(this, arguments); };
+// مستمع تغيّر الإعدادات: المحرّك الخامل لا يسجّله (فلا يعيد تشغيل نفسه من الإعدادات)
+var realOn = MOCK.chrome.storage.onChanged.addListener;
+MOCK.chrome.storage.onChanged.addListener = function () { CALLS.listen++; return realOn.apply(this, arguments); };
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+var HELLO = null;
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { HELLO = fn; } };
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "com", meta: Object.assign({}, CM.meta, { live: false }), default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Pricing": "أسعارٌ تجريبية", "Zq Plans": "خططٌ تجريبية", "Zq menu": "قائمةٌ تجريبية" }, patterns: [], plurals: {} } } };
+history.replaceState({}, "", "/pricing");
+var FONTS0 = document.fonts ? document.fonts.size : 0;
+// حال الجدول كما شُحن تُقرأ أولًا وتُثبَّت في الفحص الأول (تتغيّر في CM-د)، ثم تُكتب صيغة «قادم» صراحةً: فحوص الخمول تمتحن الآلية نفسها
+// على أي نطاقٍ قادم، فتبقى صالحةً بعد أن يُشحن com
+var STATUS0 = JSON.stringify(CM.status);
+CM.status = { upcoming: true };
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/cml-font.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function $(id) { return document.getElementById(id); }
+var H = document.documentElement;
+var ATTRS = ["dir", "lang", "data-cml", "data-cml-boot", "data-cml-hold", "data-cml-route", "data-cml-font", "data-cml-rtl", "data-cml-body", "data-cml-held"];
+function attrs() { return ATTRS.map(function (a) { return String(H.getAttribute(a)); }).join("|"); }
+function texts() { return ["navA", "h1", "p1", "ft"].map(function (i) { return $(i).textContent; }).join("|") + "|" + $("navB").getAttribute("aria-label"); }
+function hello() { var r = null; if (HELLO) HELLO({ type: "cml-hello" }, {}, function (x) { r = x; }); return r; }
+var NONE = "null|en|null|null|null|null|null|null|null|null", PAGE = "Pricing|Zq Plans|Pricing|Pricing|Zq menu", TITLE = "Zq Plans | Claude by Anthropic";
+
+(async function () {
+  // في أول الأمر (حيث يضع المحرّك العامل نافذة الإقلاع ويُمسك الصفحة)
+  var boot = attrs() + "/" + getComputedStyle(H).visibility;
+  await wait(200);
+  document.body.appendChild(document.createElement("next-route-announcer"));
+  await wait(700);
+  check("★ الجدول كما شُحن: com قادم (status.upcoming) حتى CM-د", '{"upcoming":true}', STATUS0);
+  check("★ النطاق القادم خاملٌ من بدء المستند: لا سمة على <html> (ولا نافذة إقلاعٍ ولا إمساك) والصفحة ظاهرة", NONE + "/visible", boot);
+  check("★ وبعد إشارة الترطيب: لا اتجاه ولا تعريب (نصًّا وسمة) ولا عنوان ولا خط، والقاموس فيه نصوص الصفحة",
+        NONE + "/" + PAGE + "/" + TITLE + "/0/visible",
+        attrs() + "/" + texts() + "/" + document.title + "/" + ((document.fonts ? document.fonts.size : 0) - FONTS0) + "/" + getComputedStyle(H).visibility);
+  check("★ ولا يقرأ الإعدادات ولا يستمع لتغيّرها، ولا يرسل إلى العامل شيئًا (لا قطعة ولا ورقة حيّة ولا خط)", "0/0/0",
+        CALLS.get + "/" + CALLS.listen + "/" + CALLS.send);
+  var hl = hello() || {};
+  check("★ ويجيب النافذة بأنه قادم (فتقول ذلك ولا «حدّث التبويب»)", "com/true/false/inactive", hl.domain + "/" + hl.upcoming + "/" + hl.enabled + "/" + hl.route);
+  // التنقّل الناعم إلى السوق وإلى هيكلٍ ثم العودة، وتغيّر الإعدادات: لا شيء
+  history.pushState({}, "", "/marketplace/zq-connector"); $("wake").textContent = "m"; await wait(300);
+  history.pushState({}, "", "/customers/zq-story"); $("wake").textContent = "c"; await wait(300);
+  history.pushState({}, "", "/pricing"); $("wake").textContent = "p"; await wait(300);
+  MOCK.localStore.cml_enabled = true; MOCK.fireChanged({ cml_enabled: { newValue: true }, cml_rtl: { newValue: true } }, "local");
+  await wait(300);
+  check("★ ولا يتبع التنقّل الناعم (السوق والهيكل والعودة) ولا تغيّر الإعدادات", NONE + "/" + PAGE + "/" + TITLE + "/0",
+        attrs() + "/" + texts() + "/" + document.title + "/" + CALLS.send);
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  history.replaceState({}, "", HOME);
+  document.title = "cominert " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "COMINERT: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})().catch(function (e) { jsErrors++; document.title = "cominert 0/1"; var p = document.createElement("pre"); p.textContent = String(e && e.stack || e); document.body.appendChild(p); });
+</script>

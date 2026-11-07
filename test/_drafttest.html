@@ -1,0 +1,107 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>draft test</title>
+<!--
+  ★ (ر24-ج2، ١٠ جمادى الأولى ١٤٤٨هـ — ما حملته ر24-ج1) مسودة المستخدم في محرِّرٍ معطَّل: مواضع الكتابة محتوى مستخدمٍ بالمحدِّد (جدول claude.ai الحقيقي:
+  ‎.ProseMirror > *‎ و‎[role=textbox]‎ و‎[role=searchbox]‎) أيًّا كانت قابلية تحريرها. كانت قابلية التحرير وحدها تحميها، فمحرِّرٌ صار ‎contenteditable="false"‎ وفيه
+  مسودةٌ تطابق القاموس كانت تُقرأ وتُعرَّب. بحالاتٍ متقابلة (AD-005) وجاسوسٍ عامّ على القراءة (نموذج _blockprotspytest):
+   ١) صندوق الكتابة معطَّلٌ من أوّله وفيه مسودةٌ تطابق القاموس، ومحرِّرٌ صار معطَّلًا بسمةٍ وحدها (CX-004)، وحقلٌ بدور textbox أو searchbox معطَّل: على أصلها
+      و0 قراءة؛ وسمةُ جذر المحرِّر (aria-label) واجهةٌ تُعرَّب كما كانت.
+   ٢) الضوابط بالبناء نفسه خارج المحدِّد (صنفٌ آخر، ودور group وsearch): تُعرَّب — فـ‎contenteditable="false"‎ وحده لا يحمي (جزرٌ خارج المحرِّرات).
+  العقد: document.title = "draft N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right;word-break:break-word}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<div id="compA" class="tiptap ProseMirror" contenteditable="true" translate="no" aria-label="Write your prompt to Claude"><p>Settings</p></div>
+<div id="compB" class="tiptap ProseMirror" contenteditable="false" translate="no"><p>Settings</p></div>
+<div id="ctlB" class="tiptap" contenteditable="false"><p>Settings</p></div>
+<div id="roleC" role="textbox" contenteditable="false">Search</div>
+<div id="ctlC" role="group" contenteditable="false">Search</div>
+<div id="roleD" role="searchbox"><span>Help</span></div>
+<div id="ctlD" role="search"><span>Help</span></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>
+var jsErrors = 0; window.onerror = function () { jsErrors++; };
+var SENT = new Set(), SPY_ON = false, HITS = {};
+function hit(where, t) {
+  if (!SPY_ON) return;
+  var ok = false;
+  if (t && t.nodeType === 3) ok = SENT.has(t);
+  else if (t && t.contains) SENT.forEach(function (s) { if (!ok && t !== s && t.contains(s)) ok = true; });
+  if (ok) HITS[where] = (HITS[where] || 0) + 1;
+}
+[[Node.prototype, "nodeValue"], [CharacterData.prototype, "data"], [Node.prototype, "textContent"], [HTMLElement.prototype, "innerText"],
+ [Element.prototype, "innerHTML"], [Element.prototype, "outerHTML"], [Text.prototype, "wholeText"], [HTMLElement.prototype, "outerText"]].forEach(function (x) {
+  var d = Object.getOwnPropertyDescriptor(x[0], x[1]); if (!d || !d.get) return;
+  Object.defineProperty(x[0], x[1], { configurable: true, enumerable: d.enumerable, get: function () { hit(x[1], this); return d.get.call(this); }, set: d.set });
+});
+var RTS = Range.prototype.toString;
+Range.prototype.toString = function () { var self = this; try { SENT.forEach(function (s) { if (self.intersectsNode(s)) hit("range", s); }); } catch (e) {} return RTS.call(this); };
+function spyReport() { return JSON.stringify(HITS) === "{}" ? "0" : JSON.stringify(HITS); }
+["compA", "compB", "roleC", "roleD"].forEach(function (id) {
+  var w = document.createTreeWalker(document.getElementById(id), NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) SENT.add(t);
+});
+</script>
+<link rel="stylesheet" href="../extension/base.css">
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dictionary.js"></script>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true, cml_chatrtl: true });
+window.chrome = MOCK.chrome;
+SPY_ON = true;
+</script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function $(id) { return document.getElementById(id); }
+var BIDI = new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + String.fromCharCode(0x200E) + String.fromCharCode(0x200F) + "]", "g");
+function txt(id) { var was = SPY_ON; SPY_ON = false; var r = $(id).textContent.replace(BIDI, "").trim(); SPY_ON = was; return r; }
+(async function () {
+  await wait(600);
+  var APP = CMLConst.DOMAINS.filter(function (d) { return d.id === "app"; })[0].meta;
+  check("الجدول: مواضع الكتابة في محتوى المستخدم لكل نطاقٍ مشحون (لا فيما تبقيه الشركة)، وclaude.com على حاله",
+        // ★ (ر20-ب) وبوابة Anthropic القادمة تحمل مواضع الكتابة في محتوى مستخدمها من أول صفّها (PORTAL_USER ومعها EDITOR_USER)
+        "app:true support:true privacy:true legal:true academy:true docs:true code:true com:false portal:true",
+        CMLConst.DOMAINS.map(function (d) {
+          var P = CMLShared.blockProt(CMLShared.harvestSkip(d.meta, "full"), d.meta.chat !== false, CMLShared.harvestKeep(d.meta, "full"));
+          var parts = CMLShared.selParts(P.sels.join(", "));
+          return d.id + ":" + (parts.indexOf(".ProseMirror > *") >= 0 && parts.indexOf("[role=textbox]:not(.ProseMirror)") >= 0 && parts.indexOf("[role=searchbox]:not(.ProseMirror)") >= 0);
+        }).join(" "));
+  check("★ (ر24-ج2) صندوق الكتابة معطَّلٌ من أوّله وفيه مسودةٌ تطابق القاموس، وحقلٌ بدور textbox أو searchbox: على أصلها",
+        "Settings|Search|Help", [txt("compB"), txt("roleC"), txt("roleD")].join("|"));
+  check("★ (ر24-ج2، AD-005) والضوابط بالبناء نفسه خارج المحدِّد تُعرَّب (‎contenteditable=\"false\"‎ وحده لا يحمي)",
+        "الإعدادات|بحث|المساعدة", [txt("ctlB"), txt("ctlC"), txt("ctlD")].join("|"));
+  check("وجذرُ المحرِّر نفسه واجهة: سمته (aria-label) تُعرَّب كما كانت", "true", $("compA").getAttribute("aria-label") !== "Write your prompt to Claude");
+  // المحرِّر يصير معطَّلًا بسمةٍ وحدها وفيه المسودة
+  $("compA").setAttribute("contenteditable", "false");
+  await wait(900);
+  check("★ (ر24-ج2) محرِّرٌ صار ‎contenteditable=\"false\"‎ بسمةٍ وحدها وفيه مسودةٌ تطابق القاموس: تبقى على أصلها", "Settings", txt("compA"));
+  // ويعود قابلًا للتحرير، ثم يكتب المستخدم في المسودة (تغيّر نصّ العقدة) وهو معطَّل
+  $("compA").setAttribute("contenteditable", "true");
+  await wait(400);
+  $("compA").setAttribute("contenteditable", "false");
+  var was = SPY_ON; SPY_ON = false; $("compA").firstChild.firstChild.nodeValue = "New chat"; $("roleC").firstChild.nodeValue = "Help"; SPY_ON = was;
+  await wait(900);
+  check("★ (ر24-ج2) ونصٌّ يتغيّر في المحرِّر المعطَّل وفي حقل textbox (عقدةٌ قائمة): على أصله", "New chat|Help", txt("compA") + "|" + txt("roleC"));
+  check("★ (ر24-ج2، AD-005) ولا يقرأ المحرّك نصَّ المسودة بأي getter ولا بسلفٍ يحويه (الإقلاع والسمة والتغيّر)", "0", spyReport());
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "draft " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "DRAFT: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

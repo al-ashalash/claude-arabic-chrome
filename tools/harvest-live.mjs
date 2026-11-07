@@ -51,13 +51,7 @@ const REF = /[A-Za-z0-9_]+-[A-Za-z0-9_-]{6,}\.js(?![\w.])/g;
 // ★ والحرفية بعلامتي الاقتباس المائلة (`…`) بلا استيفاء ‎${}‎: 41 رسالةً في 17 حزمة كانت لا تُقرأ (أكثرها مطالبات بدء،
 // ومعها نصوص واجهة). ما فيه ‎${‎ لا يطابق أصلًا (نصُّه يُبنى وقت التشغيل فلا مفتاح ثابتًا له)
 const DM = /(?:"?defaultMessage"?):\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|`((?:[^`\\$]|\\[\s\S]|\$(?!\{))*)`)/g;
-// حرفية القالب ← صيغةٌ يفكّها unescapeLiteral: هروبُ ` و$ و' يُفكّ (JSON لا يعرفه) بتمريرةٍ ذرّية تبتلع كل هروبٍ بأكمله،
-// ووصلُ السطر (\ ثم سطر) يُحذف كما في اللغة، والأسطر الخام تصير \n (JSON يرفض محارف التحكم الخام)
-function templateToQuoted(t) {
-  return t.replace(/\r\n?/g, "\n")
-    .replace(/\\([\s\S])/g, (x, c) => (c === "`" || c === "$" || c === "'" ? c : c === "\n" ? "" : x))
-    .replace(/\n/g, "\\n").replace(/\t/g, "\\t");
-}
+// حرفية القالب يفكّها SHARED.unescapeTemplate (★ ر29-ي: نُقلت إلى cml-shared.js، فلماسح الإضافة وهذه الأداة مصدرٌ واحد)
 const CTRL_RE = new RegExp("[\\u0000-\\u001f\\u007f]");
 const seen = new Set([seed]), queue = [seed], msgs = new Set();
 let ok = 0, ghosts = 0, failed = 0;
@@ -73,7 +67,7 @@ function chew(tx, name) {
   let m;
   DM.lastIndex = 0;
   while ((m = DM.exec(tx))) {
-    const s0 = m[3] != null ? SHARED.unescapeLiteral(templateToQuoted(m[3]), false)
+    const s0 = m[3] != null ? SHARED.unescapeTemplate(m[3])
       : SHARED.unescapeLiteral(m[1] != null ? m[1] : m[2], m[1] == null);
     if (s0 === null) continue;
     // الحرفية المائلة متعددة الأسطر: فقراتها (بسطرٍ فارغ) عقدٌ مستقلة في الصفحة عادةً، والمحرّك يطابق نصَّ العقدة كما هو
@@ -87,7 +81,9 @@ function take(s0, name) {
   if (!s || s.length < 2) return;
   if (!/[A-Za-z]/.test(s)) return;
   if (CTRL_RE.test(s)) return;
-  if (/^[#\/]|^\d|https?:|www\.|[@\\^~`|=]/.test(s) || /^[a-z]+([A-Z][a-z]+)+$/.test(s) || (/_/.test(s) && !/ /.test(s))) return;
+  if (/^[#\/]|^\d|https?:|www\.|[@\\^`|=]/.test(s) || /^[a-z]+([A-Z][a-z]+)+$/.test(s) || (/_/.test(s) && !/ /.test(s))) return;
+  // ★ (ر29-ي، كماسح الإضافة) «~» لا يُسقط نثرًا (مسارٌ في البيت أو تقريبٌ داخل جملة)؛ وما لا بياض فيه (مسارٌ وحده أو رمز) يبقى مُسقَطًا
+  if (/~/.test(s) && !/\s/.test(s)) return;
   if (/\{[^{}]*,\s*(plural|select|selectordinal)\s*,/.test(s)) return;
   if (/<\/?[A-Za-z][^>]*>/.test(s)) return;
   if (/\{/.test(s) && !/^[^{}]*(\{[A-Za-z_$][\w$]*\}[^{}]*)+$/.test(s)) return;
@@ -111,11 +107,17 @@ console.log(`\nحُصد: ${ok} ملفًا (${ghosts} إشارة وهمية، ${f
 const d = JSON.parse(fs.readFileSync(path.join(DICTS, "ar.json"), "utf8"));
 const strings = d.strings || {};
 // الأنماط بترتيب القاموس (المحرّك يأخذ أول نمطٍ مطابق) مع en وar لعرض الناتج كما يراه المستخدم
-const pats = (d.patterns || []).map((p) => { try { return { re: new RegExp(p.re), ar: p.ar, en: p.en, src: p.re }; } catch { return null; } }).filter(Boolean);
+const pats = (d.patterns || []).map((p) => { try { return { re: new RegExp(p.re), ar: p.ar, en: p.en, src: p.re, t: /%T\d/.test(p.ar), fill: /%[MWPT]\d/.test(p.ar) }; } catch { return null; } }).filter(Boolean);
 // ★ (٢١ ربيع الآخر ١٤٤٨هـ، لا سقف طول) بفهرس المحرّك نفسه وشرطه (cml-shared patternIndex، PATTERN_CAPTURE_MAX): النصّ الطويل يُحكم
 // عليه كما يعرضه المحرّك، وبلا مسحٍ خطيٍّ لآلاف التعبيرات على كل نصٍّ طويل
+// ★ (ر12، ٥ جمادى الأولى ١٤٤٨هـ — PLAN-3.0.0 E2) ونمطٌ بـ%T لا يُعدّ مطابقًا إلا إن كان كلُّ التقاطٍ %T فيه مفتاحًا حرفيًّا في القاموس
+// (cml-shared fillPattern)، وإلا يُجرَّب التالي — كما يتخطّاه المحرّك؛ وكذلك %M/%W/%P بجداول المحرّك نفسها (patternRes)
+const TRES = SHARED.toolRes(strings);
 const pidx = SHARED.patternIndex(pats.map((p) => p.src));
-const firstPat = (s) => { const r = pidx.find(s, (i) => (pats[i].re.test(s) ? { i } : null), CONST.PATTERN_CAPTURE_MAX); return r ? pats[r.i] : null; };
+const firstPat = (s) => {
+  const r = pidx.find(s, (i) => (pats[i].fill ? (SHARED.patternApply(pats[i].re, pats[i].ar, s, TRES) ? { i } : null) : (pats[i].re.test(s) ? { i } : null)), CONST.PATTERN_CAPTURE_MAX);
+  return r ? pats[r.i] : null;
+};
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const plurRes = [];
 for (const [en, spec] of Object.entries(d.plurals || {}))
@@ -127,6 +129,10 @@ function render(s) {
   if (!p) return null;
   const m = s.match(p.re);
   if (/%[MWPC]\d/.test(p.ar)) return null;                    // قواعد الشهور والأيام والأماكن: صحيحةٌ حتمًا
+  // ★ (ر12) ونمطٌ بـ%T: الناتج بعربية مفاتيحه، والقيم الظاهرة خامًا وحدها (rawCaps)؛ وbare للفحص اللاحق بلا موضع المفتاح (لاتينيُّ
+  // عربيةٍ مراجَعة — اسم منتجٍ — ليس خلطًا)
+  if (p.t) return { out: SHARED.fillPattern(p.ar, m, TRES), caps: SHARED.rawCaps(p.ar, m), en: p.en, ar: p.ar,
+                    bare: SHARED.fillPattern(p.ar, m, Object.assign({}, TRES, { T: (x) => (TRES.T(x) === undefined ? undefined : "") })) };
   return { out: p.ar.replace(/\$(\d)/g, (x, g) => (m[+g] !== undefined ? m[+g] : "")), caps: m.slice(1).filter((c) => c !== undefined), en: p.en, ar: p.ar };
 }
 const VAR = /\{[A-Za-z_$][\w$]*\}/;
@@ -152,7 +158,8 @@ function mixedVarOf(s) {
   if (!r) return byPlural(sample) ? null : { why: "template-only", out: null };
   const allowed = new Set([SAMPLE_WORD, ...(r.ar.match(/[A-Za-z]{2,}/g) || [])]);
   // القيم النموذجية تُنزع قبل العدّ: «{latency}ms» تصير «Zeddicusms» فلا يُحسب «ms» (وهو في عربية النمط) كلمةً دخيلة
-  const extra = (r.out.split(SAMPLE_WORD).join(" ").match(/[A-Za-z]{2,}/g) || []).filter((w) => !allowed.has(w));
+  // (ر12) ونمطٌ بـ%T يُعدّ على ناتجه بلا عربية مفاتيحه (bare)
+  const extra = ((r.bare !== undefined ? r.bare : r.out).split(SAMPLE_WORD).join(" ").match(/[A-Za-z]{2,}/g) || []).filter((w) => !allowed.has(w));
   return extra.length ? { why: "mixed", out: r.out, pattern: r.en } : null;
 }
 const mixed = [];

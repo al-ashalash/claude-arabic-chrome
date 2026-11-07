@@ -664,6 +664,20 @@ async function codexCases() {
   check("★ كودكس٧: ويبقى محليًّا كما هو، والمحلي نال البعيد", "طويل/بعيد", loc[LONG] + "/" + loc.Remote);
   check("★ كودكس٧: البصمة المحفوظة بصمةُ المرفوع المعقَّم", "true",
         c.dev.localStore[K.SYNC_LASTHASH] === CMLSync.hashPayload(CMLSync.unpack(cp(c.cloud.syncStore)).payload));
+  // ★ (ر29-ي) ولا حدَّ طولٍ للحفظ: تصحيحٌ أطول من 1,200 حرف وقاعدةٌ ذكية أطول من 1,000 (يحفظهما العامل بلا حدّ) يبقيان محليين بعد جولة دمجٍ ولا يُرفعان،
+  // والقصير بجوارهما يُرفع — حدُّ المزامنة (TEXT_MAX) لما يُرفع وحده
+  var c2 = freshPair(), L1200 = "Zzq " + new Array(240).join("long ") + "end";
+  var LR = CMLShared.makePattern("Zzq {count} long rule " + new Array(175).join("words ") + "end", "قاعدةٌ طويلة {count} " + new Array(600).join("ك"));
+  seedCloud(c2.cloud, { ar: { Remote: "بعيد" } });
+  var ov2 = { ar: { Short: "قصير" } }; ov2.ar[L1200] = "طويلٌ جدًّا";
+  var ed2 = CMLShared.applyTermEdits(ov2, [], "ar", [{ op: "rule", en: LR.en, ar: "قاعدةٌ طويلة {count} " + new Array(600).join("ك") }], {});
+  seedDev(c2.dev, ed2.overrides, kv(K.USER_PATTERNS, ed2.patterns));
+  c2.dev.localStore[K.SYNC_PENDING] = tNow - 5000;
+  var rc2 = await CMLSync.handleLocalChange(hookedEnv(c2.dev, c2.cloud, {}), null);
+  var co2 = cloudOv(c2.cloud) || {}, cu2 = CMLSync.unpack(cp(c2.cloud.syncStore)), loc2 = (c2.dev.localStore[K.OVERRIDES] || {}).ar || {};
+  check("★ (ر29-ي) تصحيحٌ أطول من 1,200 حرف وقاعدةٌ أطول من 1,000 يبقيان محليين بعد الدمج ولا يُرفعان، والقصير يُرفع", "pushed/false/قصير/0/طويلٌ جدًّا/1/بعيد",
+        (rc2 && rc2.done) + "/" + has(co2, L1200) + "/" + co2.Short + "/" + ((cu2 && cu2.payload.patterns) || []).length + "/" + loc2[L1200] + "/" +
+        (c2.dev.localStore[K.USER_PATTERNS] || []).filter(function (p) { return p && p.re === LR.re; }).length + "/" + loc2.Remote);
 
   // --- ٦) محوٌ محلي مباشر أثناء قراءة السحابة: الجولة تُلغى ولا تكتب ---
   var d = freshPair();

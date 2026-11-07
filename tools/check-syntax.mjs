@@ -23,4 +23,9 @@ for (const dir of DIRS) {
   }
 }
 console.log(failed ? `✗ أخفق ${failed} من ${checked}` : `✓ الصياغة سليمة في ${checked} ملفًا`);
-process.exit(failed ? 1 : 0);
+// ★ (ر24-د2، مراجعة ر24-د F-03) وبوابة الجلب في ملفات الإضافة (fetch-gate.mjs): كل fetch بـcredentials:"omit" أو من الحزمة (chrome.runtime.getURL)
+const { scanDir } = await import("./fetch-gate.mjs");
+const fetchBad = scanDir(EXT);
+for (const b of fetchBad) console.error(`✗ ${b.file}:${b.line} ${b.why}`);
+console.log(fetchBad.length ? `✗ بوابة الجلب: ${fetchBad.length} مخالفة` : "✓ بوابة الجلب: كل fetch في الإضافة بلا اعتماد أو من الحزمة");
+process.exit(failed || fetchBad.length ? 1 : 0);

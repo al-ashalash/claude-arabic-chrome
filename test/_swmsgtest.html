@@ -12,6 +12,8 @@
    ٦) الورقة المضمَّنة (<style> من المستند — وثائق Claude Code): بلا جلب، وبصمتها ببصمة نصّها، وحدودها كالروابط.
    ٧) نسخة الخط العربي (DESIGN-fonts §٤.٢، §٥.٤): العامل كاتبها الوحيد — عند التثبيت، وتغيّر الاختيار، وحذفها، وطلب
       الإصلاح من مرسلٍ مأذون — بالتسلسل، وفي ميزانية صنف cache، وعند امتلاء التخزين لا يُمسّ صنف data.
+   ٨) (ر24-و) جزر الورقة النقطية للنطاق: اسمها من مدخله في المانيفست الحقيقي، والقراءة الناجحة تُحفظ والفاشلة تُعاد، والجزيرة داخل @ ترفض الجزر،
+      وبصمتها في بصمة الورقة الحيّة.
   العقد: document.title = "swmsg N/N".
 -->
 <style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
@@ -84,6 +86,48 @@ var CONTENT_SENDER = { id: EXT_ID, url: "https://claude.ai/new", origin: "https:
   for (var i = 0; i < CMLConst.RTL_LIVE_SHEETS_MAX + 1; i++) many.push({ url: "https://claude.ai/s" + i + ".css", media: "" });
   var r6 = await send({ type: "rtlcss", fp: "x", sheets: many }, CONTENT_SENDER);
   check("★ عددٌ فوق السقف يُرفض كلُّه (لا بناءَ جزئيًّا)", "null/0", String(r6) + "/" + FETCHES.length);
+  // ★ (ر16-ج، ٦ جمادى الأولى ١٤٤٨هـ) سقف أوراق الجولة لكل نطاق (meta.liveSheetsMax): claude.com وحده يعلن سقفه (48، مقيسًا من قوالبه —
+  // صفحاتٌ بـ16 ورقة كان يرفضها السقف العام 12 فتبقى بلا ورقةٍ حيّة)، وكل نطاقٍ حيٍّ آخر على السقف العام 12 كما كان: 12 تُقبل و13 تُرفض بلا جلب.
+  // والنطاق قادمٌ في الحزمة، فيُشغَّل هنا مؤقّتًا بتبديل صفّه (C.upcoming يقرؤه حيًّا) ثم يُعاد
+  var realBuildC = CMLRtl.buildLiveSheet, realFetchC = window.fetch, CB = null, CF = [];
+  CMLRtl.buildLiveSheet = function (recs) { CB = recs.length; return { css: "x{}", stats: { flipped: 1 }, rules: 1 }; };
+  window.fetch = function (u) { CF.push(String(u)); return Promise.resolve(new Response("a{margin-left:1px}", { status: 200 })); };
+  function sheetsN(base, n, tag) { var a = []; for (var j = 0; j < n; j++) a.push({ url: base + tag + j + ".css", media: "" }); return a; }
+  // (مراجعة ر16-ج) extra: حقولٌ يضيفها الطلب نفسه — سقفٌ يدّعيه المرسِل (liveSheetsMax في الرسالة) لا يرفع سقف النطاق: السقف من جدول النطاقات وحده
+  async function capTry(sender, base, n, tag, extra) {
+    CB = null; CF = [];
+    var r = await send(Object.assign({ type: "rtlcss", fp: "cap-" + tag + n, sheets: sheetsN(base, n, tag) }, extra || {}), sender);
+    return (r && r.css ? "built" : String(r)) + ":" + CF.length + ":" + CB;
+  }
+  var COM_ROW = CMLConst.domain("com"), COM_ST = COM_ROW.status;
+  COM_ROW.status = { full: true };
+  var COM_SALES = { id: EXT_ID, url: "https://claude.com/solutions/sales", origin: "https://claude.com", tab: { id: 21 }, frameId: 0 };
+  var CM = "https://claude.com/_next/static/chunks/", comCap = (COM_ROW.meta || {}).liveSheetsMax;
+  var cap16 = await capTry(COM_SALES, CM, 16, "s"), capAt = await capTry(COM_SALES, CM, comCap, "t"), capOver = await capTry(COM_SALES, CM, comCap + 1, "u");
+  var capClaim = await capTry(COM_SALES, CM, comCap + 1, "v", { liveSheetsMax: 99 });
+  COM_ROW.status = COM_ST;
+  delete MOCK.localStore[CMLConst.key(CMLConst.K.RTL_LIVE, "com")];
+  check("★ (ر16-ج) claude.com مشغَّلًا بسقفه (48): صفحةٌ بـ16 ورقة تُقبل وتُبنى بأوراقها كلها، والسقف نفسه يُقبل، وما فوقه يُرفض كلُّه بلا جلب ولو ادّعى الطلب سقفًا أعلى",
+    "48/built:16:16/built:48:48/null:0:null/null:0:null", comCap + "/" + cap16 + "/" + capAt + "/" + capOver + "/" + capClaim);
+  // ونطاقاتٌ حيّة أخرى على السقف العام: مرسِلٌ من كلٍّ منها، وقائمتها مغلقة (نطاقٌ حيٌّ جديد يُضاف هنا)
+  var LIVE_SENDERS = { app: "https://claude.ai/new", legal: "https://www.anthropic.com/legal/privacy", academy: "https://academy.claude.com/courses",
+    docs: "https://platform.claude.com/docs/en/intro", code: "https://code.claude.com/docs/en/overview" };
+  var liveIds = CMLConst.DOMAINS.filter(function (d) { return d.meta && d.meta.live && d.id !== "com"; }).map(function (d) { return d.id; });
+  var glob = [];
+  for (var li = 0; li < liveIds.length; li++) {
+    var lid = liveIds[li], lu = LIVE_SENDERS[lid];
+    if (!lu) { glob.push(lid + "?"); continue; }
+    var lsnd = { id: EXT_ID, url: lu, origin: new URL(lu).origin, tab: { id: 30 + li }, frameId: 0 };
+    var lbase = new URL(lu).origin + "/_next/static/css/";
+    glob.push(lid + "=" + (await capTry(lsnd, lbase, 12, "g")) + "," + (await capTry(lsnd, lbase, 13, "h")) + "," +
+      (await capTry(lsnd, lbase, 13, "k", { liveSheetsMax: 48 })));
+    delete MOCK.localStore[CMLConst.key(CMLConst.K.RTL_LIVE, lid)];
+  }
+  CMLRtl.buildLiveSheet = realBuildC; window.fetch = realFetchC;
+  check("★ (ر16-ج) وكل نطاقٍ حيٍّ آخر على السقف العام 12 كما كان (لا يعلن سقفًا): 12 ورقة تُقبل و13 تُرفض كلُّها بلا جلب، ولو حمل الطلب سقف claude.com",
+    "12/com/" + liveIds.map(function (id) { return id + "=built:12:12,null:0:null,null:0:null"; }).join(";"),
+    CMLConst.RTL_LIVE_SHEETS_MAX + "/" + CMLConst.DOMAINS.filter(function (d) { return d.meta && d.meta.liveSheetsMax !== undefined; }).map(function (d) { return d.id; }).join(",") +
+    "/" + glob.join(";"));
   // ★ (وثائق Claude Code) الورقة المضمَّنة (<style> من المستند): نصُّها في الطلب فلا جلب لها، وتدخل البناء بترتيبها
   // بين الروابط، وبصمةُ العامل تحمل بصمة نصّها — ومضمَّنةٌ فيها @import أو فوق السقف أو ليست نصًّا تُسقط الطلب كلَّه
   var realBuild0 = CMLRtl.buildLiveSheet, realFetch0 = window.fetch, BUILT = null, FETCH2 = [];
@@ -167,10 +211,12 @@ var CONTENT_SENDER = { id: EXT_ID, url: "https://claude.ai/new", origin: "https:
     { op: "set", k: "x".repeat(CMLConst.TEXT_MAX + 1), v: "طويل" },
     { op: "rule", en: "Zzq delete {count} chats?", ar: "احذف {count} محادثة؟" }] }, OPTIONS_SENDER);
   var rp = (e4 && e4.report) || {};
-  check("★ الحذف المشروط لا يمسّ ما تغيّر، والطويلُ يُتخطّى، والقاعدة تُبنى في العامل",
-        "1/2/1/true/false/^Zzq delete (.+?) chats\\?$",
+  // ★ (ر29-ي، توجيه المالك) والطويلُ يُحفظ في العامل (كان يُتخطّى عند TEXT_MAX فيبقى نصُّ الموقع الطويل بالإنجليزية)، والمزامنة لا ترفعه
+  check("★ الحذف المشروط لا يمسّ ما تغيّر، والطويلُ يُحفظ بلا حدّ طول (ر29-ي)، والقاعدة تُبنى في العامل",
+        "1/1/1/true/false/^Zzq delete (.+?) chats\\?$/طويل",
         rp.del + "/" + rp.skipped + "/" + rp.rule + "/" + ("Keep me" in MOCK.localStore[OVD].ar) + "/" +
-        ("Old key" in MOCK.localStore[OVD].ar) + "/" + ((MOCK.localStore[PTD] || [])[0] || {}).re);
+        ("Old key" in MOCK.localStore[OVD].ar) + "/" + ((MOCK.localStore[PTD] || [])[0] || {}).re + "/" +
+        MOCK.localStore[OVD].ar["x".repeat(CMLConst.TEXT_MAX + 1)]);
   MOCK.localStore[CMLConst.K.SYNC_GEN] = 5;
   var g1 = await send({ type: "terms-edit", d: "docs", lang: "ar", gen: 4, ops: [{ op: "set", k: "Stale key", v: "قديم" }] }, OPTIONS_SENDER);
   var g2 = await send({ type: "terms-edit", d: "docs", lang: "ar", gen: 5, ops: [{ op: "set", k: "Fresh key", v: "طازج" }] }, OPTIONS_SENDER);
@@ -244,6 +290,23 @@ var CONTENT_SENDER = { id: EXT_ID, url: "https://claude.ai/new", origin: "https:
   var nf1 = FFETCH.length;
   var fe2 = await send({ type: "font-ensure" }, OPTIONS_SENDER);
   check("ومن صفحة الإعدادات («إعادة المحاولة») يُقبل، ولا يُعاد جلبُ نسخةٍ سليمة", '{"ok":true}/0', JSON.stringify(fe2) + "/" + (FFETCH.length - nf1));
+  // ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) تبويبٌ في النطاق القادم (claude.com حتى CM-د): مطابقته في المانيفست ومحرّكه خاملٌ لا يرسل شيئًا، والعامل حارسٌ ثانٍ
+  // خلفه — يرفض طلب إصلاح الخط والقطعة والورقة الحيّة فورًا (ردٌّ null متزامن، لا جلب)، كما يرفضها من مرسلٍ غير مأذون؛ وطلبا القطعة والورقة من نطاقٍ
+  // مشحون يُقبلان (ردٌّ لاحق) — فالرفض للنطاق القادم وحده
+  function sendSync(msg, sender) {
+    var out = { async: false, v: "(بلا ردّ)" };
+    LISTENERS.message.forEach(function (fn) { if (fn(msg, sender, function (v) { out.v = v; }) === true) out.async = true; });
+    return out.async + ":" + String(out.v);
+  }
+  var COM_SENDER = { id: EXT_ID, url: "https://claude.com/pricing", origin: "https://claude.com", tab: { id: 12 }, frameId: 0 };
+  var nfc = FFETCH.length;
+  var comRes = [sendSync({ type: "font-ensure" }, COM_SENDER), sendSync({ type: "bodies", path: "/pricing", lang: "ar" }, COM_SENDER),
+    sendSync({ type: "rtlcss", fp: "x", sheets: [{ url: "https://claude.com/_next/static/chunks/a.css", media: "" }] }, COM_SENDER)];
+  var docsAcc = sendSync({ type: "bodies", path: "/docs/en/intro", lang: "ar" }, { id: EXT_ID, url: "https://platform.claude.com/docs/en/intro",
+    origin: "https://platform.claude.com", tab: { id: 13 }, frameId: 0 }).split(":")[0];
+  await settle();
+  check("★ (ر15) العامل يرفض تبويب النطاق القادم (com) فورًا: لا إصلاح خطّ ولا قطعة ولا ورقة حيّة ولا جلب، ونطاقٌ مشحون يُقبل طلبُه",
+    "false:null/false:null/false:null/0/true", comRes.join("/") + "/" + (FFETCH.length - nfc) + "/" + docsAcc);
   // ★ (المراجعة العدائية S6-B) نسخةٌ بالطول الصحيح وبايتاتٍ تالفة (المعرّف والبصمة صحيحان): onChanged لا يعيدها، وfont-ensure
   // (المحرّك رفضها) يتحقق من بصمة بايتاتها فيعيد الجلب — وكانت تبقى تالفةً أبدًا
   var goodB64 = fdata().b64;
@@ -321,6 +384,47 @@ var CONTENT_SENDER = { id: EXT_ID, url: "https://claude.ai/new", origin: "https:
   MOCK.chrome.storage.local.set = realSet;
   delete MOCK.localStore.cml_overrides;
   window.fetch = realFetch;
+  // ★ (ر24-و — ثغرة اختبارٍ من مراجعة ر24-ب4) جزر الورقة النقطية في العامل (pointIslands): اسمُ الورقة من مدخل النطاق في المانيفست الحقيقي،
+  // والقراءة الناجحة تُحفظ في الذاكرة فلا تُعاد، والفاشلة لا تُحفظ فتُعاد في الطلب التالي، وورقةٌ فيها جزيرةٌ داخل @ تُرفض جزرها كلها؛ والجزر
+  // تصل البناء (buildLiveSheet) وبصمتُها في بصمة الورقة الحيّة فيُعاد البناء حين تتغيّر. وقبل هذا لم يكن في الاختبار getManifest فلا تُقرأ ورقةٌ أبدًا
+  var MANI = await REAL_FETCH("../extension/manifest.json").then(function (r) { return r.json(); });
+  MOCK.chrome.runtime.getManifest = function () { return MANI; };
+  var realBuildP = CMLRtl.buildLiveSheet, PISL = [], PFETCH = [], pointFail = 1;
+  CMLRtl.buildLiveSheet = function (recs, a, o) { PISL.push(JSON.stringify(o && o.islands !== undefined ? o.islands : null)); return { css: "p{}", stats: { flipped: 1 }, rules: 1 }; };
+  var ISL_OK = 'html[data-cml="on"] .zq-isl, html[data-cml="on"] .zq-isl2 > pre { direction: ltr; --cml-island: ltr; }\nhtml[data-cml="on"] .zq-plain { direction: ltr; }\n';
+  var ISL_CTX = '@media (min-width: 1px) { html[data-cml="on"] .zq-m { direction: ltr; --cml-island: ltr; } }\nhtml[data-cml="on"] .zq-ok { direction: ltr; --cml-island: ltr; }\n';
+  window.fetch = function (u) {
+    var s5 = String(u), m5 = /^chrome-extension:\/\/[^/]+\/([a-z]+-point\.css)$/.exec(s5);
+    if (m5) {
+      PFETCH.push(m5[1]);
+      if (m5[1] === "docs-point.css" && pointFail > 0) { pointFail--; return Promise.reject(new Error("قراءةٌ عابرة")); }
+      return Promise.resolve(new Response(m5[1] === "legal-point.css" ? ISL_CTX : ISL_OK, { status: 200 }));
+    }
+    return Promise.resolve(new Response("a{margin-left:1px}", { status: 200 }));
+  };
+  var DOCS_LVP = CMLConst.key(CMLConst.K.RTL_LIVE, "docs");
+  delete MOCK.localStore[DOCS_LVP];
+  var DREQ = { type: "rtlcss", fp: "x", sheets: [{ url: "https://platform.claude.com/_next/static/css/p.css", media: "" }] };
+  var q1 = await send(DREQ, DOCS_SENDER), fq1 = (MOCK.localStore[DOCS_LVP] || {}).fp, nf1 = PFETCH.length;
+  var q2 = await send(DREQ, DOCS_SENDER), fq2 = (MOCK.localStore[DOCS_LVP] || {}).fp, nf2 = PFETCH.length;
+  var q3 = await send(DREQ, DOCS_SENDER), nf3 = PFETCH.length;
+  check("★ (ر24-و) قراءة جزر الورقة النقطية: الفاشلة تُبنى بلا جزرٍ ولا تُحفظ فتُقرأ في الطلب التالي، والناجحة تصل البناء وتُحفظ فلا تُقرأ ثالثة",
+    'docs-point.css,docs-point.css/1,2,2/[]|["html[data-cml=\\"on\\"] .zq-isl","html[data-cml=\\"on\\"] .zq-isl2 > pre"]/false,false,true',
+    PFETCH.join(",") + "/" + [nf1, nf2, nf3].join(",") + "/" + PISL.join("|") + "/" + [q1 && q1.cached, q2 && q2.cached, q3 && q3.cached].join(","));
+  check("★ (ر24-و) وبصمة الجزر في بصمة الورقة الحيّة: ورقةٌ بُنيت بلا جزرٍ لا تُعاد من الذاكرة بعد أن قُرئت الجزر", "true/true",
+    (!!fq1 && !!fq2 && fq1 !== fq2) + "/" + (q2 && q2.css === "p{}"));
+  var CODE_SENDER2 = { id: EXT_ID, url: "https://code.claude.com/docs/en/overview", origin: "https://code.claude.com", tab: { id: 8 }, frameId: 0 };
+  var LEGAL_SENDER = { id: EXT_ID, url: "https://www.anthropic.com/legal/aup", origin: "https://www.anthropic.com", tab: { id: 9 }, frameId: 0 };
+  var CODE_LVP = CMLConst.key(CMLConst.K.RTL_LIVE, "code"), LEGAL_LVP = CMLConst.key(CMLConst.K.RTL_LIVE, "legal");
+  delete MOCK.localStore[CODE_LVP]; delete MOCK.localStore[LEGAL_LVP];
+  PFETCH = []; PISL = [];
+  await send({ type: "rtlcss", fp: "x", sheets: [{ url: "https://code.claude.com/docs/_next/static/chunks/p.css", media: "" }] }, CODE_SENDER2);
+  await send({ type: "rtlcss", fp: "x", sheets: [{ url: "https://www.anthropic.com/_next/static/css/l.css", media: "" }] }, LEGAL_SENDER);
+  check("★ (ر24-و) الورقة النقطية من مدخل النطاق نفسه في المانيفست (لا ورقة مدخلٍ آخر)، وورقةٌ فيها جزيرةٌ داخل @ تُرفض جزرها كلها",
+    'code-point.css,legal-point.css/["html[data-cml=\\"on\\"] .zq-isl","html[data-cml=\\"on\\"] .zq-isl2 > pre"]|[]',
+    PFETCH.join(",") + "/" + PISL.join("|"));
+  CMLRtl.buildLiveSheet = realBuildP; window.fetch = realFetch; delete MOCK.chrome.runtime.getManifest;
+  delete MOCK.localStore[DOCS_LVP]; delete MOCK.localStore[CODE_LVP]; delete MOCK.localStore[LEGAL_LVP];
   check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
   document.title = "swmsg " + pass + "/" + total;
   var h = document.createElement("p");

@@ -64,11 +64,34 @@ var cases = [
   { name: "مبلغ حرفي «$20» في الترجمة يُقرأ مجموعةً فيُفسد الناتج", en: "Get {credits} credits for $20", ar: "احصل على {credits} رصيدًا مقابل $20", accept: false },
   { name: "«$» وحدها بلا رقم لا تضرّ", en: "Balance {amount} in USD", ar: "الرصيد {amount} بالدولار $",
     accept: true, sample: "Balance 30 in USD", expect: "الرصيد 30 بالدولار $" },
+
+  // --- (ر12، ٥ جمادى الأولى ١٤٤٨هـ — PLAN-3.0.0 E2) opt.t: متغيّراتٌ التقاطها مفتاحٌ حرفيٌّ في قاموس الموقع (%T) ---
+  // قالبٌ كلُّ متغيّراته %T لا يُعدّ عامًّا لهذا السبب وحده: يُقبل محفوفًا بمتغيّرين وبثابتٍ قصير، وناتجه عربيٌّ كلّه؛ وما ليس مفتاحًا لا يطابق
+  { name: "(ر12) كلُّه %T محفوفٌ بمتغيّرين — يُقبل", en: "{first} and {second}", ar: "{first} و{second}", opt: { t: ["first", "second"] },
+    accept: true, sample: "Settings and Projects", expect: "الإعدادات والمشاريع" },
+  { name: "(ر12) كلُّه %T والتقاطٌ ليس مفتاحًا — لا يطابق (يبقى إنجليزيًّا كلّه)", en: "{first} and {second}", ar: "{first} و{second}", opt: { t: ["first", "second"] },
+    accept: true, sample: "Settings and Zeddicus", expect: null },
+  { name: "(ر12) كلُّه %T بثابتٍ قصير — يُقبل", en: "Next: {title}", ar: "التالي: {title}", opt: { t: ["title"] },
+    accept: true, sample: "Next:  Settings ", expect: "التالي: الإعدادات" },
+  { name: "(ر12) القالب نفسه بلا %T — الحارس كما كان (ثابتٌ قصير)", en: "Next: {title}", ar: "التالي: {title}", accept: false },
+  { name: "(ر12) %T مع متغيّرٍ حرّ في الطرفين — الحرّاس كما كانت", en: "{title} by {name}", ar: "{title} من {name}", opt: { t: ["title"] }, accept: false },
+  { name: "(ر12) %T مع متغيّرٍ حرّ بثابتٍ كافٍ — يُقبل، و‎$n‎ خامٌ و%T معرَّب", en: "Moved {page} to folder {folder}", ar: "نُقل {page} إلى المجلد {folder}",
+    opt: { t: ["page"] }, accept: true, sample: "Moved Settings to folder Docs", expect: "نُقل الإعدادات إلى المجلد Docs" },
+  { name: "(ر12) opt.t باسمٍ ليس في القالب — يُرفض", en: "Next: {title}", ar: "التالي: {title}", opt: { t: ["page"] }, accept: false },
+  { name: "(ر12) كلُّه %T بلا ثابتٍ أصلًا — يُرفض", en: "{title}", ar: "{title}", opt: { t: ["title"] }, accept: false },
+  // (مراجعة ر12) اسمٌ في opt.t غائبٌ من العربية: لا %T له فلا يحدّه القاموس — كان يُقبل بالحرّاس المخفَّفة فيبتلع كل «Next: …» ويمحو ما بعده
+  { name: "(مراجعة ر12) اسمٌ في opt.t غائبٌ من العربية — يُرفض (لا %T فلا يحدّه القاموس)", en: "Next: {title}", ar: "التالي", opt: { t: ["title"] }, accept: false },
+  { name: "(مراجعة ر12) والمحدود كذلك: اسمٌ في opt.t غائبٌ من العربية — يُرفض", en: "Next: {title}", ar: "التالي", opt: { t: ["title"] }, bounded: true, accept: false },
+  { name: "(ر12) المحدود (الشحن الجماعي): %T يلتقط (.+?) لا أربعة رموز", en: "Next: {title}", ar: "التالي: {title}", opt: { t: ["title"] }, bounded: true,
+    accept: true, sample: "Next: Zq course title of five words", expect: "التالي: دورةٌ تجريبية" },
 ];
+// (ر12) مفاتيح قاموسٍ تجريبي لـ%T، وتعبئة القالب بالمُحلِّلات نفسها التي يستعملها المحرّك والأدوات (cml-shared)
+var TEST_LIT = { "Settings": "الإعدادات", "Projects": "المشاريع", "Zq course title of five words": "دورةٌ تجريبية" };
+var RES = CMLShared.patternRes(function () { return [TEST_LIT]; });
 
 var tb = document.querySelector("#tbl tbody"), pass = 0;
 cases.forEach(function (c) {
-  var p = makePattern(c.en, c.ar);
+  var p = c.bounded ? CMLShared.makePatternBounded(c.en, c.ar, c.opt) : makePattern(c.en, c.ar, c.opt);
   var ok, got;
   if (!c.accept) {
     ok = (p === null);
@@ -76,17 +99,19 @@ cases.forEach(function (c) {
   } else if (!p) {
     ok = false; got = "رُفضت خطأً ✗";
   } else {
-    var m = c.sample.match(new RegExp(p.re));
+    var m = c.sample.trim().match(new RegExp(p.re));
     if (!m) { ok = false; got = "النمط لا يطابق العيّنة ✗"; }
     else {
-      var out = p.ar.replace(/\$(\d)/g, function (t, g) { return m[+g] !== undefined ? m[+g] : ""; });
-      ok = out === c.expect;
-      got = out;
+      // تعبئة القالب كالمحرّك (cml-shared fillPattern): ‎$n‎ خامًا، و%T بعربية المفتاح أو null إن لم يكن مفتاحًا
+      var out = CMLShared.fillPattern(p.ar, m, RES);
+      ok = out === c.expect && (!c.opt || /%T\d/.test(p.ar));
+      got = out === null ? "لا يطابق (null)" : out;
     }
   }
+  if (!ok && got.indexOf("✗") < 0) got += " ✗"; // (ر12) الصفّ المخفق يحمل علامته فيُرى في نصّ الصفحة عند الإخفاق (run-tests-cdp)
   if (ok) pass++;
   var tr = document.createElement("tr");
-  [c.name, c.en, c.ar, c.accept ? (c.expect || "تُقبل") : "تُرفض", got].forEach(function (v, i) {
+  [c.name, c.en, c.ar, c.accept ? (c.expect === null ? "تُقبل ولا تطابق العيّنة" : c.expect || "تُقبل") : "تُرفض", got].forEach(function (v, i) {
     var td = document.createElement("td");
     if (i === 4) { td.className = ok ? "ok" : "bad"; }
     td.textContent = v;

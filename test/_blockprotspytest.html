@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>blockprotspy test</title>
+<!--
+  ★ (ر24-أ، ٨ جمادى الأولى ١٤٤٨هـ — المراجعة المستقلة لمراجعة Codex CX-001 وملحقها AD-005) جاسوسٌ عامّ على القراءة: كل getter يقرأ نصًّا
+  (nodeValue وdata وtextContent وinnerText وinnerHTML وouterHTML وwholeText وouterText وRange.toString) يُعدّ إن كان المقروء عقدةَ علامةٍ
+  محمية أو عنصرًا يحويها — فقراءةُ سلفٍ بـtextContent تُرى أيضًا (جاسوس العقدة الواحدة في _blockprottest لا يراها). وحالاتٌ متقابلة لم تكن
+  في الاختبارات: محميٌّ داخل ذرّة شيفرة، ومحميٌّ متداخلٌ في سطريٍّ غير محمي، وحدٌّ محميٌّ (div قابلٌ للتحرير) في li بجوار نصٍّ ليس في
+  القاموس (fragmentInBody كان يقرأ نصّه)، والكتابة في المحميّ (طفرة نص)، وإدراجُ غلافٍ غير محميّ فيه محميّ في كتلةٍ معرَّبة، وإدراجُ
+  محميٍّ في تتابعٍ عرّبه قاموس الواجهة (مسار العقدة الوحيدة). العقد: document.title = "blockprotspy N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right;word-break:break-word}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<div id="main" class="zq-body">
+  <p id="pA">Read the <b>guide</b> before <span data-zq-skip><i>Zqsentinel A</i></span> you start.</p>
+  <p id="cA">Read the <b>guide</b> before <span data-zq-other><i>Control A</i></span> you start.</p>
+  <ul><li id="pB">Settings<div contenteditable="true">Zqsentinel B</div></li></ul>
+  <ul><li id="cB">Settings<div>Control B</div></li></ul>
+  <p id="pC">Use <code>run <span contenteditable="">Zqsentinel C</span></code> now.</p>
+  <p id="pD">See <a href="#"><span data-zq-skip>Zqsentinel D</span> docs</a> here.</p>
+  <p id="cD">See <a href="#"><span data-zq-other>Control D</span> docs</a> here.</p>
+  <p id="pE">Type <span contenteditable="plaintext-only">Zqsentinel E</span> below.</p>
+  <p id="cF">Edit <span contenteditable="FALSE">Control F</span> fine.</p>
+  <ul><li id="pJ">Unknownword here<div contenteditable="true">Zqsentinel J</div></li></ul>
+  <p id="pH">Settings <span id="hS"></span></p>
+  <p id="pI">Plain <b>bold</b> words <span>tail</span> end.</p>
+  <div contenteditable="true"><p id="pK">Zqsentinel K typed note</p></div>
+</div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };
+var SENT = new Set(), SPY_ON = false, HITS = {}, STACKS = {};
+function hit(where, t) {
+  if (!SPY_ON) return;
+  var ok = false;
+  if (t && t.nodeType === 3) ok = SENT.has(t);
+  else if (t && t.contains) SENT.forEach(function (s) { if (!ok && t !== s && t.contains(s)) ok = true; });
+  if (!ok) return;
+  HITS[where] = (HITS[where] || 0) + 1;
+  var st = String(new Error().stack).split("\n").slice(2, 5).map(function (l) { return l.trim().replace(/\(.*\//, "(").replace(/^at /, ""); }).join(" < ");
+  STACKS[st] = (STACKS[st] || 0) + 1;
+}
+[[Node.prototype, "nodeValue"], [CharacterData.prototype, "data"], [Node.prototype, "textContent"], [HTMLElement.prototype, "innerText"],
+ [Element.prototype, "innerHTML"], [Element.prototype, "outerHTML"], [Text.prototype, "wholeText"], [HTMLElement.prototype, "outerText"]].forEach(function (x) {
+  var d = Object.getOwnPropertyDescriptor(x[0], x[1]); if (!d || !d.get) return;
+  Object.defineProperty(x[0], x[1], { configurable: true, enumerable: d.enumerable, get: function () { hit(x[1], this); return d.get.call(this); }, set: d.set });
+});
+var RTS = Range.prototype.toString;
+Range.prototype.toString = function () { var self = this; try { SENT.forEach(function (s) { if (self.intersectsNode(s)) hit("range", s); }); } catch (e) {} return RTS.call(this); };
+function spyReport() { return JSON.stringify(HITS) === "{}" ? "0" : JSON.stringify(HITS) + " " + JSON.stringify(STACKS); }
+</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var META = { scan: "none", live: false, chat: false, hydrate: "none", bodies: true, bodySel: ".zq-body", skipSel: "[data-zq-skip]", bodyGuard: 0.9 };
+function $(id) { return document.getElementById(id); }
+["pA", "pB", "pC", "pD", "pE", "pJ", "pK"].forEach(function (id) {
+  var w = document.createTreeWalker($(id), NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) if (/Zqsentinel/.test(t.data)) SENT.add(t);
+});
+SPY_ON = true;
+var HV = CMLShared.harvestBlocks(document, { body: META.bodySel, skip: CMLShared.harvestSkip(META, "full"), chat: false });
+SPY_ON = false;
+var HV_SPY = spyReport(); HITS = {}; STACKS = {};
+var TR = {
+  "Read the <b1>guide</b1> before <s2><i3>Control A</i3></s2> you start.": "اقرأ <b1>الدليل</b1> قبل <s2><i3>الضابطة أ</i3></s2> أن تبدأ.",
+  "See <a1><s2>Control D</s2> docs</a1> here.": "انظر <a1><s2>الضابطة د</s2> الوثائق</a1> هنا.",
+  "Edit <s1>Control F</s1> fine.": "حرّر <s1>الضابطة و</s1> جيدًا.",
+  "Plain <b1>bold</b1> words <s2>tail</s2> end.": "عادي <b1>غامق</b1> كلمات <s2>ذيل</s2> نهاية."
+};
+var BLOCKS = {}, HVT = {};
+HV.forEach(function (h) { HVT[h.tpl] = 1; if (Object.prototype.hasOwnProperty.call(TR, h.tpl)) BLOCKS[h.fp] = TR[h.tpl]; });
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) {
+  if (!msg || msg.type !== "bodies") { if (cb) cb(null); return; }
+  setTimeout(function () { if (cb) cb({ page: CMLShared.pageKey(META, msg.path), blocks: BLOCKS, keep: [] }); }, 50);
+} });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true, cml_chatrtl: true });
+var HELLO = null;
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { HELLO = fn; } };
+window.chrome = MOCK.chrome;
+// قاموس الواجهة يعرف الكلمات المؤهَّلة بجوار المحميّ: لا تُعرَّب جزئيًّا
+window.CLAUDE_L10N = { domain: "privacy", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Settings": "الإعدادات", "guide": "الدليل", "below.": "أدناه.", "Type": "اكتب", "Control B": "الضابطة ب" }, patterns: [], plurals: {} } } };
+SPY_ON = true;
+</script>
+<link rel="stylesheet" href="../extension/base.css">
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function noBidi(s) { return String(s).replace(new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + String.fromCharCode(0x200E) + String.fromCharCode(0x200F) + "]", "g"), ""); }
+function txt(id) { var was = SPY_ON; SPY_ON = false; var r = noBidi($(id).textContent).replace(/\s+/g, " ").trim(); SPY_ON = was; return r; }
+(async function () {
+  await wait(1200);
+  SPY_ON = false;
+  var EN_SPY = spyReport();
+  check("★ (ر24-أ، المراجعة) الحاصد لا يقرأ نصَّ المحميّ بأي getter ولا بسلفٍ يحويه (جاسوسٌ عامّ): 0", "0", HV_SPY);
+  check("★ (ر24-أ، المراجعة) ولا قالبٌ ولا عقدةٌ وحيدة ولا بندٌ فيه العلامة", "0",
+        HV.filter(function (h) { return /Zqsentinel/.test(h.tpl + (h.single || "") + JSON.stringify(h.group || [])); }).length);
+  check("★ (ر24-أ، المراجعة، AD-005) الضابطات المماثلة بناءً تُحصد (السطريّ المتداخل، وcontenteditable=FALSE ليس محميًّا، والكتلة العادية)", "1/1/1/1",
+        Object.keys(TR).map(function (k) { return HVT[k] ? 1 : 0; }).join("/"));
+  check("★ (ر24-أ، المراجعة) المحرّك (الإقلاع والمطابقة والكتابة وعدّ الحارس) لا يقرأ نصَّ المحميّ بأي getter ولا بسلفٍ يحويه — ومنه fragmentInBody لـli فيه حدٌّ محميّ", "0", EN_SPY);
+  check("★ (ر24-أ، المراجعة) المحميّ على أصله: داخل ذرّة شيفرة، ومتداخلٌ في رابط، وplaintext-only، والحدّ المحميّ في li",
+        "Read the guide before Zqsentinel A you start.|Use run Zqsentinel C now.|See Zqsentinel D docs here.|Type Zqsentinel E below.|Unknownword hereZqsentinel J",
+        [txt("pA"), txt("pC"), txt("pD"), txt("pE"), txt("pJ")].join("|"));
+  check("★ (ر24-أ، المراجعة، AD-005) والضابطات تُعرَّب: السطريّ المتداخل، وcontenteditable=FALSE، والكتلة العادية",
+        "اقرأ الدليل قبل الضابطة أ أن تبدأ.|انظر الضابطة د الوثائق هنا.|حرّر الضابطة و جيدًا.|عادي غامق كلمات ذيل نهاية.",
+        [txt("cA"), txt("cD"), txt("cF"), txt("pI")].join("|"));
+  check("الحدّ المحميّ تتابعٌ مستقلّ: نصُّ li المؤهَّل وحده يُعرَّب كضابطه (الحدّ ليس في تتابعه)", "الإعداداتZqsentinel B|الإعداداتالضابطة ب", txt("pB") + "|" + txt("cB"));
+  // الكتابة في المحميّ (طفرة نص): لا قراءة في مسار الطفرات
+  HITS = {}; STACKS = {}; SPY_ON = true;
+  SENT.forEach(function (t) { if (t.parentNode && (t.parentNode.closest("#pE") || t.parentNode.closest("#pB") || t.parentNode.closest("#pK"))) CharacterData.prototype.appendData.call(t, " typed"); });
+  await wait(800);
+  SPY_ON = false;
+  check("★ (ر24-أ، المراجعة) الكتابة في نصٍّ محميّ (طفرة نص، ومنه فقرةٌ تحت سلفٍ قابلٍ للتحرير) لا يقرؤها مسار الطفرات: 0", "0", spyReport());
+  // إدراج غلافٍ غير محميّ فيه محميّ في كتلةٍ معرَّبة: يُعاد تقديرها فتعود كلُّها، ولا يُقرأ المُدرَج
+  var i0 = txt("pI");
+  var wr = document.createElement("b"), inner = document.createElement("i"); inner.setAttribute("contenteditable", "true");
+  inner.appendChild(document.createTextNode("Zqsentinel W")); wr.appendChild(inner); SENT.add(inner.firstChild);
+  HITS = {}; STACKS = {}; SPY_ON = true;
+  $("pI").appendChild(wr);
+  await wait(800);
+  SPY_ON = false;
+  check("★ (ر24-أ، المراجعة) غلافٌ غير محميّ فيه محميّ يُدرج في كتلةٍ معرَّبة: تعود كلُّها، و0 قراءة", "عادي غامق كلمات ذيل نهاية.|Plain bold words tail end.Zqsentinel W|0",
+        i0 + "|" + txt("pI") + "|" + spyReport());
+  // إدراج محميٍّ في تتابعٍ عرّبه قاموس الواجهة (مسار العقدة الوحيدة، لا كتابة كتلة): يُرجع، و0 قراءة
+  var h0 = txt("pH");
+  var ed2 = document.createElement("span"); ed2.setAttribute("contenteditable", "true"); ed2.appendChild(document.createTextNode("Zqsentinel S")); SENT.add(ed2.firstChild);
+  HITS = {}; STACKS = {}; SPY_ON = true;
+  $("hS").appendChild(ed2);
+  await wait(800);
+  SPY_ON = false;
+  check("★ (ر24-أ، المراجعة) محميٌّ يُدرج في تتابعٍ عرّبه قاموس الواجهة: يُرجع نصُّه المؤهَّل، و0 قراءة", "الإعدادات|Settings Zqsentinel S|0", h0 + "|" + txt("pH") + "|" + spyReport());
+  var hl = null; if (HELLO) HELLO({ type: "cml-hello" }, {}, function (x) { hl = x; });
+  var g = hl && hl.bodies && hl.bodies.guard;
+  check("★ (ر24-أ، المراجعة) حارس المتن يعدّ ما يحصده الحاصد وحده (التتابعات المحمية لا تُعدّ)", HV.length + "", g ? g.blocks : "no-guard");
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "blockprotspy " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "BLOCKPROTSPY: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

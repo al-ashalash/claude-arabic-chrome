@@ -13,60 +13,82 @@
    ٢) المتن بوضع الكتلة من قطعة الصفحة، والعنوان وسطر السريان بقاموس الواجهة والتاريخ بالنمط («Previous Version» يبقى إنجليزيًّا: الشركة
       تبقيه كذلك في كل عرضٍ مترجَم — قاعدة النطاق، وسؤال المالك قائم)؛ وغلاف
       الموقع ومنتقي اللغة لا يُمسّان ولو طابق نصُّهما القاموس، ويبقيان LTR في صفحةٍ RTL (legal-point.css).
-   ٣) التنبيه: صندوقٌ مولَّد (legal-point.css) معلَّقٌ بسمة data-cml-body، لا يظهر إلا وفي المتن كتلةٌ معرَّبة من القطعة.
+   ٣) ★ (ر28-هـ1، ٢٦ جمادى الأولى ١٤٤٨هـ — القرار 145) لا تنبيه فوق المتن: كان صندوقًا مولَّدًا (legal-point.css) معلَّقًا بسمة data-cml-body
+      فوق المتن المعرَّب، فحُذف. فيُفحص غيابه في كل حالٍ كان يظهر فيها (المتن المعرَّب، والعودة إلى English، وإعادة التشغيل، والعودة إلى
+      وثيقةٍ بقطعتها)، وألّا تحمل ورقةٌ في الصفحة نصَّه، وتبقى السمة يكتبها المحرّك لحارس المتن.
    ٤) حارس منتقي اللغة (meta.siteLangSel): لغةٌ أخرى ⇒ خمولٌ تام وجوابُ النافذة siteLangBy "sel"، والعودة إلى English تعيد كل شيء.
    ٥) عنوان التبويب «<العنوان> \ Anthropic»: كاملًا من القاموس، وبالذيل بعد الشرطة المائلة العكسية، و<title> في <body>.
-   ٦) التنقّل: مسارٌ خامل يُرجع كل شيء ويمحو السمة، ووثيقةٌ أخرى تطلب قطعتها وتعيد السمة، ووثيقةٌ بلا قطعة بلا تنبيه.
+   ٦) التنقّل: مسارٌ خامل يُرجع كل شيء ويمحو السمة، ووثيقةٌ أخرى تطلب قطعتها وتعيد السمة، ووثيقةٌ بلا قطعة محجوبة.
    ٧) ★ (ر6-د) حارس المتن بعتبته الحقيقية (5٪، القرار 83): وثيقةٌ بلا قطعة محجوبةٌ بسببها «none» (القرار 84)، ووثيقةٌ تغيّر متنها «drift»،
       وكلتاهما بلا تنبيه ولا عربية في متنها؛ وفقرات الحشو الخمس عشرة تُبقي الصفحة الأولى تحت العتبة (1 من 22).
+  ★ (ر29-ج، ١٣ جمادى الأولى ١٤٤٨هـ) بنية الصفحات الجديدة (ر29-أ F1) بأسماء وحداتها وجزءٍ مجزَّأ مختلَق: الترويسة HeaderLayout ورابط التخطّي
+  SkipLink والتذييل Footer، ورأس الوثيقة LegalArticleHero (العنوان وبياناتها وزرّ الإصدارات ومنتقي اللغة Select وفهرس الأقسام)، وشريط الأقسام
+  TableOfContents__Bar، والمتن LegalArticlePage__Content؛ وما يُلحقه الموقع بـ<body> عند الفتح (قائمة المنتقي وقائمة الترويسة المنسدلة وقائمة
+  الجوال) حاضرٌ هنا من البدء. والفهرس وشريط الأقسام واجهةٌ خارج المتن: الإنجليزي منهما LTR بنصّه (dirSel).
+  ★ (ر29-ح، ١٩ جمادى الأولى ١٤٤٨هـ — DX0-0 §٥) غيّر الموقع صيغة أصنافه إلى ‎<بصمة>_<اسم>‎ فذهب اسم الوحدة: البنية هنا بالصيغة الجديدة ببصماتٍ
+  مختلَقة، والمحدِّدات باسم الصنف وموضعه وسمات الموقع وأدوار ARIA (لا اسم وحدةٍ ولا بصمة). وزيد: غلاف عنوان الرأس ‎_Content‎ ليس المتن، وحوار سجل
+  الإصدارات (بلا ‎<nav>‎) يُعرَّب RTL ورأسه ‎<header>‎ ليس الترويسة، ولافتة الموافقة ‎_consentBanner‎ مُبقاةٌ LTR. والصيغة القديمة في _noseltest.html.
   النصوص العربية هنا تجريبيةٌ للاختبار لا ترجمات. العقد: document.title الختامي = "legal N/N".
 -->
 <style>body{font-family:system-ui;padding:16px;max-width:1100px;margin:auto}
 #tbl{border-collapse:collapse;width:100%;margin-top:12px}
 #tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
 .ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
-[class*="__metadata"]{display:flex;justify-content:space-between;gap:8px}
-/* (ر3-ب) توسيطُ الموقع في الغلاف وقلبُه المولَّد كما في rtl-legal.css بتخصيصه نفسه (:not(#…×3)) وبالأصناف التجريبية — فالقاعدة ٣ في
-   legal-point.css وحدها ما يعيد إزاحة الموقع داخل الغلاف LTR */
-.SiteHeader-module-scss-module__Zq1aB__skipLinks{position:absolute;top:-1000px;left:0;width:100%;text-align:center}
-.SiteHeader-module-scss-module__Zq1aB__skipLinks .SiteHeader-module-scss-module__Zq1aB__skipLink{position:absolute;left:50%;transform:translate(-50%)}
-.Dropdown-module-scss-module__Zq7mN__dropdown[data-align=center]{position:absolute;left:50%;transform:translate(-50%)}
-html[data-cml-rtl]:not(#cml0#cml1#cml2) :where(.SiteHeader-module-scss-module__Zq1aB__skipLinks .SiteHeader-module-scss-module__Zq1aB__skipLink,
-  .Dropdown-module-scss-module__Zq7mN__dropdown[data-align=center]){left:unset;inset-inline-start:50%;transform:translate(50%)}</style>
+[class*="_Metalist"]{display:flex;justify-content:space-between;gap:8px;list-style:none;padding:0}
+/* (ر29-ج، المراجعة المستقلة) نسخةٌ اصطناعية من تصفير الورقة المولَّدة للصناديق المولَّدة (rtl-legal.css من تصفير الموقع ‎*,:before,:after‎) بتخصيصها
+   (ثلاثة معرّفات). كانت تُثبت أن حشو التنبيه وحدّه يغلبانها؛ وبعد حذفه (القرار 145) تبقى لتشابه الصفحة الحيّة */
+html[data-cml-rtl="v2"]:not(#cml0#cml1#cml2) *:before{border-inline:0 solid;margin-inline:0;padding-inline:0}</style>
 <link rel="stylesheet" href="../extension/base.css">
 <link rel="stylesheet" href="../extension/legal-point.css">
-<header class="SiteHeader-module-scss-module__Zq1aB__root" id="hdr"><div class="SiteHeader-module-scss-module__Zq1aB__skipLinks"><a class="SiteHeader-module-scss-module__Zq1aB__skipLink" id="skip" href="#body">Zq skip link</a></div><nav style="position:relative"><a href="#" id="hdrA">Settings</a> <span id="hdrS">Zq News</span><div class="Dropdown-module-scss-module__Zq7mN__dropdown" data-align="center" id="dd">Zq menu</div></nav></header>
-<main>
-  <article class="LegalPageDetail-module-scss-module__Zq2cD__legal-page">
-    <div><div class="page-wrapper">
-      <header class="">
-        <h1 class="LegalPageDetail-module-scss-module__Zq2cD__title display-2" id="h1">Zq Policy</h1>
-        <div class="LegalPageDetail-module-scss-module__Zq2cD__metadata" id="meta">
-          <span class="LegalPageDetail-module-scss-module__Zq2cD__effective-date text-label" id="eff">Effective <time id="date" datetime="2026-10-08">October 8, 2026</time></span>
-          <a class="text-label" href="#" id="prev">Previous Version</a>
-          <div class="LegalPageDetail-module-scss-module__Zq2cD__language-options" id="langOpts">
-            <svg class="LegalPageDetail-module-scss-module__Zq2cD__icon-globe" width="12" height="12"></svg>
-            <div class="LegalPageDetail-module-scss-module__Zq2cD__select css-b62m3t-container"><span class="css-7pg0cj-a11yText" id="live">option English, selected.</span>
-              <div class="css-t9e581-control"><div class="css-13mzj6d"><div class="css-1dimb5e-singleValue" id="langVal">English</div></div></div></div>
-          </div>
-        </div>
-      </header>
-      <div class="LegalPageDetail-module-scss-module__Zq2cD__body" id="body">
-        <article><div><div class="Body-module-scss-module__Zq3eF__body" data-theme="ivory">
-          <h2 id="b1">Zq sample heading of the policy</h2>
-          <p id="b2">Zq sample paragraph with a <a href="#" id="b2a">sample link</a> inside it.</p>
-          <p id="b3">Zq untranslated paragraph stays in English.</p>
-          <h3 id="b5">Settings</h3>
-          <ul class="TextBlock-module-scss-module__Zq4gH__list"><li id="b4">Zq list item of the policy.</li></ul>
-          <div class="Table-module-scss-module__Zq5iJ__root"><div class="Table-module-scss-module__Zq5iJ__tableWrapper" role="region" aria-label="Zq table region" id="reg">
-            <table><tbody><tr class="Table-module-scss-module__Zq5iJ__row"><th class="body-3" id="th1">Zq category name</th><td class="body-3" id="td1">Zq cell value of the table.</td></tr></tbody></table></div></div>
-          <div id="fill"></div>
-        </div></div></article>
-      </div>
-    </div></div>
+<!-- ★ (ر29-ح، ١٩ جمادى الأولى ١٤٤٨هـ) الصيغة الجديدة لأصناف الموقع ‎<بصمة>_<اسم>‎ (وبادئة ‎_‎ لبصمةٍ تبدأ برقم) ببصماتٍ مختلَقة، وسمات الموقع
+     (data-site-nav وdata-skip-link) وبوّابات Base UI الملحقة بـ<body> وأدوارها، بترتيب الصفحة الحيّة (الشريط ثم رأس الوثيقة ثم المتن) -->
+<a class="Zq0aA_root" id="skip" href="#main-content" data-skip-link="">Zq skip link</a>
+<header class="Zq1aB_root" id="hdr" data-site-nav="" data-hidden="false"><nav class="Zq1aB_bar"><a href="#" id="hdrB" class="Zq1aB_logo">Settings</a><div class="Zq1bC_idle"><a href="#" id="hdrA">Settings</a> <span id="hdrS">Zq News</span>
+  <button class="Zq1cD_button _4zq1dE_trigger" aria-haspopup="menu" id="ddT">Zq menu</button></div></nav></header>
+<main id="main-content">
+  <article class="Zq2cD_Article">
+    <div class="Zq2hJ_Bar"><div class="Zq2jL_Accordion"><div class="Zq2jL_Item"><h3 class="Zq2jL_Header" id="bar">
+      <button class="Zq2jL_Trigger"><span class="Zq2jL_TriggerLabel">Zq on this page: <span class="Zq2jL_Target">Zq sample section title of the policy.</span></span></button></h3></div></div></div>
+    <header class="Zq2eF_Header">
+      <!-- غلاف عنوان الرأس صنفه ‎_Content‎ أيضًا، وليس ابن المقالة: لا يطابقه محدِّد المتن -->
+      <div class="Zq2eF_Content" id="heroC"><span class="Zq2eF_Chip"><span class="Zq2fG_chip">Zq chip</span></span>
+      <h1 class="Zq2eF_Title" id="h1">Zq Policy</h1></div>
+      <div class="Zq2eF_TableOfContentsContainer"><div class="Zq2hJ_List Zq2eF_TableOfContents">
+        <nav class="Zq2iK_TableOfContentsDesktop"><ul class="Zq2iK_List">
+          <li class="Zq2iK_Item" id="toc1"><span class="Zq2iK_Number">01</span><span class="Zq2iK_Text">Zq sample section title of the policy</span></li>
+        </ul></nav></div></div>
+      <div class="Zq2eF_MetalistContainer"><ul class="Zq2eF_Metalist" id="meta">
+        <li class="Zq2eF_Metadata" id="eff">Effective <time id="date" datetime="2026-10-08">October 8, 2026</time></li>
+        <li class="Zq2eF_Metadata"><div class="Zq2eF_VersionsTrigger"><button aria-haspopup="dialog" id="prev">Previous Version</button></div></li>
+        <li class="Zq2eF_Metadata"><button type="button" role="combobox" aria-haspopup="listbox" aria-expanded="false" id="langOpts"
+          class="Zq1cD_button Zq2gH_trigger Zq2eF_LanguageSelect"><span id="langVal">English</span><span aria-hidden="true" class="Zq2gH_icon"></span></button><input id="hidIn" aria-hidden="true" tabindex="-1" value="" style="clip-path:inset(50%);overflow:hidden;white-space:nowrap;border:0;padding:0;width:1px;height:1px;margin:-1px;position:fixed;top:0;left:0"></li>
+      </ul></div>
+    </header>
+    <div class="Zq3aB_content Zq2cD_Content" id="body">
+      <div class="Zq3aB_grid"><div class="Zq3eF_body" data-theme="ivory">
+        <h2 class="Zq3eF_reading-column" id="b1">Zq sample heading of the policy</h2>
+        <p class="Zq3eF_reading-column post-text" id="b2">Zq sample paragraph with a <a href="#" id="b2a">sample link</a> inside it.</p>
+        <p class="Zq3eF_reading-column post-text" id="b3">Zq untranslated paragraph stays in English.</p>
+        <h3 class="Zq3eF_reading-column" id="b5">Settings</h3>
+        <ul class="Zq3eF_reading-column"><li id="b4">Zq list item of the policy.</li></ul>
+        <div class="Zq3eF_media-column"><div class="Zq5iJ_wrapper"><div class="Zq5kL_root" role="region" aria-label="Zq table region" id="reg">
+          <table class="Zq5iJ_card"><tbody><tr class="Zq5iJ_row"><th class="Zq5iJ_headerCol" id="th1">Zq category name</th><td class="Zq5iJ_cell" id="td1">Zq cell value of the table.</td></tr></tbody></table></div></div></div>
+        <div id="fill"></div>
+      </div></div>
+    </div>
   </article>
 </main>
-<footer class="SiteFooter-module-scss-module__Zq6kL__root" id="ftr"><p id="ftrP">© 2026 Zq Footer Line</p><a href="#" id="ftrA">Settings</a></footer>
+<footer class="theme-slate Zq6kL_footer" id="ftr"><div class="Zq6kL_copySections"><p id="ftrP">© 2026 Zq Footer Line</p></div><a href="#" id="ftrA">Settings</a></footer>
+<!-- ما يُلحقه الموقع بـ<body> عند الفتح، كلٌّ في بوّابة Base UI: قائمة المنتقي (listbox)، وقائمة الترويسة المنسدلة (menu)، وقائمة الجوال (حوارٌ فيه
+     ‎<nav>‎ الموقع)، وحوار سجل الإصدارات (حوارٌ بلا ‎<nav>‎ وفي رأسه ‎<header>‎: ليس من الغلاف، فيُعرَّب RTL كما كان)؛ ولافتة الموافقة -->
+<div data-base-ui-portal=""><div class="Zq2gH_positioner" role="presentation"><div class="Zq2gH_popup" role="presentation"><div class="Zq2gH_list" role="listbox" id="selPop">
+  <div class="Zq2gH_item" role="option" aria-selected="true" id="opt"><div class="Zq2gH_itemText">English</div></div></div></div></div></div>
+<div data-base-ui-portal=""><div class="_4zq1dE_positioner" role="presentation"><div class="_4zq1dE_popup" role="menu" id="ddPop"><div class="_4zq1dE_column" role="group">
+  <a class="_4zq1dE_item" role="menuitem" href="#" id="ddItem"><span class="_4zq1dE_itemLabel">Settings</span></a></div></div></div></div>
+<div data-base-ui-portal=""><div class="Zq7mN_popup theme-slate" role="dialog" aria-labelledby="mobT" id="mob"><h2 class="Zq7mN_title" id="mobT">Zq News</h2>
+  <div class="Zq7mN_content"><nav aria-label="Zq main"><a href="#" id="mobA">Settings</a></nav></div></div></div>
+<div data-base-ui-portal=""><div role="presentation"><div class="Zq8pQ_popup" role="dialog" id="ver"><header class="Zq8pQ_header"><div class="Zq8pQ_header-slot" id="verT">Zq Version History</div></header></div></div></div>
+<div class="_0zqUW_container"><div class="_0zqUW_consentBanner" id="cb"><p class="_0zqUW_description" id="cbP">Settings</p></div></div>
 <div hidden id="outlet"></div>
 <p id="wake">-</p>
 <table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
@@ -97,6 +119,8 @@ var STR = {
   "Zq Policy": "سياسةٌ تجريبية", "Zq Policy \\ Anthropic": "سياسةٌ تجريبية كاملة \\ Anthropic", "Zq Terms": "شروطٌ تجريبية",
   "Effective": "سريانٌ تجريبي", "Zq table region": "منطقةٌ تجريبية",
   "Settings": "الإعدادات", "English": "الإنجليزية", "Zq News": "أخبارٌ تجريبية",
+  // ★ (ر29-ح) عنوان حوار سجل الإصدارات: ليس من الغلاف، فيعرّبه قاموس الواجهة
+  "Zq Version History": "سجل إصداراتٍ تجريبي",
 };
 // ★ (ر6-د، القرار 83) حارس المتن بعتبته الحقيقية (5٪) في جدول النطاقات: خمس عشرة فقرة حشوٍ مترجَمة تجعل الفقرة الوحيدة التي ليست في القطعة
 // (b3) 1 من 22 كتلة (4.5٪) فلا تُحجب الصفحة، فيبقى امتحانُ «الفقرة التي ليست في القطعة إنجليزيةٌ كلّها» قائمًا كما يقع في الموقع تحت العتبة
@@ -155,6 +179,13 @@ function $(id) { return document.getElementById(id); }
 function txt(id) { return $(id).textContent.replace(MARKS, "").replace(/\s+/g, " ").trim(); }
 function cs(id) { return getComputedStyle($(id)); }
 function notice() { return getComputedStyle($("body"), "::before").content; }
+// ★ (ر28-هـ1 — القرار 145) عدد القواعد في أوراق الصفحة (ومنها legal-point.css) التي تحمل نصّ التنبيه المحذوف
+function noticeRules() {
+  var n = 0, walk = function (rules) { for (var i = 0; i < rules.length; i++) { var r = rules[i];
+    if (r.cssRules && r.cssRules.length) walk(r.cssRules); else if ((r.cssText || "").indexOf(NOTICE) >= 0) n++; } };
+  for (var i = 0; i < document.styleSheets.length; i++) { try { walk(document.styleSheets[i].cssRules); } catch (e) {} }
+  return n;
+}
 function T() { return document.title.replace(MARKS, ""); }
 var H = document.documentElement;
 function attrs() { return ["dir", "lang", "data-cml", "data-cml-body"].map(function (a) { return H.getAttribute(a) || "-"; }).join("|"); }
@@ -181,11 +212,12 @@ function heldAttr() { return H.getAttribute("data-cml-held") || "-"; }
         CMLConst.siteLabel("legal") + "/" + caps.chat.on + "/" + caps.scan.on + "/" + caps.bodies.on + "/" + caps.live.on);
   check("★ القاموس المبنيّ يعلن نطاقه وجدولَه (build.mjs يحقن meta) ونمطَ التاريخ", "legal/true/1",
         BUILT.domain + "/" + (JSON.stringify(BUILT.meta) === JSON.stringify(LM)) + "/" + BUILT.dicts.ar.patterns.length);
-  var NOT_HV = ["Zq News", "© 2026 Zq Footer Line", "English", "option English, selected.", "Zq Policy", "Previous Version"];
+  // ★ (ر29-ج) ورابط التخطّي ومشغّل القائمة المنسدلة وقائمة المنتقي الملحقة بـ<body> من الغلاف كذلك
+  var NOT_HV = ["Zq News", "© 2026 Zq Footer Line", "English", "Zq skip link", "Zq menu", "Zq Policy", "Previous Version", "Zq sample section title of the policy"];
   check("★ الحاصد: قوالب المتن كلها، ولا شيء من الغلاف ولا المنتقي ولا رأس الوثيقة في الكتل؛ ولا مفتاحَ واجهةٍ من الغلاف والمنتقي", "0//",
         Object.keys(TR).filter(function (t) { return !hvTpl[t]; }).length + "/" +
         NOT_HV.filter(function (k) { return HV.some(function (h) { return h.tpl === k || h.single === k; }); }).join(",") + "/" +
-        ["Zq News", "English", "option English, selected.", "© 2026 Zq Footer Line"].filter(function (k) { return HK.indexOf(k) >= 0; }).join(","));
+        ["Zq News", "English", "Zq skip link", "Zq menu", "© 2026 Zq Footer Line"].filter(function (k) { return HK.indexOf(k) >= 0; }).join(","));
 
   await wait(700);
   // ٢) التعريب والاتجاه
@@ -199,17 +231,36 @@ function heldAttr() { return H.getAttribute("data-cml-held") || "-"; }
         "عنوانٌ تجريبي للسياسة/فقرةٌ تجريبية فيها رابطٌ تجريبي داخلها./بندٌ تجريبي من السياسة./اسم فئةٍ تجريبي/قيمةٌ تجريبية في الجدول./Zq untranslated paragraph stays in English.",
         ["b1", "b2", "b4", "th1", "td1", "b3"].map(txt).join("/"));
   check("وسمة المنطقة في المتن (aria-label) بقاموس الواجهة", "منطقةٌ تجريبية", $("reg").getAttribute("aria-label").replace(MARKS, ""));
-  check("★ غلاف الموقع ومنتقي اللغة لا يُمسّان ولو طابق نصُّهما القاموس (skipSel)", "Settings/Zq News/Settings/© 2026 Zq Footer Line/English/option English, selected.",
-        ["hdrA", "hdrS", "ftrA", "ftrP", "langVal", "live"].map(txt).join("/"));
-  check("★ والغلاف والمنتقي LTR في صفحةٍ RTL (legal-point.css)، وصفُّ البيانات الوصفية والمتن RTL", "ltr/ltr/ltr/rtl/rtl",
-        [cs("hdr").direction, cs("ftr").direction, cs("langOpts").direction, cs("meta").direction, cs("body").direction].join("/"));
-  // (ر3-ب) الإزاحة الأفقية للتحويل المحسوب: translate(-50%) سالبةٌ كما في الموقع، والمقلوبة موجبة
-  var tx = function (id) { var t = cs(id).transform; return t === "none" ? 0 : new DOMMatrixReadOnly(t).m41; };
-  check("★ (ر3-ب) ما يتوسّط في الغلاف LTR يبقى بإزاحة الموقع رغم قلبها المولَّد: رابط التخطّي والقائمة المنسدلة الموسَّطة (legal-point.css ٣)",
-        "true/true/v2", (tx("skip") < 0) + "/" + (tx("dd") < 0) + "/" + H.getAttribute("data-cml-rtl"));
+  // ★ (ر29-ج) ومنها ما يُلحقه الموقع بـ<body> عند الفتح: قائمة المنتقي، وقائمة الترويسة المنسدلة، وقائمة الجوال
+  // ★ (ر29-د — ثغرة ر29-ج F3) ونصٌّ في شريط الترويسة خارج غلافها الداخلي (SiteHeaderShell)، كما في الموقع: يمسك الطافر R7 (إبقاء الترويسة بغلافها الداخلي وحده)
+  // ★ (ر29-ح) وبالصيغة الجديدة: رابط قائمة الجوال في ‎<nav>‎ حوارها، ونصّ لافتة الموافقة
+  check("★ غلاف الموقع ومنتقي اللغة لا يُمسّان ولو طابق نصُّهما القاموس (skipSel)، ومنه شريط الترويسة خارج غلافها الداخلي", "Settings/Settings/Zq News/Settings/© 2026 Zq Footer Line/English/English/Settings/Zq News/Settings/Settings|ltr",
+        ["hdrB", "hdrA", "hdrS", "ftrA", "ftrP", "langVal", "opt", "ddItem", "mobT", "mobA", "cbP"].map(txt).join("/") + "|" + cs("hdrB").direction);
+  check("★ والغلاف والمنتقي LTR في صفحةٍ RTL (legal-point.css)، وصفُّ البيانات الوصفية والمتن RTL؛ ورابط التخطّي وقوائم المنتقي والترويسة والجوال ولافتة الموافقة LTR",
+        "ltr/ltr/ltr/rtl/rtl/ltr/ltr/ltr/ltr/ltr",
+        [cs("hdr").direction, cs("ftr").direction, cs("langOpts").direction, cs("meta").direction, cs("body").direction,
+         cs("skip").direction, cs("selPop").direction, cs("ddPop").direction, cs("mob").direction, cs("cb").direction].join("/"));
+  // ★ (ر29-ح) حوار سجل الإصدارات حوارٌ في بوّابةٍ كقائمة الجوال لكن بلا ‎<nav>‎، ورأسه ‎<header>‎ ليس ابنًا لـ<body>: ليس من الغلاف، فيعرّبه قاموس
+  // الواجهة RTL كما كان قبل تغيّر الصيغة؛ وغلاف عنوان الرأس صنفه ‎_Content‎ وليس ابن المقالة: ليس المتن، فلا تنبيه عليه
+  check("★ (ر29-ح) حوار سجل الإصدارات يُعرَّب RTL (ليس من الغلاف)، وغلاف عنوان الرأس ‎_Content‎ ليس المتن (لا تنبيه عليه)",
+        "سجل إصداراتٍ تجريبي/rtl/rtl/none", txt("verT") + "/" + cs("ver").direction + "/" + cs("verT").direction + "/" +
+        getComputedStyle($("heroC"), "::before").content);
+  // ★ (ر29-ج) فهرس الأقسام في رأس الوثيقة وشريط الأقسام اللاصق: واجهةٌ خارج المتن (عناوينه)، فما بقي منها إنجليزيًّا (حتى ت11) يُحسم اتجاهه
+  // بنصّه (LEGAL_HERO في dirSel) فلا يُعرض إنجليزيٌّ من اليمين؛ ونصّه على أصله (ليس في القطعة ولا في قاموس الواجهة)، والعنوان العربي RTL.
+  // (قاعدة التوسيط ٣ في legal-point.css أُزيلت: الغلاف الجديد بلا توسيطٍ بالإزاحة)
+  // وبيانات الرأس كذلك (LEGAL_HERO): بندٌ إنجليزي (زرّ الإصدارات) LTR، وسطر السريان المعرَّب RTL
+  check("★ (ر29-ج) فهرس الأقسام وشريطها وبيانات الرأس خارج المتن: الإنجليزي منها LTR بنصّه (dirSel) وعلى أصله، والمعرَّب والعنوان RTL، والورقة المولَّدة مفعَّلة",
+        "ltr/ltr/true/true/ltr/rtl/rtl/v2", [cs("toc1").direction, cs("bar").direction, txt("toc1").indexOf("Zq sample section title") >= 0,
+        txt("bar").indexOf("Zq on this page") === 0, cs("prev").direction, cs("eff").direction, cs("h1").direction, H.getAttribute("data-cml-rtl")].join("/"));
+  // ★ (ر29-ج، المراجعة المستقلة) الحقل المخفيّ لعنصر التحكم (نمطٌ سطريّ: fixed وleft:0 وهامش ‎-1px‎) لا يفيض يسار الصفحة RTL فيُمرَّر إليها
+  check("والحقل المخفيّ لمنتقي اللغة بلا هامشٍ سالب في الصفحة RTL (legal-point.css ٤)", "0px/0px", cs("hidIn").marginLeft + "/" + cs("hidIn").marginRight);
   check("★ اتجاه الكتل: المعرَّبة RTL والإنجليزية LTR (dirSel)", "rtl/rtl/ltr", cs("b1").direction + "/" + cs("td1").direction + "/" + cs("b3").direction);
-  check("★ التنبيه: سمة data-cml-body والصندوق المولَّد فوق المتن بنصّه حرفًا", "tr/" + JSON.stringify(NOTICE),
+  // ★ (ر28-هـ1 — القرار 145) حُذف التنبيه: السمة باقيةٌ (يكتبها المحرّك لحارس المتن) ولا صندوق مولَّدًا فوق المتن المعرَّب
+  check("★ (القرار 145) لا تنبيه فوق المتن المعرَّب: سمة data-cml-body باقية، ولا صندوق مولَّد على غلاف المتن", "tr/none",
         H.getAttribute("data-cml-body") + "/" + notice());
+  // (كانت: حشو الصندوق وحدّه يغلبان تصفير الورقة المولَّدة «16px/4px») ولا قاعدةَ في أوراق الصفحة تحمل نصّ التنبيه ولا ترسم صندوقه
+  check("ولا حشو ولا حدّ لصندوقٍ مولَّد على غلاف المتن، ولا قاعدةَ في أوراق الصفحة تحمل نصّ التنبيه", "0px/0px/0",
+        getComputedStyle($("body"), "::before").paddingInlineStart + "/" + getComputedStyle($("body"), "::before").borderInlineStartWidth + "/" + noticeRules());
   check("والقطعة طُلبت مرّةً بمفتاح الصفحة", "/legal/privacy", bodyReqs.join(","));
 
   // ٥) عنوان التبويب
@@ -245,10 +296,10 @@ function heldAttr() { return H.getAttribute("data-cml-held") || "-"; }
   $("langVal").firstChild.nodeValue = "English";
   await wait(600);
   hl = hello() || {};
-  check("★ العودة إلى English: تعود الإضافة بتنبيهها، ولا سبب خمولٍ في الجواب", "rtl|ar|on|tr|سياسةٌ تجريبية|عنوانٌ تجريبي للسياسة|" + JSON.stringify(NOTICE) + "|null/null/true",
+  check("★ العودة إلى English: تعود الإضافة بلا تنبيه (القرار 145)، ولا سبب خمولٍ في الجواب", "rtl|ar|on|tr|سياسةٌ تجريبية|عنوانٌ تجريبي للسياسة|none|null/null/true",
         attrs() + "|" + txt("h1") + "|" + txt("b1") + "|" + notice() + "|" + hl.siteLang + "/" + hl.siteLangBy + "/" + hl.enabled);
 
-  // إعادة رسم الجذر تمحو سماتنا (Next.js App Router): تُعاد ومعها سمة التنبيه
+  // إعادة رسم الجذر تمحو سماتنا (Next.js App Router): تُعاد ومعها سمة المتن (data-cml-body)
   H.removeAttribute("data-cml"); H.removeAttribute("data-cml-body"); H.removeAttribute("dir");
   await wait(200);
   check("★ إعادة رسم الجذر تمحو السمات: تُعاد ومعها data-cml-body (watchHtml ← applyChrome)", "rtl|ar|on|tr", attrs());
@@ -258,8 +309,8 @@ function heldAttr() { return H.getAttribute("data-cml-held") || "-"; }
   var off = attrs() + "|" + notice() + "|" + txt("b1");
   MOCK.localStore.cml_enabled = true; MOCK.fireChanged({ cml_enabled: { newValue: true } }, "local");
   await wait(400);
-  check("★ إيقاف الإضافة يمحو السمة والتنبيه ويُرجع المتن، وتشغيلها يعيدها",
-        "-|en|-|-|none|Zq sample heading of the policy > rtl|ar|on|tr|عنوانٌ تجريبي للسياسة", off + " > " + attrs() + "|" + txt("b1"));
+  check("★ إيقاف الإضافة يمحو السمة ويُرجع المتن، وتشغيلها يعيدها بلا تنبيه (القرار 145)",
+        "-|en|-|-|none|Zq sample heading of the policy > rtl|ar|on|tr|عنوانٌ تجريبي للسياسة|none", off + " > " + attrs() + "|" + txt("b1") + "|" + notice());
 
   // ٦) التنقّل داخل الموقع
   await go("/legal/archive/zq1");
@@ -284,7 +335,7 @@ function heldAttr() { return H.getAttribute("data-cml-held") || "-"; }
         (H.getAttribute("data-cml-body") || "-") + "|" + heldAttr() + "|" + notice() + "|" + txt("b1") + "|" +
         (hlD.guard ? hlD.guard.why + "/" + hlD.guard.uncovered + "/" + hlD.guard.blocks : "-"));
   await goDoc("/legal/privacy");
-  check("والعودة إلى وثيقةٍ بقطعتها تعيد التنبيه (ولا سبب حجب)", "tr|-|عنوانٌ تجريبي للسياسة|" + JSON.stringify(NOTICE),
+  check("والعودة إلى وثيقةٍ بقطعتها تعيد التعريب بلا تنبيه (القرار 145)، ولا سبب حجب", "tr|-|عنوانٌ تجريبي للسياسة|none",
         (H.getAttribute("data-cml-body") || "-") + "|" + heldAttr() + "|" + txt("b1") + "|" + notice());
 
   check("لا أخطاء JS غير ملتقطة", "0", jsErrors);

@@ -59,3 +59,34 @@ html[data-cml="on"] [role="math"] {
   unicode-bidi: isolate;
   text-align: left;
 }
+
+/* ★ (ر30-ب، ١٣ جمادى الأولى ١٤٤٨هـ — القرار 124) الأيقونات الاتجاهية بعلامةٍ صريحة، على طريقة claude.ai (‎data-cds-mirror‎ لأيقونات نظام تصميمه):
+   يسم المحرّك ‎data-cml-mirror‎ ما كانت هويّتُه سهمًا أفقيًّا (اسم الرمز وأصنافه وغلافه، لا شكله)، في النطاقات التي تعلن meta.iconMirror، ولا يسم ما
+   يعكسه الموقع بنفسه ولا ما يُدار. والعكس بخاصية scale فيتركّب مع transform الموقع، وتحت ‎:dir(rtl)‎ فيبقى السهم على أصله في فرعٍ LTR بسمة dir. */
+html[data-cml="on"][dir="rtl"] [data-cml-mirror]:dir(rtl) {
+  scale: -1 1;
+}
+
+/* ★ (ر30-ب، ١٣ جمادى الأولى ١٤٤٨هـ — القرار 124، تعميم القرار 95 وقاعدة ر29-ب) حقول LTR في المواقع الأخرى (لا claude.ai: يعالجها الموقع بنفسه
+   وapp-point.css). حقل البريد والرابط والهاتف (بالنوع أو بنمط الإدخال أو بالإكمال التلقائي، ورمز التحقق) يُقرأ ما يُكتب فيه من اليسار:
+   - فإن جعله الموقع LTR (dir="ltr") ونصّه المؤقت معرَّب، فهو RTL ما دام النص المؤقت ظاهرًا، ومحاذاته «البداية» (يمينًا) أيًّا كانت محاذاة الموقع؛
+   - وإن ورث اتجاه الصفحة RTL، فمن أول حرفٍ يُكتب يصير LTR فيُقرأ البريد والرابط من اليسار، والنص المؤقت قبله يمينًا كسائر النموذج؛
+   - وحقل البحث والحقل النصّي لا يُمسّان بهذا: قد يُكتب فيهما بالعربية (ولحقل البحث قاعدته أدناه، ر30-ب2).
+   والإعلانات مهمّة في cml-point (المعلنة أولًا) فتغلب أنماط الموقع العادية والمهمّة، وتسقط كلها بإطفاء الإضافة أو قلب الصفحة.
+   ★ (ر30-ب2، ١٤ جمادى الأولى ١٤٤٨هـ — R30B §٨ البند 1) حقل البحث في المواقع الأخرى (بالنوع أو الدور، أو search في معرّفه أو اسمه أو صنفه): يُكتب فيه
+   بالعربية وبالإنجليزية، فاتجاهُ ما فيه من أول حرفٍ قويّ (unicode-bidi: plaintext): العربية تُقرأ من اليمين، واللاتينية من اليسار، والنص المؤقت المعرَّب يمينًا
+   ما دام ظاهرًا. واتجاه العنصر نفسه (direction) كما هو، فلا يتغيّر موضعه ولا أيقونته ولا حشوته. قِيس حيًّا (١٤ جمادى الأولى): حقل مركز الخصوصية
+   (‎#search-input‎) وحقل الأكاديمية في ‎/all‎ RTL عاديّان والمكتوب اللاتيني فيهما يُحاذى يمينًا، وحقل بحث الموقع في رأس الوثائق القانونية LTR بنصٍّ مؤقت
+   إنجليزي؛ وليس في الصفحات العامة لمركز المساعدة والوثائق وClaude Code حقل بحثٍ ظاهر (البحث زرٌّ يفتح نافذة). */
+@layer cml-point {
+  html[data-cml="on"][dir="rtl"][data-cml-site]:not([data-cml-site="app"]) input[dir="ltr"]:is([type="email"], [type="url"], [type="tel"], [inputmode="email"], [inputmode="url"], [inputmode="tel"], [autocomplete~="email"], [autocomplete~="url"], [autocomplete~="tel"], [autocomplete~="one-time-code"]):not([placeholder=""]):placeholder-shown {
+    direction: rtl !important;
+    text-align: start !important;
+  }
+  html[data-cml="on"][dir="rtl"][data-cml-site]:not([data-cml-site="app"]) input:not([dir]):is([type="email"], [type="url"], [type="tel"], [inputmode="email"], [inputmode="url"], [inputmode="tel"], [autocomplete~="email"], [autocomplete~="url"], [autocomplete~="tel"], [autocomplete~="one-time-code"]):not(:placeholder-shown) {
+    direction: ltr !important;
+  }
+  html[data-cml="on"][dir="rtl"][data-cml-site]:not([data-cml-site="app"]) input:is([type="search"], [role="searchbox"], [id*="search" i], [name*="search" i], [class*="search" i]) {
+    unicode-bidi: plaintext !important;
+  }
+}

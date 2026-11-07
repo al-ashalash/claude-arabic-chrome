@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>icon test</title>
+<!--
+  ★ (ر30-ب، ١٣ جمادى الأولى ١٤٤٨هـ — القرار 124) الأيقونات الاتجاهية بعلامةٍ صريحة (engine.js markIcons وbase.css)، بالمحرّك الحقيقي
+  في نطاقٍ اصطناعي (zq) يعلن meta.iconMirror، على أيقوناتٍ بأشكال المواقع (أسماءٌ مختلَقة على صيغها):
+   ١) يوسم السهم الأفقي بهويّته وتعكسه base.css (scale: -1 1): رمز ‎<use href="#…-ChevronRight">‎ (صيغة Mintlify)، وغلافٌ أيقوني باسمه
+      (‎…__BackLinkIcon‎ في وحدات CSS) فيوسم الرسم الذي فيه لا الغلاف، وصنف lucide، وصورةٌ باسم ملفها، وقناعٌ سطري باسم ملفه؛
+   ٢) وسهم الرابط الخارجي (↗) داخل رابطٍ وحده؛
+   ٣) ولا يوسم: السهم الرأسي، والشعار ولو كان في اسمه سهم، وما يُدار (صنف rotate، أو دورانٌ محسوب)، وزرّ الطيّ (aria-expanded)،
+      وما يعكسه الموقع (‎data-cds-mirror‎، أو عكسٌ محسوب على سلفٍ قريب) — فلا قلب مزدوج، وما في جزيرة LTR (‎dir="ltr"‎ وpre)، وما تجاوز 48 بكسلًا؛
+      (ومراجعة ر30-ب: ولا لافتةٌ نصّية بصنفٍ أيقوني، ولا ما عليه خاصية scale من الموقع، ولا سهمُ عنوان ‎<details>‎)
+   ٤) والمُدرَج بعد الإقلاع يوسم في دفعته؛
+   ٥) وإطفاء قلب الصفحة أو الإضافة يرفع العلامات كلها، وإعادته تعيدها؛
+   ٦) (ر29-هـ) وموسومٌ صار الموقع يعكسه بعدُ (‎scaleX(-1)‎ عليه أو على سلفه) ترتفع علامته فلا يُقلب مرتين، وتعود إن زال عكس الموقع؛
+      والموسوم الذي ارتفعت علامته لدورانه يبقى بلا علامة وإن زال دورانه (يُحفظ الحكم)؛
+   ٧) (مراجعة ر29-هـ) وحارس العكس بمحدِّد المصفوفة وزوجيّة الحكم الأول: نصف الدورة بتحويلٍ في transform ليس عكسًا فيبقى الموسوم، وعكسان من الموقع
+      عليه وعلى أبيه يتلاشيان فيبقى، وعكسٌ بخاصية scale على السلف الثالث يرفع العلامة.
+  العقد: document.title = "icon N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:820px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+#fx svg,#fx img,#fx i{width:16px;height:16px;display:inline-block}
+#fx .big{width:64px;height:64px}</style>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="mi-zq-1-ChevronRight" viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" fill="none" stroke="#000" stroke-width="2"/></symbol>
+  <symbol id="mi-zq-1-ChevronDown" viewBox="0 0 16 16"><path d="M3 6l5 5 5-5" fill="none" stroke="#000" stroke-width="2"/></symbol>
+</defs></svg>
+
+<h1>اختبار الأيقونات الاتجاهية</h1>
+<div id="fx">
+  <p><svg id="use1" class="size-3 text-gray-400 shrink-0"><use href="#mi-zq-1-ChevronRight"></use></svg> مسار</p>
+  <!-- ★ (ر30-ب2، O1) موسومان يُنقلان بعد الإقلاع: أحدهما صار الموقع يديره (rotate) فترتفع علامته، والآخر يبقى موسومًا -->
+  <p id="o1box"><svg id="rlate1"><use href="#mi-zq-1-ChevronRight"></use></svg><svg id="rlate2"><use href="#mi-zq-1-ChevronRight"></use></svg><svg id="rlate3"><use href="#mi-zq-1-ChevronRight"></use></svg><svg id="rlate4"><use href="#mi-zq-1-ChevronRight"></use></svg> يُدار لاحقًا</p>
+  <!-- ★ (مراجعة ر30-ب2، O1) وموسومان يديرهما الموقع بعدُ بما لا يكسر العكس: نصف دورةٍ بخاصية rotate، وتحويلٌ دوّار في transform (يقع قبل scale) -->
+  <p id="o1dst"></p>
+  <!-- ★ (ر29-هـ) موسومان يعكسهما الموقع بعد الإقلاع: أحدهما بتحويلٍ عليه، والآخر بتحويلٍ على غلافٍ فوق أبيه (سلفٌ ثانٍ) -->
+  <p id="reflbox"><svg id="rref1"><use href="#mi-zq-1-ChevronRight"></use></svg><span id="rrefA" style="display:inline-block"><span style="display:inline-block"><svg id="rref2"><use href="#mi-zq-1-ChevronRight"></use></svg></span></span> يعكسه الموقع لاحقًا</p>
+  <p id="refldst"></p>
+  <!-- ★ (مراجعة ر29-هـ) ثلاثة موسومين يغيّرهم الموقع بعد الإقلاع: نصف دورةٍ بتحويلٍ في transform (ليس عكسًا)، وعكسان عليه وعلى أبيه (يتلاشيان بالزوجيّة)،
+       وعكسٌ بخاصية scale على السلف الثالث (أداة ‎-scale-x-100‎) -->
+  <p id="refl2box"><svg id="rhalf1"><use href="#mi-zq-1-ChevronRight"></use></svg><span id="rparA" style="display:inline-block"><svg id="rpar1"><use href="#mi-zq-1-ChevronRight"></use></svg></span><span id="r3A" style="display:inline-block"><span style="display:inline-block"><span style="display:inline-block"><svg id="r3x"><use href="#mi-zq-1-ChevronRight"></use></svg></span></span></span> يغيّره الموقع لاحقًا</p>
+  <p id="refl2dst"></p>
+  <p><a href="#x" id="backA"><span class="Hero-module-scss-module__zQ1__BackLinkIcon" id="backWrap" style="display:inline-block"><svg id="back1" viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg></span> رجوع</a></p>
+  <p><svg id="luc1" class="lucide lucide-arrow-left" viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg> سهم</p>
+  <p><img id="img1" alt="" src="assets/zq-icons/arrow-right.svg"> صورة</p>
+  <p><svg id="mask1" style="mask-image:url(https://zq.invalid/lucide/arrow-right.svg)"></svg> قناع</p>
+  <p><a href="#y"><svg id="ext1" class="ConditionalExternalLink-module-scss-module__zQ2__linkIcon"><path d="M4 12L12 4M6 4h6v6"/></svg> رابط خارجي</a></p>
+  <p><span><svg id="ext2" class="ConditionalExternalLink-module-scss-module__zQ2__linkIcon"><path d="M4 12L12 4M6 4h6v6"/></svg></span> خارج رابط</p>
+  <p><svg id="down1"><use href="#mi-zq-1-ChevronDown"></use></svg> أسفل</p>
+  <p><svg id="logo1" class="Footer-module__logo-arrow-right"><path d="M2 2h12v12z"/></svg> شعار</p>
+  <p><svg id="rot1" class="size-3 rotate-90"><use href="#mi-zq-1-ChevronRight"></use></svg> مُدار بصنف</p>
+  <p><svg id="rot2" style="rotate:90deg"><use href="#mi-zq-1-ChevronRight"></use></svg> مُدار محسوب</p>
+  <p><button aria-expanded="false"><svg id="exp1"><use href="#mi-zq-1-ChevronRight"></use></svg></button> طيّ</p>
+  <p><svg id="cds1" data-cds-mirror="" class="chevron-right"><path d="M6 3l5 5-5 5"/></svg> نظام التصميم</p>
+  <p><span style="transform:scaleX(-1);display:inline-block"><svg id="anc1"><use href="#mi-zq-1-ChevronRight"></use></svg></span> معكوسٌ بسلفه</p>
+  <p dir="ltr"><svg id="ltr1"><use href="#mi-zq-1-ChevronRight"></use></svg> ltr</p>
+  <pre><svg id="pre1"><use href="#mi-zq-1-ChevronRight"></use></svg></pre>
+  <p><svg id="big1" class="big"><use href="#mi-zq-1-ChevronRight"></use></svg> كبير</p>
+  <p><span class="pager-icon-next" id="txt1">التالي</span> لافتةٌ بصنفٍ أيقوني</p>
+  <p><svg id="scl1" style="scale:0.75"><use href="#mi-zq-1-ChevronRight"></use></svg> مقاسٌ من الموقع</p>
+  <details><summary><svg id="sum1"><use href="#mi-zq-1-ChevronRight"></use></svg> عنوان طيّ</summary>محتوى</details>
+  <p id="later"></p>
+</div>
+
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+
+<link rel="stylesheet" href="../extension/base.css">
+<script>window.__jsErrors = 0; window.onerror = function () { window.__jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "zq", meta: { scan: "none", live: false, chat: false, hydrate: "none", iconMirror: true },
+  default: "ar", langs: [{ code: "ar" }], dicts: { ar: { dir: "rtl", strings: {}, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function waitFor(cond, then, ms) { var t0 = Date.now(); (function poll() { if (cond() || Date.now() - t0 > (ms || 3000)) then(); else setTimeout(poll, 50); })(); }
+function marked(id) { var e = document.getElementById(id); return e && e.hasAttribute("data-cml-mirror") ? "mark" : "none"; }
+function sc(id) { return getComputedStyle(document.getElementById(id)).scale; }
+var MARK = ["use1", "back1", "luc1", "img1", "mask1", "ext1", "rlate1", "rlate2", "rlate3", "rlate4", "rref1", "rref2", "rhalf1", "rpar1", "r3x"];
+var KEEP = ["backWrap", "ext2", "down1", "logo1", "rot1", "rot2", "exp1", "cds1", "anc1", "ltr1", "pre1", "big1", "txt1", "scl1", "sum1"];
+waitFor(function () { return document.documentElement.getAttribute("dir") === "rtl" && marked("use1") === "mark"; }, function () {
+  check("★ (ر30-ب) الصفحة RTL والمحرّك يعمل", "rtl", document.documentElement.getAttribute("dir"));
+  check("★ (ر30-ب) السهم الأفقي بهويّته يوسم: use وغلافٌ أيقوني وlucide وصورة وقناع، وسهم الرابط الخارجي في رابط",
+    MARK.map(function () { return "mark"; }).join(","), MARK.map(marked).join(","));
+  check("★ (ر30-ب) ويُعكس: scale -1 1 على الموسوم (قاعدة base.css)", "-1 1|-1 1", sc("use1") + "|" + sc("ext1"));
+  check("★ (ر30-ب) لا يوسم الغلاف ولا الخارجي خارج رابط ولا الرأسي ولا الشعار ولا المُدار ولا الطيّ ولا ما يعكسه الموقع ولا جزيرة LTR ولا الكبير",
+    KEEP.map(function () { return "none"; }).join(","), KEEP.map(marked).join(","));
+  check("★ (ر30-ب) ما يعكسه الموقع يبقى على عكسه الواحد (لا قلب مزدوج): data-cds-mirror والسلف المعكوس بلا scale منّا", "none|none",
+    sc("cds1") + "|" + sc("anc1"));
+  // ٤) المُدرَج بعد الإقلاع
+  var later = document.getElementById("later");
+  later.innerHTML = '<svg id="late1"><use href="#mi-zq-1-ChevronRight"></use></svg>';
+  waitFor(function () { return marked("late1") === "mark"; }, function () {
+    check("★ (ر30-ب) المُدرَج بعد الإقلاع يوسم في دفعته", "mark", marked("late1"));
+    // ★ (ر30-ب2، O1) موسومٌ صار الموقع يديره بعدُ ثم أُعيد في الشجرة (دفعةٌ تمرّ به): ترتفع علامته ولا تعود؛ وجاره الموسوم بلا دوران يبقى
+    var r1 = document.getElementById("rlate1"), r2 = document.getElementById("rlate2"), dst = document.getElementById("o1dst");
+    r1.style.rotate = "90deg";
+    var r3 = document.getElementById("rlate3"), r4 = document.getElementById("rlate4");
+    r3.style.rotate = "180deg"; r4.style.transform = "rotate(90deg)";
+    dst.appendChild(r1); dst.appendChild(r2); dst.appendChild(r3); dst.appendChild(r4);
+  waitFor(function () { return marked("rlate1") === "none"; }, function () {
+    check("★ (ر30-ب2، O1) الموسوم الذي صار يُدار ترتفع علامته، وجاره بلا دوران يبقى موسومًا ومعكوسًا", "none|mark|-1 1",
+      marked("rlate1") + "|" + marked("rlate2") + "|" + sc("rlate2"));
+    // ★ (مراجعة ر30-ب2، O1) ونصف الدورة بخاصية rotate (يتبادل مع العكس الأفقي) والتحويل الدوّار في transform (عكسُنا بعده مرآةُ ما يرسمه الموقع) لا يرفعان العلامة
+    check("★ (مراجعة ر30-ب2، O1) الموسوم الذي أداره الموقع نصف دورةٍ بخاصية rotate أو بتحويلٍ دوّار في transform يبقى موسومًا ومعكوسًا", "mark|mark|-1 1|-1 1",
+      marked("rlate3") + "|" + marked("rlate4") + "|" + sc("rlate3") + "|" + sc("rlate4"));
+    // ★ (ر29-هـ) موسومٌ صار الموقع يعكسه بعدُ (عليه، أو على غلافه)، ثم أُعيد في الشجرة: ترتفع علامته فيبقى على عكس الموقع وحده.
+    // ومعه المُدار الذي ارتفعت علامته وقد زال دورانه، وسهمٌ جديد شاهدٌ على أن الدفعة مرّت
+    var q1 = document.getElementById("rref1"), qa = document.getElementById("rrefA"), rdst = document.getElementById("refldst");
+    q1.style.transform = "scaleX(-1)"; qa.style.transform = "scaleX(-1)";
+    r1.style.rotate = "";
+    rdst.innerHTML = '<svg id="late2"><use href="#mi-zq-1-ChevronRight"></use></svg>';
+    rdst.appendChild(q1); rdst.appendChild(qa); rdst.appendChild(r1);
+  waitFor(function () { return marked("late2") === "mark" && marked("rref1") === "none" && marked("rref2") === "none"; }, function () {
+    check("★ (ر29-هـ) موسومٌ عكسه الموقع بعدُ بتحويلٍ عليه أو على سلفٍ ثانٍ له: ترتفع علامته، ولا scale منّا عليه، وعكسُ الموقع وحده باقٍ (لا قلب مزدوج)",
+      "none|none|none|none|matrix(-1, 0, 0, 1, 0, 0)", marked("rref1") + "|" + marked("rref2") + "|" + sc("rref1") + "|" + sc("rref2") + "|" +
+      getComputedStyle(q1).transform);
+    check("★ (ر29-هـ، M11) الموسوم الذي ارتفعت علامته لدورانه يبقى بلا علامة وإن زال دورانه (يُحفظ الحكم)، والدفعة مرّت به", "none|mark|none",
+      marked("rlate1") + "|" + marked("late2") + "|" + getComputedStyle(r1).rotate);
+    // ثم يزول عكس الموقع: يُعاد الحكم فتعود العلامة (لا يُحفظ حكم المعكوس، كما في الحكم الأول)
+    q1.style.transform = ""; qa.style.transform = "";
+    document.getElementById("o1box").appendChild(q1); document.getElementById("o1box").appendChild(qa);
+  waitFor(function () { return marked("rref1") === "mark" && marked("rref2") === "mark"; }, function () {
+    check("★ (ر29-هـ) وإذا زال عكس الموقع عادت العلامة وعُكس السهم بقاعدتنا", "mark|mark|-1 1|-1 1",
+      marked("rref1") + "|" + marked("rref2") + "|" + sc("rref1") + "|" + sc("rref2"));
+    // ★ (مراجعة ر29-هـ) وحارس العكس بزوجيّة الحكم الأول ومحدِّد المصفوفة: نصف الدورة في transform يبقى موسومًا، والعكسان يتلاشيان، والسلف الثالث بخاصية scale يرفعها
+    var h1 = document.getElementById("rhalf1"), pA = document.getElementById("rparA"), a3 = document.getElementById("r3A"), d2 = document.getElementById("refl2dst");
+    h1.style.transform = "rotate(180deg)";
+    document.getElementById("rpar1").style.transform = "scaleX(-1)"; pA.style.transform = "scaleX(-1)";
+    a3.style.scale = "-1 1";
+    d2.innerHTML = '<svg id="late3"><use href="#mi-zq-1-ChevronRight"></use></svg>';
+    d2.appendChild(h1); d2.appendChild(pA); d2.appendChild(a3);
+  waitFor(function () { return marked("late3") === "mark" && marked("r3x") === "none"; }, function () {
+    check("★ (مراجعة ر29-هـ) موسومٌ أداره الموقع بعدُ نصف دورةٍ بتحويلٍ في transform ليس معكوسًا (محدِّدٌ موجب): يبقى موسومًا ومعكوسًا، والدفعة مرّت به", "mark|-1 1|mark",
+      marked("rhalf1") + "|" + sc("rhalf1") + "|" + marked("late3"));
+    check("★ (مراجعة ر29-هـ) عكسان من الموقع بعدُ، عليه وعلى أبيه، يتلاشيان بالزوجيّة كما في الحكم الأول: يبقى موسومًا ومعكوسًا", "mark|-1 1",
+      marked("rpar1") + "|" + sc("rpar1"));
+    check("★ (مراجعة ر29-هـ) عكسُ الموقع بعدُ بخاصية scale على السلف الثالث: ترتفع العلامة ولا scale منّا عليه", "none|none|-1 1",
+      marked("r3x") + "|" + sc("r3x") + "|" + getComputedStyle(a3).scale);
+    // ٥) إطفاء قلب الصفحة ثم إعادته
+    MOCK.localStore.cml_rtl = false; MOCK.fireChanged({ cml_rtl: { newValue: false } }, "local");
+    waitFor(function () { return marked("use1") === "none"; }, function () {
+      check("★ (ر30-ب) إطفاء قلب الصفحة يرفع العلامات كلها", "0", String(document.querySelectorAll("[data-cml-mirror]").length));
+      MOCK.localStore.cml_rtl = true; MOCK.fireChanged({ cml_rtl: { newValue: true } }, "local");
+      waitFor(function () { return marked("use1") === "mark"; }, function () {
+        check("وإعادته تعيدها", "mark,mark", marked("use1") + "," + marked("late1"));
+        MOCK.localStore.cml_enabled = false; MOCK.fireChanged({ cml_enabled: { newValue: false } }, "local");
+        waitFor(function () { return marked("use1") === "none"; }, function () {
+          check("★ (ر30-ب) وإطفاء الإضافة يرفعها", "0", String(document.querySelectorAll("[data-cml-mirror]").length));
+          check("لا أخطاء JS في الصفحة", "0", String(window.__jsErrors));
+          document.title = "icon " + pass + "/" + total;
+          var h = document.createElement("p"); h.className = pass === total ? "ok" : "bad";
+          h.textContent = "ICON: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+          document.body.appendChild(h);
+        });
+      });
+    });
+  }, 2000);
+  }, 2000);
+  }, 2000);
+  }, 1500);
+  });
+}, 4000);
+</script>

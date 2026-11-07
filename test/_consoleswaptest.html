@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<script>document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');</script>
+<title>console swap test</title>
+<!--
+  ★ (ر20-ج، ١٢ جمادى الأولى ١٤٤٨هـ) تبديل القاموس وبيانات الصنف بالمسار (هندسة CN1 بلا حصاد)، على صفحاتٍ اصطناعية وحدها، والصنف في الجدول قادمٌ كما كان:
+  (أ) الصنف مشحونًا في إطارٍ وحده (_consoleframe.html?ship=1: حاله بلا upcoming وقاموسه التجريبي محقون): الوثائق بقاموسها، واللوحة بقاموس الصنف وبياناته —
+  محتوى المستخدم بمحدِّداته على أصله والجاسوس 0 — والتبديل في الاتجاهين بالتنقّل الناعم وreplaceState وpopstate بلا إعادة تحميل، بلا أثرٍ من الجانب الآخر:
+  لقطة اللوحة بعد الوثائق لقطةُ إطارٍ أقلع في اللوحة ولم يرَ الوثائق قط، ولقطة الوثائق بعد اللوحة لقطةُ إطارٍ بلا الصنف قام بالتنقّلات نفسها، بايتًا بايتًا،
+  ومعهما وجوه الخطوط والورقة الحيّة؛ ولا طلب قطعة متنٍ من منظر الصنف، وسمةٌ تطرأ على صفٍّ في اللوحة تحميه، والرجوع والتقدّم يُدخلان المنظر بعد رسم
+  الموقع لا قبله؛ (ب) صنفٌ مشحون بلا قاموسٍ محقون خاملٌ كالقادم، والقادم خاملٌ ولو حُقن قاموسه؛
+  (ج) سمة lang فورًا في طريق العودة من اللوحة إلى الوثائق وإن أعاد الموقع كتابتها بعد مرورنا (مراجعة ر20-أ)، واللوحة القادمة خاملةٌ على أصلها.
+  (د) المراجعة المستقلة: عبورُ حدّ الصنف من غير مراقب الطفرات ينتظر رسم الموقع والصنف قادمٌ أيضًا (الرجوع إلى الفوترة والتقدّم إلى الوثائق، وnavigatesuccess
+  يسبق popstate الذي يرسم فيه الموقع) — خاملٌ في الأول، ولا يُقرأ محتوى مستخدم الفوترة في الثاني (الجاسوس 0).
+  العقد: document.title = "consoleswap N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1100px;margin:auto}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}
+#tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;word-break:break-all}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+iframe{width:300px;height:120px;border:1px solid #ccc}</style>
+<h1>اختبار تبديل قاموس الصنف بالمسار</h1>
+<div id="frames"></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function frame(q) {
+  return new Promise(function (res) {
+    var f = document.createElement("iframe");
+    f.onload = function () { res(f.contentWindow); };
+    f.src = "_consoleframe.html?" + q;
+    document.getElementById("frames").appendChild(f);
+  });
+}
+var NONE = "null|en|null|null|null|null|null|null|null|null";
+function inert(w) { var t = w.trace(); return t.html + "/" + t.marks + "/" + t.live + "/" + t.bidi + "/" + t.langs + "/" + t.fonts + "/" + t.vis; }
+var INERT = NONE + "/0/false/0/0/0/visible";
+function head4(w) { var h = w.trace().html.split("|"); return [h[0], h[1], h[2], h[5]].join("|") + "|" + w.trace().live; }
+function bodiesAsked(w) { return (w.calls().types || {}).bodies || 0; }
+
+(async function () {
+  // ---- (أ) الصنف مشحونًا بقاموسه في إطارٍ وحده ----
+  var S = await frame("mode=nav&ship=1"), SK = await frame("mode=boot&ship=1"), O = await frame("mode=nav&cls=0");
+  await wait(1600);
+  var same = [S.snap() === O.snap()];
+  check("الوثائق (‎/docs/en/intro‎) والصنف مشحون: بقاموس الوثائق وبياناتها كما بلا الصنف",
+        "rtl|ar|on|full|true|توثيقٌ تجريبي|لوحةٌ تجريبية|قائمةٌ تجريبية",
+        head4(S) + "|" + S.text("navDocs") + "|" + S.text("navCon") + "|" + S.attr("navBtn", "aria-label"));
+  var b0 = bodiesAsked(S);
+  S.go("keys"); O.go("keys"); await wait(1300);
+  check("★ الوثائق ← اللوحة (‎/settings/keys‎) والصنف مشحون: يعمل المحرّك بقاموس الصنف (الواجهة والرأس المشترك بترجمته هو) والمسار كامل والورقة الحيّة قائمة",
+        "rtl|ar|on|full|true|مفاتيحُ اللوحة|إنشاء مفتاحٍ في اللوحة|اسمٌ في اللوحة|توثيقٌ من اللوحة|لوحةٌ من اللوحة",
+        head4(S) + "|" + ["kh", "kb", "kth", "navDocs", "navCon"].map(S.text).join("|"));
+  check("★ ولا أثر لقاموس الوثائق في اللوحة: ما ليس في قاموس الصنف (سمة زرّ القائمة) عاد إلى أصله لا ترجمته في الوثائق",
+        "Zq menu", S.attr("navBtn", "aria-label"));
+  check("★ ومحتوى المستخدم بمحدِّدات الصنف (‎[data-row-key]‎: اسم المفتاح وحالته) على أصله وقاموس الصنف يحويهما، والصفّ نفسه بلا السمة يُعرَّب",
+        "Default|Active|افتراضيٌّ في اللوحة", ["kname", "kst", "kctl"].map(S.text).join("|"));
+  check("★ ولقطة المستند كلّه في اللوحة بعد الوثائق هي لقطة إطارٍ أقلع في اللوحة بالصنف مشحونًا ولم يرَ الوثائق قط — بايتًا بايتًا، ووجوه الخطوط هي هي",
+        "true/" + SK.trace().fonts, (S.snap() === SK.snap()) + "/" + S.trace().fonts);
+  S.go("play"); O.go("play"); await wait(900);
+  check("★ (ساحة التجربة، داخل اللوحة) محرِّر الموجِّه ودور المستخدم والمخرَج على أصلها، والفقرة نفسها خارجها والعنوان والزرّ بقاموس الصنف، وسمة المحرِّر على أصلها (ليست في قاموس الصنف)",
+        "Hello there|Hello there|Hello there|مرحبًا من اللوحة|ساحةُ اللوحة|شغِّل في اللوحة|Zq menu",
+        ["wp", "wu", "wo", "wctl", "wh", "wr"].map(S.text).join("|") + "|" + S.attr("wed", "aria-label"));
+  // سمةٌ تطرأ وحدها على صفٍّ مُعرَّب في اللوحة تجعله محتوى مستخدم: يُرجع ما كتبناه فيه (المراقب يرى سمات محدِّدات الصنف لا الوثائق وحدها)
+  S.go("keys"); O.go("keys"); await wait(900);
+  var ctlRow = S.document.getElementById("kctl").parentNode, beforeRow = S.text("kctl");
+  ctlRow.setAttribute("data-row-key", "k2"); await wait(500);
+  check("★ وسمةٌ تطرأ على صفٍّ مُعرَّب في اللوحة (‎data-row-key‎) تُرجعه إلى أصله: سمات محدِّدات الصنف في المراقب", "افتراضيٌّ في اللوحة/Default", beforeRow + "/" + S.text("kctl"));
+  ctlRow.removeAttribute("data-row-key"); await wait(500);
+  S.go("api"); O.go("api"); await wait(1400);
+  check("★ اللوحة ← مرجع الواجهة (‎/docs/en/api/messages‎): بقاموس الوثائق وبياناتها — التوقيع على أصله (STL_KEEP) والعنوان والرأس بترجمة الوثائق",
+        "rtl|ar|on|full|true|POST /v1/messages|إنشاء رسالةٍ تجريبية|توثيقٌ تجريبي|لوحةٌ تجريبية|قائمةٌ تجريبية",
+        head4(S) + "|" + ["sig", "ah", "navDocs", "navCon"].map(S.text).join("|") + "|" + S.attr("navBtn", "aria-label"));
+  same.push(S.snap() === O.snap());
+  S.go("billing"); O.go("billing"); await wait(1000);
+  check("★ المرجع ← اللوحة (‎/settings/billing‎): الرصيد والمؤشّر وحقل المتغيّر وصفّ الفاتورة على أصلها، والعنوان والزرّ والنصّ نفسه خارجها بقاموس الصنف",
+        "Default|Active|Default|Default|فوترةُ اللوحة|شغِّل في اللوحة|افتراضيٌّ في اللوحة", ["bbal", "bkpi", "bvar", "binv", "bh", "bbtn", "bctl"].map(S.text).join("|"));
+  // الطلب الوحيد بعد الإقلاع هو قطعة المرجع (‎/docs/en/api/messages‎)، ومحطات اللوحة الأربع (المفاتيح وساحة التجربة والمفاتيح والفوترة) لا تطلب شيئًا
+  check("★ ولا طلب قطعة متنٍ من منظر الصنف (لا متون للوثائق في اللوحة): طلبٌ واحد بعد الإقلاع، للمرجع", "1", bodiesAsked(S) - b0);
+  S.go("intro"); O.go("intro"); await wait(1400);
+  same.push(S.snap() === O.snap());
+  check("★ اللوحة ← الوثائق: يعود قاموس الوثائق وبياناتها", "rtl|ar|on|full|true|توثيقٌ تجريبي|لوحةٌ تجريبية|قائمةٌ تجريبية",
+        head4(S) + "|" + S.text("navDocs") + "|" + S.text("navCon") + "|" + S.attr("navBtn", "aria-label"));
+  check("★ والوثائق بعد اللوحة هي الوثائق في إطارٍ بلا الصنف قام بالتنقّلات نفسها، بايتًا بايتًا، في محطاتها الثلاث (البدء والمرجع والعودة)، ووجوه الخطوط هي هي",
+        "true,true,true/" + O.trace().fonts, same.join(",") + "/" + S.trace().fonts);
+  S.rgo("members"); await wait(1200);
+  check("★ (replaceState) الوثائق ← الأعضاء: منظر الصنف، والاسم والبريد والعدد على أصلها، والعنوان بقاموس الصنف",
+        "/settings/members|أعضاءُ اللوحة|Default|zq-member" + String.fromCharCode(64) + "example.invalid|Active|Zq menu",
+        S.location.pathname + "|" + ["mh", "mname", "mmail", "mcount"].map(S.text).join("|") + "|" + S.attr("navBtn", "aria-label"));
+  check("★ (AD-005) ولا يقرأ المحرّك نصَّ محتوى المستخدم بأي getter ولا بسلفٍ يحويه في الرحلة كلها (الجاسوس العامّ)", "0", S.spy());
+
+  // ---- (ب) صنفٌ مشحون في الجدول بلا قاموسٍ محقون: خاملٌ كالقادم ----
+  var ND = await frame("mode=nav&ship=1&nodict=1");
+  await wait(1500);
+  ND.go("keys"); await wait(900);
+  check("★ صنفٌ مشحون بلا قاموسٍ محقون (المانيفست لا يحمله): مساره خاملٌ بلا أثر كالقادم",
+        INERT + "/Zq Keys|Default|Zq Documentation", inert(ND) + "/" + ["kh", "kname", "navDocs"].map(ND.text).join("|"));
+  ND.go("intro"); await wait(1300);
+  check("وتعود الوثائق معرَّبة بعده", "rtl|ar|on|full|true|توثيقٌ تجريبي", head4(ND) + "|" + ND.text("navDocs"));
+  // والصنف القادم خاملٌ ولو حُقن قاموسه (حالٌ يرفضها verify-package --final): الحال في الجدول هي الحكم لا وجود القاموس
+  var IJ = await frame("mode=nav&inject=1");
+  await wait(1500);
+  IJ.go("keys"); await wait(900);
+  check("★ والصنف القادم في الجدول خاملٌ ولو حُقن قاموسه: لا منظر له", INERT + "/Zq Keys|Default|Zq Documentation", inert(IJ) + "/" + ["kh", "kname", "navDocs"].map(IJ.text).join("|"));
+
+  // ---- (ج) سمة lang فورًا في طريق العودة (الموقع يعيد كتابة ‎<html lang="en">‎ بعد كل تنقّل) ----
+  var L = await frame("mode=nav&sitelang=1"), LS = await frame("mode=nav&ship=1&sitelang=1");
+  await wait(1600);
+  L.go("keys"); LS.go("keys"); await wait(900);
+  check("★ (الصنف قادم) اللوحة خاملةٌ على أصلها وإن كتب الموقع lang: لا نستردّها في مسارٍ خامل", INERT, inert(L));
+  check("★ (الصنف مشحون) دخول اللوحة من الوثائق ثم كتابة الموقع lang: تُستردّ لغتنا", "ar", LS.document.documentElement.getAttribute("lang"));
+  L.go("intro"); LS.go("intro"); await wait(400);
+  check("★ (مراجعة ر20-أ) العودة من اللوحة إلى الوثائق ثم كتابة الموقع ‎lang=en‎ بعد مرورنا: تُستردّ لغتنا في الحال (قبل أي مرورٍ تالٍ)، والصنف قادمًا ومشحونًا",
+        "ar/ar/rtl|on", L.document.documentElement.getAttribute("lang") + "/" + LS.document.documentElement.getAttribute("lang") + "/" +
+        L.trace().html.split("|")[0] + "|" + L.trace().html.split("|")[2]);
+  L.go("keys"); await wait(900);
+  check("★ ثم اللوحة مرّةً ثانية: خاملةٌ على أصلها (lang الموقع)", INERT, inert(L));
+  L.go("intro"); await wait(400);
+  check("★ والعودة الثانية كالأولى", "ar", L.document.documentElement.getAttribute("lang"));
+  // ميزانية الاسترداد لكل دخول خارج htmlPins: عشر عوداتٍ أخرى لا تستنفد حارس التثبيت، فمحوُ سمتنا عن <html> بعدها يُعاد
+  for (var rt = 0; rt < 10; rt++) { L.go("keys"); await wait(350); L.go("intro"); await wait(350); }
+  var lang12 = L.document.documentElement.getAttribute("lang");
+  L.document.documentElement.removeAttribute("data-cml"); await wait(300);
+  check("★ وبعد اثنتي عشرة عودة: lang مستردّة، وحارس التثبيت حيّ (محوُ data-cml عن <html> يُعاد)", "ar/on",
+        lang12 + "/" + L.document.documentElement.getAttribute("data-cml"));
+  // (المراجعة المستقلة) موقعٌ يصرّ على lang="en" كلما كتبنا لغتنا: ميزانية الاسترداد لكل دخول (langPins) تُنهي التقاذف فلا حلقة، والصفحة معرَّبة
+  L.go("keys"); await wait(900);
+  var siteW = 0, mo = new L.MutationObserver(function () {
+    var h = L.document.documentElement; if (h.getAttribute("lang") !== "en" && siteW < 500) { siteW++; h.setAttribute("lang", "en"); } });
+  mo.observe(L.document.documentElement, { attributes: true, attributeFilter: ["lang"] });
+  L.go("intro"); await wait(1500);
+  mo.disconnect();
+  check("★ (المراجعة المستقلة) وموقعٌ يصرّ على lang الإنجليزية كلما كتبنا لغتنا بعد العودة: تقاذفٌ تنهيه ميزانية الدخول (كتابات الموقع 15 فأقل لا 500) والصفحة معرَّبة",
+        "true|on|توثيقٌ تجريبي", (siteW <= 15) + "|" + L.document.documentElement.getAttribute("data-cml") + "|" + L.text("navDocs"));
+  // popstate في إطارٍ وحده بعد أن سكنت الأطر كلها: تاريخ الجلسة مشتركٌ بين الصفحة وأطرها، فالرجوع يُرجع آخر من دفع (الموقع يعيد الرسم عند popstate)
+  var P = await frame("mode=nav&ship=1");
+  await wait(1500);
+  P.go("billing"); await wait(900); P.go("intro"); await wait(1200);
+  P.history.back(); await wait(1200);
+  check("★ (popstate) الرجوع من الوثائق إلى الفوترة: منظر الصنف بقاموسه، ومحتوى المستخدم على أصله", "/settings/billing|فوترةُ اللوحة|Default|Default|Zq menu",
+        P.location.pathname + "|" + ["bh", "bbal", "binv"].map(P.text).join("|") + "|" + P.attr("navBtn", "aria-label"));
+  P.history.forward(); await wait(1300);
+  check("★ (popstate) والتقدّم إلى الوثائق: قاموس الوثائق كما كان", "/docs/en/intro|توثيقٌ تجريبي|قائمةٌ تجريبية|0",
+        P.location.pathname + "|" + P.text("navDocs") + "|" + P.attr("navBtn", "aria-label") + "|" + P.spy());
+  // ---- (د) المراجعة المستقلة: الانتظار لكل عبورٍ لحدّ الصنف من غير مراقب الطفرات، والصنف قادم ----
+  // الرجوع والتقدّم والصنف قادم، في إطارٍ وحده بعد أن سكنت الأطر كلها (الموقع يعيد الرسم عند popstate، وnavigatesuccess يسبقه)
+  var U = await frame("mode=nav&spy=1&pop=1");
+  await wait(1500);
+  U.go("billing"); await wait(900); U.go("intro"); await wait(1200);
+  U.history.back(); await wait(1200);
+  check("★ (المراجعة المستقلة، الصنف قادم) الرجوع من الوثائق إلى الفوترة: خاملٌ على أصله والجاسوس 0", INERT + "|0", inert(U) + "|" + U.spy());
+  U.history.forward(); await wait(1500);
+  check("★ (المراجعة المستقلة، الصنف قادم) والتقدّم إلى الوثائق: تُعرَّب بعد أن يرسم الموقع، ولا يُقرأ محتوى مستخدم الفوترة قبله (الجاسوس 0)",
+        "/docs/en/intro|توثيقٌ تجريبي|rtl|ar|on|full|true|0", U.location.pathname + "|" + U.text("navDocs") + "|" + head4(U) + "|" + U.spy());
+  check("لا أخطاء JS غير ملتقطة (الصفحة والأطر)", "0/0/0/0/0/0/0/0/0/0",
+        [jsErrors].concat([S, SK, O, ND, IJ, L, LS, P, U].map(function (w) { return w.jsErrors; })).join("/"));
+  document.title = "consoleswap " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "CONSOLESWAP: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})().catch(function (e) { jsErrors++; document.title = "consoleswap 0/1"; var p = document.createElement("pre"); p.textContent = String(e && e.stack || e); document.body.appendChild(p); });
+</script>

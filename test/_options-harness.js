@@ -2,7 +2,8 @@
    الإعدادات أو النافذة الحقيقية فوق قشرة chrome جديدة وعامل خدمةٍ حقيقي (sw.js في الإطار نفسه)،
    وأدوات التحقق والانتظار. الصفحة تعرّف قبلها jsErrors وجدول النتائج #tbl.
    خيارات makeFrame: tabs (قشرة chrome.tabs للنافذة)، noAccess (permissions.contains ⇒ false:
-   «الوصول إلى المواقع» مقيَّد في المتصفح — ج٣)، manifest (ما يُرجعه runtime.getManifest بدل مانيفست القشرة — ر8-ب). */
+   «الوصول إلى المواقع» مقيَّد في المتصفح — ج٣)، manifest (ما يُرجعه runtime.getManifest بدل مانيفست القشرة — ر8-ب)،
+   status ({<نطاق>: صيغة status} تُكتب في جدول النطاقات داخل الإطار بعد cml-const.js وقبل الصفحة — ر15: تشغيل النطاق القادم كما يشغّله CM-د). */
 var EXT = new URL("../extension/", location.href).href;
 var EXT_ID = "cmloptstest";
 var XURL = "chrome-extension://" + EXT_ID + "/";
@@ -96,6 +97,9 @@ function makeFrame(page, seed, opts) {
   var html = page === "options.html" ? OPTS_HTML : POPUP_HTML;
   var head = '<base href="' + EXT + '"><script>parent.__install(window);<\/script>';
   html = html.replace("<head>", "<head>" + head);
+  // ★ (ر15) صيغ status بديلة في جدول الإطار وحده (الجدول الحقيقي في الصفحة الأم لا يُمسّ)
+  if (opts.status) html = html.replace('<script src="cml-const.js"><\/script>', '<script src="cml-const.js"><\/script><script>(function (s) {' +
+    ' for (var k in s) CMLConst.domain(k).status = s[k]; })(' + JSON.stringify(opts.status) + ');<\/script>');
   if (page === "options.html") {
     html = html.replace('<script src="cml-shared.js"><\/script>',
       '<script src="cml-shared.js"><\/script><script src="cml-rtl.js"><\/script><script src="cml-arbiter.js"><\/script>' +

@@ -5,7 +5,9 @@
 //  ١) ★ المفاتيح المكررة بمسح نصي خام — JSON.parse يُبقي الأخير صامتًا، فدفعةٌ فيها
 //     مفتاح مكرر بترجمة أسوأ تدهس الأفضل بلا أثر، ولا أداة أخرى تراها.
 //  ٢) أزواج فارغة أو غير نصية.
-//  ٣) قواعد فاسدة التعبير أو مراجع $n بلا مجموعة مقابلة.
+//  ٣) قواعد فاسدة التعبير أو مراجع $n بلا مجموعة مقابلة. ★ (ر12، ٥ جمادى الأولى ١٤٤٨هـ) ومعها رموز المحرّك %M/%W/%P/%C/%T<n>
+//     (‎%T‎ التقاطٌ مفتاحٌ حرفيٌّ في قاموس الموقع — cml-shared fillPattern): لا رمز على مجموعةٍ غير موجودة، والعدّ بالتعبير نفسه
+//     (‎new RegExp(re + "|")‎) لا بعدّ الأقواس — كان «\(» المهروب يُعدّ مجموعةً فيُجيز مرجعًا لا مجموعة له.
 //  ٤) ترتيب التخصيص قائم فعلًا (بالدالة المشتركة نفسها لا بنسخة).
 //  ٥) ★ حارس عقد الحصاد: نصّ unescapeLiteral في harvest-all-strings.js مطابق للمشترك
 //     — السكربت ذاتي الاكتفاء حكمًا (يُلصق في وحدة التحكم) فنسخته قسرية، والعقد
@@ -24,17 +26,23 @@ const CODE = __P.CODE || null; // غير مُصدَّر في بنية النشر
 await import(new URL("file:///" + path.join(__P.EXT, "cml-shared.js").split(path.sep).join("/")).href);
 const { sortBySpecificity, patternLiteralLen } = globalThis.CMLShared;
 
-const { C, domainArg, domainsOf, dictFile, label } = await import(new URL("./domain-arg.mjs", import.meta.url).href);
+const { C, domainArg, dictTargets } = await import(new URL("./domain-arg.mjs", import.meta.url).href);
 const SEL = domainArg(process.argv, { allowAll: true, fallback: "all" });
 let fails = 0, warns = 0;
-const fail = (m) => { console.error("✗ " + m); fails++; };
+// ★ (ر20-ج) وفشلٌ في قاموس صنف مسار يُسمّى باسم الصنف ونطاقه («… (docs/console): …»)، وفشل النطاق كما كان حرفًا
+let CUR = null;
+const fail = (m) => { console.error("✗ " + (CUR ? CUR + ": " : "") + m); fails++; };
 const warn = (m) => { console.warn("⚠ " + m); warns++; };
 
-for (const D of domainsOf(SEL)) {
-const AR = dictFile(D);
-if (!fs.existsSync(AR)) { fail(`${label(D)}: قاموسه غير موجود — ${path.basename(AR)}`); continue; }
+// ★ (ر20-ج، ١٢ جمادى الأولى ١٤٤٨هـ) النطاقات وأصناف مسارها (dictTargets): قاموس الصنف (ar-console.json) يُفحص بعد قاموس نطاقه بالفحوص نفسها
+for (const X of dictTargets(SEL)) {
+const AR = X.file;
+CUR = X.cls ? X.label : null;
+// ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) نطاقٌ قادم (status.upcoming — claude.com حتى CM-د) بلا قاموسٍ بعد: لا شيء يُفحص، ويُفحص متى أُنشئ قاموسه
+if (!fs.existsSync(AR) && X.upcoming) { console.log(`\nℹ ${X.label}: ${X.cls ? "صنفٌ" : "نطاقٌ"} قادم بلا قاموسٍ بعد (${path.basename(AR)}) — يُفحص متى أُنشئ`); continue; }
+if (!fs.existsSync(AR)) { if (X.cls) fail(`قاموسه غير موجود — ${path.basename(AR)}`); else fail(`${X.label}: قاموسه غير موجود — ${path.basename(AR)}`); continue; }
 console.log(`
-— ${label(D)}: ${path.basename(AR)}`);
+— ${X.label}: ${path.basename(AR)}`);
 const raw = fs.readFileSync(AR, "utf8");
 
 // ١) المفاتيح المكررة — مسح خام قبل التحليل، **داخل قسم strings وحده**
@@ -85,13 +93,14 @@ const patterns = dict.patterns || [];
     if (!p || typeof p.re !== "string" || typeof p.ar !== "string" || typeof p.en !== "string") { bad++; return fail(`قاعدة ${i} ناقصة الحقول`); }
     let re;
     try { re = new RegExp(p.re); } catch (e) { bad++; return fail(`قاعدة ${i} تعبيرها فاسد: ${p.re.slice(0, 50)}`); }
-    const groups = (p.re.match(/\((?!\?)/g) || []).length;
-    for (const mm of p.ar.matchAll(/\$(\d)/g)) {
-      const n = +mm[1];
-      if (n === 0 || n > groups) { bad++; fail(`قاعدة «${p.en.slice(0, 40)}»: $${n} بلا مجموعة مقابلة (${groups})`); }
+    // عدد المجموعات الملتقطة بالتعبير نفسه: البديل الفارغ يطابق "" فتُرجع المطابقة كل مجموعةٍ خانةً (‎(?:…)‎ و‎\(‎ لا تُعدّان)
+    const groups = new RegExp("(?:" + p.re + ")|").exec("").length - 1;
+    for (const mm of p.ar.matchAll(/(\$|%[MWPCT])(\d)/g)) {
+      const n = +mm[2];
+      if (n === 0 || n > groups) { bad++; fail(`قاعدة «${p.en.slice(0, 40)}»: ${mm[1]}${n} بلا مجموعة مقابلة (${groups})`); }
     }
   });
-  if (!bad) console.log(`✓ القواعد سليمة التعبير والمراجع (${patterns.length.toLocaleString("en")})`);
+  if (!bad) console.log(`✓ القواعد سليمة التعبير والمراجع ($n و%M/%W/%P/%C/%T: ${patterns.length.toLocaleString("en")}، منها ${patterns.filter((p) => /%T\d/.test(p.ar)).length} بـ%T)`);
 }
 
 // ٤) ترتيب التخصيص — بالدالة المشتركة نفسها

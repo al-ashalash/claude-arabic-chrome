@@ -35,7 +35,8 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vert
   try {
     OPTS_HTML = await fetch(EXT + "options.html").then(function (r) { return r.text(); });
     POPUP_HTML = await fetch(EXT + "popup.html").then(function (r) { return r.text(); });
-    var IDS = CMLConst.DOMAINS.map(function (d) { return d.id; });
+    // ★ (ر15) المواقع المشحونة: النطاق القادم (status.upcoming) لا تعرضه الصفحة
+    var IDS = CMLConst.shipped().map(function (d) { return d.id; });
     try { localStorage.removeItem("cml_ui_domain"); } catch (e) {}
 
     // ══ ١) «المواقع كلها» أولًا وافتراضيًّا ══
@@ -375,20 +376,24 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vert
       (about.indexOf("لا تجمع بيانات عنك ولا عن استعمالك") >= 0) + "/" + (about.indexOf("لا تطلب الوصول إلى أي موقع غير claude.ai") >= 0) +
       "/" + (about.indexOf("لا خادم") >= 0));
     check("الخصوصية تسرد المواقع كلها من الجدول", "true",
-      CMLConst.DOMAINS.every(function (d) { return E.$("privSites").textContent.indexOf(CMLConst.siteLabel(d.id)) >= 0; }));
+      CMLConst.shipped().every(function (d) { return E.$("privSites").textContent.indexOf(CMLConst.siteLabel(d.id)) >= 0; }));
     check("الترحيب بعدد المواقع من الجدول لا «الأربع»", "false/true",
       (E.$("welcomeTitle").textContent.indexOf("الأربع") >= 0) + "/" + (E.$("welcomeTitle").textContent.indexOf(IDS.length + " مواقع") >= 0));
     // ★ (ر8-ب) «ما لا يُعرَّب» في بطاقة الترحيب يصدق على المشحون (مراجعة ر8-أ، F10): «مقالات وثائق Claude Code» مذكورةٌ ما دام فهرس
     // قطعها المشحون فارغًا، و«محتوى أكاديمية Claude عدا واجهتها» ما دامت الأكاديمية بلا مقالاتٍ في الجدول — فإن شُحن أحدهما أخفق هذا
     // حتى تُحدَّث الجملة؛ ومرجع الواجهة البرمجية تبقى خصائصه ونماذجه لا محتواه كلّه؛ ولا «الشيفرة» في البطاقة (دليل الأسلوب §13)
+    // ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) والأكاديمية صار لها متونٌ في الجدول (meta.bodies) وفهرسُ قطعها المشحون فارغ حتى AC-د: فجملتها مذكورةٌ ما دام
+    // فهرسها فارغًا، كمقالات Claude Code
     var keepT = E.$("welcomeKeep").textContent.replace(/\s+/g, " ");
-    var codeIx = await fetch(EXT + "bodies/code/ar/index.json").then(function (r) { return r.ok ? r.json() : null; }, function () { return null; });
-    var codePages = codeIx ? (typeof codeIx.pages === "number" ? codeIx.pages : (codeIx.shards || []).length) : -1;
-    var acadDom = CMLConst.DOMAINS.filter(function (d) { return d.id === "academy"; })[0];
-    check("★ الترحيب: «ما لا يُعرَّب» يطابق المشحون — مقالات Claude Code ما دام فهرسها فارغًا، والأكاديمية ما دامت بلا مقالات، وخصائص المرجع ونماذجه، وبلا «الشيفرة»",
+    var shipPages = function (d) {
+      return fetch(EXT + "bodies/" + d + "/ar/index.json").then(function (r) { return r.ok ? r.json() : null; }, function () { return null; })
+        .then(function (x) { return x ? (typeof x.pages === "number" ? x.pages : (x.shards || []).length) : -1; });
+    };
+    var codePages = await shipPages("code"), acadPages = await shipPages("academy");
+    check("★ (ر13) الترحيب: «ما لا يُعرَّب» يطابق المشحون — مقالات Claude Code ومحتوى الأكاديمية ما دام فهرس قطع كلٍّ منهما فارغًا، وخصائص المرجع ونماذجه، وبلا «الشيفرة»",
       "true/true/true/false/false",
       ((keepT.indexOf("مقالات وثائق Claude Code") >= 0) === (codePages === 0)) + "/" +
-      ((keepT.indexOf("ومحتوى أكاديمية Claude عدا واجهتها") >= 0) === !!(acadDom && !(acadDom.meta && acadDom.meta.bodies))) + "/" +
+      ((keepT.indexOf("ومحتوى أكاديمية Claude عدا واجهتها") >= 0) === (acadPages === 0)) + "/" +
       (keepT.indexOf("والخصائص والنماذج في مرجع الواجهة البرمجية") >= 0) + "/" +
       (keepT.indexOf("ومحتوى مرجع الواجهة البرمجية") >= 0) + "/" +
       (E.$("welcomeBox").textContent.indexOf("الشيفرة") >= 0));
@@ -400,7 +405,7 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vert
     try { localStorage.setItem("cml_ui_domain", "all"); } catch (e) {}
     var R = await makeFrame("options.html", {});
     await until(function () { return !R.$("welcomeBox").classList.contains("hidden") && R.$("statsBody").children.length === IDS.length; }, 8000);
-    var DOMS = CMLConst.DOMAINS;
+    var DOMS = CMLConst.shipped();
     // N2: العنوان بلفظ المالك وعددِ الجدول، والاحتياط في options.html بلا «صار»
     var staticTitle = (/<h2 id="welcomeTitle">([^<]*)<\/h2>/.exec(OPTS_HTML) || [])[1] || "";
     check("★ (ر8-د) الترحيب: «الآن يعمل التعريب في N مواقع لـClaude» بعدد الجدول، واحتياطُه في options.html بلا «صار»",
@@ -460,6 +465,16 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vert
     var legalB = R.$("siteRow_legal").querySelector(".where bdi");
     check("★ (ر8-د) مسارات كل موقع معزولة في <bdi dir=\"ltr\"> والفواصل العربية خارجها: «/legal/privacy» لا «legal/privacy/»", "true/true//legal/privacy",
       isoOk + "/" + (R.$("siteRow_academy").querySelectorAll(".where bdi").length > 10) + "/" + (legalB ? legalB.textContent : "?"));
+    // ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) النطاق القادم (status.upcoming — claude.com حتى CM-د) لا تعرضه الصفحة في قسمٍ منها: لا خيار في «الموقع» ولا صفّ
+    // في «المواقع» ولا في «لكل موقع» ولا سطر في الترحيب ولا ذكر في «حول»، ولا يُعدّ في العنوان
+    var UP = CMLConst.DOMAINS.filter(function (d) { return CMLConst.upcoming(d.id); }).map(function (d) { return d.id; });
+    check("★ (ر15) النطاق القادم (com) لا تعرضه الإعدادات: لا خيار ولا صفّ في الجدولين ولا سطر ترحيبٍ ولا ذكر في «حول»، والعنوان بعدد المشحون",
+      // ★ (ر20-ب) وبوابة Anthropic القادمة كذلك
+      "com,portal/false/false/false/false/false/true",
+      UP.join(",") + "/" + [].some.call(R.$("domainSel").options, function (o) { return UP.indexOf(o.value) >= 0; }) + "/" +
+      UP.some(function (d) { return !!R.$("siteRow_" + d) || !!R.$("rtlRow_" + d); }) + "/" +
+      UP.some(function (d) { return !!R.$("welcomeSt_" + d); }) + "/" + (R.$("welcomeLines").textContent.indexOf("موقع Claude") >= 0) + "/" +
+      (R.$("privSites").textContent.indexOf("«موقع Claude»") >= 0) + "/" + (R.$("welcomeTitle").textContent.indexOf(" " + IDS.length + " مواقع") >= 0));
     // N4: تسميات عمود «الفحص» بما يُفحص، وسطر التذييل بها
     var scanLab = IDS.map(function (d) { return R.$("scanRes_" + d).parentNode.children[1].textContent; });
     check("★ (ر8-د) عمود «الفحص»: «نصوص الواجهة كلها» و«عناوين الصفحات» و«عند كل إصدار» من القدرات، وسطر التذييل بها",
@@ -503,10 +518,14 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vert
         var hvAt = bj && bj._meta && bj._meta.harvestedAt !== undefined ? bj._meta.harvestedAt : null;
         HV_DICT.push(dd.id + ":" + hvAt);
         HV_IX.push(dd.id + ":" + (hvIx ? hvIx.harvestedAt : "(لا فهرس)"));
-        if (bj) { if (/^\d{4}-\d{2}-\d{2}$/.test(String(hvAt))) HV_OK++; else HV_BAD++; }
+        // ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) وقاموسٌ فارغٌ لم يُحصد له شيء (هيكل ar-academy.blocks.json قبل أول دمج) لا تاريخ فيه ولا في فهرسه، كموقعٍ
+        // بلا قاموس كتل (build.mjs لا يأخذ له تاريخًا من مجلد العمل)
+        var bjHv = bj ? Object.keys(bj.harvested || bj.pages || {}).length : 0;
+        if (bj && bjHv) { if (/^\d{4}-\d{2}-\d{2}$/.test(String(hvAt))) HV_OK++; else HV_BAD++; }
+        else if (bj && hvAt !== null) HV_BAD++;
       }
     }
-    check("★ (ر9-أ) تاريخ الحصاد في فهرس متون كل موقعٍ هو _meta.harvestedAt في قاموس كتله (يكتبه merge-blocks فيُبنى المستودع العام بلا حصاد)، تاريخًا صالحًا؛ وموقعٌ بلا قاموس كتلٍ بلا تاريخ",
+    check("★ (ر9-أ؛ ر13) تاريخ الحصاد في فهرس متون كل موقعٍ هو _meta.harvestedAt في قاموس كتله (يكتبه merge-blocks فيُبنى المستودع العام بلا حصاد)، تاريخًا صالحًا؛ وموقعٌ بلا قاموس كتلٍ أو بقاموسٍ فارغٍ لم يُحصد له شيء بلا تاريخ",
       HV_DICT.join(",") + "/0/true", HV_IX.join(",") + "/" + HV_BAD + "/" + (HV_OK > 0));
     check("★ (ر8-د) الأعداد المشحونة في القاموس (counts) تطابق إعادة حسابها من القواميس: نصوص الواجهة المترجَمة وفقرات المقالات المشحونة (ما تشير إليه صفحاتها) والكلمات العربية",
       IDS.map(function (d) { return [RECALC[d].strings, RECALC[d].blocks, RECALC[d].words].join(":"); }).join(",") + "/true",
@@ -523,7 +542,7 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vert
     check("★ (ر8-د) جدول «الكل»: «نصوص الواجهة» و«فقرات المقالات» و«الكلمات» من الأعداد المشحونة لا من عدّ القاموس المحمَّل، وسطرُه بمجموعها",
       "نصوص الواجهة|فقرات المقالات|الكلمات/true/true/true/true",
       heads("statsTable").split("|").slice(1, 4).join("|") + "/" + cellsOk + "/" + (R.$("size_strings_app").textContent !== appKeys.toLocaleString("en") || SHIP.app.strings === appKeys) + "/" +
-      (R.$("statLine").textContent.indexOf("في " + IDS.length + " مواقع: " + totS.toLocaleString("en") + " نصًّا للواجهة و" + totB.toLocaleString("en") + " فقرةً من المقالات، نحو ") === 0) + "/" +
+      (R.$("statLine").textContent.indexOf("في " + IDS.length + " مواقع: " + totS.toLocaleString("en") + " " + (totS % 100 >= 3 && totS % 100 <= 10 ? "نصوص" : totS % 100 >= 11 ? "نصًّا" : "نصّ") + " للواجهة و" + totB.toLocaleString("en") + " فقرةً من المقالات، نحو ") === 0) + "/" +
       (R.$("statLine").textContent.indexOf("نحو " + (Math.round(totW / 1000) >= 1000 ? (Math.round(totW / 1e4) / 100).toLocaleString("en") + " مليون"
         : Math.round(totW / 1000).toLocaleString("en") + ([3, 4, 5, 6, 7, 8, 9, 10].indexOf(Math.round(totW / 1000) % 100) >= 0 ? " آلاف" : " ألف")) + " كلمة عربية") >= 0));
     check("(ر8-د) الكلمات مقرَّبة بالألف في خلاياها («≈ 298 ألفًا»، «≈ 3 آلاف»)، وأعمدة تصحيحاتك كما هي", "true/true/تصحيحاتك|قواعدك|الفقرات",
@@ -629,9 +648,10 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vert
     function charsN(n) { var m = n % 100; return n.toLocaleString("en") + (m >= 3 && m <= 10 ? " أحرف" : m >= 11 && m <= 99 ? " حرفًا" : " حرف"); }
     R.$("newDomain").value = "support"; R.$("newSrc").value = "Zzq " + "long ".repeat(CMLConst.TEXT_MAX); R.$("newDst").value = "ط";
     R.$("addTerm").click();
-    await until(function () { return R.$("termsStatus").textContent.indexOf("تعذّر الحفظ") === 0; }, 2000);
-    check("(ر8-د2) رسالة حدّ الطول بمعدودٍ صحيح: «أطول من " + charsN(CMLConst.TEXT_MAX) + " أو الترجمة أطول من " + charsN(CMLConst.TEXT_MAX * 2) + "»", "true",
-      R.$("termsStatus").textContent.indexOf("النص أطول من " + charsN(CMLConst.TEXT_MAX) + " أو الترجمة أطول من " + charsN(CMLConst.TEXT_MAX * 2) + "،") >= 0);
+    // ★ (ر29-ي) لا حدَّ طولٍ للتصحيح: يُضاف، وتقول الرسالة إنه أطول من حدّ المزامنة فيبقى على هذا الجهاز — بمعدودٍ صحيح (N8)
+    await until(function () { return R.$("termsStatus").textContent.indexOf("أُضيف التصحيح") === 0; }, 2000);
+    check("(ر8-د2، ر29-ي) يُضاف التصحيح الطويل، ورسالة حدّ المزامنة بمعدودٍ صحيح: «أطول من حدّ المزامنة (" + charsN(CMLConst.TEXT_MAX) + " للنص، و" + charsN(CMLConst.TEXT_MAX * 2) + " للترجمة)»", "true",
+      R.$("termsStatus").textContent.indexOf("أطول من حدّ المزامنة (" + charsN(CMLConst.TEXT_MAX) + " للنص، و" + charsN(CMLConst.TEXT_MAX * 2) + " للترجمة)") >= 0);
 
     // ★ (ر8-د، المراجعة — قرار المنسّق) مفتاح إغلاق الترحيب الجديد (cml_welcome_v2b) — في إطارٍ خاصّ بعد فحوص الإطار R (الإطار الجديد يحلّ محلّه): من أغلقه في test-2.0.0-2 (cml_welcome_v2) يراه مرّةً
     // أخرى بحال المواقع ويُمحى القديم، و«حسنًا» يكتب الجديد فتُخفى البطاقة؛ والجديد في «إعادة الضبط» (صنف ui) والقديم بقيّةٌ (legacy)
@@ -748,6 +768,28 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vert
       HELD_NONE + "/true/false/true/" + HELD_NONE, [hN.note, hN.v, hN.foot, hN.box, hN.blk].join("/"));
     check("★ (ر6-د) النافذة: صفحةٌ تغيّر متنها بعد ترجمتها محجوبة ⇒ سطر «تغيّر متن هذه الصفحة…» ظاهر، وصندوق التصحيح يقوله",
       HELD_DRIFT + "/true/false/true/" + HELD_DRIFT, [hD.note, hD.v, hD.foot, hD.box, hD.blk].join("/"));
+    // ★ (ر28-ج2، ٢٥ جمادى الأولى ١٤٤٨هـ — القرار 140) لا نموذج «إضافة أو تصحيح ترجمة» في النافذة (حقلاه وزرّه وسطر حاله): مكانه الإعدادات. وقبل
+    // رابطها سطرٌ واحد بما فيها، في صفّ الرابط نفسه. ونصُّ واجهةٍ يجلبه «جلب الفقرة المحدّدة» يُحال إلى الإعدادات بنصّه الإنجليزي معزولًا
+    var OPT_HINT = "في الإعدادات: تشغيل التعريب، وتعريب كل موقع، والخط العربي، وفحص الترجمة، واتجاه الصفحة، وتصحيح قاموس التعريب واستيراده وتصديره، وتصحيحات فقرات المقالات، والمزامنة بين أجهزتك، وإعادة الضبط، ونبذة عن الإضافة والخصوصية.";
+    var QU = await makeFrame("popup.html", {}, { tabs: {
+      query: function (q, cb) { setTimeout(function () { cb([{ id: 13 }]); }, 0); },
+      sendMessage: function (id, msg, o, cb) { setTimeout(function () {
+        cb(msg.type === "cml-hello" ? { domain: "support", route: "full", enabled: true, font: { reach: "ok" },
+            bodies: { page: "/zq", have: 3, pending: false, bad: 0, guard: { judged: true, held: false, why: "", blocks: 3, uncovered: 0 } } }
+          : msg.type === "cml-block-at" ? { ui: true, en: "Zq Settings", ar: "إعدادات زق" } : null); }, 0); },
+    } });
+    await until(function () { return QU.$("tabLabel").textContent.indexOf("هذا التبويب:") === 0; }, 4000);
+    await sleep(150);
+    QU.$("blkGet").click();
+    await until(function () { return QU.$("blkStatus").textContent.length > 0; }, 3000);
+    var quHint = QU.$("optHint"), quLink = QU.$("openOptions"), quText = QU.w.document.body.textContent; // نصّ الصفحة بلا تعليقات HTML (تعليق النافذة يذكر النموذج المحذوف باسمه)
+    check("★ (ر28-ج2) النافذة بلا نموذج «إضافة أو تصحيح ترجمة»، وقبل رابط الإعدادات سطرٌ بما فيها، ونصُّ الواجهة المجلوب يُحال إلى الإعدادات بنصّه",
+      ["0/false", "true/true/" + OPT_HINT, "true/true",
+       "هذا نصٌّ من قاموس الواجهة: \u2066Zq Settings\u2069 — صحّحه من الإعدادات في «إدارة قاموس التعريب».", "true"].join(" | "),
+      [["src", "dst", "save", "status"].filter(function (id) { return !!QU.$(id); }).length + "/" + (quText.indexOf("إضافة أو تصحيح") >= 0),
+       visible(quHint) + "/" + (!!quHint && quHint.nextElementSibling === quLink) + "/" + (quHint ? quHint.textContent : "-"),
+       visible(QU.$("blkBox")) + "/" + (QU.$("blkEdit").classList.contains("hidden")),
+       QU.$("blkStatus").textContent, Math.ceil(QU.w.document.documentElement.getBoundingClientRect().height) <= 600].join(" | "));
     var hT = await popHeld("docs", { judged: true, held: false, why: "drift", blocks: 250, uncovered: 9 });
     var hI = await popHeld("code", { judged: true, held: true, why: "none", blocks: 120, uncovered: 110 }, false);
     check("(ر6-د) النافذة: لا سطر حجبٍ لصفحةٍ لم تُحجب، ولا والإضافة خاملة في الموقع", "false/true/false/true",
@@ -1009,6 +1051,63 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vert
       [MF.name, MF.short_name, (MF.action || {}).default_title, String(MF.short_name || "").length <= 12,
        tagText(OPTS_HTML, /<title>([^<]*)<\/title>/), tagText(OPTS_HTML, /<h1 id="appName">([^<]*)<\/h1>/),
        tagText(OPTS_HTML, /<strong id="aboutName">([^<]*)<\/strong>/), tagText(POPUP_HTML, /<h1>([^<]*)<\/h1>/)].join("/"));
+    // ★ (ر15) وcom مشغَّلًا في الإطار (status كما يبدّله CM-د في الجدول): خيارٌ ثامن وصفُّه، وجملة «يعمل في…» تذكر قائمته الطويلة بعددها لا
+    // بمساراتها (ثلاثمئة ونيّف) ومساراتُها الباقية معزولة، والترحيب يعدّه بحاله
+    var CS = await makeFrame("options.html", {}, { status: { com: { part: "تجريبيٌّ للاختبار", en: "قسمٌ تجريبي" } } });
+    await until(function () { return !!CS.$("siteRow_com") && !CS.$("welcomeBox").classList.contains("hidden"); }, 8000);
+    var whC = CS.$("siteRow_com") ? CS.$("siteRow_com").querySelector(".where") : null, capC = CMLConst.caps("com");
+    var exN = CMLConst.domain("com").meta.routes.exact.length;
+    check("★ (ر15) com مشغَّلًا: خيارٌ ثامن وصفُّه، و«يعمل في…» بعدد قائمته المولَّدة ومساراتُ السوق والهيكل السبعة معزولة، والترحيب «جزئي» بسببه",
+      (IDS.length + 2) + "/true/true/7/true/true/true",
+      CS.$("domainSel").options.length + "/" + [].some.call(CS.$("domainSel").options, function (o) { return o.value === "com"; }) + "/" +
+      (!!whC && whC.textContent === capC.where && whC.textContent.indexOf("(" + exN.toLocaleString("en") + ")") > 0) + "/" +
+      (whC ? whC.querySelectorAll("bdi").length : -1) + "/" + (CS.$("welcomeTitle").textContent.indexOf(" " + (IDS.length + 1) + " مواقع") >= 0) + "/" +
+      (CS.$("welcomeSt_com") && CS.$("welcomeSt_com").textContent === "جزئي") + "/" + (CS.$("welcomeKeep").textContent.indexOf("قسمٌ تجريبي") >= 0));
+    // ★ (ر15) والنافذة على تبويبٍ في النطاق القادم: محرّكه الخامل يجيب أنه قادم (أو يُعرف من عنوان تبويبٍ فُتح قبل التحديث) — سطرٌ يقوله، ولا مفتاح
+    // للموقع ولا «حدّثه» ولا تصحيح
+    async function popupUp(hello, url) {
+      var Q = await makeFrame("popup.html", {}, { tabs: {
+        query: function (q, cb) { setTimeout(function () { cb([{ id: 5, url: url }]); }, 0); },
+        sendMessage: function (id, msg, o, cb) { setTimeout(function () { cb(msg.type === "cml-hello" ? hello : null); }, 0); },
+      } });
+      await until(function () { return visible(Q.$("tabNote")); }, 3000);
+      // ★ (ر28-ج2) «ولا تصحيح»: لا نموذج تصحيحٍ في النافذة أصلًا (القرار 140)، وصندوق تصحيح الفقرة مخفيّ
+      return Q.$("tabLabel").textContent + "|" + visible(Q.$("siteSwitch")) + "|" + Q.$("tabNote").textContent.replace(/[\u2066-\u2069]/g, "") + "|" + (!Q.$("save") && !visible(Q.$("blkBox")));
+    }
+    var UPN = "تعريب «موقع Claude» قادمٌ في تحديثٍ لاحق، والإضافة لا تغيّر صفحات claude.com في هذا الإصدار.";
+    check("★ (ر15) النافذة في تبويبٍ من النطاق القادم: «قادم» بلا مفتاحٍ ولا «حدّثه» — من جواب محرّكه الخامل، ومن عنوان التبويب إن لم يُجب",
+      ["هذا التبويب: موقع Claude|false|" + UPN + "|true", "هذا التبويب: موقع Claude|false|" + UPN + "|true"].join(" / "),
+      [await popupUp({ domain: "com", upcoming: true, enabled: false, route: "inactive" }, undefined), await popupUp(null, "https://claude.com/pricing")].join(" / "));
+    // ★ (ر20-أ، ١٢ جمادى الأولى ١٤٤٨هـ) وتبويبٌ في لوحة المطوّرين (صنفُ مسارٍ قادم في «وثائق المطوّرين»): «قادم» تحت موقعه بلا مفتاحٍ ولا «حدّثه» ولا تصحيح —
+    // من جواب المحرّك (routeClass)، ومن عنوان التبويب إن لم يُجب؛ وصفحةُ وثائق في تبويبٍ قديم على جملتها كما كانت
+    var UPC = "تعريب «لوحة المطوّرين (Console)» قادمٌ في تحديثٍ لاحق، والإضافة لا تغيّر صفحاتها في هذا الإصدار؛ و«وثائق المطوّرين» تُعرَّب في platform.claude.com/docs/en/ وحدها.";
+    var LBC = "هذا التبويب: وثائق المطوّرين — لوحة المطوّرين (Console)|false|" + UPC + "|true";
+    check("★ (ر20-أ) النافذة في تبويبٍ من لوحة المطوّرين: «قادم» تحت «وثائق المطوّرين» بلا مفتاحٍ ولا «حدّثه» — من جواب المحرّك ومن عنوان التبويب، والوثائق في تبويبٍ قديم كما كانت",
+      [LBC, LBC, "هذا التبويب|false|هذا تبويب «وثائق المطوّرين» لكنه فُتح قبل تحديث الإضافة — حدّثه (Ctrl+Shift+R) ليُعرَّب.|true"].join(" / "),
+      [await popupUp({ domain: "docs", route: "inactive", enabled: false, master: true, site: true,
+                       routeClass: { id: "console", name: "لوحة المطوّرين (Console)", upcoming: true } }, undefined),
+       await popupUp(null, "https://platform.claude.com/settings/keys"), await popupUp(null, "https://platform.claude.com/docs/en/intro")].join(" / "));
+    // ★ (مراجعة ر15) اختيارٌ محفوظ للنطاق القادم (cml_ui_domain = com: من بناءٍ شُغِّل فيه ثم عاد قادمًا) يعود إلى «المواقع كلها» (validDom)، ولا قسمَ له
+    try { localStorage.setItem("cml_ui_domain", "com"); } catch (e) {}
+    var UQ = await makeFrame("options.html", {});
+    await until(function () { return UQ.$("statsBody").children.length === IDS.length; }, 8000);
+    check("★ (مراجعة ر15) اختيارٌ محفوظ للنطاق القادم يعود إلى «المواقع كلها»: لا خيار له ولا صفّ ولا جملة «يعمل في…» بقائمته",
+      "all/false/false/false", UQ.$("domainSel").value + "/" + [].some.call(UQ.$("domainSel").options, function (o) { return o.value === "com"; }) + "/" +
+      !!UQ.$("siteRow_com") + "/" + (UQ.w.document.body.textContent.indexOf("الصفحات التي تترجمها الشركة بأعيانها") >= 0));
+    try { localStorage.removeItem("cml_ui_domain"); } catch (e) {}
+    // ★ (ر24-د2، مراجعة ر24-د) أعدادٌ مخزَّنة نصوصًا في سطرين يُبنيان innerHTML: missing نتيجة الفحص، وعددُ القواعد التالفة، وcount المزامنة —
+    // كان toLocaleString للنصّ يعيده نفسه فيُرسم وسمًا؛ وبـNumber تُكتب 0 ولا وسم
+    var INJ = function (n) { return '<i id="zqInj' + n + '">x</i>'; };
+    var IS = { cml_sync_enabled: true, cml_sync_state: { status: "ok", at: Date.now(), count: INJ(3), bytes: 100 } };
+    IS[CMLConst.key("cml_scan_result", "app")] = { status: "done", found: 7, missing: INJ(1), at: Date.now() };
+    IS[CMLConst.key("cml_bad_rules", "app")] = { patterns: INJ(2), plurals: 0 };
+    try { localStorage.setItem("cml_ui_domain", "app"); } catch (e) {}
+    var IJ = await makeFrame("options.html", IS);
+    await until(function () { return IJ.$("statLine").textContent.indexOf("آخر فحص") >= 0 && IJ.$("syncStateLine").textContent.indexOf("آخر رفع") >= 0; }, 8000);
+    check("★ (ر24-د2) أعدادٌ مخزَّنة نصوصًا (missing الفحص وعددُ القواعد التالفة وcount المزامنة) لا تُرسم وسمًا في سطري الإحصاء والمزامنة", "0|true|true|false",
+      IJ.w.document.querySelectorAll("[id^='zqInj']").length + "|" + (IJ.$("statLine").textContent.indexOf("آخر فحص") >= 0) + "|" +
+      (IJ.$("syncStateLine").textContent.indexOf("آخر رفع") >= 0) + "|" + /zqInj/.test(IJ.$("statLine").innerHTML + IJ.$("syncStateLine").innerHTML));
+    try { localStorage.removeItem("cml_ui_domain"); } catch (e) {}
     check("لا أخطاء جافاسكربت في الصفحة", 0, jsErrors);
   } catch (e) {
     check("استثناء في الاختبار", "", String(e && (e.stack || e.message) || e).slice(0, 400));

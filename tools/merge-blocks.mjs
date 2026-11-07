@@ -6,9 +6,11 @@
 // بلا نصٍّ إنجليزي (المفتاح بصمة). ما تُرك كما هو (ar = src) يُسجَّل في kept ولا تُشحن له قيمة، بل علامةُ إبقاءٍ في صفحاته
 // (keepPages: {مفتاح الصفحة: [fp…]} — بصماتٌ فقط؛ S6-C): المحرّك يقدّمها على قاموس الواجهة في الكتلة ذات العقدة الوحيدة.
 // ودفعةٌ اسمها يحوي override تسبق ما قبلها؛ وإلا فالموجود يبقى. وبصمةٌ واحدة لمصدرين مختلفين = تعارضٌ يوقف الدمج.
+// ★ (ر13-ج) ومدخلُ kept-as-is.json ذو keepOn ‏({fp, why, keepOn: [مفتاح صفحة…]}) علامةُ إبقاءٍ في تلك الصفحات وحدها ولو تُرجمت البصمة (العلامة تغلب
+// هناك، ولا تُشحن ترجمتها في قطعها)، ولا يكون إبقاءً عامًّا.
 import fs from "node:fs";
 import path from "node:path";
-import { C, SHARED, domainArg, label, blocksDictFile, blockBatchDir, latestBlocksHarvest, harvestDate } from "./domain-arg.mjs";
+import { C, SHARED, domainArg, label, blocksDictFile, blockBatchDir, latestBlocksHarvest, blocksHarvests, harvestDate } from "./domain-arg.mjs";
 
 const argv = process.argv.slice(2);
 const opt = (n) => { const a = argv.find((x) => x.startsWith(`--${n}=`)); return a ? a.slice(n.length + 3) : ""; };
@@ -83,9 +85,8 @@ const META_D = (C.domain(D) || {}).meta || {};
 const pk0 = (pk) => SHARED.pageKey(META_D, pk);
 const pages = {};
 for (const [pk, fps] of Object.entries(base.harvested || base.pages || {})) pages[pk0(pk)] = fps;
-const hvDir = path.join(path.dirname(latestBlocksHarvest(D) || path.join(blockBatchDir(D), "..", "_harvest", "x")), "");
-const hvFiles = opt("harvest") ? [opt("harvest")]
-  : (fs.existsSync(hvDir) ? fs.readdirSync(hvDir).filter((n) => /^blocks-.*\.json$/.test(n)).sort().map((n) => path.join(hvDir, n)) : []);
+// ★ (ر13-ج) بترتيبٍ واحدٍ مع بوابة الشمول (domain-arg.mjs: blocksHarvests — اسم الملف طابعُ وقته)
+const hvFiles = opt("harvest") ? [opt("harvest")] : blocksHarvests(D);
 let hvUsed = 0;
 // ★ (ر9-أ، ٣ جمادى الأولى ١٤٤٨هـ) تاريخ الحصاد يسافر مع القاموس (_meta.harvestedAt): أحدثُ حصادٍ استُعمل فعلًا للنطاق هنا (harvestDate)،
 // ومنه يكتب build.mjs تاريخ index.json، فتُبنى بنية المستودع العام (لا مجلد عمل فيها ولا حصاد — make-release لا ينشرهما) طازجةً
@@ -125,35 +126,61 @@ if (fs.existsSync(manPath)) {
     console.log(`بيان الدفعات: ${doneIds.size} من ${man.length} دفعةً منجزة؛ حُجب متن ${[...pending].filter((pk) => pages[pk]).length} صفحةً لم تكتمل دفعتها`);
   }
 }
-// كل صفحةٍ تحمل ما تُرجم من كتلها وحده (القطعة المشحونة)
+// ★ (ر6-ب، ٢٩ ربيع الآخر ١٤٤٨هـ) ومع قرارات المترجم ما أبقاه تحضير الدفعات كما هو قبل الترجمة (_blk_todo/kept-as-is.json: شيفرةٌ أو عناوين
+// وروابط أو مفاتيح ورموز أو أسماء منتجاتٍ وحدها، أو كتلٌ مؤجَّلة لقرار المالك) — لا ما أحاله إلى قاموس الواجهة (أسبابه تبدأ بـui). يحتاجها
+// حارس المتن المختلط (engine.js، meta.bodyGuard) ليعدّها مغطّاةً لا متنًا تغيّر؛ وعلامةُ الإبقاء لا تغيّر عرضها: لا تُترجم أصلًا، ولا يعرّب
+// قاموسُ الواجهة منها شيئًا (قِيس على الصفحات المشحونة الحيّة، ٢٩ ربيع الآخر ١٤٤٨هـ). وهي في keepPages وحدها لا في kept (قرارات المترجم)
+// ★ (ر13-ج، ٦ جمادى الأولى ١٤٤٨هـ) ومدخلٌ بنطاق صفحات (keepOn: [مفتاح صفحة…]): تسميةٌ تُبقيها الشركة إنجليزيةً في تلك الصفحات وحدها وتترجمها في
+// غيرها (شاشات أفلام الأكاديمية وأدواتها: Owner وStatus وDesign…)، والبصمة واحدة. فعلامة الإبقاء في تلك الصفحات ولو كان للبصمة ترجمةٌ في دفعة
+// أو كان قاموس الواجهة يغطّيها (ui-dict)، ولا تُشحن ترجمتها في قطعها (العلامة تغلب هناك؛ والمحرّك يقدّمها على الترجمة إن اجتمعتا)؛ وفي الصفحات
+// الأخرى لا علامة. ولا يكون المدخل ذو keepOn إبقاءً عامًّا أيًّا كان سببه
+const prepKeep = new Set();
+const scoped = new Map();   // بصمة ← مفاتيح الصفحات التي تُبقيها فيها
+const kaiPath = path.join(bDir, "..", "_blk_todo", "kept-as-is.json");
+if (fs.existsSync(kaiPath)) {
+  const kai = JSON.parse(fs.readFileSync(kaiPath, "utf8"));
+  for (const x of (kai && kai.blocks) || []) {
+    if (!x || typeof x.fp !== "string" || typeof x.why !== "string") continue;
+    if (Array.isArray(x.keepOn)) {
+      const s = scoped.get(x.fp) || new Set();
+      for (const pk of x.keepOn) if (typeof pk === "string" && pk) s.add(pk0(pk));
+      scoped.set(x.fp, s);
+      continue;
+    }
+    if (!/^ui/.test(x.why)) prepKeep.add(x.fp);
+  }
+}
+const keptOn = (fp, pk) => scoped.has(fp) && scoped.get(fp).has(pk);
+// كل صفحةٍ تحمل ما تُرجم من كتلها وحده (القطعة المشحونة) — إلا بصمةً تُبقيها الصفحة بنطاقها (keepOn)
 const outPages = {};
 let shipped = 0;
 for (const pk of Object.keys(pages).sort()) {
   if (pending.has(pk)) continue;
-  const fps = pages[pk].filter((fp) => Object.prototype.hasOwnProperty.call(blocks, fp));
+  const fps = pages[pk].filter((fp) => Object.prototype.hasOwnProperty.call(blocks, fp) && !keptOn(fp, pk));
   if (fps.length) { outPages[pk] = fps; shipped += fps.length; }
 }
 // ★ (S6-C) علامات الإبقاء بنطاق الصفحة: كل كتلةٍ قرّر المترجم إبقاءها كما في المصدر، في كل صفحةٍ حُصدت فيها. كانت لا تُشحن
 // فيعرّب قاموسُ الواجهة كتلةً من عقدةٍ واحدة يطابق نصُّها عنوانًا فيه (جدول «الصفحات المتاحة» في صفحة Claude Platform on AWS:
 // عشرة أسماءٍ لصفحات Console عربيةٌ بين صفوفٍ أبقاها المترجم إنجليزية). والعلامة لصفحاتها وحدها: البصمة نفسها في صفحةٍ أخرى
 // لم تُحصد فيها لا تتأثّر
-// ★ (ر6-ب، ٢٩ ربيع الآخر ١٤٤٨هـ) ومع قرارات المترجم ما أبقاه تحضير الدفعات كما هو قبل الترجمة (_blk_todo/kept-as-is.json: شيفرةٌ أو عناوين
-// وروابط أو مفاتيح ورموز أو أسماء منتجاتٍ وحدها، أو كتلٌ مؤجَّلة لقرار المالك) — لا ما أحاله إلى قاموس الواجهة (أسبابه تبدأ بـui). يحتاجها
-// حارس المتن المختلط (engine.js، meta.bodyGuard) ليعدّها مغطّاةً لا متنًا تغيّر؛ وعلامةُ الإبقاء لا تغيّر عرضها: لا تُترجم أصلًا، ولا يعرّب
-// قاموسُ الواجهة منها شيئًا (قِيس على الصفحات المشحونة الحيّة، ٢٩ ربيع الآخر ١٤٤٨هـ). وهي في keepPages وحدها لا في kept (قرارات المترجم)
-const prepKeep = new Set();
-const kaiPath = path.join(bDir, "..", "_blk_todo", "kept-as-is.json");
-if (fs.existsSync(kaiPath)) {
-  const kai = JSON.parse(fs.readFileSync(kaiPath, "utf8"));
-  for (const x of (kai && kai.blocks) || []) if (x && typeof x.fp === "string" && typeof x.why === "string" && !/^ui/.test(x.why)) prepKeep.add(x.fp);
-}
 const keepPages = {};
-let keepShipped = 0, prepShipped = 0;
+let keepShipped = 0, prepShipped = 0, scopedShipped = 0;
+const scopedPages = new Set();
 for (const pk of Object.keys(pages).sort()) {
   if (pending.has(pk)) continue;
-  const fps = [...new Set(pages[pk].filter((fp) => (kept.has(fp) || prepKeep.has(fp)) && !Object.prototype.hasOwnProperty.call(blocks, fp)))].sort();
-  if (fps.length) { keepPages[pk] = fps; keepShipped += fps.length; prepShipped += fps.filter((fp) => !kept.has(fp)).length; }
+  const fps = [...new Set(pages[pk].filter((fp) => ((kept.has(fp) || prepKeep.has(fp)) && !Object.prototype.hasOwnProperty.call(blocks, fp)) || keptOn(fp, pk)))].sort();
+  if (fps.length) {
+    keepPages[pk] = fps; keepShipped += fps.length;
+    prepShipped += fps.filter((fp) => !kept.has(fp) && !keptOn(fp, pk)).length;
+    const sc = fps.filter((fp) => keptOn(fp, pk)).length;
+    if (sc) { scopedShipped += sc; scopedPages.add(pk); }
+  }
 }
+// مدخلٌ بنطاقٍ صفحتُه لا تحمل بصمته في خريطة الصفحات (تغيّرت الصفحة بعد التحضير، أو صفحةٌ لم تُحصد): يُذكر ولا يُشحن له شيء
+const scopedStale = [];
+for (const [fp, set] of scoped) for (const pk of set) if (!pages[pk] || !pages[pk].includes(fp)) scopedStale.push(pk + " " + fp);
+if (scoped.size) console.log(`إبقاءٌ بنطاق الصفحات (keepOn في kept-as-is): ${scoped.size} بصمة؛ ${scopedShipped} علامةً في ${scopedPages.size} صفحة` +
+  (scopedStale.length ? `، و${scopedStale.length} صفحةً في المدخلات لا تحمل البصمة في الحصاد (أولها: ${scopedStale.slice(0, 3).join("، ")})` : ""));
 if (prepKeep.size) console.log(`مُبقًى في التحضير (kept-as-is): ${prepKeep.size} بصمة؛ منها ${prepShipped} علامة إبقاءٍ في صفحاتٍ مشحونة`);
 const sorted = {};
 for (const fp of Object.keys(blocks).sort()) sorted[fp] = blocks[fp];

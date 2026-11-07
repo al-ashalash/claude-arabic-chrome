@@ -64,10 +64,17 @@ window.addEventListener("resize", function () { resizeNudges++; });
 <script src="../extension/engine.js"></script>
 <script>
 var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+// ★ (ت10-هـ2ب، ٢٠ جمادى الأولى ١٤٤٨هـ) قيم الجدول (المتوقَّع والناتج) مخرَجُ الاختبار لا واجهة: تُكتب في ‎<samp>‎ (عنصرٌ يتخطّاه المحرّك كالشيفرة،
+// ‎DOM_RULES.SKIP‎) فلا تُعرَّب. وكان «true» حرفيًّا مراجَعًا في قاموس claude.ai منذ ت10-هـ2 («صحيح»)، فكان المحرّك يعرّب خلايا الجدول نفسها
+// فيكتب نصًّا ويطلق نبضةً صادقة تُفسد عدَّ «لا نبضة بلا كتابة نص» و«نبضةُ الاستعادة». العدّ والتحقّقان كما هما
 function check(name, expect, got) {
   total++; var ok = expect === got; if (ok) pass++;
   var tr = document.createElement("tr");
-  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  [name, expect, got].forEach(function (v, i) {
+    var td = document.createElement("td");
+    if (i) { var sp = document.createElement("samp"); sp.textContent = v; td.appendChild(sp); } else td.textContent = v;
+    tr.appendChild(td);
+  });
   var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
   tb.appendChild(tr);
 }

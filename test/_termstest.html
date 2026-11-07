@@ -62,6 +62,10 @@ function search(q) { return new Promise(function (r) { BOX.value = q; BOX.dispat
 function rows() { return [].slice.call(LIST.querySelectorAll(".term")); }
 function rowFor(en) { return rows().find(function (r) { return r.querySelector(".src").textContent.indexOf(en) === 0; }); }
 function mine() { return Object.keys((window.__store.cml_overrides || {}).ar || {}); }
+// ★ (ر29-ي) نصوصٌ طويلة اصطناعية (مفاتيح «Zzq…»): فوق حدّ المزامنة بكثير، ودون أي حدٍّ آخر
+var LONG_EN = "Zzq " + "long ".repeat(240), LONG_EN2 = "Zzq imported " + "longer ".repeat(212), LONG_AR = "ت".repeat(2000);
+LONG_EN = LONG_EN.trim(); LONG_EN2 = LONG_EN2.trim();
+var LONG_TPL = "Zzq {count} imported template " + "words ".repeat(170).trim(), LONG_TPL_AR = "قالبٌ مستورَد {count} " + "ك".repeat(900);
 
 setTimeout(function () {
   Promise.resolve()
@@ -158,23 +162,45 @@ setTimeout(function () {
     })
     .then(function () {
       check("★ «حذف القاعدة» يزيلها بهويتها", "0", (window.__store.cml_user_patterns || []).length);
-      // ★ المعقِّم الموحّد: نصٌّ فوق TEXT_MAX أو ترجمةٌ فوق ضعفه لا تُحفظ (المحرّك لا يطبّقها والمزامنة لا ترفعها)
-      document.getElementById("newSrc").value = "Zzq " + "long ".repeat(80);
+      // ★ (ر29-ي، توجيه المالك: لا سقف طولٍ يُبقي نصَّ موقعٍ بالإنجليزية) لا حدَّ طولٍ لتصحيح المستخدم: كان ما فوق TEXT_MAX (300 للنص و600 للترجمة)
+      // يُرفض. يُحفظ الآن على هذا الجهاز مهما طال، ويُقال إنه أطول من حدّ المزامنة فيبقى عليه
+      document.getElementById("newSrc").value = LONG_EN;
       document.getElementById("newDst").value = "طويل";
       document.getElementById("addTerm").click();
       return new Promise(function (r) { setTimeout(r, 300); });
     })
     .then(function () {
       var st = document.getElementById("termsStatus").textContent;
-      check("★ نصٌّ أطول من الحدّ يُرفض برسالةٍ ولا يُحفظ", "false/true",
-            String(mine().some(function (k) { return k.indexOf("Zzq long") === 0; })) + "/" + String(st.indexOf("تعذّر الحفظ") >= 0));
+      check("★ (ر29-ي) نصٌّ أطول من 1,200 حرف يُحفظ تصحيحًا بنصّه، ويُقال إنه يبقى على هذا الجهاز لأنه أطول من حدّ المزامنة", "true/true/false",
+            String(((window.__store.cml_overrides || {}).ar || {})[LONG_EN] === "طويل") + "/" + String(st.indexOf("يبقى على هذا الجهاز وحده") >= 0) + "/" +
+            String(st.indexOf("تعذّر") >= 0));
       document.getElementById("newSrc").value = "Zzq short source";
-      document.getElementById("newDst").value = "ت".repeat(CMLConst.TEXT_MAX * 2 + 1);
+      document.getElementById("newDst").value = LONG_AR;
       document.getElementById("addTerm").click();
       return new Promise(function (r) { setTimeout(r, 300); });
     })
     .then(function () {
-      check("★ ترجمةٌ أطول من ضعف الحدّ تُرفض كذلك", "false", String(mine().indexOf("Zzq short source") >= 0));
+      check("★ (ر29-ي) وترجمةٌ من 2,000 حرف (فوق ضعف حدّ المزامنة) تُحفظ كذلك", "true/true",
+            String(((window.__store.cml_overrides || {}).ar || {})["Zzq short source"] === LONG_AR) + "/" +
+            String(document.getElementById("termsStatus").textContent.indexOf("يبقى على هذا الجهاز وحده") >= 0));
+      // ★ (ر29-ي) والاستيراد لا يُهمِل سطرًا لطوله: ردُّ «أمر الترجمة» بنصٍّ طويلٍ وقالبٍ طويل يُستورد كلُّه، ويُقال ما يبقى على هذا الجهاز
+      window.confirm = function () { return true; };
+      var file = new File([JSON.stringify({ domain: "app", terms: [{ en: LONG_EN2, ar: LONG_AR }, { en: LONG_TPL, ar: LONG_TPL_AR }, { en: "Zzq imported short", ar: "مستورَدٌ قصير" },
+        { en: "Zzq imported short key", ar: LONG_AR }] })],
+        "reply.json", { type: "application/json" });
+      var dt = new DataTransfer(); dt.items.add(file);
+      var inp = document.getElementById("importTransFile"); inp.files = dt.files; inp.dispatchEvent(new Event("change"));
+      return new Promise(function (r) { setTimeout(r, 900); });
+    })
+    .then(function () {
+      var st = document.getElementById("termsStatus").textContent, ov = (window.__store.cml_overrides || {}).ar || {};
+      var rule = (window.__store.cml_user_patterns || []).find(function (p) { return p && p.en === LONG_TPL; });
+      check("★ (ر29-ي) الاستيراد: سطرٌ أطول من 1,400 حرف وقالبٌ أطول من 1,000 حرف يُستوردان (لا «أُهمل»)، والقصير معهما، وتُقال الأسطر الباقية على هذا الجهاز",
+            "true/true/true/true/false/true/true",
+            String(ov[LONG_EN2] === LONG_AR) + "/" + String(!!rule) + "/" + String(ov["Zzq imported short"] === "مستورَدٌ قصير") + "/" +
+            String(st.indexOf("تبقى على هذا الجهاز وحده") >= 0) + "/" + String(st.indexOf("أُهمل") >= 0) + "/" +
+            // ★ (مراجعة ر29-ي) ونصٌّ قصير ترجمتُه أطول من ضعف حدّ المزامنة يُعدّ معها: ثلاثةُ أسطرٍ تبقى (كان عدُّ المفتاح وحده ينجو)
+            String(ov["Zzq imported short key"] === LONG_AR) + "/" + String(st.indexOf("ومنها 3 أسطر") >= 0));
       document.title = "terms " + pass + "/" + total;
       var h = document.createElement("p");
       h.className = pass === total ? "ok" : "bad";

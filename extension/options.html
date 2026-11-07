@@ -607,7 +607,8 @@
         <div class="card hidden" id="syncConsent" style="border-color:var(--brand);margin:10px 0 4px;padding:12px 14px">
           <h2 style="font-size:14px;margin:0 0 8px">قبل التفعيل — هذا ما سيحدث بالضبط</h2>
           <ul class="desc" style="margin:0 0 10px;padding-inline-start:20px;line-height:1.9">
-            <li><b>ما الذي يُرفع:</b> تصحيحاتُك التي كتبتها بنفسك وقواعدُك الذكية وتصحيحاتُ الفقرات — لا غير.</li>
+            <li><b>ما الذي يُرفع:</b> تصحيحاتُك التي كتبتها بنفسك وقواعدُك الذكية وتصحيحاتُ الفقرات — لا غير.
+              والتصحيح الأطول من 300 حرفٍ للنص أو 600 للترجمة يبقى على جهازك ولا يُرفع، وتقول لك هذه الصفحة عدده.</li>
             <li><b>إلى أين:</b> مساحة مزامنة كروم المرتبطة بحسابك في جوجل؛ وجوجل قد تطّلع
               عليه ما لم تفعّل عبارة مرور المزامنة في كروم نفسه.</li>
             <li><b>ما لا يُرفع أبدًا:</b> إعداداتك — تبقى لكل جهاز، ولا نتائج الفحص،
@@ -631,6 +632,8 @@
       <div class="hidden" id="syncOn">
         <p class="desc" id="syncStateLine" style="margin-bottom:0">…</p>
         <div class="syncbar" aria-hidden="true"><div id="syncBarFill"></div></div>
+        <!-- ★ (ر29-ي) ما يبقى على هذا الجهاز وحده لأنه أطول من حدّ المزامنة: يملؤه renderLocalOnly بعدده، ويخلو إن لم يكن -->
+        <p class="desc" id="syncLocalLine" style="margin:6px 0 0"></p>
         <div class="btnrow">
           <button id="syncDisableBtn">إيقاف المزامنة</button>
         </div>

@@ -16,6 +16,8 @@
   // متن المقالة وفهرسُه (أداة الحصاد: ما فيهما «متن» للمرحلة ٤، وما سواهما «واجهة» للمرحلة ١) —
   // الفهرس يكرّر عناوين المتن، فعدُّه واجهةً كان يجرّ آلاف عناوين المتن إلى دفعة المرحلة ١
   var INTERCOM_BODYSEL = ".article_body, .table-of-contents, [class*='DocsToc_toc']";
+  // ★ (ر29-د2، ١٤ جمادى الأولى ١٤٤٨هـ — مراجعة ر29-د F4) حاوية المتن الرئيسة (meta.bodyMain): الجزء الذي فيه نصّ المقالة من المحدِّد المركّب
+  var INTERCOM_BODYMAIN = ".article_body";
   // متغيّرا الخط اللذان ترسم بهما منصة Intercom نصّها (على :root لا على body) — موضعا الإلحاق (DESIGN-fonts §٤.٤)
   var INTERCOM_FONT_VARS = ["--font-family-primary", "--font-family-secondary"];
   // ★ مرجع الواجهة البرمجية في وثائق المطوّرين (‎.stldocs-root‎ تحت ‎/docs/en/api/‎ — دراسة S7-B، ٢١ ربيع الآخر ١٤٤٨هـ): نترجم ما تترجمه
@@ -36,7 +38,7 @@
   // ★ (S9-M، ٢٢ ربيع الآخر ١٤٤٨هـ؛ ما وجده S8-A) أسماءٌ كتبها المستخدم في واجهة claude.ai — محتواه لا واجهتنا: محادثةٌ اسمها
   // «Settings» أو «Projects» كانت تُعرَّب في الشريط الجانبي لأنها تطابق نصًّا في القاموس. تُستثنى كمتن المحادثة (meta.skipSel للتطبيق):
   // لا نصَّ ولا سمة يُقرأ للمطابقة، ولا يحصدها حاصد DOM، وما عرّبناه قبل أن يصير منها يُرجع أصله. المحدِّدات من حزم الموقع
-  // (١ أكتوبر ٢٠٢٦، _app-gap-20261002/cache):
+  // (٢٠ ربيع الآخر ١٤٤٨هـ، _app-gap-20261002/cache):
   //   صفوف الشريط الجانبي (المحادثات وجلسات Claude Code ومهام Cowork والمشاريع، في «الأحدث» و«المثبّتة»): كل صفٍّ ملفوفٌ في
   //   ‎[data-row-key]‎ واسمه في ‎[data-row-label]‎ — لا الصفّ كلّه: فيه وقتٌ وحالةٌ وأزرار إجراءاتٍ هي واجهة
   //   عنوان المحادثة أو الجلسة في رأس الصفحة: الزرّ الأول من ‎[data-testid="chat-title-split"]‎ (و‎session-title-split‎) وبديله المؤقت
@@ -47,13 +49,55 @@
     "[data-testid='frame-artifact-title'], [data-testid='artifact-data-title'], [data-testid='artifact-delete-title'], " +
     "[data-testid='artifact-share-title'], [data-testid='artifact-invite-title'], [data-testid='artifact-publish-target-title'], " +
     "[data-testid='mp-filename'], [data-testid='artifact-publish-file-name']";
+  // ★ (ر24-ج2، ١٠ جمادى الأولى ١٤٤٨هـ — ما حملته ر24-ج1) مواضع الكتابة: ما يكتبه المستخدم محتوى مستخدمٍ بالمحدِّد أيًّا كانت قابلية تحريره (CLAUDE.md §5:
+  // الحماية باستثناء المحادثات ومحتوى المستخدم بالمحدِّدات). كانت قابلية التحرير وحدها تحميه، فمحرِّرٌ صار ‎contenteditable="false"‎ وفيه مسودةٌ تطابق
+  // القاموس كانت تُقرأ وتُعرَّب. الجرد (عيّنة فحص الاتجاه العامة، 57 صفحة في النطاقات السبعة المشحونة، أعدادٌ لا نص): لا محرِّر نصٍّ غنيّ في أي صفحةٍ عامة
+  // (0 لكلٍّ من ‎[role=textbox]‎ و‎[role=searchbox]‎ و‎.ProseMirror‎ و‎[contenteditable=true]‎)، وحقول البحث وأسئلة المساعد فيها ‎<input>‎ (43) و‎<textarea>‎ (39) لا
+  // عقدة نصٍّ فيها؛ ومحادثة «اسأل Claude» في الأكاديمية (‎[data-ask-view]‎) وأجوبة مساعد Claude Code (‎#chat-content‎) محتوى مستخدمٍ من قبل. ومحرِّر
+  // claude.ai (صندوق الكتابة، وClaude Code على الويب) خلف الدخول: ProseMirror (‎tiptap‎) بشهادة أوراق الموقع (‎.ProseMirror‎ في 54 قاعدة، ومنها
+  // ‎.ProseMirror>p>code‎ و‎p.is-editor-empty:first-child‎: المحتوى فقراتٌ أبناءٌ مباشرون للجذر). فالمحدِّدات:
+  //   ‎.ProseMirror > *‎: كتل المحتوى تحت جذر المحرِّر — الصنف ثابتٌ تضعه المكتبة نفسها على الجذر في كل حال (‎contenteditable="false"‎ حين لا يُحرَّر)، لا
+  //     صنفُ تنسيقٍ مولَّد. وجذرُه نفسه خارجها: سماته (‎aria-label‎ وأمثالها) واجهةٌ تُعرَّب كما كانت؛
+  //   ‎[role=textbox]:not(.ProseMirror)‎ و‎[role=searchbox]:not(.ProseMirror)‎: دورا ARIA للحقل الذي يكتب فيه المستخدم (وحقل البحث منه) في غير عناصر
+  //     الإدخال — أيُّ محرِّرٍ يعلن دوره، في كل نطاق.
+  // ولا يُحمى ‎contenteditable="false"‎ عامّةً: في عيّنة Claude Code ‏1,209 عنصرًا منه خارج أي محرِّر، في 1,172 منها نصُّ الموقع (كانت ستبقى إنجليزية).
+  // وclaude.com قادمٌ خامل: جدوله على حاله
+  var EDITOR_USER = ".ProseMirror > *, [role=textbox]:not(.ProseMirror), [role=searchbox]:not(.ProseMirror)";
   // ★ (ر3، ٢٨ ربيع الآخر ١٤٤٨هـ) الوثائق القانونية الخمس في www.anthropic.com/legal (Next.js 16 وSanity — دراسة ر3).
   // غلاف الموقع إنجليزيٌّ عند الشركة فيبقى كما هو: الترويسة والتذييل وقائمة الجوال والقوائم المنسدلة ولافتة الموافقة،
   // ومنتقي لغة الوثيقة (أسماء لغات). لا تُعرَّب ولا تُحصد، وتبقى LTR بقاعدةٍ في legal-point.css
-  var LEGAL_CHROME = "header[class*='SiteHeader-module'], footer[class*='SiteFooter-module'], [class*='SiteMobileNav-module'], " +
-    "[class*='Dropdown-module'], [class*='ConsentBanner-module'], [class*='LegalPageDetail-module'][class*='__language-options']";
-  // متن الوثيقة: أسماء CSS Modules باسم الوحدة واسم الصنف، فالجزء المجزَّأ (G_oy1G) يتغيّر مع كل تعديلٍ للوحدة
-  var LEGAL_BODY = "[class*='LegalPageDetail-module'][class*='__body']";
+  // ★ (ر29-ج، ١٣ جمادى الأولى ١٤٤٨هـ — ر29-أ F1) أعاد الموقع بناء صفحاته القانونية بين 2026-10-16 و2026-10-23 فماتت المحدِّدات كلها
+  // (LegalPageDetail وSiteHeader وSiteFooter وSiteMobileNav لا أثر لها في أوراقه). فالغلاف الجديد مقيسًا على الخمس بعرضي 1366 و390:
+  //   الترويسة ‎header.HeaderLayout‎ (وفيها SiteHeaderShell وNavItems ومشغّلات NavDropdown والبحث)، ورابط التخطّي SkipLink (ابنٌ مباشر
+  //   لـ<body> خارج الترويسة)، والتذييل ‎footer.Footer‎، وقائمة الجوال SiteMenuDialog (نافذةٌ تُلحق بـ<body> عند فتحها، 390)، وقوائم
+  //   الترويسة المنسدلة NavDropdown (مشغّلها في الترويسة ونافذتها ملحقةٌ بـ<body>)، ولافتة الموافقة ConsentBanner (وحدتها باقيةٌ في أوراق
+  //   الموقع وإن لم تظهر لزائر السحابة: تظهر بحسب البلد)، ومنتقي لغة الوثيقة Select (المشغّل في رأس الوثيقة وقائمته ملحقةٌ بـ<body>)
+  // ★ (ر29-ح، ١٩ جمادى الأولى ١٤٤٨هـ — DX0-0 §٥) غيّر الموقع صيغة أصناف CSS Modules: من ‎<الوحدة>-module-scss-module__<بصمة>__<اسم>‎ إلى
+  // ‎<بصمة>_<اسم>‎ (وبادئة ‎_‎ إن بدأت البصمة برقم)، فذهب اسم الوحدة من الصفحة كلها ومات كل محدِّدٍ بُني عليه. والبصمة واسم الصنف كما كانا
+  // (البصمات الإحدى عشرة في لقطة ١٣ جمادى الأولى ١٤٤٨هـ بالصيغة الطويلة هي هي اليوم). فالمحدِّدات الآن لا اسم وحدةٍ فيها ولا بصمة: اسم الصنف
+  // بعد ‎_‎ (يطابق الصيغتين: ‎__Content‎ فيها ‎_Content‎) مع موضعه في البنية، أو سمةٌ أو دورٌ يعلنه الموقع. مقيسةً على الخمس بعرضي 1366
+  // و390 مغلقةً ومع كل نافذة: الترويسة (‎body > header‎، وعليها data-site-nav) 1، ورابط التخطّي (‎data-skip-link‎، ابنٌ مباشر لـ<body>
+  // رابطُه ‎#main-content‎) 1، والتذييل (‎body > footer‎) 1؛ والنوافذ تُلحق بـ<body> في بوّابات Base UI: قائمة الجوال حوارٌ فيه ‎<nav>‎ الموقع
+  // (1 مفتوحةً بعرض 390)، والقوائم المنسدلة ‎[role=menu]‎ (1 مفتوحةً بعرض 1366)، وقائمة منتقي اللغة ‎[role=listbox]‎ (1 مفتوحةً)، والمنتقي
+  // نفسه زرّ ‎_LanguageSelect‎ في رأس الوثيقة (1). وحوار سجل الإصدارات ليس منها (حوارٌ بلا ‎<nav>‎: 0) فيبقى يُعرَّب كما كان. ولافتة الموافقة
+  // لا تظهر لزائر السحابة، واسم صنفها في أوراق الموقع ‎_consentBanner‎ (اللقطة)
+  var LEGAL_CHROME = "body > header, header[data-site-nav], a[data-skip-link], body > a[href^='#'], body > footer, " +
+    "[role=dialog]:has(nav), [role=menu], [class*='_consentBanner'], [class*='_LanguageSelect'], [role=listbox]";
+  // متن الوثيقة: أسماء CSS Modules باسم الوحدة واسم الصنف، فالجزء المجزَّأ (rSIXoW) يتغيّر مع كل تعديلٍ للوحدة.
+  // ★ (ر29-ج) غلاف المتن الجديد ‎LegalArticlePage__Content‎ (واحدٌ في كل وثيقة، وفيه ArticleContent ثم Body): خارجه رأس الوثيقة
+  // LegalArticleHero (العنوان والشارة وبيانات الوثيقة وزرّ الإصدارات ومنتقي اللغة وفهرس الأقسام) وشريط الأقسام اللاصق — نصوص واجهةٍ
+  // يعرّبها قاموس الواجهة (العنوان وسطر السريان)، وما ليس فيه منها لـت11
+  // ★ (ر29-ح) بالصيغة الجديدة: غلاف المتن ابنٌ مباشر للمقالة ‎article[_Article]‎ وصنفه ‎_Content‎ (1 في العشرة)، ورأس الوثيقة ‎header‎ وشريط
+  // الأقسام ‎_Bar‎ أخواه. واسم الصنف بلا بصمةٍ ولا اسم وحدة، فيطابق الصيغتين
+  var LEGAL_BODY = "article[class*='_Article'] > [class*='_Content']";
+  // ★ (ر29-ج) بنود بيانات رأس الوثيقة، وفهرس أقسامه، وشريط الأقسام اللاصق: نصوص واجهةٍ خارج المتن (الفهرس عناوين المتن تكتبها الشركة خارجه،
+  // فهي مفاتيح واجهةٍ لا كتل)، وما بقي منها إنجليزيًّا (حتى ت11) يُحسم اتجاهه بنصّه كالمتن (dirSel) فلا يُعرض إنجليزيٌّ من اليمين، والمعرَّب منها
+  // (سطر السريان) RTL. والبند لا قائمته: الحاوية تُحسم بأغلب نصّها، وقائمة البيانات مختلطةٌ فكانت تنقلب كلُّها LTR فيُعكس ترتيب صفّها.
+  // مقيسًا: 3–4 بنودٍ إنجليزية قصيرة في بيانات الرأس كانت تُحسم RTL في كل وثيقة
+  // ★ (ر29-ح) بالصيغة الجديدة: بنود البيانات ‎_Metadata‎ داخل رأس الوثيقة (4–5)، والفهرس ‎_TableOfContents‎ فيه (3 متداخلة: الحاوية والقائمة
+  // ونسختها للحاسوب)، والشريط ‎_Bar‎ ابن المقالة (1)
+  var LEGAL_HERO = "article[class*='_Article'] > header [class*='_Metadata'], article[class*='_Article'] > header [class*='_TableOfContents'], " +
+    "article[class*='_Article'] > [class*='_Bar']";
   // ★ (ر4، ٢٨ ربيع الآخر ١٤٤٨هـ) الأكاديمية (academy.claude.com — Vite وReact مع تصييرٍ مسبق — دراسة ر4): ما يبقى إنجليزيًّا في 2.0.0
   // ولا يُعرَّب ولا يُحصد: المتون (الدروس والدورات والشروح وحالات الاستخدام، ومنها أفلام حالات الاستخدام وتمارينها) — القرار 69،
   // وتُعرَّب في 3.0.0؛ وقائمة «في هذه الصفحة» (عناوين المتن)؛ ولافتة الإعلانات (إنجليزيةٌ عند الشركة في كل عرضٍ مترجَم)؛ وقيمة
@@ -63,8 +107,22 @@
   // (‎button[aria-haspopup=dialog]‎ وقيمته ‎span[lang=en]‎) وخياراته أزرار ‎[role=radio][lang]‎ — فلا يطابق المحدِّدان الأولان شيئًا، وكانت
   // «English» تُحصد في كل صفحة. والعنصر الذي يعلن لغته بسمة lang (اسمُ لغةٍ أو نصٌّ بلغته) ليس نصَّ واجهةٍ إنجليزيًّا: يُستثنى كلّه
   // (‎body [lang]‎: لا <html> الذي نكتب فيه ar)؛ وقِيس أن لا عنصر بسمة lang خارج المتن غيرُ المنتقي وخياراته. والأولان باقيان إن عاد المكوّن
-  var ACADEMY_SKIP = "article.mdx-article, ul:has(> li > a[href^='#']), [data-testid^='notification-banner'], " +
-    "footer [role=combobox] > span:first-child, [role=option] [lang], body [lang], [data-ask-view]";
+  // ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ — دراسة ر13-أ) المتون في 3.0.0 بوضع الكتلة (ACADEMY_BODY أدناه، meta.bodySel): خرج المتن وقائمة «في هذه الصفحة»
+  // من هذه القائمة، فتُعرَّب كتلهما من قطعة الصفحة ويحصدهما حاصد الكتل، وما سواهما هنا كما كان. و‎body [lang]‎ ضُيِّق إلى ما خارج المتن: ملخّصُ
+  // الأداة لقارئ الشاشة داخل المتن (‎p.sr-only[data-widget-summary][lang=en]‎) تترجمه الشركة في صفحاتها المعرَّبة (عيّنة ر13-أ)، فهو متنٌ لا اسم
+  // لغة؛ وخارج المتن لا عنصرَ بسمة lang غيرُ قيمة المنتقي وخياراته (قِيس في ر4-أ ثم في ر13-أ). و‎:not()‎ بمحدِّدٍ مركّب في كروم 88 فما بعده
+  // ★ (ر13) جذور المتن: المقالة (‎article.mdx-article‎: الدروس والدورات والشروح وحالات الاستخدام بأفلامها وتمارينها)، وقائمة «في هذه الصفحة»
+  // في الشريط الجانبي (عناوين المتن، روابط إلى ‎#…‎؛ في المستند بكل عرضٍ ولو خفيت دون xl، فيعدّها الحارس في العرضين كما في الوثائق). تُحكم
+  // القائمة مع المتن وتُعرَّب معه، فتبقى في الصفحة المحجوبة إنجليزيةً كعناوينه ولا يكتب فيها قاموس الواجهة. وقِيس في ر13-أ: هي وحدها
+  // ‎ul:has(> li > a[href^='#'])‎ في الصفحة، ولا مثلها داخل المقالة
+  var ACADEMY_TOC = "main nav ul:has(> li > a[href^='#'])";
+  var ACADEMY_BODY = "article.mdx-article, " + ACADEMY_TOC;
+  // ★ (ر24-ج1، ١٠ جمادى الأولى ١٤٤٨هـ) صنفا المستثنى (meta.keepSel أدناه): ما تبقيه الشركة إنجليزيًّا من نصّ الموقع — لافتة الإعلانات، وقيمة
+  // المنتقي، وأسماء اللغات في خياراته — وما سواه محتوى مستخدمٍ احتياطًا: محادثة «اسأل Claude»، والعنصر المعلِن لغته خارج المقالة (لا يُثبت
+  // أنه نصُّ الشركة في كل حال). والسلسلة المجموعة ACADEMY_SKIP هي هي حرفًا بحرف
+  var ACADEMY_KEEP = "[data-testid^='notification-banner'], footer [role=combobox] > span:first-child, [role=option] [lang]";
+  var ACADEMY_USER = "body [lang]:not(article.mdx-article [lang]), [data-ask-view]";
+  var ACADEMY_SKIP = ACADEMY_KEEP + ", " + ACADEMY_USER;
   // اتجاه كل كتلةٍ بنصّها حيث يبقى إنجليزيٌّ في 2.0.0 (المتن، والملخصات والأهداف ووصف الأقسام وبيانات الندوات خارجه): الفقرات
   // والبنود وحدها لا حاويات التخطيط — حاويةٌ أغلبُ نصّها إنجليزي كانت ستقلب تخطيطها كلّه إلى اليسار. ومحادثة «اسأل Claude» (خارج
   // main): الاتجاه وحده لكل كتلة ونصُّها لا يُمسّ (skipSel)، كأجوبة المساعد في وثائق Claude Code (‎#chat-content‎)
@@ -72,7 +130,10 @@
   // الإعداد: ‎li > a.grid‎ بعنوانٍ ووسومٍ في خلايا): كان يُحسم بعنوانه الإنجليزي حين يبقى (اسم منتجٍ أو عنوانٌ جديد لم يُترجم) فيرث وسمُه
   // المعرَّب LTR — فحص الاتجاه بقاموسٍ تجريبي للعناوين والوسوم وحدها (والجمل إنجليزية كما في 2.0.0): نصٌّ عربي محسوب LTR ×4 في
   // ‎/products/claude‎. فالاتجاه لخلايا الصف (‎li > a > span‎) لا للصف، والبنود النصية (الأهداف: شارةٌ ثم جملة) كما كانت
-  var ACADEMY_DIR = "article.mdx-article, main :is(p, figcaption, dd), main li:not(:has(> a)), main li > a > span, [data-ask-view]";
+  // ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) وبنود «في هذه الصفحة» بنصّها كذلك (ابنُها المباشر رابطٌ فلم يطابقها ما قبلها): تتبع المتن — إنجليزيةً LTR في
+  // الصفحة المحجوبة وفي جزيرة academy-point.css، ومعرَّبةً RTL حين يُكتب المتن (data-cml-body="tr")
+  var ACADEMY_DIR = "article.mdx-article, main :is(p, figcaption, dd), main li:not(:has(> a)), main li > a > span, " +
+    ACADEMY_TOC + " > li, [data-ask-view]";
   // ★ (ر5ب، ٢٩ ربيع الآخر ١٤٤٨هـ — القرار 71) أسماء أوجه خط النظام العربي لمصادر local() في «خط النظام» (FONT_SYS أدناه). الاسم في local()
   // اسم الوجه الكامل ثم اسمه البرمجي (PostScript)، لا اسم العائلة (تجربة ر5ب البند ٦: أخفق «Noto Sans Arabic» ونجح «Noto Sans Arabic Regular»).
   // والترتيب بالنظام: خطّا ماك العربيان (SF Arabic في الحديث، ثم Geeza Pro الموجود في كل إصدار)، ثم لينكس (Noto Sans Arabic UI ثم Noto Sans
@@ -93,7 +154,406 @@
   // والوثائق القانونية وClaude Code: ‏5٪، قرّرها المالك (القرار 83: «5٪ (موصى به)»). الصفحة التي تزيد فيها حصّة كتل المتن غير المغطّاة على
   // هذه النسبة يبقى متنها إنجليزيًّا كلُّه والواجهة حوله عربية، والصفحة التي لا قطعة لها تُحكم بقطعةٍ فارغة (القرار 84، engine.js judgeBody).
   // تغييرها في المواقع كلها هذا الرقم وحده، ولموقعٍ بعينه رقمٌ مكان الاسم في سطر bodyGuard من صفّه، وحذفُ ذلك السطر يُطفئ الحارس فيه
+  // ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) والأكاديمية سادستها منذ صار لها متون (القرار 83: «لكل مواقع المتون»)
   var BODY_GUARD = 0.05;
+  // ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) claude.com (Next.js مع Sanity — دراسة ر14 §٧أ ومراجعتها). لافتة الموافقة نصٌّ قانوني تبقيه الشركة إنجليزيًّا
+  // في عروضها المترجمة، ومنتقي اللغة يسمّي اللغات بأسمائها (قرار دراسة 2.0.0): لا يُعرَّبان ولا يُحصدان
+  var COM_SKIP = "[class*='ConsentContainer-module'], [class*='LocalePicker-module']";
+  // اتجاه كل كتلةٍ بنصّها في النص الغني (المقالات والقصص والإضافات والأدلة): ما يبقى إنجليزيًّا منها LTR داخل تخطيطٍ من اليمين
+  var COM_DIR = ".text-rich-text, .w-richtext";
+  // الصفحات التي تترجم الشركة إطارها دون متنها (السؤال 17، وافتراضه «هيكلٌ فقط»): قصص العملاء والمقالات غير المترجمة، والأدلة والندوات
+  // وسلاسلها، ونماذج التواصل والاستمارات، والحلول غير المترجمة، وصفحة إدارة الرعاية الصحية — نسختها ‎/<locale>/…‎ تُرجع 200 بترويسةٍ وتذييلٍ
+  // مترجمَين ومتنٍ إنجليزي (دراسة ر14 §٢هـ). والمترجَم منها بعينه في COM_EXACT فيسبقها (routeMode: exact ثم shell ثم full)
+  var COM_SHELL = ["/customers/", "/resources/", "/contact-sales/", "/form/", "/solutions/", "/healthcare-administration/"];
+  // ═══ <com-routes> مولَّدٌ بـ«node web/code/toolchain/com-routes.mjs --write» من خريطة claude.com وروابط hreflang — لا يُعدَّل باليد ═══
+  // مساراتُ الصفحات التي تترجمها الشركة بأعيانها (حارس المسار exact لنطاق com)، وأعدادها: الخريطة كلها، والإنجليزية، والمترجمة فيها،
+  // وما دخل من الخريطة، وما دخل من روابط hreflang وحدها، وعتبة اللغات (السؤال 15)، ويوم آخر تغيّرٍ في القائمة
+  var COM_EXACT = [
+    "/",
+    "/claude-for-google-workspace",
+    "/claude-for-microsoft-365",
+    "/claude-in-chrome",
+    "/community",
+    "/community/ambassadors",
+    "/contact-sales",
+    "/contact-sales/education-plan",
+    "/contact-sales/financial-services",
+    "/contact-sales/followup",
+    "/contact-sales/healthcare",
+    "/contact-sales/life-sciences",
+    "/contact-sales/nonprofits",
+    "/contact-sales/priority-tier",
+    "/contact-sales/security",
+    "/contact-sales/vc-partner",
+    "/customers",
+    "/customers/adalat-ai",
+    "/customers/advolve",
+    "/customers/aes",
+    "/customers/alexa-plus",
+    "/customers/amazon-q-in-connect",
+    "/customers/amira",
+    "/customers/apollo",
+    "/customers/appfolio",
+    "/customers/armanino",
+    "/customers/asana",
+    "/customers/asana-qa",
+    "/customers/asapp",
+    "/customers/assembled",
+    "/customers/athena",
+    "/customers/attention",
+    "/customers/audience-strategies",
+    "/customers/augment-code",
+    "/customers/aura",
+    "/customers/banner-health",
+    "/customers/base44",
+    "/customers/benchling",
+    "/customers/binti",
+    "/customers/biomni",
+    "/customers/bito",
+    "/customers/block",
+    "/customers/blueflame",
+    "/customers/bluenote",
+    "/customers/bolt",
+    "/customers/braintrust",
+    "/customers/brand-ai",
+    "/customers/brex",
+    "/customers/brian-impact-foundation",
+    "/customers/bunq",
+    "/customers/campfire",
+    "/customers/canva",
+    "/customers/carta-healthcare",
+    "/customers/charm-industrial",
+    "/customers/chatandbuild",
+    "/customers/chatbase",
+    "/customers/chronograph",
+    "/customers/circleback",
+    "/customers/circleci",
+    "/customers/classdojo",
+    "/customers/classmethod",
+    "/customers/clay",
+    "/customers/coderabbit",
+    "/customers/codewords",
+    "/customers/cogent",
+    "/customers/coinbase",
+    "/customers/copy-ai",
+    "/customers/cove",
+    "/customers/cox-automotive",
+    "/customers/cred",
+    "/customers/crunched",
+    "/customers/cubic",
+    "/customers/decagon",
+    "/customers/delightai-qa",
+    "/customers/descript",
+    "/customers/doctolib",
+    "/customers/dolly",
+    "/customers/dust",
+    "/customers/elation-health",
+    "/customers/emergent",
+    "/customers/epic-systems",
+    "/customers/esentire",
+    "/customers/factory",
+    "/customers/figma",
+    "/customers/fountain",
+    "/customers/freedom-forever",
+    "/customers/futurehouse",
+    "/customers/gambit",
+    "/customers/gamma",
+    "/customers/genspark",
+    "/customers/gitlab",
+    "/customers/gitlab-enterprise",
+    "/customers/grab",
+    "/customers/gradient-labs",
+    "/customers/grafana",
+    "/customers/graph",
+    "/customers/graphite",
+    "/customers/greptile",
+    "/customers/gumroad",
+    "/customers/harvey",
+    "/customers/headstart",
+    "/customers/hebbia",
+    "/customers/hostinger",
+    "/customers/hubspot",
+    "/customers/hubspot-qa",
+    "/customers/humach",
+    "/customers/hume",
+    "/customers/ifs",
+    "/customers/ig-group",
+    "/customers/inscribe",
+    "/customers/intercom",
+    "/customers/intuit",
+    "/customers/jetbrains",
+    "/customers/jetbrains-2",
+    "/customers/jumpcut",
+    "/customers/kodif",
+    "/customers/law-and-company",
+    "/customers/lazy-ai",
+    "/customers/legora",
+    "/customers/lex",
+    "/customers/lindy",
+    "/customers/lokalise",
+    "/customers/loreal",
+    "/customers/lotte-homeshopping",
+    "/customers/lyft",
+    "/customers/magicschool",
+    "/customers/matillion",
+    "/customers/medgate",
+    "/customers/micro1",
+    "/customers/mintlify",
+    "/customers/money-forward",
+    "/customers/n26",
+    "/customers/n8n",
+    "/customers/nbim",
+    "/customers/nevis",
+    "/customers/newfront",
+    "/customers/notion",
+    "/customers/notion-qa",
+    "/customers/novo-nordisk",
+    "/customers/nri",
+    "/customers/orange",
+    "/customers/otter",
+    "/customers/palo-alto-networks",
+    "/customers/panorama",
+    "/customers/panther",
+    "/customers/parcha",
+    "/customers/pelanor",
+    "/customers/pensive",
+    "/customers/perplexity",
+    "/customers/pjmf",
+    "/customers/postman",
+    "/customers/pratham-international",
+    "/customers/praxis",
+    "/customers/pulpit-ai",
+    "/customers/qodo",
+    "/customers/qualified-health",
+    "/customers/quantium",
+    "/customers/quillit",
+    "/customers/rakuten",
+    "/customers/rakuten-qa",
+    "/customers/ramp",
+    "/customers/replit",
+    "/customers/rileybot",
+    "/customers/rising-academies",
+    "/customers/rocket",
+    "/customers/scribd",
+    "/customers/section",
+    "/customers/semgrep",
+    "/customers/sentry",
+    "/customers/sett",
+    "/customers/shopify",
+    "/customers/shortcut",
+    "/customers/skillfully",
+    "/customers/skt",
+    "/customers/slack",
+    "/customers/snowflake",
+    "/customers/solvely",
+    "/customers/sourcegraph",
+    "/customers/sourcegraph-claude-for-work",
+    "/customers/spotify",
+    "/customers/spring-new",
+    "/customers/stairwell",
+    "/customers/steno",
+    "/customers/stripe",
+    "/customers/stubhub",
+    "/customers/studyfetch",
+    "/customers/super-teacher",
+    "/customers/tabnine",
+    "/customers/tahoe-lead-removal-project",
+    "/customers/tasklet",
+    "/customers/telus",
+    "/customers/thomson-reuters",
+    "/customers/thomson-reuters-qa",
+    "/customers/tidio",
+    "/customers/tines",
+    "/customers/tldv",
+    "/customers/tome",
+    "/customers/trellix",
+    "/customers/triple-whale",
+    "/customers/try",
+    "/customers/vambe",
+    "/customers/vanta",
+    "/customers/vibecode",
+    "/customers/wedia-group",
+    "/customers/windsurf",
+    "/customers/wiz",
+    "/customers/wordsmith",
+    "/customers/workato",
+    "/customers/wrtn",
+    "/customers/you-dot-com",
+    "/customers/zapia",
+    "/customers/zapier",
+    "/customers/zencoder",
+    "/customers/zingage",
+    "/customers/zoom",
+    "/download",
+    "/features/artifacts",
+    "/import-memory",
+    "/marketplace-partners",
+    "/newsletter/developers",
+    "/office-hours",
+    "/partners",
+    "/partners/claude-on-aws",
+    "/partners/google-cloud",
+    "/partners/microsoft-foundry",
+    "/partners/powered-by-claude",
+    "/platform/api",
+    "/pricing",
+    "/problem-solvers",
+    "/product/claude-code",
+    "/product/claude-code/enterprise",
+    "/product/claude-science",
+    "/product/claude-security",
+    "/product/cowork",
+    "/product/design",
+    "/product/overview",
+    "/product/tag",
+    "/programs/campus",
+    "/programs/frontier-academy",
+    "/programs/startups",
+    "/programs/team-plan-for-scientists",
+    "/regional-compliance",
+    "/resources",
+    "/resources/articles",
+    "/resources/articles/1m-context-ga",
+    "/resources/articles/auto-mode",
+    "/resources/articles/automate-security-reviews-with-claude-code",
+    "/resources/articles/best-practices-for-prompt-engineering",
+    "/resources/articles/beyond-permission-prompts-making-claude-code-more-secure-and-autonomous",
+    "/resources/articles/build-responsive-web-layouts",
+    "/resources/articles/building-agents-with-skills-equipping-agents-for-specialized-work",
+    "/resources/articles/building-companies-with-claude-code",
+    "/resources/articles/building-multi-agent-systems-when-and-how-to-use-them",
+    "/resources/articles/claude-code-and-slack",
+    "/resources/articles/claude-code-desktop-redesign",
+    "/resources/articles/claude-code-guide-for-startups",
+    "/resources/articles/claude-code-mods",
+    "/resources/articles/claude-code-on-the-web",
+    "/resources/articles/claude-code-plugins",
+    "/resources/articles/claude-design-stays-on-brand-for-daily-work",
+    "/resources/articles/claude-excel-powerpoint-updates",
+    "/resources/articles/claude-for-chrome",
+    "/resources/articles/claude-for-financial-advisors",
+    "/resources/articles/claude-for-government-is-now-generally-available",
+    "/resources/articles/claude-for-the-legal-industry",
+    "/resources/articles/claude-in-chrome-generally-available",
+    "/resources/articles/claude-managed-agents",
+    "/resources/articles/claude-now-works-in-google-docs-sheets-and-slides",
+    "/resources/articles/common-workflow-patterns-for-ai-agents-and-when-to-use-them",
+    "/resources/articles/complete-guide-to-building-skills-for-claude",
+    "/resources/articles/context-management",
+    "/resources/articles/cowork-built-in-browser",
+    "/resources/articles/cowork-is-now-claude",
+    "/resources/articles/cowork-plugins-across-enterprise",
+    "/resources/articles/cowork-plugins-finance",
+    "/resources/articles/create-files",
+    "/resources/articles/eight-trends-defining-how-software-gets-built-in-2026",
+    "/resources/articles/extending-claude-capabilities-with-skills-mcp-servers",
+    "/resources/articles/fix-software-bugs-faster-with-claude",
+    "/resources/articles/how-ai-helps-break-cost-barrier-cobol-modernization",
+    "/resources/articles/how-anthropic-enables-self-service-data-analytics-with-claude",
+    "/resources/articles/how-anthropic-teams-use-claude-code",
+    "/resources/articles/how-anthropic-uses-claude-legal",
+    "/resources/articles/how-anthropic-uses-claude-marketing",
+    "/resources/articles/how-brex-improves-code-quality-and-productivity-with-claude-code",
+    "/resources/articles/how-enterprises-are-building-ai-agents-in-2026",
+    "/resources/articles/how-healthcare-organizations-use-claude-tag",
+    "/resources/articles/how-to-configure-hooks",
+    "/resources/articles/how-to-create-skills-key-steps-limitations-and-examples",
+    "/resources/articles/how-to-prepare-for-ai-driven-code-modernization-projects",
+    "/resources/articles/improved-web-search-with-dynamic-filtering",
+    "/resources/articles/improving-frontend-design-through-skills",
+    "/resources/articles/improving-skill-creator-test-measure-and-refine-agent-skills",
+    "/resources/articles/integrate-apis-seamlessly",
+    "/resources/articles/introducing-routines-in-claude-code",
+    "/resources/articles/introduction-to-agentic-coding",
+    "/resources/articles/key-benefits-transitioning-agentic-coding",
+    "/resources/articles/making-claude-a-better-electrical-engineer",
+    "/resources/articles/memory",
+    "/resources/articles/observability-for-developers-building-connectors",
+    "/resources/articles/optimize-code-performance-quickly",
+    "/resources/articles/opus-4-6-finance",
+    "/resources/articles/organization-skills-and-directory",
+    "/resources/articles/preview-review-and-merge-with-claude-code",
+    "/resources/articles/self-serve-enterprise",
+    "/resources/articles/skills",
+    "/resources/articles/skills-explained",
+    "/resources/articles/structured-outputs-on-the-claude-developer-platform",
+    "/resources/articles/the-ai-native-sdlc-playbook",
+    "/resources/articles/the-founders-playbook",
+    "/resources/articles/using-claude-md-files",
+    "/resources/articles/were-expanding-the-claude-startups-program-to-help-founders-build",
+    "/resources/articles/what-is-model-context-protocol",
+    "/resources/best-practices",
+    "/resources/guides",
+    "/resources/insights",
+    "/resources/perspectives",
+    "/resources/product-announcements",
+    "/resources/videos",
+    "/resources/webinars",
+    "/skills",
+    "/solutions/agents",
+    "/solutions/code-modernization",
+    "/solutions/coding",
+    "/solutions/commerce",
+    "/solutions/customer-support",
+    "/solutions/cybersecurity",
+    "/solutions/education",
+    "/solutions/enterprise",
+    "/solutions/financial-services",
+    "/solutions/government",
+    "/solutions/healthcare",
+    "/solutions/legal",
+    "/solutions/life-sciences",
+    "/solutions/life-sciences/ai-adoption-index",
+    "/solutions/nonprofits",
+    "/solutions/sales",
+    "/solutions/small-business",
+    "/solutions/teachers"
+  ];
+  var COM_EXACT_META = {"at":"2026-10-17","sitemap":3696,"english":2387,"localized":340,"fromSitemap":334,"fromHreflang":5,"minLocales":1,"exact":339};
+  // ═══ </com-routes> ═══
+  // ★ (ر20-أ، ١٢ جمادى الأولى ١٤٤٨هـ) لوحة المطوّرين (Console) على platform.claude.com خارج ‎/docs/‎: تطبيق Next.js واحدٌ مع الوثائق يتنقّل بينهما بلا إعادة
+  // تحميل (الجرد §٣-٢، وخطة النطاقات §٤ب)، فهي **صنفُ مسارٍ في مدخل الوثائق نفسه** بقاموسٍ ثانٍ (ar-console.json ← dict-console.js) لا مدخلٌ ثانٍ على
+  // المضيف نفسه، ولا إذن جديدًا (‎https://platform.claude.com/*‎ مطابَقٌ اليوم). والمسارات أقسام اللوحة بأعيانها، لا «كل ما ليس ‎/docs/‎»: قسمٌ جديد
+  // لا نعرفه خاملٌ حتى يُضاف هنا. والمصدر (١٢ جمادى الأولى ١٤٤٨هـ، قراءةٌ بنيوية للحزم العامة بلا دخولٍ ولا كعكات، أسماءٌ وأعداد): أسماء المسارات
+  // المقتبسة في حزم صفحة الدخول وأغلفة الأقسام العامة (215 ملفًّا)، ثم طلبٌ بلا اعتمادٍ لكلٍّ منها — 200 (غلاف القسم يُرسم ثم يُطلب الدخول من العميل)
+  // أو تحويلٌ إلى قسمٍ منها (‎/settings‎ ← ‎/settings/organization‎، و‎/workbench‎ ← ‎/playground‎) يُبقيه، و404 يُسقطه (‎/limits‎ و‎/workspaces‎ و‎/upgrade‎…).
+  // وأقسام الإعدادات التسعة عشر في حزمةٍ واحدة (جدول التنقّل في الإعدادات) تحت البادئة ‎/settings/‎. والجذر ‎/‎ بعينه (لوحة البداية). وخارجها كما هي:
+  // ‎/docs/‎ (مدخل الوثائق)، و‎/cookbook/‎ (خارج النطاق، PLAN-3.0.0 §١-٨)، وكل مسارٍ آخر
+  var CONSOLE_ROUTES = { exact: ["/"],
+    full: ["/agents/", "/appeal/", "/batches/", "/claude-code/", "/cost/", "/create/", "/dashboard/", "/deployments/", "/environments/", "/files/",
+           "/invites/", "/join/", "/login/", "/logout/", "/logs/", "/magic-link/", "/memory-stores/", "/notifications/", "/onboarding/",
+           "/org-discovery/", "/partner-callback/", "/partner-onboarding/", "/partner-setup/", "/playground/", "/restricted/", "/sessions/",
+           "/settings/", "/skills/", "/spending/", "/sso-callback/", "/usage/", "/vaults/", "/workbench/"] };
+  // ★ (ر20-أ) محتوى المستخدم في أسطح اللوحة (RULES §1): لا يُعرَّب ولا يُقلب ولا يُحصد، ولا يُقرأ نصُّه للمطابقة (رفض التتابع كلّه، SHARED.blockProt)، وهو
+  // خاملٌ اليوم مع الصنف كلّه حتى CN1. والمحدِّدات من بنية الحزم العامة وحدها (أسماء الأصناف وسمات البيانات ومعرّفات الاختبار، أعدادًا بلا نص)، وما
+  // يحتاج فحص المالك بحسابه في CN-د مذكورٌ بنجمة:
+  //   ‎[data-row-key]‎ (8 في الحزم): صفوف جداول البيانات كلها — المفاتيح (‎table-api-keys‎) والأعضاء والمساحات والسجلّات والملفات والدفعات والفواتير
+  //     (‎console-billing-invoice-history‎): الصفّ كلّه سجلٌّ من حساب المستخدم (اسم المفتاح وبادئته، والاسم والبريد، ومبلغ الفاتورة)؛ ورؤوس الأعمدة
+  //     خارجه فتُعرَّب. ★ وما في الصفّ من نصّ الشركة (شارة الحالة، واسم الدور) يبقى إنجليزيًّا احتياطًا حتى يفصله فحص المالك
+  //   ‎.bg-user-message‎ (3): دورُ المستخدم في محادثة ساحة التجربة (‎/playground‎)
+  //   ‎[class~="prose"]‎ (21 صنفًا يبدأ بـ‎prose‎): النصّ المنسَّق بمكتبة الطباعة — مخرجات النموذج في ساحة التجربة والتقييم. ★ وإن كان فيه نصُّ شركةٍ فاحتياطٌ
+  //   ومعرّفات الاختبار للمبالغ والأعداد: ‎kpi-value‎ و‎top-bar-balance‎ و‎purchase-dialog-current-balance‎ و‎balance-after-bonus‎ و‎members-count‎،
+  //     وإطار الفاتورة ‎invoice-detail-frame‎
+  //   ومعها EDITOR_USER في الصف (محرِّر الموجِّه ومتغيّراته إن كان ProseMirror أو أعلن دور ‎textbox‎). ★ ولا محرِّر غنيّ في الحزم العامة (0 من ‎cm-editor‎
+  //     و‎monaco-editor‎ و‎ProseMirror‎)، فمحرِّر الموجِّه خلف الدخول؛ و‎contenteditable‎ (17 موضعًا) يحميه المحرّك بقابلية التحرير أصلًا، و‎<input>‎ لا عقدة نصٍّ
+  //     فيه، وقيمة ‎<textarea>‎ الأولى عقدةُ نصٍّ يحميها تخطّي المحرّك وسمَ TEXTAREA (ر24-و). ★ واسم المؤسسة والمساحة في مبدِّل الرأس (‎top-bar-menu‎) لم يُعرف عنصره بلا دخول
+  var CONSOLE_USER = "[data-row-key], .bg-user-message, [class~='prose'], [data-testid='kpi-value'], [data-testid='top-bar-balance'], " +
+    "[data-testid='purchase-dialog-current-balance'], [data-testid='balance-after-bonus'], [data-testid='members-count'], " +
+    "[data-testid='invoice-detail-frame']";
+  // ★ (ر20-ب، ١٢ جمادى الأولى ١٤٤٨هـ) محتوى المستخدم في بوابة Anthropic (portal.anthropic.com، صفّ portal أدناه): التطبيق من عائلة اللوحة نفسها
+  // (applicationType ‏trust-portal في إعداد الصفحة، ومكتبة الدخول ونظام التصميم CDS نفساهما)، لكن حزمه ليست حزم اللوحة (2 من 59 ملفًّا متطابقةٌ
+  // بالمحتوى مع حزم صفحة دخول اللوحة). والمحدِّدات من بنية الحزم العامة لصفحة الدخول وحدها (أسماءٌ وأعداد بلا نص، والحزم محذوفة بعد القراءة)، لأن كل
+  // مسارٍ غير صفحات الدخول الأربع يحوّله الخادم إلى الدخول (307 ← ‎/login?returnTo=‎) ولو كان مسارًا لا وجود له، فلا يُرى من أسطح البوابة خلف الدخول
+  // شيء. وما عليه نجمة ★ يحتاج فحص المالك بحسابه في متصفحه (CN2-د)، والبوابة كلها خاملةٌ اليوم:
+  //   ‎[data-row-key]‎ ★: صفوف جداول البيانات في CDS كما في اللوحة (CONSOLE_USER) — الطلبات وأعضاء المؤسسة إن عُرضت جداولَ
+  //   ‎[class~="prose"]‎ ★: النصّ المنسَّق — إجابات نماذج التقديم إن عُرضت للمراجعة منسَّقة
+  //   ‎[dir="ltr"]‎: ما يجعله الموقع من اليسار بسمةٍ صريحة — في حزم الدخول 6 مواضع في 4 ملفات، ومنها عنوان البريد الذي أُرسل إليه رابط الدخول
+  //     وأرقام الرموز؛ وهي في البوابة قيمٌ يكتبها المستخدم أو تخصّ حسابه (بريد، هاتف، رمز)
+  //   ومعها EDITOR_USER في الصف. و‎<input>‎ (حقول النماذج) لا عقدة نصٍّ فيه؛ أما ‎<textarea>‎ فقيمته الأولى التي يرسلها الخادم عقدةُ نصٍّ فيه، ويحميها
+  //   تخطّي المحرّك وسمَ TEXTAREA (‎CMLShared.DOM_RULES.SKIP‎) لا غيابُ النص (تصحيح مراجع ر20-ب في RULES §1، ر24-و). والمحرِّر القابل للتحرير يحميه المحرّك.
+  //   ★ ولم يُعرف بلا دخول: عرضُ إجابات الطلب بعد إرساله، وأسماء المتقدّم والمؤسسة وحقولها، وأسماء الملفات المرفوعة (‎input[type=file]‎ موضعٌ واحد
+  //     في الحزم، واسم الملف المعروض بجانبه غير معروف)، وحال الطلب (شارةٌ من نصّ الشركة أم من بيانات الطلب)، ومبدِّل الحساب (‎add-or-switch-*‎)
+  var PORTAL_USER = "[data-row-key], [class~='prose'], [dir='ltr']";
   var C = {
     // ---- مفاتيح chrome.storage.local — كل مفتاح باسمه الواحد ----
     K: {
@@ -226,8 +686,10 @@
     TITLE_PIN_FAST_MS: 100,
     // ★ (٢١ ربيع الآخر ١٤٤٨هـ، توجيه المالك: «لا يمنع أي حدٍّ تقني تعريب نص موقعٍ مهما طال ما دام ليس محادثةً أو محتوى
     // مستخدم») لم يعد TEXT_MAX سقفًا لما يترجمه المحرّك: مفتاح العقدة والسمة والعنوان بلا سقف طول (engine.js KEY_MAX)، والجمع
-    // والنمط مفهرسان بثوابتهما (cml-shared patternIndex). بقي حدًّا لما يُدخله المستخدم (تصحيحاته في الإعدادات والنافذة
-    // والمزامنة) ولفحص الحزم داخل الإضافة.
+    // والنمط مفهرسان بثوابتهما (cml-shared patternIndex). بقي حدًّا لما يُدخله المستخدم وحده (تصحيحاته في الإعدادات والنافذة
+    // والمزامنة). ★ (ر29-ط، ١٩ جمادى الأولى ١٤٤٨هـ) ولم يعد سقفًا لـ«فحص الترجمة» (ماسحا الحزم وفهرس الصفحات في engine.js): كان نصٌّ طويلٌ غير مترجم
+    // لا يبلغ تصدير المالك أبدًا. ★ (ر29-ي، ١٩ جمادى الأولى ١٤٤٨هـ) ولم يعد حدًّا لما يُحفظ من تصحيحات المستخدم: التصحيح يُحفظ على الجهاز مهما طال،
+    // وبقي حدَّ المزامنة وحدها (cml-sync.js: ما جاوز النصُّ فيه TEXT_MAX أو الترجمةُ ضعفَه لا يُرفع ويبقى محليًّا، وتقوله الإعدادات والنافذة).
     TEXT_MAX: 300,
     // ما تلتقطه متغيّرات نمطٍ من نصٍّ مجتمعةً (النص ناقصَ ثوابت النمط): القالب الطويل ثوابته طويلة فيمرّ، ونمطٌ قصيرٌ عامّ
     // لا يبتلع فقرةً طويلةً لا تخصّه — والنصّ الذي لا يزيد على هذا الحدّ لا يمسّه الشرط أصلًا (السلوك قبل رفع السقف نفسه)
@@ -238,7 +700,9 @@
 
     // ---- عتبات الفحص ----
     CLAIM_STALE_MS: 90000,  // حجز أقدم من هذا متروك (يطابقه startScan وclaimScan حكمًا)
-    SCAN_CAP: 4000,         // أقصى ما يُخزَّن من غير المترجَم (القائمتان تُقصان، العدّ يصدق)
+    // ★ (ر29-ز) لا سقف عددٍ لغير المترجَم (كان SCAN_CAP ‏4,000 سطر فأسقط من تصدير المالك خمسة أسطر): حدُّ حجمٍ لما يُخزَّن منه حمايةً لسعة
+    // التخزين المحلي، أعلى بكثيرٍ من أي فحصٍ قيس (4,005 أسطر نحو 0.2 م.ب). وما جاوزه يُعدّ ويُقال في الإعدادات وفي ملف «أمر الترجمة» (omitted)
+    SCAN_MAX_BYTES: 2 * 1024 * 1024,
     RTLDOC_CAP: 500,        // أقصى ما يُخزَّن من إعلانات فيزيائية غير مغطاة (العدّ يصدق)
     // سقفُ ورقة المحرّك الحيّ المخزَّنة (الحاليّ ~400ك.ب؛ ما تجاوز هذا لقطةٌ شاذّة لا تُخزَّن)
     RTL_LIVE_MAX_BYTES: 2 * 1024 * 1024,
@@ -305,7 +769,7 @@
     // ★ (المرحلة ٢، قرار المالك ق٢) تصحيحات الفقرات تُزامَن بأدنى أولوية: مساحتُها ما يبقى بعد كل ما سواها
     // ناقصًا هامشًا لنموّ تصحيحات الواجهة، ومساحةُ الواجهة تُخليها متى احتاجت (لا تتوقف مزامنة الواجهة أبدًا)
     SYNC_BLOCK_HEADROOM: 8192,
-    BLOCK_VAL_MAX: 8000,     // أطول قالبٍ عربي لفقرةٍ يُقبل تصحيحًا (المتون حتى BLOCK.MAX=4000 إنجليزيًّا)
+    BLOCK_VAL_MAX: 8000,     // أطول قالبٍ عربي لفقرةٍ يُقبل تصحيحًا من القارئ: حصّة تخزين التصحيحات ومزامنتها، لا شرطُ ترجمة (المتون بلا سقف طولٍ منذ ر24-أ)
 
     // ═══ جدول النطاقات (١-٠ب) — المصدر الواحد لها في المحرّك والعامل والخيارات والبناء ═══
     // id هو اسم النطاق في المفاتيح (key) والقواميس؛ «app» يبقى على مفاتيح 1.0.0 بلا لاحقة
@@ -314,6 +778,8 @@
     //   scan  : "app" فحص حزم التطبيق | "llms" فهرس llms.txt (المسار meta.llms، وافتراضه "/llms.txt")
     //           | "none" لا فحص
     //   live  : ورقة اتجاهٍ حيّة من أوراق الصفحة (وإلا فاللقطة المشحونة وحدها)
+    //   liveSheetsMax: ★ (ر16-ج) سقف عدد أوراق الجولة لهذا النطاق بدل RTL_LIVE_SHEETS_MAX (العامل validLiveRequest) — لموقعٍ تزيد أوراق صفحاته
+    //           على السقف العام، مقيسًا من قوالبه؛ وغيابُه = السقف العام كما كان
     //   liveInline: أوراق <style> المضمَّنة في الورقة الحيّة — اختياريةٌ لكل نطاق (غيابها = الروابط وحدها): true كلُّها،
     //           أو محدِّدٌ يحصرها؛ وما داخل المحادثة أو skipSel خارجها أبدًا (المحرّك يستثنيه، والعامل يرفضها من نطاقٍ لم يخترها)
     //   siteLang: حارس لغة الموقع — لغةٌ غير الإنجليزية يكتبها الموقع في <html lang> (إعداد الحساب) تُخمد الإضافة (التطبيق)
@@ -328,24 +794,49 @@
     //   hydrateSignal: "announcer" (الافتراض: next-route-announcer وحده) | "idle" (الإشارة ثم load ثم فترتا خمولٍ للخيط
     //           الرئيس — لموقعٍ يترطّب انتقائيًّا بعد الإشارة فتُفشل كتابتُنا المبكرة ترطيبَه: React ‎#418‎) | "lang" (ر4: أول كتابةٍ
     //           من الموقع نفسه لسمة <html lang> بعد اكتمال التحليل — لا كتابتُنا — ثم load وفترتا خمولٍ كـ"idle"؛ لموقعٍ بلا
-    //           next-route-announcer يكتب لغة واجهته عند تركيب تطبيقه: الأكاديمية، ويلزمه siteLang). السقفان كما هما
+    //           next-route-announcer يكتب لغة واجهته عند تركيب تطبيقه: الأكاديمية، ويلزمه siteLang) | "attr" (ر27-ب: أول كتابةٍ من الموقع
+    //           لسمة <html> المسمّاة في hydrateAttr بعد اكتمال التحليل — لا نكتبها نحن أبدًا — تفتح البوابة بلا انتظار الخمول؛ لموقعٍ بلا
+    //           next-route-announcer يعيد كتابة تلك السمة في إيداع ترطيب جذره ولا يبقى بعده غير مرطَّبٍ ما فيه نصّ: بناء Mintlify الجديد
+    //           في وثائق Claude Code، وnext-route-announcer يبقى إشارةً معها). السقفان كما هما
+    //   hydrateAttr: اسم سمة <html> لإشارة "attr" (وحدها)
     //   isoLabels: عزل اللافتات اللاتينية الخالصة التي لم تُترجم وفي طرفها رمز («C#» تُرسم «#C» في سياق RTL) بـLRI…PDI في
     //           عقدة نصّها — حين تكون وحدها نصَّ صندوق سطرها واتجاهُها المحسوب RTL (engine.js isolateLabel). لا يُفعَّل في نطاقٍ فيه
     //           نصوصٌ كتبها المستخدم خارج متن المحادثة (عناوين المحادثات في التطبيق)
+    //   iconMirror: ★ (ر30-ب، القرار 124) يسم المحرّك الأيقونات الاتجاهية بهويّتها (اسم الرمز وأصنافه) ‎data-cml-mirror‎ فتعكسها base.css تحت
+    //           ‎:dir(rtl)‎ (engine.js markIcons). لا يُفعَّل في claude.ai: يعكس أيقوناته بنفسه
+    //   countNoun: ★ (ر12، ٥ جمادى الأولى ١٤٤٨هـ — PLAN-3.0.0 ج3) معدودٌ يُرسم عقدةً وحده بعد عددٍ في عقدةٍ أخرى («‎2<!-- --> <!-- -->lessons‎»)
+    //           يُكتب بصيغة الجمع للعدد من مدخل «‎%d <المعدود>‎» في القاموس، وتُفرَّغ عقدة العدد (engine.js countPair). للأكاديمية وحدها:
+    //           لم يُقَس شكلٌ كهذا في غيرها، وفي التطبيق أسماءٌ يكتبها المستخدم خارج المحادثة
     //   routes: حارس المسار — exact: مساراتٌ كاملةٌ بالمساواة (بعد نزع الشرطة الختامية)، full: بادئاتٌ
     //           يعمل فيها كاملًا، shell: هيكلٌ فقط؛ وما سواها خامل
+    //   bodyRoutes: ★ (ر29-د) مسارات المتن (بصيغة routes: exact وfull): صفحاتٌ لا بدّ فيها من متنٍ يطابقه bodySel. فإن لم يطابق شيئًا بعد استقرار
+    //           الصفحة حُجزت «nosel» وخمد المحرّك فيها (engine.js)، وفحص الاتجاه والحاصد يعدّانه عطلًا. غيابها = لا صمّام (الأكاديمية وclaude.ai).
+    //           ★ (مراجعة ر29-د) وshell فيها: بادئةٌ تحت بادئةٍ كاملة ليست مسار متن (صفحةٌ بلا متنٍ أصلًا) — routeMode يقدّمها على full
+    //   bodyMain: ★ (ر29-د2، مراجعة ر29-د F4) حاوية المتن الرئيسة — أجزاءٌ من bodySel فيها نصّ الصفحة (لا الرأس ولا الفهرس)، وأيُّها يكفي. يسأل
+    //           عنها الصمّام وحكمُ الحارس (engine.js mainFound)، وتُفحص مفتاحًا بنفسها في الحاصد وفحص الاتجاه وبوابة بدء المرحلة ونتيجة الفحص
+    //           (sel-health.mjs). لازمةٌ لكل نطاقٍ له bodyRoutes ومحدِّد متنه مركّب (selftest-tools: tableGaps)؛ وغيابها = bodySel كلّه
     //   bodies: متونٌ بوضع الكتلة (المرحلة ٢) — قطعةٌ لكل صفحة من bodies/<id>/<لغة>/ داخل المتن (bodySel)
     //   bodyGuard: ★ (ر6-ب) حارس المتن المختلط — نسبةٌ من 0 إلى أقل من 1: إذا زادت حصّة كتل المتن الحيّة التي لا تغطّيها قطعة الصفحة (لا ترجمة لها
     //           ولا علامة إبقاء ولا يعرّبها قاموس الواجهة ولا هي محايدة بلا كلمةٍ لاتينية) على هذه النسبة لم يُكتب داخل متن تلك الصفحة شيء:
     //           يبقى المتن إنجليزيًّا كلُّه والواجهة حوله عربية، وعلى الجذر data-cml-body="held". يُحكم مرّةً لكل صفحة بعد وصول قطعتها
     //           وترطيبها، وما يظهر بعده (لوحات التبويب والأكورديون) يتبع الحكم. غيابُها = لا حارس (كما كان).
     //           ★ (ر6-د — القرار 84) والصفحة التي لا قطعة لها تُحكم بقطعةٍ فارغة فتُحجب كذلك إلا أن يغطّي قاموسُ الواجهة متنَها، ومعها
-    //           data-cml-held="none" (و"drift" لما لها قطعة) — والعتبة في المواقع الخمسة BODY_GUARD (القرار 83)
+    //           data-cml-held="none" (و"drift" لما لها قطعة) — والعتبة في المواقع الخمسة BODY_GUARD (القرار 83)، ★ (ر13) والأكاديمية سادستها
+    //   bodyRejudge: ★ (مراجعة ر13-أ) true: الحكم يُعاد بكتل المتن الحاضرة كلما كبر المتن بعد حكمٍ لم يحجبه ولم يُكتب فيه من القطعة شيء (engine.js
+    //           bodyRejudge) — لموقعٍ يُركِّب جزءًا من متنه من العميل بعد فتح البوابة (أدوات الأكاديمية الحيّة)؛ وبعد أول كتابةٍ من القطعة يتبع ما يظهر
+    //           الحكمَ كما في bodyGuard. غيابُها = حكمٌ واحد لكل صفحة (كما كان)
     //   pageAlias: [{re, to}] — مساراتٌ عدّة لصفحةٍ واحدة تُردّ إلى مفتاحها القانوني (SHARED.pageKey: المحرّك والعامل والحاصد والبناء
     //           معًا): re مصدرُ تعبيرٍ على المسار بلا شرطةٍ ختامية، وto قالبُ الاستبدال ($1…). مرجع الوثائق: صفحات SDK (‎/api/python/…‎)
     //           نصوصُ ما نترجمه فيها هي نصوص صفحة HTTP حرفًا بحرف، فقطعتُها قطعتُها
     //   skipSel: ما لا يُترجم ولا يُحصد أبدًا في النطاق (محتوى مولَّد كأجوبة المساعد، والعقد البرمجي في مرجع الوثائق، وأسماءٌ كتبها
     //           المستخدم في التطبيق: المحادثات والمشاريع والمُخرَجات والملفات — APP_USER_NAMED) — كاستثناء المحادثة في التطبيق
+    //   keepSel: ★ (ر24-ج1، ١٠ جمادى الأولى ١٤٤٨هـ — بعد ر24-أ، القراران 107 و113) صنفُ ما في skipSel: أجزاؤه (محدِّداتٌ مفصولةٌ بفاصلةٍ في المستوى
+    //           الأعلى، حرفًا بحرف كما في skipSel) التي هي نصُّ الموقع تبقيه الشركة إنجليزيًّا — العقد البرمجي والشيفرة والشارات وغلاف الموقع.
+    //           وكلُّ جزءٍ من skipSel ليس هنا محتوى مستخدم (المحادثة، والقابل للتحرير، وأسماء المستخدم ونصوصه، وما يتلقّاه جوابًا) — فما لم يُصنَّف
+    //           محتوى مستخدمٍ احتياطًا. وكلاهما لا يُترجم ولا يُحصد كما كان؛ والفرق داخل تتابع الكتلة وحده (SHARED.blockProt): عنصرُ محتوى المستخدم
+    //           يرفض التتابع كلَّه بلا قراءة، وعنصرُ ما تبقيه الشركة ذرّةٌ معتمة لا تُكتب (<cN>نصّها</cN> أو <gN/>) ويُترجم ما حوله. وshellSel (محتوى
+    //           الموقع في مسار shell) وechoSel (صدى عنوانٍ من المتن) من الصنف الثاني بتعريفهما (SHARED.harvestKeep)، ومحدِّدات المحادثة وقابل
+    //           التحرير من الأول دائمًا. وغيابُه = كلُّ skipSel محتوى مستخدم
     //   fontFamilies: القائمة المغلقة لعائلات خطوط الموقع التي يُعكس فيها الخط العربي {عائلة: دور} (DESIGN-fonts §٤.٣)؛
     //           الدور ui أو read أو mono (ق٤)، والأسماء مطبَّعة (SHARED.normFamily: بلا تنصيص) — ولا وجه لعائلةٍ
     //           خارجها ولا لاسمٍ فيها لم يعلنه الموقع نفسه في document.fonts. تفحص «fonts.mjs verify» كلَّ اسمٍ منها
@@ -367,6 +858,12 @@
     //   (وثائق المطوّرين: باقيها ما غيّره الموقع بعد ترجمته، ولذلك ذيلُ الجملة العام). ويمتحنه _optionstest على المشحون
     //   (للنطاقات القادمة، مقيسًا في ٢٠ ربيع الآخر ١٤٤٨هـ: claude.com « | Claude by Anthropic»؛ والأكاديمية « · Claude Academy» صار لها
     //   نطاقها في ر4؛ وصفحات anthropic.com « \ Anthropic» بشرطةٍ مائلة عكسية — مقيسٌ في ٢٨ ربيع الآخر ١٤٤٨هـ، والوثائق القانونية أولها)
+    //   ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) وصيغةٌ ثالثة {upcoming: true}: نطاقٌ «قادم» — صفُّه هنا، ومطابقته يحجبها البناء عن مانيفست الحزمة
+    //   (ر28-ب، ٢٠ جمادى الأولى ١٤٤٨هـ، السؤال 2 على افتراضه: manifest-entry.mjs ‏packageEntries)، فلا يُعلَن مضيفه في نافذة الإذن حتى يُشحن
+    //   قاموسه في الإصدار الذي يحمله، ولا قاموس له بعد. فهو خاملٌ تمامًا في صفحاته (engine.js: لا سمة ولا إخفاء ولا خط ولا
+    //   عنوان ولا طلب، والنافذة وحدها تقول إنه قادم)، ولا تعرضه الإعدادات ولا يُعدّ في الترحيب (C.shipped)، وعامل الخدمة لا يجيب له طلب قطعةٍ ولا
+    //   ورقة، وبوابة الحزمة (verify-package) لا تقبل نطاقًا مشحونًا قاموسُه المبنيّ لا يعرّب شيئًا. ويُشغَّل بتبديل صيغته إلى {full} أو {part, en}
+    //   في المرحلة التي تشحن قاموسه (CM-د)، ومعه تُحدَّث الفحوص المثبَّتة على حاله اليوم (_comtest و_cominerttest و_optionstest والدخان)
     DOMAINS: [
       { id: "app", name: "تطبيق Claude", host: "claude.ai", origin: "https://claude.ai",
         matches: ["https://claude.ai/*", "https://*.claude.ai/*"], dict: "dictionary.js", allFrames: true,
@@ -378,7 +875,7 @@
         excludeMatches: ["https://assets.claude.ai/*", "https://pivot.claude.ai/*", "https://*.livepreview.claude.ai/*"],
         meta: { scan: "app", live: true, chat: true, hydrate: "none", siteLang: true,
                 // أسماء المحادثات والمشاريع والمُخرَجات والملفات: محتوى المستخدم لا يُعرَّب ولو طابق نصَّ واجهة (APP_USER_NAMED)
-                skipSel: APP_USER_NAMED,
+                skipSel: APP_USER_NAMED + ", " + EDITOR_USER,
                 fontFamilies: { "anthropic-sans": "ui", "anthropic-serif": "read", "anthropic-mono": "mono" },
                 // عنوان التبويب (من حزم الموقع، ٢٠ ربيع الآخر ١٤٤٨هـ): رأسُ المسار «<العنوان> - Claude» (والجذر «Claude» وحده،
                 // وبعض المسارات عنوانٌ كامل بلا ذيل)، وأداة العنوان في المكوّنات «<الاسم> - Claude»، وClaude Code على الويب «<…> | Claude Code»
@@ -402,20 +899,30 @@
       { id: "support", name: "مركز المساعدة", host: "support.claude.com", origin: "https://support.claude.com",
         matches: ["https://support.claude.com/en/*"], dict: "dict-support.js", allFrames: false,
         status: { full: true },
-        meta: { scan: "none", live: false, chat: false, hydrate: "defer", intercom: true, bodies: true, dirSel: INTERCOM_DIRSEL, bodySel: INTERCOM_BODYSEL,
+        meta: { scan: "none", live: false, chat: false, iconMirror: true, hydrate: "defer", intercom: true, bodies: true, dirSel: INTERCOM_DIRSEL, bodySel: INTERCOM_BODYSEL,
                 // ★ (ر6-د) حارس المتن المختلط بعتبة القرار 83 (BODY_GUARD أعلاه)
                 bodyGuard: BODY_GUARD,
+                // ★ (ر29-د) مسارات المتن لصمّام «nosel» (engine.js): مقالاتٌ فيها متنٌ لا بدّ منه، لا الرئيسة ولا المجموعات
+                bodyRoutes: { full: ["/en/articles/"] },
+                // ★ (ر29-د2) حاوية المتن الرئيسة: نصّ المقالة، لا فهرسها (INTERCOM_BODYSEL مركّب)
+                bodyMain: INTERCOM_BODYMAIN,
                 fontFamilies: { "AnthropicSans-Regular-Web": "ui", "AnthropicSerif-Regular-Web": "read" }, fontPrepend: INTERCOM_FONT_VARS,
                 // «<المقالة أو المجموعة> | Claude Help Center»، والرئيسية «Home | …» (وأكثرها في القاموس كاملةً من حصاد DOM)
-                titleSuffix: [" | Claude Help Center"] } },
+                titleSuffix: [" | Claude Help Center"],
+                skipSel: EDITOR_USER } },   // ★ (ر24-ج2) مواضع الكتابة
       { id: "privacy", name: "مركز الخصوصية", host: "privacy.claude.com", origin: "https://privacy.claude.com",
         matches: ["https://privacy.claude.com/en/*"], dict: "dict-privacy.js", allFrames: false,
         status: { full: true },
-        meta: { scan: "none", live: false, chat: false, hydrate: "defer", intercom: true, bodies: true, dirSel: INTERCOM_DIRSEL, bodySel: INTERCOM_BODYSEL,
+        meta: { scan: "none", live: false, chat: false, iconMirror: true, hydrate: "defer", intercom: true, bodies: true, dirSel: INTERCOM_DIRSEL, bodySel: INTERCOM_BODYSEL,
                 // ★ (ر6-د) حارس المتن المختلط بعتبة القرار 83 (BODY_GUARD أعلاه)
                 bodyGuard: BODY_GUARD,
+                // ★ (ر29-د) مسارات المتن لصمّام «nosel» (engine.js): مقالاتٌ فيها متنٌ لا بدّ منه، لا الرئيسة ولا المجموعات
+                bodyRoutes: { full: ["/en/articles/"] },
+                // ★ (ر29-د2) حاوية المتن الرئيسة: نصّ المقالة، لا فهرسها (INTERCOM_BODYSEL مركّب)
+                bodyMain: INTERCOM_BODYMAIN,
                 fontFamilies: { "Tiempos Text Regular": "read" }, fontPrepend: INTERCOM_FONT_VARS,
-                titleSuffix: [" | Anthropic Privacy Center"] } },
+                titleSuffix: [" | Anthropic Privacy Center"],
+                skipSel: EDITOR_USER } },   // ★ (ر24-ج2) مواضع الكتابة
       // ★ (ر3) الوثائق القانونية الخمس (دراسة ر3، ٢٨ ربيع الآخر ١٤٤٨هـ): المسارات الخمسة بأعيانها، وسائر /legal/ والأرشيف خامل.
       // المطابقة ‎/legal/*‎ وحدها (أضيق نمطٍ يعمل: يشمل سلسلة الاستعلام والتنقّل بين الوثائق داخل الموقع)
       { id: "legal", name: "الوثائق القانونية", host: "www.anthropic.com", origin: "https://www.anthropic.com",
@@ -427,14 +934,22 @@
         // ★ (قياس ر3، ٢٨ ربيع الآخر ١٤٤٨هـ) الإشارة الافتراضية (next-route-announcer) تكفي فلا hydrateSignal ولا hydrateMaxMs: الصفحات الخمس
         // بالإضافة الحقيقية وقاموسٍ وقطعٍ تجريبية تكتب العنوان والرأس والمتن كلّه — 0 خطأ React في 25 تحميلًا بها و15 بدونها، والإشارة
         // بعد DOMContentLoaded بـ0.1–0.4 ث، وأول كتابةٍ عربية بعدها بـ9–20 مث لا قبلها أبدًا (و<title> في <body> يُعرَّب كذلك)
-        meta: { scan: "none", live: true, chat: false, hydrate: "defer", bodies: true, siteLang: true,
+        meta: { scan: "none", live: true, chat: false, iconMirror: true, hydrate: "defer", bodies: true, siteLang: true,
                 // ★ (ر6-د) حارس المتن المختلط بعتبة القرار 83 (BODY_GUARD أعلاه): وسياسة الاستخدام (‎/legal/aup‎) بلا قطعةٍ حتى يُحسم q90،
                 // فتُحجب بلا تنبيه (القرار 84)
                 bodyGuard: BODY_GUARD,
                 routes: { exact: ["/legal/privacy", "/legal/non-user-privacy-policy", "/legal/cookies", "/legal/aup", "/legal/consumer-terms"] },
-                dirSel: LEGAL_BODY, bodySel: LEGAL_BODY, skipSel: LEGAL_CHROME,
+                // ★ (ر29-د) مسارات المتن لصمّام «nosel» (engine.js): الوثائق الخمس كلها، وسياسة الاستخدام منها (متنها محجوزٌ «none» وموضعه معروف)
+                bodyRoutes: { exact: ["/legal/privacy", "/legal/non-user-privacy-policy", "/legal/cookies", "/legal/aup", "/legal/consumer-terms"] },
+                dirSel: LEGAL_BODY + ", " + LEGAL_HERO, bodySel: LEGAL_BODY, skipSel: LEGAL_CHROME + ", " + EDITOR_USER,
+                // ★ (ر24-ج1) غلاف الموقع ومنتقي اللغة نصُّ الموقع تبقيه الشركة إنجليزيًّا: كلُّه من صنف keepSel
+                keepSel: LEGAL_CHROME,
                 // منتقي لغة الوثيقة يبدّل المتن في React بلا تغييرٍ في العنوان ولا <html lang>، ويبدأ بلغة بلد الزائر إن وُجدت ترجمتها
-                siteLangSel: "[class*='LegalPageDetail-module'][class*='__language-options'] [class*='singleValue']",
+                // ★ (ر29-ج) المنتقي الجديد زرٌّ (Select__trigger، وعليه LegalArticleHero__LanguageSelect) فيه قيمته المعروضة (‎<span>‎ بلا صنف)
+                // وأيقونته (Select__icon، بلا نص). واختيار لغةٍ أخرى يضيف سلسلة استعلامٍ ويبدّل المتن والقيمة، ولا يمسّ المسار ولا <html lang>
+                // (مقيسًا) — فالحكم بنصّ القيمة كما كان
+                // ★ (ر29-ح) بالصيغة الجديدة: الزرّ ‎_LanguageSelect‎ (وعليه ‎_trigger‎ من وحدة المنتقي) وأيقونته ‎_icon‎ — قيمته English في العشرة
+                siteLangSel: "[class*='_LanguageSelect'] > span:not([class*='_icon'])",
                 siteLangOk: ["English"],
                 fontFamilies: { anthropicSans: "ui", anthropicSerif: "read", anthropicMono: "mono" },
                 // ★ (ر5ب) رفيقات «anthropicSans Fallback» وأخواتها: local(Arial) بواصفات حجمٍ (لقطة sitecss-legal) — بها «خط النظام» هنا
@@ -448,6 +963,7 @@
       { id: "academy", name: "أكاديمية Claude", host: "academy.claude.com", origin: "https://academy.claude.com",
         matches: ["https://academy.claude.com/*"], dict: "dict-academy.js", allFrames: false,
         // ★ (ر8-د) الواجهة والعناوين في 2.0.0 والمتون في 3.0.0 (القرار 69)
+        // ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) ويبقى كما هو ما دام فهرس قطعها المشحون فارغًا (متون صفحاتها محجوبةٌ «none»)، ويُعدَّل حين تُشحن القطع (AC-د)
         status: { part: "الواجهة وعناوين الدورات والدروس", en: "محتوى أكاديمية Claude عدا واجهتها وعناوين الدورات والدروس" },
         // live: Vite يبدّل أسماء أوراقه المجزَّأة مع كل نشر، فاللقطة المشحونة للطلاء الأول والحيّة تُبنى من أوراق الصفحة (٢–٣).
         // hydrate: كتابةُ نصٍّ قبل الترطيب تُفشله فيرمي React ما رسمه الخادم ويُبلغ الموقعُ «[prerender] hydration failed» إلى
@@ -456,11 +972,28 @@
         // ★ (قياس ر4-أ بالإضافة الحقيقية وقاموسٍ تجريبي يكتب الواجهة والعنوان والسمات، ٢٨ ربيع الآخر ١٤٤٨هـ) صفحات العيّنة الاثنتا عشرة ×3:
         // 0 بلاغ ترطيب و0 خطأ React في 36 تحميلًا بها و36 بدونها، وما رسمه الخادم باقٍ؛ والبوابة «open:lang+idle» في كلها، وكتابة الموقع
         // لـlang بعد DOMContentLoaded بـ0.22–0.55 ث، وأول نصٍّ عربي بعد DOMContentLoaded بـ0.5–1.8 ث (والسقف 8 ث)، ولا كتابة قبل كتابته أبدًا
-        meta: { scan: "none", live: true, chat: false, hydrate: "defer", hydrateSignal: "lang", siteLang: true, isoLabels: true,
+        meta: { scan: "none", live: true, chat: false, iconMirror: true, hydrate: "defer", hydrateSignal: "lang", siteLang: true, isoLabels: true,
+                // ★ (ر12، ج3) عدد دروس القسم وعدده في عقدتين («‎2<!-- --> <!-- -->lessons‎»، مقيسٌ في صفحات الدورات): صيغة الجمع للعدد
+                countNoun: true,
                 // أول بادئةٍ في routes.full («/all/») لا تختصر الموقع
                 siteLabel: "academy.claude.com",
                 // ★ (ر5، ٢٩ ربيع الآخر ١٤٤٨هـ — مراجعة ر4-أ L6) لغة الواجهة هنا منتقٍ في تذييل الصفحة (يحفظ اختياره في academy.locale)، لا إعدادٌ في الحساب
                 siteLangHow: "اختر English من منتقي اللغة في تذييل الصفحة",
+                // ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ — دراسة ر13-أ) المتون بوضع الكتلة: قطعةٌ لكل صفحة (bodies/academy/<لغة>/) للمقالة وقائمة «في هذه
+                // الصفحة» (ACADEMY_BODY)، والحارس بعتبة القرار 83. ولا قطعة مشحونة حتى AC-د: كل صفحةٍ في متنها كتلٌ تُحكم بقطعةٍ فارغة فتُحجب
+                // (data-cml-held="none"، القرار 84) ويبقى متنها إنجليزيًّا LTR كما في 2.0.0. وكتابة الكتل خلف بوابة الترطيب نفسها ("lang")، والقطعة
+                // تُطلب من بدء المستند. ولا pageAlias (لكل صفحةٍ مسارٌ عامٌّ واحد في خريطة الموقع) ولا echoSel (لا يحكي خارجَ المتن عنوانٌ منه)
+                // ★ (مراجعة ر13-أ، ٦ جمادى الأولى ١٤٤٨هـ) وأداةٌ حيّة تُركَّب بعد الحكم في درسٍ متنُه هي وحدها: يُعاد الحكم إذا كبر المتن ولم يُكتب فيه
+                // شيءٌ من القطعة (bodyRejudge) — قِيس: 8 من 156 صفحةً بأداةٍ حيّة كانت تُحكم بكتلةٍ واحدة فلا تُحجب
+                // ★ (ر13-ج، ٦ جمادى الأولى ١٤٤٨هـ — E-lang) وما يُكتب بالعربية في عنصرٍ من المتن يعلن لغةً أخرى (ملخّص الأداة لقارئ الشاشة
+                // ‎p.sr-only[data-widget-summary][lang=en]‎) تصير سمةُ lang فيه لغةَ الصفحة كما تفعل الشركة في عروضها المترجمة، وتُرجع مع إرجاع النص
+                // (engine.js langSync). براية الأكاديمية وحدها، فالمواقع الأخرى على حالها حرفًا
+                // ★ (مراجعة ر13-ج، ٦ جمادى الأولى ١٤٤٨هـ) وعلامة الإبقاء في صفّ لافتاتٍ تُبقيه الشركة (شاشات الأفلام وأدوات المحاكاة) تمنع قاموس الواجهة من
+                // تعريب بنوده كما تمنعه في العقدة الوحيدة (keepRows، engine.js blockPass) — كان يُعرَّب منها ما في القاموس («Design» و«Copy» و«Plugins»…)
+                bodies: true, bodySel: ACADEMY_BODY, bodyGuard: BODY_GUARD, bodyRejudge: true, blockLang: true, keepRows: true,
+                // ★ (ر29-د2) حاوية المتن الرئيسة: المقالة لا قائمة «في هذه الصفحة». ولا صمّام هنا (لا bodyRoutes)، فتُفحص في بوابة بدء المرحلة وحدها
+                // (قِيست في الدرس والدورة والدرس التعليمي بالعرضين: تطابق في الأربع، والقائمة في اثنتين)
+                bodyMain: "article.mdx-article",
                 // الصفحة الرئيسة بعينها (بادئة «/» كانت ستُعمل ‎/<لغة>/…‎ كلها)، وأقسام الموقع الإنجليزية بادئاتٍ، ومنها صفحات الدخول (واجهتها في
                 // فهرس الرسائل)؛ وصفحتا المساعدة هيكلٌ فقط (الشركة تبقي محتواهما إنجليزيًّا في كل لغة). وما سواها خامل: ‎/<لغة>/…‎ وصفحات
                 // الإدارة الداخلية (/admin/ وبيانات المؤسسة، و/garden/ و/_dev/ و/embed/ و/oauth/ و/mcp) وكل قسمٍ جديد لا نعرفه
@@ -471,7 +1004,9 @@
                           shell: ["/help/"] },
                 // في مسار الهيكل يبقى محتوى الصفحة على أصله LTR (academy-point.css ببوابة data-cml-route)
                 shellSel: "main",
-                dirSel: ACADEMY_DIR, skipSel: ACADEMY_SKIP,
+                dirSel: ACADEMY_DIR, skipSel: ACADEMY_SKIP + ", " + EDITOR_USER,
+                // ★ (ر24-ج1) ما تبقيه الشركة من المستثنى (ACADEMY_KEEP)، وسائره محتوى مستخدم
+                keepSel: ACADEMY_KEEP,
                 // عائلات @font-face في أوراق الموقع (أسماء claude.ai نفسها)
                 fontFamilies: { "anthropic-sans": "ui", "anthropic-serif": "read", "anthropic-mono": "mono" },
                 // «<الصفحة أو الوحدة> · Claude Academy»، والدرس «<الدرس> · <الدورة> · Claude Academy» (حرفيٌّ مشتقّ وقت الدمج)،
@@ -486,21 +1021,31 @@
         // ★ (S7-B، المراجعة العدائية) وسقف الترطيب 20 ث كوثائق Claude Code: صفحات المرجع الثقيلة (messages/create 5 م.ب
         // وbeta وmessages) يتأخّر فيها DOMContentLoaded إلى 4–11 ث، فالسقف العام (8 ث منه) كان يفتح النصوص قبل الإشارة («timeout»
         // في كل تحميلٍ مقيس) فيقع خطأ React ‎#418‎ ويُعاد رسم المرجع — وفي الصفحات الخفيفة تسبق الإشارةُ السقفَ فلا يتغيّر شيء
-        meta: { scan: "llms", live: true, chat: false, hydrate: "defer", hydrateSignal: "idle", hydrateMaxMs: 20000, bodies: true, isoLabels: true,
+        meta: { scan: "llms", live: true, chat: false, iconMirror: true, hydrate: "defer", hydrateSignal: "idle", hydrateMaxMs: 20000, bodies: true, isoLabels: true,
                 // ★ (ر6-د) حارس المتن المختلط بعتبة القرار 83 (BODY_GUARD أعلاه): يسري على ما لم يُترجم من متغيّر الوثائق عند الإصدار
                 bodyGuard: BODY_GUARD,
                 // ★ (S7-B، ٢١ ربيع الآخر ١٤٤٨هـ) مرجع الواجهة البرمجية (‎/docs/en/api/‎) مسارٌ كامل: كان هيكلًا فقط (shell) فيبقى ‎.stldocs-root‎
                 // كلُّه إنجليزيًّا والصفحاتُ النثرية العشر تحته (overview وerrors وrate-limits…) بلا متون — والشركة تترجم فيه ما يسمّي
                 // العملية ويصفها. وما تبقيه على أصله مستثنًى بمحدِّد (skipSel = STL_KEEP) لا يُترجم ولا يُحصد
                 routes: { full: ["/docs/en/"] },
+                // ★ (ر29-د) مسارات المتن لصمّام «nosel» (engine.js): كل صفحةٍ من الوثائق، والشرح ومرجع الواجهة البرمجية معًا.
+                // ★ (مراجعة ر29-د) إلا الصفحة الرئيسة ‎/docs/en/home‎: بطاقاتٌ بلا متنٍ ولا فهرس، فلا يطابقها محدِّد المتن ولا الاتجاه اليوم (مقيسٌ في عيّنة
+                // 94 صفحةً عامة من llms.txt: هي وحدها) — كانت تُحجز «nosel» فتخمد الإضافة في صفحةٍ تعرّب 2.0.0 واجهتها
+                bodyRoutes: { full: ["/docs/en/"], shell: ["/docs/en/home/"] },
                 // المتن والعنوان (.docs-prose) وبنود الفهرس، وجزر المرجع المترجَمة (STL_DIR) — كل كتلةٍ بحسب نصّها
                 dirSel: ".docs-prose, nav li:has(> a[href^='#']), " + STL_DIR,
                 bodySel: ".docs-prose, .stldocs-root, nav:has(li > a[href^='#'])",
+                // ★ (ر29-د2، مراجعة ر29-د F4) حاوية المتن الرئيسة: نوعا المتن (الشرح ومرجع الواجهة البرمجية) وأيُّهما يكفي، لا فهرس الصفحة —
+                // إن تغيّر ‎.docs-prose‎ بقي الفهرس يطابق فلم يكن الصمّام يحجز ولا البوابات تسقط
+                bodyMain: ".docs-prose, .stldocs-root",
                 // ★ (ر7-ب، ٣٠ ربيع الآخر ١٤٤٨هـ — الفحص الحيّ ر7، M2) لافتة «القسم الحالي» في الشريط اللاصق دون عرض xl («الصفحة / القسم»): نصُّها نصُّ
                 // عنوانٍ من المتن، فتأخذ نصَّه المعروض بحال حارس المتن (engine.js echoText) لا قاموس الواجهة. واسم الصفحة قبلها (خارج ‎div.flex.min-w-0‎)
                 // من قاموس الواجهة كما كان
                 echoSel: "div.fixed.inset-x-0[class*='top-[calc(3.5rem'] div.flex.min-w-0 > button span.truncate",
-                skipSel: STL_KEEP,
+                skipSel: STL_KEEP + ", " + EDITOR_USER,
+                // ★ (ر24-ج1) العقد البرمجي كلُّه نصُّ الموقع تبقيه الشركة إنجليزيًّا (لا محتوى مستخدم في الوثائق): ذرّةٌ داخل التتابع لا رفضٌ له — فعنوان
+                // بطاقة المثال بجوار شارة الطريقة يُعرَّب كما في 2.0.0، والشارة على أصلها حرفًا
+                keepSel: STL_KEEP,
                 // صفحات SDK في المرجع (‎/docs/en/api/python/messages/create‎ و‎…/http/…‎ وروابط المرجع الداخلية منها) قطعتُها قطعةُ الصفحة
                 // القانونية: البادئات الثماني و«http» بديلُ الافتراضية (مقيسةٌ في الدراسة؛ وkotlin وterraform واسمٌ مختلَق 404 ليّنة)
                 pageAlias: [{ re: "^(/docs/en/api)/(?:http|python|typescript|go|java|ruby|csharp|php|cli)(?=/)", to: "$1" }],
@@ -508,8 +1053,18 @@
                 // ★ (ر5ب) رفيقات «anthropicSans Fallback» وأخواتها: local(Arial) بواصفات حجمٍ (لقطة sitecss-docs) — بها «خط النظام» هنا
                 fontFallback: "Arial",
                 // «<الصفحة> - Claude Platform Docs»، وفي المرجع «<العملية> - Claude API Reference»
-                titleSuffix: [" - Claude Platform Docs", " - Claude API Reference"] } },
-      // ★ وثائق Claude Code (Mintlify فوق Next.js — دراسة code-claude-docs.md §٨ ومراجعتها المستقلة، ١٣ ربيع الآخر ١٤٤٨هـ)
+                titleSuffix: [" - Claude Platform Docs", " - Claude API Reference"] },
+        // ★ (ر20-أ، ١٢ جمادى الأولى ١٤٤٨هـ) أصناف المسار في هذا المدخل: لوحة المطوّرين (Console) بقاموسها (CONSOLE_ROUTES أعلاه). خارج meta عمدًا: لا يُحقن
+        // في dict-docs.js فيبقى قاموس الوثائق المبنيّ هو هو بايتًا بايتًا، ويقرؤه المحرّك والنافذة والبناء من هذا الجدول حيًّا (C.routeClass). وحال الصنف
+        // status كحال النطاق: {upcoming: true} خاملٌ تمامًا في مساراته (المحرّك يحكم بها «inactive» كما اليوم: لا سمة ولا اتجاه ولا خط ولا عنوان ولا نصّ ولا
+        // طلب)، وقاموسه يُبنى (ar-console.json ← dict-console.js) ولا يُحقن في المانيفست ما دام قادمًا. وCN1 يملأ ar-console.json ثم يبدّل status —
+        // و‎verify-package‎ يرفض صنفًا مشحونًا قاموسُه لا يعرّب شيئًا أو لا يحمله المانيفست، والمحرّك لا يشغّل قاموس الصنف بعدُ (تبديل القاموس بالمسار
+        // عند التنقّل بندٌ من CN1 الهندسي، انظر engine.js routeMode)
+        classes: [{ id: "console", name: "لوحة المطوّرين (Console)", dict: "dict-console.js", status: { upcoming: true },
+                    routes: CONSOLE_ROUTES,
+                    meta: { skipSel: CONSOLE_USER + ", " + EDITOR_USER } }] },
+      // ★ وثائق Claude Code (كانت Mintlify فوق Next.js — دراسة code-claude-docs.md §٨ ومراجعتها المستقلة، ١٣ ربيع الآخر ١٤٤٨هـ؛ وصارت بناء
+      // Mintlify الجديد بلا Next.js — ر27-ب، ٢٠ جمادى الأولى ١٤٤٨هـ)
       { id: "code", name: "وثائق Claude Code", host: "code.claude.com", origin: "https://code.claude.com",
         matches: ["https://code.claude.com/docs*"], dict: "dict-code.js", allFrames: false,
         // ★ (ر8-د) المقالات في 3.0.0 (القرار 82: لم تُشحن متونها)
@@ -517,8 +1072,14 @@
         // فهرس الصفحات تحت /docs صراحةً: نسخة الجذر (/llms.txt) خارج المطابقة ولا ضمان لبقائها (المراجعة ج-٤).
         // وسقف الترطيب 20 ث: قِيس ترطيب أثقل الصفحات بين 8.6 و14.6 ث (settings-reference وchangelog)، والسقف
         // العام 8 ث كان يكتب النصوص قبل الترطيب فيقع خطأ React ‎#418‎ ويُعاد رسم الصفحة كلها
-        meta: { scan: "llms", llms: "/docs/llms.txt", live: true, chat: false, hydrate: "defer", hydrateMaxMs: 20000, bodies: true,
-                // ★ (ر6-ب، ٢٩ ربيع الآخر ١٤٤٨هـ) حارس المتن المختلط: تغيّر الموقع بعد حصاد ٢٥ سبتمبر فصارت كتلٌ إنجليزية بين العربية في أكثر
+        // ★ (ر27-ب، ٢٠ جمادى الأولى ١٤٤٨هـ — العيب D1 في الفحص الحيّ ر27) انتقل الموقع إلى بناء Mintlify الجديد (Vite وReact 19.2، بلا ‎_next‎ ولا
+        // next-route-announcer)، فكانت كل صفحةٍ تبقى إنجليزيةً حتى السقف (20 ث) — وفي 2.0.0 المنشور كذلك. فالإشارة "attr" بسمة data-current-path:
+        // يكتبها سكربتٌ مضمَّن أثناء التحليل، ثم يعيد مكوّن المسار كتابتها في إيداع ترطيب الجذر (قِيس بخطّاف إيداعات React على overview وquickstart
+        // وhooks وsettings وchangelog بعرضَي 1366 و390، 63 تحميلًا: بلا الإضافة بين 0.6 و2.0 ث، وما بقي غير مرطَّبٍ فيه حدُّ Suspense واحدٌ فارغ، والترطيب كاملٌ
+        // في الإيداع التالي) فتُفتح البوابة عندها. والسقف 20 ث باقٍ احتياطًا، وnext-route-announcer يبقى إشارةً إن عاد الموقع إلى Next.js
+        meta: { scan: "llms", llms: "/docs/llms.txt", live: true, chat: false, iconMirror: true, hydrate: "defer", hydrateSignal: "attr",
+                hydrateAttr: "data-current-path", hydrateMaxMs: 20000, bodies: true,
+                // ★ (ر6-ب، ٢٩ ربيع الآخر ١٤٤٨هـ) حارس المتن المختلط: تغيّر الموقع بعد حصاد ١٤ ربيع الآخر ١٤٤٨هـ فصارت كتلٌ إنجليزية بين العربية في أكثر
                 // صفحاته؛ فالصفحة التي تزيد فيها حصّة الكتل غير المغطّاة على العتبة تبقى إنجليزية المتن كلَّه.
                 // ★ (ر6-د) والعتبة 5٪ بقرار المالك (القرار 83، BODY_GUARD أعلاه) في مواقع المتون كلها لا هنا وحده؛ ومتون Claude Code لم تُشحن
                 // بعد (القرار 82)، فكل صفحةٍ هنا بلا قطعة تُحكم بقطعةٍ فارغة (القرار 84)
@@ -534,18 +1095,72 @@
                 // وسجلّ الإصدارات هيكلٌ فقط: يُولَّد يوميًّا من CHANGELOG فتعريب متنه تقادمٌ دائم. والبادئة بشرطتها الختامية
                 // (routeMode يضيفها للمسار): ‎/docs/en/changelog‎ وما تحته وحده، لا كل صفحةٍ يبدأ اسمها بـ«changelog» (مراجعة المحرّك ٤)
                 routes: { exact: ["/docs"], full: ["/docs/en/"], shell: ["/docs/en/changelog/"] },
+                // ★ (ر29-د) مسارات المتن لصمّام «nosel» (engine.js): كل صفحةٍ كاملة من الوثائق (والجذر ‎/docs‎ وسجلّ الإصدارات ليسا منها)
+                bodyRoutes: { full: ["/docs/en/"] },
                 // المتن والرأس (العنوان والوصف) وبنود الفهرس — كل كتلة بحسب نصّها؛ ورابط «ما الجديد» (رابطٌ مستقلّ بسهمٍ بعده،
                 // فاتجاهه بنصّه لا بسطره المختلط)؛ وأجوبة المساعد (#chat-content): الاتجاه وحده لكل كتلة، ونصُّها لا يُمسّ (skipSel)
                 dirSel: "#content, #header, #table-of-contents li, #content .digest-feature-link, #chat-content",
                 bodySel: "#content, #header, #table-of-contents",
+                // ★ (ر29-د2، مراجعة ر29-د F4) حاوية المتن الرئيسة: ‎#content‎ وحده — إن تغيّر اسمه بقي الرأس والفهرس يطابقان
+                bodyMain: "#content",
                 // في مسار shell يبقى المتن على أصله LTR (code-point.css ببوابة data-cml-route)
                 shellSel: "#content",
                 // أجوبة المساعد المولَّدة (خدمة Mintlify) لا تُعرَّب ولا تُحصد؛ إطاره (الحقل والأزرار) خارجها فيُعرَّب
-                skipSel: "#chat-content",
+                skipSel: "#chat-content, " + EDITOR_USER,
                 // Inter عائلة واجهةٍ ثانية في Mintlify (وجهان في الإقلاع)، وSerif Display للعناوين
                 fontFamilies: { "Anthropic Sans": "ui", "Inter": "ui", "Anthropic Serif": "read", "Anthropic Serif Display": "read",
                                 paperMono: "mono" },
                 titleSuffix: [" - Claude Code Docs"] } },
+      // ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) claude.com وسوقه (Next.js مع Sanity؛ دراسة ر14 §٧أ، والنطاق بافتراضات أسئلة المالك 15–17). المطابقة
+      // المضيفُ كلّه: الموقع تطبيقٌ واحد يتنقّل بين أقسامه من جهة العميل، وحارس المسار يحصر العمل. ★ قادمٌ (status.upcoming): خاملٌ حتى يُشحن
+      // قاموسه في CM-د (3.1.0 بالقرار 135)، ومطابقته يحجبها البناء عن مانيفست الحزمة منذ ر28-ب (السؤال 2 على افتراضه)، فلا يُعلَن مضيفه قبل ذلك
+      { id: "com", name: "موقع Claude", host: "claude.com", origin: "https://claude.com",
+        matches: ["https://claude.com/*"], dict: "dict-com.js", allFrames: false,
+        status: { upcoming: true },
+        // live: الأوراق كلها على المضيف نفسه (‎/_next/static/chunks/*.css‎، 4–16 لكل صفحة)، ولا <style> مضمَّنة ذات شأن فلا liveInline.
+        // hydrate: كتابةٌ عند DOMContentLoaded أسقطت React في خطأ الترطيب في 20 من 20 تحميلًا، وعند ظهور next-route-announcer سليمةٌ في 20 من 20
+        // (دراسة ر14 §٣ب) — فالإشارة الافتراضية بلا hydrateSignal ولا hydrateMaxMs. siteLang: الصفحات ‎/<locale>/…‎ تكتب لغتها في <html lang>
+        meta: { scan: "none", live: true, chat: false, iconMirror: true, hydrate: "defer", siteLang: true,
+                // ★ (ر16-ج، ٦ جمادى الأولى ١٤٤٨هـ) سقف أوراق الجولة: السقف العام 12 كان يرفض الورقة الحيّة في 53 من 492 صفحة قيست من قوالب الموقع كلها
+                // (المسارات المترجمة بأعيانها وأربعٌ من كل بادئةٍ في الخريطة): الصفحة 4–8 أوراق أو 16، والموقع يُبقي أوراق الصفحات السابقة في التنقّل من
+                // جهة العميل (23 بعد ستّ تنقّلات)، وأوراقه المختلفة على مضيفه في الصفحات كلها 42 (1.35 م.ب، دون سقف المجموع) — فلا تنقّل يتجاوزها.
+                // فالسقف 48 (أوراق الموقع كلها وفسحةٌ لنموّها)، وسقفا الورقة الواحدة والمجموع بالبايت كما هما
+                liveSheetsMax: 48,
+                // أول بادئةٍ في routes.full («/marketplace/») لا تختصر الموقع
+                siteLabel: "claude.com",
+                // المتون بوضع الكتلة (المتن ‎main#main-content‎ في كل صفحةٍ إلا ‎/hard-questions‎ الخاملة)، والحارس بعتبة القرار 83
+                bodies: true, bodyGuard: BODY_GUARD,
+                // الصفحات المترجمة بأعيانها (COM_EXACT، مولَّدة)، ثم الهيكل (COM_SHELL)، ثم السوق كلّه (مترجمٌ عند الشركة كلّه، ونسخه المترجمة خارج
+                // الخريطة). وما سواها خامل: ‎/<locale>/…‎، و‎/docs/‎ (Mintlify، إنجليزيٌّ عند الشركة)، و‎/code-with-claude/‎ والمفردات التي تحوّل
+                // الشركة نسختها المترجمة إلى الإنجليزية (‎/check-files‎ و‎/fast-mode‎ و‎/hard-questions‎ و‎/marketplace-contact-sales‎)، وكل قسمٍ جديد
+                routes: { exact: COM_EXACT, full: ["/marketplace/"], shell: COM_SHELL },
+                // في مسار الهيكل يبقى المتن على أصله (لا تعريب ولا حصاد)؛ وبقاؤه LTR بقاعدةٍ في com-point.css ببوابة data-cml-route (ر16)
+                shellSel: "main",
+                dirSel: COM_DIR, bodySel: "main", skipSel: COM_SKIP,
+                // ★ (ر24-ج1) لافتة الموافقة ومنتقي اللغة نصُّ الموقع تبقيه الشركة إنجليزيًّا
+                keepSel: COM_SKIP,
+                // أسماء @font-face في أوراق الموقع هي أسماء الوثائق القانونية نفسها، ورفيقات «… Fallback» local(Arial) (دراسة ر14 §٤ب)
+                fontFamilies: { anthropicSans: "ui", anthropicSerif: "read", anthropicMono: "mono" }, fontFallback: "Arial",
+                // «<العنوان> | Claude by Anthropic» في 2,221 صفحة، والشركة تبقي الذيل إنجليزيًّا في نسخها المترجمة كلها (دراسة ر14 §٢و)
+                titleSuffix: [" | Claude by Anthropic"], titleKeep: ["Claude by Anthropic"] } },
+      // ★ (ر20-ب، ١٢ جمادى الأولى ١٤٤٨هـ) بوابة Anthropic (portal.anthropic.com: التقدّم لبرامج الثقة، الجرد §٣-٥) — نطاقٌ تاسع **قادمٌ خامل** على نمط
+      // claude.com في ر15: صفُّه هنا، ومطابقة مضيفه يحجبها البناء عن مانيفست الحزمة منذ ر28-ب (السؤال 2 على افتراضه)، فيأتي إذن المضيف مع الإصدار
+      // الذي يحمل ترجمتها في CN2 (3.1.0 بالقرار 135؛ PLAN §٧ الخطر 3)، وقاموسٌ فارغ قادم (ar-portal.json ← dict-portal.js). فلا سمة ولا اتجاه ولا خط
+      // ولا عنوان ولا نصّ ولا طلب شبكة في صفحاتها، ولا جواب لفحص، والنافذة وحدها تقول إنها قادمة (status.upcoming، كما في claude.com).
+      // والمطابقة المضيفُ كلّه: البوابة تطبيق Next.js واحد (Turbopack)، وكل مسارٍ فيه من أسطحها؛ والعامّ منها بلا دخول أربع صفحات (‎/login‎ و‎/magic-link‎
+      // و‎/sso-callback‎ و‎/logout‎) و‎/‎ يحوّل إلى ‎/login‎، وما سواها يحوّله الخادم إلى الدخول. فلا حارس مسارٍ بعد (routes غائبة = كامل)، وخريطة ما خلف
+      // الدخول ★ لفحص المالك بحسابه (CN2-د). والبيانات أدناه تصميمٌ لـ CN2 لا يعمل اليوم: siteLang لأن الموقع يكتب لغة المتصفح في <html lang> ويقدّم
+      // ترجمته (الجرد ت-12)، فالصفحة بلغةٍ غير الإنجليزية خاملة؛ وhydrate بالإشارة الافتراضية كتطبيقات Next.js الأخرى؛ وscan ‏none (لا فحص حزمٍ حتى
+      // يُصمَّم لها في CN2)؛ وlive ‏false حتى تُلتقط أوراقها (لقطة sitecss-portal وورقة قلبها في CN2)، ولاحقة عنوانها تُقاس في CN2. وأسماء @font-face في
+      // أوراق صفحة الدخول الأربع هي أسماء claude.com نفسها (anthropicSans وanthropicSerif وanthropicMono، ورفيقات «… Fallback» من local(Arial))، فإعداد
+      // الخطوط إعداده — ولا يعمل اليوم: المحرّك يعود قبل وحدة الخط في النطاق القادم
+      { id: "portal", name: "بوابة Anthropic", host: "portal.anthropic.com", origin: "https://portal.anthropic.com",
+        matches: ["https://portal.anthropic.com/*"], dict: "dict-portal.js", allFrames: false,
+        status: { upcoming: true },
+        meta: { scan: "none", live: false, chat: false, hydrate: "defer", siteLang: true,
+                siteLabel: "portal.anthropic.com",
+                skipSel: PORTAL_USER + ", " + EDITOR_USER,
+                fontFamilies: { anthropicSans: "ui", anthropicSerif: "read", anthropicMono: "mono" }, fontFallback: "Arial" } },
     ],
 
     // ═══ الخط العربي (2.0.0 — DESIGN-fonts §٢ و§٤؛ قرارات المالك ق١–ق٧، ١٨ ربيع الآخر ١٤٤٨هـ) ═══
@@ -686,6 +1301,28 @@
     for (var i = 0; i < C.DOMAINS.length; i++) if (C.DOMAINS[i].id === id) return C.DOMAINS[i];
     return null;
   };
+  // ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) نطاقٌ «قادم» (status.upcoming): خاملٌ في هذا البناء — يُقرأ الصفُّ حيًّا لا مرّةً عند التحميل، فالاختبار يبدّله
+  C.upcoming = function (id) { var d = C.domain(id); return !!(d && d.status && d.status.upcoming); };
+  // النطاقات المشحونة بترتيب الجدول: ما تعرضه الإعدادات والنافذة ويُعدّ في الترحيب وفي «حول»
+  C.shipped = function () { return C.DOMAINS.filter(function (d) { return !(d.status && d.status.upcoming); }); };
+  // ★ (ر20-أ، ١٢ جمادى الأولى ١٤٤٨هـ) أصناف المسار في نطاقٍ (لوحة المطوّرين في مدخل الوثائق): صنفُ مسارٍ ما أو null. الحكم بحارس المسار نفسه
+  // (CMLShared.routeMode على routes الصنف: exact ثم full)، ويُقرأ الصفّ حيًّا كـC.upcoming. وبلا CMLShared (أداةٌ حمّلت الثوابت وحدها) فلا صنف
+  C.routeClasses = function (id) { var d = C.domain(id); return (d && Array.isArray(d.classes)) ? d.classes : []; };
+  C.routeClass = function (id, pathname) {
+    var cs = C.routeClasses(id), S = g.CMLShared;
+    if (!cs.length || !S || typeof S.routeMode !== "function") return null;
+    for (var i = 0; i < cs.length; i++) if (cs[i].routes && S.routeMode(cs[i].routes, pathname) !== "inactive") return cs[i];
+    return null;
+  };
+  C.classUpcoming = function (cls) { return !!(cls && cls.status && cls.status.upcoming); };
+  // ★ (ر20-ج، ١٢ جمادى الأولى ١٤٤٨هـ) حقول المضيف في بيانات منظر الصنف (engine.js classMeta): الصنفُ والنطاقُ تطبيقٌ واحد بلا إعادة تحميل، فهذه من صفّ
+  // النطاق وحده في المنظرين (الفحص وفهرسه، والورقة الحيّة وحدّها، والمحادثة، والترطيب، وحارس لغة الموقع، وIntercom، وعائلات الخط)، ولا يتجاوزها الصنف —
+  // ثوابتُ يحسبها المحرّك مرّةً عند الإقلاع فتبقى هي هي إذا بُدّل المنظر. وسائر الحقول (محتوى المستخدم skipSel، وkeepSel، وdirSel، والمتون، والعنوان…)
+  // من بيانات الصنف وحدها، ومساراتُ المنظر مساراتُ الصنف
+  C.CLASS_HOST_META = ["scan", "llms", "live", "liveInline", "liveSheetsMax", "chat", "hydrate", "hydrateSignal", "hydrateAttr", "hydrateMaxMs",
+                       "siteLang", "siteLangSel", "siteLangOk", "intercom", "fontFamilies", "fontPrepend", "fontFallback"];
+  // أعداد قائمة claude.com المولَّدة (كتلة com-routes أعلاه): يفحص البناء أن القائمة بعددها، ويقرؤها الفحص الذاتي
+  C.COM_EXACT_META = COM_EXACT_META;
   // نطاقُ عنوانٍ ما (أو null): المضيف أولًا ثم بادئة المسار كما في matches
   C.domainOfUrl = function (url) {
     var u;
@@ -709,9 +1346,13 @@
   // فالصفحة لا تُخفي قسمًا بل تعطّله بسببٍ مكتوب، والسبب يُكتب هنا مرةً واحدة. وإضافةُ موقعٍ
   // جديد صفٌّ في DOMAINS لا تعديلٌ في الصفحة.
   function pathOf(match) { var m = /^https:\/\/[^\/]+(\/.*)$/.exec(match || ""); return m ? m[1].replace(/\*$/, "") : "/"; }
+  // ★ (ر15) أطول قائمة مساراتٍ بأعيانها تُسرد في جملة «يعمل في …» (الوثائق القانونية خمسة)؛ وما زاد عليها يُذكر بعدده
+  var EXACT_LISTED_MAX = 10;
+  // ★ (مراجعة ر15، ٦ جمادى الأولى ١٤٤٨هـ) المواقع المشحونة وحدها (C.shipped): النطاق القادم لا يُذكر في جمل القدرات — كانت جملة «تصحيحات الفقرات
+  // تخصّ …» في إعدادات تطبيق Claude تذكر «موقع Claude» (له متون) وهو قادمٌ لا تعرضه الصفحة
   function listNames(pred) {
-    var n = [];
-    for (var i = 0; i < C.DOMAINS.length; i++) if (pred(C.DOMAINS[i].meta || {})) n.push("«" + C.DOMAINS[i].name + "»");
+    var n = [], ds = C.shipped();
+    for (var i = 0; i < ds.length; i++) if (pred(ds[i].meta || {})) n.push("«" + ds[i].name + "»");
     return { text: n.join(" و"), n: n.length };
   }
   // عنوانٌ قصير للموقع: المضيف وبادئة مساره بلا مقطع اللغة (platform.claude.com/docs، support.claude.com)
@@ -740,8 +1381,11 @@
     if (m.routes) {
       // المسارات الكاملة بالمساواة (exact: ‎/docs‎ وحده) ثم بالبادئة
       T("يعمل في ");
-      (m.routes.exact || []).map(function (p) { return [p, " بعينه"]; }).concat((m.routes.full || []).map(function (p) { return [p, ""]; }))
-        .forEach(function (x, i) { if (i) T("، "); P(x[0]); if (x[1]) T(x[1]); });
+      // ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) وقائمةٌ طويلة بأعيانها (claude.com: ثلاثمئة مسارٍ ونيّف مولَّدة من خريطة الموقع) تُذكر بعددها لا بمساراتها
+      var ex = m.routes.exact || [], many = ex.length > EXACT_LISTED_MAX;
+      if (many) T("الصفحات التي تترجمها الشركة بأعيانها (" + String(ex.length).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + ")");
+      (many ? [] : ex).map(function (p) { return [p, " بعينه"]; }).concat((m.routes.full || []).map(function (p) { return [p, ""]; }))
+        .forEach(function (x, i) { if (i || many) T("، "); P(x[0]); if (x[1]) T(x[1]); });
       T(" كاملًا");
       if ((m.routes.shell || []).length) {
         T("، وفي ");
@@ -749,6 +1393,9 @@
         T(" هيكلُ الصفحة وحده");
       }
       T("، ولا يمسّ سائر صفحات المضيف");
+      // ★ (ر20-أ، ١٢ جمادى الأولى ١٤٤٨هـ) وصنفُ مسارٍ قادم على المضيف نفسه (لوحة المطوّرين في «وثائق المطوّرين») يُذكر تحت موقعه بأنه قادم، بلا مفتاحٍ
+      // ولا إعداد (كالنطاق القادم): الإعدادات تعرض هذه الجملة تحت الموقع. والصنف المشحون يُذكر بمساراته حين يُشحن (CN1)
+      C.routeClasses(id).filter(C.classUpcoming).forEach(function (c) { T("؛ وتعريب «" + c.name + "» على المضيف نفسه قادمٌ في تحديثٍ لاحق"); });
     } else {
       var ps = d.matches.map(pathOf);
       if (ps.indexOf("/") >= 0) T("يعمل في صفحات الموقع كلها");

@@ -4,7 +4,7 @@
 //   user/extension/dict-<نطاق>.js  (قاموس كل نطاقٍ آخر من جدول CMLConst.DOMAINS)
 //   user/extension/languages.json  (enabled languages for the popup)
 //   user/extension/bodies/<نطاق>/<لغة>/<قطعة>.json + index.json  (قطع المتون لكل صفحة — المرحلة ٢)
-//   manifest.json: content_scripts من جدول النطاقات، وversion_name
+//   manifest.json: content_scripts من جدول النطاقات (المشحونة وحدها — manifest-entry.mjs)، وversion_name
 // Run this after editing any user/dictionaries/*.json.  node build.mjs
 import fs from "node:fs";
 import path from "node:path";
@@ -12,6 +12,7 @@ import { pathToFileURL } from "node:url";
 import { resolveDirection } from "./direction.mjs";
 import { LANGUAGES_JSON, DICTS, EXT, GLOSSARY } from "./paths.mjs";
 import { latestBlocksHarvest, harvestDate } from "./domain-arg.mjs";
+import { packageEntries } from "./manifest-entry.mjs";
 
 // ── وسائط الإصدار تُتحقَّق **قبل** أي كتابة (مراجعة كودكس) ─────────────────────────
 //   --set-version=X.Y.Z  إسنادٌ صريح (تكراره لا يغيّر شيئًا — هو ما يُستعمل عند الإصدار)
@@ -45,15 +46,27 @@ const C = globalThis.CMLConst;
 function shadowGuard(d, label) {
   const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const res = [];
+  // ★ (ر12، ٥ جمادى الأولى ١٤٤٨هـ — PLAN-3.0.0 E2) نمطٌ بـ%T (التقاطٌ مفتاحٌ حرفيٌّ في قاموس الموقع، cml-shared fillPattern) يُحكم عليه
+  // كما يحكم المحرّك بالضبط: يظلّل مفتاحًا إن طابقه تعبيرُه **وكان كلُّ التقاطٍ %T فيه مفتاحًا** — وإلا فالمحرّك لا يطبّقه عليه أصلًا. فلا
+  // يُستثنى %T استثناءً عامًّا كـb وlit، ولا يُرفض قالبٌ متغيّراته كلُّها %T لأنه «عامّ» لهذا السبب وحده (حدُّه القاموس؛ القاعدة في
+  // cml-shared makePattern) — وحكمُ عمومه ومحتوى المستخدم فيه للمراجع لا للبناء. والحكمُ نفسه لنمطٍ بشهرٍ أو يومٍ أو ص/م (%M/%W/%P): مُحلِّلات
+  // المحرّك نفسها (cml-shared patternRes)، وتعابيرها في القواميس قوائمُ مغلقة من مفاتيح جداولها فلا يتغيّر بها عدٌّ قائم
+  const SH = globalThis.CMLShared, TRES = SH.toolRes(d.strings || {});
   // الأنماط ذات الالتقاط المحدود (b)، والمعلَّمة lit (عنوانٌ حرّ الطول كعنوان المحادثة لا يُحدّ التقاطه)، تُستثنى: تصادمها مع مفتاحٍ حرفي مقبولٌ بقصد — «Add a card» نصٌّ مستقل في الموقع
   // لا مثيلٌ لقالب «Add {name}»، والحرفيّ يسبق الأنماط فيبقى كلٌّ بترجمته (makePatternBounded، بوابة الشمول ١٤٤٨هـ)
-  for (const p of d.patterns || []) { if (p.b || p.lit) continue; try { res.push({ re: new RegExp(p.re), src: `pattern «${p.en}»` }); } catch {} }
+  for (const p of d.patterns || []) {
+    if (p.b || p.lit) continue;
+    try {
+      const re = new RegExp(p.re), fill = /%[MWPT]\d/.test(p.ar);
+      res.push({ re, src: `pattern «${p.en}»`, hit: fill ? (k) => SH.patternApply(re, p.ar, k, TRES) !== null : null });
+    } catch {}
+  }
   for (const [en, spec] of Object.entries(d.plurals || {}))
     for (const pat of [en, spec.plural])
       if (pat) res.push({ re: new RegExp("^" + esc(pat).replace("%d", "(\\d+)") + "$"), src: `plural «${en}»` });
   const clashes = [];
   for (const k of Object.keys(d.strings || {})) {
-    const hit = res.find((r) => r.re.test(k));
+    const hit = res.find((r) => (r.hit ? r.hit(k) : r.re.test(k)));
     if (hit) clashes.push(`   ${JSON.stringify(k)}  ← shadows ${hit.src}`);
   }
   if (clashes.length) {
@@ -134,6 +147,32 @@ function keepOf(domain) {
   return [...out].sort();
 }
 
+// ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) شكل حارس المسار في كل نطاق قبل أي كتابة: مساراتُ exact بصيغة الحارس (تبدأ بشرطةٍ ولا تنتهي بها إلا الجذر)
+// بلا تكرار، وبادئات full وshell بشرطتين (routeMode يضيف شرطةً إلى المسار ثم يقارن البادئة). وقائمة claude.com مولَّدة (com-routes.mjs في
+// كتلة cml-const.js): مرتّبةٌ وعددُها عددُ COM_EXACT_META — فتعديلٌ باليد أو كتلةٌ مبتورة يوقف البناء لا يشحن حارسًا ناقصًا
+function routesProblems(d) {
+  const r = d.meta && d.meta.routes, bad = [];
+  if (!r) return bad;
+  const ex = r.exact || [], seen = new Set();
+  for (const p of ex) {
+    if (typeof p !== "string" || !/^\/[^\s?#]*$/.test(p) || (p.length > 1 && p.endsWith("/")) || /\/\//.test(p)) bad.push("exact: " + JSON.stringify(p));
+    else if (seen.has(p)) bad.push("exact مكرّر: " + p);
+    seen.add(p);
+  }
+  for (const k of ["full", "shell"]) for (const p of r[k] || [])
+    if (typeof p !== "string" || !/^\/(?:[^\s?#]*\/)?$/.test(p)) bad.push(k + ": " + JSON.stringify(p));
+  if (d.id === "com") {
+    const meta = C.COM_EXACT_META || {};
+    if (ex.some((p, i) => i && !(ex[i - 1] < p))) bad.push("exact غير مرتّب (القائمة مولَّدة: com-routes.mjs --write)");
+    if (meta.exact !== ex.length) bad.push(`عدد exact ‏${ex.length} لا يطابق COM_EXACT_META.exact ‏${meta.exact} — الكتلة عُدّلت باليد أو بُترت`);
+  }
+  return bad;
+}
+for (const d of C.DOMAINS) {
+  const bad = routesProblems(d);
+  if (bad.length) { console.error(`! ${d.id}: حارس المسار مختلّ — ${bad.slice(0, 5).join("؛ ")}`); process.exit(1); }
+}
+
 const langs = [];
 const totals = {};
 const outputs = [];
@@ -180,6 +219,33 @@ for (const domain of C.DOMAINS) {
     "globalThis.CLAUDE_L10N = JSON.parse('" + jsonText + "');\n";
   fs.writeFileSync(path.join(OUTDIR, domain.dict), js, "utf8");
   outputs.push(domain.dict);
+}
+// ★ (ر20-أ، ١٢ جمادى الأولى ١٤٤٨هـ) قواميس أصناف المسار (لوحة المطوّرين في مدخل الوثائق: صفّ docs ‏classes في cml-const.js): <لغة>-<الصنف>.json ← ملف
+// الصنف (dict-console.js) كقاموس أي موقع، بحارس الظلّ نفسه، وقاموسٌ لم يُنشأ فارغٌ لا خطأ. ويكتب حمولته في globalThis.CLAUDE_L10N_CLASSES[<الصنف>] لا في
+// CLAUDE_L10N، فلا يمسّ قاموس النطاق إن حُقن معه. ولا يحقنه المانيفست ما دام الصنف قادمًا (contentScriptFor في manifest-entry.mjs)، فالصفحات لا تحمل منه بايتًا
+for (const domain of C.DOMAINS) for (const cls of C.routeClasses(domain.id)) {
+  const dicts = {}, dlangs = [];
+  for (const lang of enabled) {
+    const src = path.join(DICTS, `${lang.code}-${cls.id}.json`);
+    const d = fs.existsSync(src) ? JSON.parse(fs.readFileSync(src, "utf8")) : { strings: {}, plurals: {}, patterns: [] };
+    shadowGuard(d, `${lang.code}/${domain.id}/${cls.id}`);
+    const dir = resolveDirection(lang.code, lang.direction || d._meta?.direction);
+    const counts = countsOf(d, null);
+    dicts[lang.code] = { dir, strings: d.strings || {}, plurals: d.plurals || {}, patterns: d.patterns || [], counts };
+    dlangs.push({ code: lang.code, endonym: lang.endonym, englishName: lang.englishName, direction: dir });
+    totals[domain.id + "/" + cls.id] = (totals[domain.id + "/" + cls.id] || 0) + Object.keys(d.strings || {}).length;
+    console.log(`+ ${domain.id}/${cls.id}/${lang.code} (${dir}): ${Object.keys(d.strings || {}).length} strings · ${counts.strings} translated` +
+      (C.classUpcoming(cls) ? " · قادم (لا يحقنه المانيفست)" : ""));
+  }
+  const payload = { domain: domain.id, routeClass: cls.id, meta: cls.meta || {}, default: registry.default || dlangs[0]?.code || "ar", langs: dlangs, dicts };
+  const jsonText = JSON.stringify(payload).replace(/\\/g, "\\\\").replace(/'/g, "\\'")
+    .replace(new RegExp(String.fromCharCode(0x2028), "g"), "\\u2028").replace(new RegExp(String.fromCharCode(0x2029), "g"), "\\u2029");
+  fs.writeFileSync(path.join(OUTDIR, cls.dict),
+    "/* AUTO-GENERATED by code/toolchain/build.mjs — do not edit by hand. */\n" +
+    "/* مُولّد آليًّا — لا تُعدّله يدويًّا. عدّل user/dictionaries/*.json ثم أعد البناء. */\n" +
+    "globalThis.CLAUDE_L10N_CLASSES = globalThis.CLAUDE_L10N_CLASSES || {};\n" +
+    "globalThis.CLAUDE_L10N_CLASSES[" + JSON.stringify(cls.id) + "] = JSON.parse('" + jsonText + "');\n", "utf8");
+  outputs.push(cls.dict);
 }
 fs.writeFileSync(path.join(OUTDIR, "languages.json"), JSON.stringify({ default: registry.default || langs[0]?.code || "ar", languages: langs }, null, 2) + "\n", "utf8");
 
@@ -229,14 +295,19 @@ for (const domain of C.DOMAINS) {
     }
     let trShards = 0;
     for (const [pk, fps] of byPk) {
+      // ★ (ر13-ج، ٦ جمادى الأولى ١٤٤٨هـ) علامة الإبقاء في الصفحة تغلب ترجمة البصمة فيها (إبقاءٌ بنطاق الصفحة، keepOn في kept-as-is): لا تُشحن
+      // ترجمتها في قطعة هذه الصفحة، وتبقى في قطع غيرها. وmerge-blocks لا يجمعهما في صفحةٍ أصلًا، فهذا للقاموس الذي جمعهما وحده
+      const keep = (keepBy.get(pk) || []).filter((fp) => /^[0-9a-f]{16}$/.test(fp));
+      const keepSet = new Set(keep);
       const part = {};
       for (const fp of fps) {
+        if (keepSet.has(fp)) continue;
         if (!Object.prototype.hasOwnProperty.call(blocks, fp)) { console.error(`! ${path.basename(src)}: صفحة ${pk} تشير إلى بصمةٍ بلا قيمة ${fp}`); process.exit(1); }
         part[fp] = blocks[fp];
       }
-      const keep = (keepBy.get(pk) || []).filter((fp) => /^[0-9a-f]{16}$/.test(fp) && !Object.prototype.hasOwnProperty.call(part, fp));
-      if (!fps.length && !keep.length) continue;
-      if (fps.length) trShards++;
+      const partN = Object.keys(part).length;
+      if (!partN && !keep.length) continue;
+      if (partN) trShards++;
       const name = SH.shardOf(pk);
       if (shards.includes(name)) { console.error(`! تعارض قطعتين على اسمٍ واحد (${pk})`); process.exit(1); }
       shards.push(name);
@@ -252,7 +323,10 @@ for (const domain of C.DOMAINS) {
     let harvestedAt = (bd._meta && typeof bd._meta.harvestedAt === "string") ? bd._meta.harvestedAt : null;
     // ★ (ر9-أ) merge-blocks يكتب التاريخ في _meta فيسافر مع القاموس إلى المستودع العام (لا حصاد فيه)؛ واسم أحدث حصادٍ في مجلد
     // العمل احتياطٌ لقاموسٍ أقدم بلا تاريخ (domain-arg.mjs: harvestDate)
-    if (!harvestedAt) harvestedAt = harvestDate(latestBlocksHarvest(domain.id));
+    // ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) لقاموسٍ فيه صفحاتٌ محصودة وحده: الهيكلُ الفارغ (ar-academy.blocks.json قبل أول دمج) لا حصاد فيه فلا تاريخ له،
+    // وإلا كتب حصادٌ في مجلد العمل لم يُدمج بعد تاريخًا في فهرسٍ بلا صفحة («حصاد …» في سطر التغطية) وخالف بناءَ المستودع العام (لا مجلد عمل
+    // فيه) فيسقط «البناء طازج» في make-release --self-check. وسائر القواميس فيها التاريخ أو صفحاتٌ محصودة، فلا يتغيّر بناؤها
+    if (!harvestedAt && harvested) harvestedAt = harvestDate(latestBlocksHarvest(domain.id));
     // pages: الصفحات المعرَّبة وحدها (قطعةٌ فيها ترجمة) — قطعةُ علاماتِ إبقاءٍ وحدها لا تُعدّ صفحةً معرَّبة في سطر التغطية
     fs.writeFileSync(path.join(dir, "index.json"), JSON.stringify({ v: SH.BLOCK.V, shards, pages: trShards, harvested, harvestedAt }), "utf8");
     outputs.push(`bodies/${domain.id}/${lang.code} (${shards.length})`);
@@ -262,29 +336,9 @@ if (bodyFiles) console.log(`قطع المتون: ${bodyFiles} ملفًا، ${(bo
 
 console.log(`\nBuilt ${langs.length} language(s) × ${C.DOMAINS.length} domain(s) -> ${outputs.join(", ")}`);
 
-// مداخل المانيفست من جدول النطاقات: ترتيب السكربتات إلزامي (الثوابت ثم المشترك ثم الاتجاه ثم
-// التغطية للتطبيق ثم وحدة الخط ثم القاموس **قبل** المحرّك)، وأنماطها: base.css أولًا (يعلن الطبقات)، ثم
-// لقطة الاتجاه إن وُجدت، ثم إصلاحات التطبيق النقطية للتطبيق وحده
-const SNAPSHOT = { app: "rtl-overrides.css", support: "rtl-intercom.css", privacy: "rtl-intercom.css", docs: "rtl-docs.css", code: "rtl-code.css",
-  legal: "rtl-legal.css", academy: "rtl-academy.css" };
-const POINT = { app: "app-point.css", support: "intercom-point.css", privacy: "intercom-point.css", docs: "docs-point.css", code: "code-point.css",
-  legal: "legal-point.css", academy: "academy-point.css" };
-function contentScriptFor(domain) {
-  const js = ["cml-const.js", "cml-shared.js", "cml-rtl.js"];
-  if (domain.id === "app") js.push("rtl-coverage.js");
-  // وحدة الخط العربي بعد الاتجاه وقبل القاموس (DESIGN-fonts §٤.٣): يُنشئها المحرّك عند document_start فتركّب محفّزاتها
-  js.push("cml-font.js", domain.dict, "engine.js");
-  const css = ["base.css"];
-  const snap = SNAPSHOT[domain.id];
-  if (snap && fs.existsSync(path.join(EXT, snap))) css.push(snap);
-  // إصلاحات النطاق النقطية بعد لقطته: التطبيق، ومنصة Intercom لمركزي المساعدة والخصوصية، والوثائق، ووثائق Claude Code،
-  // والوثائق القانونية (تنبيهها وغلاف الموقع LTR — ر3)، والأكاديمية (جزر المتون واللافتة والمنتقي LTR — ر4)
-  const point = POINT[domain.id];
-  if (point && fs.existsSync(path.join(EXT, point))) css.push(point);
-  const cs = { matches: domain.matches.slice(), js, css, run_at: "document_start", all_frames: !!domain.allFrames };
-  if (domain.excludeMatches && domain.excludeMatches.length) cs.exclude_matches = domain.excludeMatches.slice();
-  return cs;
-}
+// مداخل المانيفست من جدول النطاقات (manifest-entry.mjs: ترتيب السكربتات والأنماط الإلزامي، ومنه يضيف rtl-audit مدخل النطاق القادم إلى نسخته
+// المشغَّلة). ★ (ر28-ب، ٢٠ جمادى الأولى ١٤٤٨هـ — السؤال 2 على افتراضه) المشحونة وحدها: النطاق القادم (claude.com وبوابة Anthropic) لا مدخل له
+// في الحزمة، فلا يُعلن مضيفٌ لا تعمل فيه الإضافة شيئًا (ومضيفٌ جديد في تحديثٍ يعطّلها عند المستخدم حتى يوافق على الإذن)
 const totalAll = Object.values(totals).reduce((a, n) => a + n, 0);
 // ★ (ر9-أ، ٣ جمادى الأولى ١٤٤٨هـ) عدد العبارات في version_name («قاموس 40,219 عبارةً»): الرقم مجمَّع المراتب، والمعدود بعده بصيغته
 // العربية بقاعدة arCount في options.js — والعدد مضافٌ إليه بعد «قاموس»: 1 ← «عبارة واحدة»، و2 ← «عبارتين»، وآخر رقمين 3–10 (ومعها
@@ -309,7 +363,7 @@ const manifestPath = path.join(EXT, "manifest.json");
 if (fs.existsSync(manifestPath)) {
   const mf = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
   const total = totalAll;
-  mf.content_scripts = C.DOMAINS.map(contentScriptFor);
+  mf.content_scripts = packageEntries(C, EXT);
 
   if (argSet) {
     if (mf.version !== argSet) console.log(`↑ version -> ${argSet} (--set-version)`);

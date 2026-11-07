@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>scanlongapp test</title>
+<!--
+  ★ (ر29-ط، ١٩ جمادى الأولى ١٤٤٨هـ — توجيه المالك: لا يمنع سقفُ طولٍ تعريبَ نصّ موقع) «فحص الترجمة» بلا سقف طول في ماسح الحزم (التطبيق):
+  كانت رسالة الواجهة (defaultMessage) التي تزيد على TEXT_MAX (300 حرف) تُتخطّى، فلا تبلغ تصديرَ المالك أبدًا.
+  بالمحرّك الحقيقي وقاموس التطبيق المشحون، على حزمتين اصطناعيتين يجيبهما الاختبار (ملف الدخول يُعلَن بوسم script لا يُنفَّذ، والثانية يكتشفها
+  الزحف من إشارةٍ في الأولى؛ ورسائل «Zzq …»: لا نصَّ من الموقع):
+   ١) رسائل غير مترجمة من 450 و1,200 حرف (ومنها ما فيه هروب ‎’‎ يُفكّ، وما في الحزمة الثانية) ⇒ في القائمة بنصّها، ورسالةٌ طويلة بمتغيّر ⇒ في قائمة المتغيّرات؛
+   ٢) رسالةٌ من 450 يترجمها القاموس (مفتاحٌ اصطناعي يُضاف هنا) ⇒ مغطّاة؛
+   ٣) والمرشّحات بالمحتوى كما هي مع الطويل: ICU (جمع) ووسوم ورابط ⇒ لا تُعدّ، مهما طالت.
+   ★ (مراجعة ر29-ط) ٤) ورسالةٌ من 20,000 حرف في الحزمة الثانية ⇒ في القائمة بنصّها: كان سقفٌ يُعاد فوق 1,200 (أطول ما سبق) ينجو من الفحوص.
+  العقد: document.title = "scanlongapp N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1000px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vertical-align:top;word-break:break-all}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<!-- ملف الدخول: وسمٌ بنوعٍ غير جافاسكربت لا يجلبه المتصفح ولا ينفّذه، ويراه الماسح كما يرى ملفات الموقع (script[src] تحت ‎/assets/v<n>/‎) -->
+<script type="text/x-cml-fixture" src="assets/v9/index-Zq9LongA1.js"></script>
+</head>
+<body>
+<h1>اختبار «فحص الترجمة» في حزم التطبيق: لا سقف طول</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<pre id="log"></pre>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script>
+  var MOCK = makeChromeMock({ session: false });
+  window.__store = MOCK.localStore;
+  window.chrome = MOCK.chrome;
+</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dictionary.js"></script>
+<script>
+  var L = globalThis.CLAUDE_L10N, D = L.dicts.ar;
+  var WORDS = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel"];
+  function longText(tag, n) {
+    var s = "Zzq " + tag, i = 0;
+    while (s.length < n) s += " " + WORDS[i++ % WORDS.length];
+    s = s.slice(0, n);
+    return s.charAt(n - 1) === " " ? s.slice(0, n - 1) + "z" : s;
+  }
+  var APOS = String.fromCharCode(0x2019);
+  var M = {
+    l450: longText("untranslated long app message", 450),
+    l1200: longText("untranslated very long app message", 1200),
+    esc: longText("couldn" + APOS + "t load the long app panel", 450),
+    deep: longText("untranslated long message in a second bundle", 450),
+    huge: longText("untranslated huge message in a second bundle", 20000),
+    v450: "Zzq {count} " + longText("untranslated long message with a variable", 450).slice(4),
+    tr450: longText("translated long app message", 450),
+    icu: "Zzq {count, plural, one {# item} other {# items}} " + longText("long plural", 420).slice(4),
+    tag: "Zzq <link>read more</link> " + longText("long tagged", 420).slice(4),
+    url: "Zzq see https://example.com/zzq " + longText("long with a link", 420).slice(4),
+    short: "Zzq short app label",
+  };
+  D.strings[M.tr450] = "رسالةٌ طويلةٌ مترجَمة للاختبار";
+  function lit(s) { return JSON.stringify(s); }
+  // الهروب كما تكتبه أدوات الحزم: ‎’‎ نصًّا في الحرفية لا المحرف نفسه
+  function litEsc(s) { return JSON.stringify(s).split(APOS).join("\\u2019"); }
+  var BUNDLE_A = 'import"./panel-Zq9LongB2.js";var a={id:"zq.a",defaultMessage:' + lit(M.l450) + '},b={id:"zq.b",defaultMessage:' + lit(M.l1200) +
+    '},c={id:"zq.c",defaultMessage:' + litEsc(M.esc) + '},d={id:"zq.d",defaultMessage:' + lit(M.v450) + '},e={id:"zq.e",defaultMessage:' + lit(M.tr450) +
+    '},f={id:"zq.f",defaultMessage:' + lit(M.icu) + '},g={id:"zq.g",defaultMessage:' + lit(M.tag) + '},h={id:"zq.h",defaultMessage:' + lit(M.url) +
+    '},k={id:"zq.k",defaultMessage:' + lit(M.short) + '};';
+  var BUNDLE_B = 'var z={id:"zq.z",defaultMessage:' + lit(M.deep) + '},y={id:"zq.y",defaultMessage:' + lit(M.huge) + '};';
+  var FETCHED = [], realFetch = window.fetch;
+  window.fetch = function (u, o) {
+    var s = String(u && u.url || u);
+    if (s.indexOf("/assets/v9/") >= 0) {
+      FETCHED.push(s.split("/").pop());
+      var body = /index-Zq9LongA1\.js$/.test(s) ? BUNDLE_A : /panel-Zq9LongB2\.js$/.test(s) ? BUNDLE_B : null;
+      return Promise.resolve(body === null ? new Response("nf", { status: 404 }) : new Response(body, { status: 200, headers: { "content-type": "text/javascript" } }));
+    }
+    return realFetch.apply(window, arguments);
+  };
+</script>
+<script src="../extension/engine.js"></script>
+<script>
+(function () {
+  var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+  function check(name, expect, got) {
+    total++; var ok = String(expect) === String(got); if (ok) pass++;
+    var tr = document.createElement("tr");
+    [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+    var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+    tb.appendChild(tr);
+    document.title = "scanlongapp " + pass + "/" + total + " …";
+  }
+  function done() { document.title = "scanlongapp " + pass + "/" + total; }
+  setTimeout(function () { chrome.storage.local.set({ cml_scan_request: { d: "app", kind: "scan", at: Date.now(), id: "a1" } }); }, 300);
+  var t0 = Date.now();
+  var poll = setInterval(function () {
+    var r = window.__store.cml_scan_result;
+    if ((!r || (r.status !== "done" && r.status !== "error")) && Date.now() - t0 < 15000) return;
+    clearInterval(poll);
+    try { run(r || {}); } catch (e) { check("استثناء في الاختبار", "", String(e && (e.stack || e.message) || e).slice(0, 400)); }
+    done();
+  }, 200);
+
+  function run(r) {
+    var list = r.list || [], vars = r.varList || [], all = list.concat(vars);
+    document.getElementById("log").textContent = JSON.stringify({ status: r.status, fetched: r.fetched, found: r.found, missing: r.missing, files: FETCHED,
+      lens: list.map(function (s) { return s.length; }), varLens: vars.map(function (s) { return s.length; }) });
+    check("تمهيد: الفحص انتهى وقرأ الحزمتين (الثانية بإشارةٍ من الأولى)، وأطوال الرسائل كما بُنيت", "done/2/450/1200/450",
+      r.status + "/" + r.fetched + "/" + M.l450.length + "/" + M.l1200.length + "/" + M.deep.length);
+    check("★ (ر29-ط) رسائل واجهةٍ غير مترجمة أطول من 300 حرف (450 و1,200، ومنها ما في الحزمة الثانية) في القائمة بنصّها كاملًا، فتبلغ «أمر الترجمة»",
+      "true/true/true", (list.indexOf(M.l450) >= 0) + "/" + (list.indexOf(M.l1200) >= 0) + "/" + (list.indexOf(M.deep) >= 0));
+    check("★ (ر29-ط) والطويلة بهروبٍ (‎\\u2019‎) تُفكّ وتُعدّ، والطويلة بمتغيّرٍ في قائمة المتغيّرات", "true/true/false",
+      (list.indexOf(M.esc) >= 0) + "/" + (vars.indexOf(M.v450) >= 0) + "/" + (list.indexOf(M.v450) >= 0));
+    check("★ (ر29-ط) والطويلة التي يترجمها القاموس مغطّاة كالقصيرة", "false", all.indexOf(M.tr450) >= 0);
+    check("★ (مراجعة ر29-ط) ورسالةٌ من 20,000 حرف (في الحزمة الثانية) في القائمة بنصّها كاملًا: لا سقف طولٍ مهما ارتفع", "20000/true",
+      M.huge.length + "/" + (list.indexOf(M.huge) >= 0));
+    check("★ (ر29-ط) والمرشّحات بالمحتوى لا بالطول: الطويلة بجمع ICU وبوسمٍ وبرابطٍ لا تُعدّ", "false/false/false",
+      (all.indexOf(M.icu) >= 0) + "/" + (all.indexOf(M.tag) >= 0) + "/" + (all.indexOf(M.url) >= 0));
+    check("ولا يتغيّر القصير، والعدّ الحقيقي يساوي المعروض بلا قصّ (found = كل ما قُبل، missing = طول القائمتين)", "true/8/7/7/0",
+      (list.indexOf(M.short) >= 0) + "/" + r.found + "/" + r.missing + "/" + all.length + "/" + r.omitted);
+    check("لا أخطاء جافاسكربت في الصفحة", 0, jsErrors);
+  }
+})();
+</script>
+</body>
+</html>

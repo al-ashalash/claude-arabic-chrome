@@ -1,0 +1,237 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>gallery list test</title>
+<!--
+  ★ (ر28-ج2، ٢٥ جمادى الأولى ١٤٤٨هـ — ملاحظة المالك على النسخة التجريبية 1) أسماء البطاقات في قائمة المعرض (نافذة الخدمات القانونية):
+  قاعدة app-point.css الجديدة بالمحرّك الحقيقي بقاموس التطبيق المبنيّ، وأوراق التطبيق بترتيب المانيفست (base.css ثم rtl-overrides.css ثم
+  app-point.css)، على نموذجٍ اصطناعي يعيد بنية القائمة كما قرأها المالك في متصفحه (legal-dom-20261101): الاسم span[data-cds="OverflowTooltip"]
+  (block وoverflow-x: clip وtext-overflow: ellipsis وwhite-space: nowrap وmin-width: 0) داخل button[data-slug] في القائمة العمودية
+  div[role="toolbar"][aria-orientation="vertical"] في aside داخل المعرض div[data-view].group/gallery داخل [role="dialog"]، وسطر الشريك تحته
+  span.text-caption > span[data-cds="OverflowTooltip"]. والنصوص الإنجليزية اصطناعية (Zq…)، والعربية ترجماتٌ مشحونة يكتبها المحرّك.
+  والقياس بمستطيلات الحروف (Range) على صندوق الاسم، لا بقراءة القاعدة:
+   ١) الاسم الإنجليزي الطويل وسطر الشريك الإنجليزي الطويل: أول حرفٍ داخل الصندوق عند حافته اليسرى، وآخر حرفٍ مقصوصٌ خارج حافته اليمنى
+      (فالقصّ ونقاطه في آخر الاسم). وبلا القاعدة (الطفرة) يُقصّ من أوله: أول حرفٍ خارج الحافة اليسرى وآخره عند اليمنى («…e-case inventory»)؛
+   ٢) الاسم العربي الطويل (ترجمةٌ يكتبها المحرّك): أول حرفٍ (أقصى اليمين) داخل الصندوق عند حافته اليمنى، وآخره مقصوصٌ خارج حافته اليسرى؛
+      والترجمة المختلطة التي يعزلها المحرّك (RLI…PDI) كذلك من اليمين، ★ (مراجعة ر28-ج2) وإن فاضت عن صندوقها في قائمةٍ أضيق: أولها عند
+      الحافة اليمنى والقصّ من جهة اليسار وحدها (بعلامة RLM بعد الاسم؛ وplaintext وحده كان يجعلها من اليسار فيُقصّ أولها)؛
+   ٣) الاسم الإنجليزي القصير وسطر الشريك القصير تحت اسمٍ عربي: يمينًا، آخر حرفٍ عند الحافة اليمنى وأوله داخل الصندوق بعيدًا عن اليسرى؛
+   ٤) ولا يتّسع: خمسة أشباهٍ ينقص كلًّا شرطٌ واحد من المحدِّد على حالها بالورقة وبدونها؛
+   ٥) وبإطفاء قلب الصفحة، وبإطفاء الإضافة والصفحة RTL من الموقع: القاعدة خاملة، والرسم بورقة app-point.css وبدونها واحد.
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+
+<h1>اختبار أسماء قائمة المعرض</h1>
+
+<!-- أدوات الموقع التي يحتاجها الرسم بتعريفاتها في ورقته (وقيم المسافات بدائل)، وعرض القائمة ثابت (14rem كعرضها في الموقع دون lg) -->
+<style id="glCss">.flex{display:flex}.flex-col{flex-direction:column}.flex-1{flex:1 1 0%}.min-w-0{min-width:0}.min-h-0{min-height:0}.w-full{width:100%}
+.items-center{align-items:center}.justify-center{justify-content:center}.shrink-0{flex-shrink:0}.size-4{width:1rem;height:1rem}.contents{display:contents}
+.block{display:block}.overflow-x-clip{overflow-x:clip}.text-ellipsis{text-overflow:ellipsis}.whitespace-nowrap{white-space:nowrap}.text-start{text-align:start}
+.gap-xs{gap:.25rem}.gap-sm{gap:.5rem}.gap-md{gap:.75rem}.px-md{padding-inline:.75rem}.py-sm{padding-block:.5rem}.px-xs{padding-inline:.25rem}
+.text-caption{font-size:.8125rem}.font-normal{font-weight:400}
+.gl-dialog{margin-top:12px;font:16px/1.5 system-ui}.gl-aside{width:14rem;box-sizing:border-box;border:1px dashed #bbb}
+.gl-dialog button{font:inherit;background:none;border:0;color:inherit;cursor:pointer}</style>
+<div class="gl-dialog" role="dialog" data-cds="Dialog">
+ <div class="isolate flex min-h-0 flex-1 flex-col">
+  <div data-view="list" class="group/gallery grid min-h-0 flex-1">
+   <aside class="flex min-h-0 flex-col gap-sm gl-aside">
+    <div class="contents">
+     <div role="toolbar" aria-orientation="vertical" aria-label="Zq gallery" class="flex min-h-0 flex-1 flex-col gap-md px-xs">
+      <button type="button" data-slug="zq-long" class="flex w-full items-center gap-xs rounded px-md py-sm text-start"><span class="flex size-4 shrink-0 items-center justify-center"><span data-cds="Icon" aria-hidden="true"></span></span><span class="flex min-w-0 flex-1 flex-col"><span data-cds="OverflowTooltip" id="glLongEn" class="block overflow-x-clip text-ellipsis whitespace-nowrap min-w-0">Zq obligations checker for every contract</span></span></button>
+      <button type="button" data-slug="zq-short" class="flex w-full items-center gap-xs rounded px-md py-sm text-start"><span class="flex size-4 shrink-0 items-center justify-center"><span data-cds="Icon" aria-hidden="true"></span></span><span class="flex min-w-0 flex-1 flex-col"><span data-cds="OverflowTooltip" id="glShortEn" class="block overflow-x-clip text-ellipsis whitespace-nowrap min-w-0">Zq intake</span></span></button>
+      <button type="button" data-slug="ai-use-case-inventory" class="flex w-full items-center gap-xs rounded px-md py-sm text-start"><span class="flex size-4 shrink-0 items-center justify-center"><span data-cds="Icon" aria-hidden="true"></span></span><span class="flex min-w-0 flex-1 flex-col"><span data-cds="OverflowTooltip" id="glLongAr" class="block overflow-x-clip text-ellipsis whitespace-nowrap min-w-0">AI use-case inventory</span></span></button>
+      <button type="button" data-slug="harvey-intake" class="flex w-full items-center gap-xs rounded px-md py-sm text-start"><span class="flex size-4 shrink-0 items-center justify-center"><span data-cds="Icon" aria-hidden="true"></span></span><span class="flex min-w-0 flex-1 flex-col"><span data-cds="OverflowTooltip" id="glMixed" class="block overflow-x-clip text-ellipsis whitespace-nowrap min-w-0">Harvey Intake</span><span class="flex min-w-0 text-caption font-normal"><span data-cds="OverflowTooltip" id="glPartnerLong" class="block overflow-x-clip text-ellipsis whitespace-nowrap min-w-0">Zq Rising for Justice and Partners</span></span></span></button>
+      <button type="button" data-slug="obligations-tracker" class="flex w-full items-center gap-xs rounded px-md py-sm text-start"><span class="flex size-4 shrink-0 items-center justify-center"><span data-cds="Icon" aria-hidden="true"></span></span><span class="flex min-w-0 flex-1 flex-col" id="glCol"><span data-cds="OverflowTooltip" id="glShortAr" class="block overflow-x-clip text-ellipsis whitespace-nowrap min-w-0">Obligations checker</span><span class="flex min-w-0 text-caption font-normal"><span data-cds="OverflowTooltip" id="glPartnerShort" class="block overflow-x-clip text-ellipsis whitespace-nowrap min-w-0">Zq Lardner</span></span></span></button>
+     </div>
+    </div>
+   </aside>
+  </div>
+ </div>
+</div>
+<!-- ★ (مراجعة ر28-ج2) قائمةٌ أضيق: ترجمة «Harvey Intake» المختلطة المعزولة تفيض عن صندوقها، كما تفيض في متصفح المالك (صندوقٌ بعرض 129 بكسل).
+     ★ (ت14-هـ0، ٢٦ جمادى الأولى ١٤٤٨هـ) وترجمتها الجديدة (p33b) أقصر فتتّسع لعرض 10rem، فصار العرض 6rem ليبقى الفيض الذي يُختبر -->
+<div class="gl-dialog" role="dialog">
+ <div data-view="list" class="group/gallery">
+  <aside class="gl-aside" style="width:6rem">
+   <div class="contents">
+    <div role="toolbar" aria-orientation="vertical" class="flex flex-col px-xs">
+     <button type="button" data-slug="harvey-intake-narrow" class="flex w-full items-center gap-xs rounded px-md py-sm text-start"><span class="flex size-4 shrink-0 items-center justify-center"><span data-cds="Icon" aria-hidden="true"></span></span><span class="flex min-w-0 flex-1 flex-col"><span data-cds="OverflowTooltip" id="glMixedNarrow" class="block overflow-x-clip text-ellipsis whitespace-nowrap min-w-0">Harvey Intake</span></span></button>
+    </div>
+   </div>
+  </aside>
+ </div>
+</div>
+<!-- الأشباه الخمسة (كلٌّ ينقصه شرطٌ واحد من المحدِّد): قائمةٌ أفقية، وزرٌّ بلا data-slug، وقائمةٌ خارج المعرض، وزرٌّ خارج القائمة، وتلميحٌ غير OverflowTooltip -->
+<div class="gl-dialog" role="dialog">
+ <div data-view="list" class="group/gallery"><aside class="gl-aside">
+  <div role="toolbar" aria-orientation="horizontal" class="flex flex-col"><button type="button" data-slug="zq-a" class="flex w-full text-start"><span class="flex min-w-0 flex-1 flex-col"><span data-cds="OverflowTooltip" id="nmHoriz" class="block overflow-x-clip text-ellipsis whitespace-nowrap min-w-0">Zq near miss: a horizontal toolbar</span></span></button></div>
+  <div role="toolbar" aria-orientation="vertical" class="flex flex-col"><button type="button" class="flex w-full text-start"><span class="flex min-w-0 flex-1 flex-col"><span data-cds="OverflowTooltip" id="nmNoSlug" class="block overflow-x-clip text-ellipsis whitespace-nowrap min-w-0">Zq near miss: a button without a slug</span></span></button></div>
+  <button type="button" data-slug="zq-c" class="flex w-full text-start"><span class="flex min-w-0 flex-1 flex-col"><span data-cds="OverflowTooltip" id="nmNoBar" class="block overflow-x-clip text-ellipsis whitespace-nowrap min-w-0">Zq near miss: a button outside the toolbar</span></span></button>
+  <div role="toolbar" aria-orientation="vertical" class="flex flex-col"><button type="button" data-slug="zq-d" class="flex w-full text-start"><span class="flex min-w-0 flex-1 flex-col"><span data-cds="Tooltip" id="nmOther" class="block overflow-x-clip text-ellipsis whitespace-nowrap min-w-0">Zq near miss: another component</span></span></button></div>
+ </aside></div>
+ <div data-view="list"><aside class="gl-aside">
+  <div role="toolbar" aria-orientation="vertical" class="flex flex-col"><button type="button" data-slug="zq-e" class="flex w-full text-start"><span class="flex min-w-0 flex-1 flex-col"><span data-cds="OverflowTooltip" id="nmNoGallery" class="block overflow-x-clip text-ellipsis whitespace-nowrap min-w-0">Zq near miss: a list outside the gallery</span></span></button></div>
+ </aside></div>
+</div>
+
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+
+<link rel="stylesheet" href="../extension/base.css">
+<link rel="stylesheet" href="../extension/rtl-overrides.css">
+<link rel="stylesheet" href="../extension/app-point.css">
+<script>window.__jsErrors = 0; window.onerror = function () { window.__jsErrors++; };</script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dictionary.js"></script>
+<script src="_chrome-mock.js"></script>
+<script>
+// القشرة الموحّدة: الترجمة وقلب الصفحة مفعّلان كما عند المستخدم
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+</script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function finish() {
+  check("لا أخطاء JS في الصفحة", "0", String(window.__jsErrors));
+  document.title = "gallerylist " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "GALLERYLIST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+}
+function waitFor(cond, then, ms) {
+  var t0 = Date.now();
+  (function poll() { if (cond() || Date.now() - t0 > (ms || 3000)) then(); else setTimeout(poll, 50); })();
+}
+var html = document.documentElement;
+function $(id) { return document.getElementById(id); }
+// الترجمات المشحونة (ر28-ج2): يكتبها المحرّك في الصفحة؛ والمختلطة يعزلها (RLI…PDI)
+// ★ (ت14-هـ0، ٢٦ جمادى الأولى ١٤٤٨هـ) بترجمة p33b (ر28-د1) التي تحلّ محلّ p33: الطويل ما زال أعرض من عموده، والمختلط أقصر من قبل
+var AR_LONG = "سجل استخدامات الذكاء الاصطناعي", AR_SHORT = "متابعة الالتزامات", AR_MIXED = "الطلبات عبر Harvey";
+var RLI = String.fromCharCode(0x2067), PDI = String.fromCharCode(0x2069);
+// حروف العنصر بترتيبها المنطقي ومستطيل كلٍّ منها (Range)، بلا البياض وعلامات الاتجاه الخفية
+function glyphs(el) {
+  var g = [], tw = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null), t;
+  while ((t = tw.nextNode())) {
+    for (var i = 0; i < t.nodeValue.length; i++) {
+      var ch = t.nodeValue[i], c = t.nodeValue.charCodeAt(i);
+      if (/\s/.test(ch) || (c >= 0x200B && c <= 0x200F) || (c >= 0x202A && c <= 0x202E) || (c >= 0x2066 && c <= 0x2069) || c === 0x061C) continue;
+      var r = document.createRange(); r.setStart(t, i); r.setEnd(t, i + 1);
+      var b = r.getBoundingClientRect();
+      g.push({ c: ch, l: b.left, r: b.right, w: b.width });
+    }
+  }
+  return g;
+}
+// موضع الحرف من صندوقٍ: داخله in بحافته (L عند اليسرى، وR عند اليمنى، وM بينهما)، أو clipL/clipR خارج حافته اليسرى/اليمنى
+function at(x, box) {
+  if (!x) return "-";
+  if (!(x.w > 0)) return "zero";
+  if (x.l < box.left - 0.5) return "clipL";
+  if (x.r > box.right + 0.5) return "clipR";
+  return "in" + (Math.abs(x.l - box.left) <= 1 ? "L" : Math.abs(x.r - box.right) <= 1 ? "R" : "M");
+}
+// شكل الاسم: «unicode-bidi/text-align/أول حرف/آخر حرف» على صندوقه، أو على صندوق عموده (سطر الشريك: عنصرٌ مرن بعرض نصّه)
+function shape(id, boxEl) {
+  var el = $(id), cs = getComputedStyle(el), g = glyphs(el);
+  var box = (boxEl || el).getBoundingClientRect();
+  return [cs.unicodeBidi, cs.textAlign, at(g[0], box), at(g[g.length - 1], box)].join("/");
+}
+var LIST = ["glLongEn", "glShortEn", "glLongAr", "glMixed", "glPartnerLong", "glShortAr", "glPartnerShort", "glMixedNarrow"];
+// ★ (مراجعة ر28-ج2) جهات القصّ في عنصرٍ: كل حرفٍ خارج صندوقه بجهته (clipL أو clipR)، أو none
+function clipSides(id) {
+  var el = $(id), box = el.getBoundingClientRect(), s = {};
+  glyphs(el).forEach(function (x) { var a = at(x, box); if (/^clip/.test(a)) s[a] = 1; });
+  return Object.keys(s).sort().join(",") || "none";
+}
+var MISS = ["nmHoriz", "nmNoSlug", "nmNoBar", "nmOther", "nmNoGallery"];
+function appPointSheet() {
+  for (var i = 0; i < document.styleSheets.length; i++) { var s = document.styleSheets[i]; if (s.href && /app-point\.css$/.test(s.href)) return s; }
+  return null;
+}
+// الرسم كله (الأسماء والأشباه) بالورقة وبدونها: واحدٌ إن كانت القاعدة خاملة
+function allShapes(ids) { return ids.map(function (id) { return id + "=" + shape(id, /^glPartner/.test(id) ? $("glCol") : null); }).join(" | "); }
+function sameWithout(ids) {
+  var ap = appPointSheet(), w = allShapes(ids);
+  if (ap) ap.disabled = true;
+  var wo = allShapes(ids);
+  if (ap) ap.disabled = false;
+  return !!ap + "/" + (w === wo);
+}
+function plainCount(ids) { return ids.filter(function (id) { return getComputedStyle($(id)).unicodeBidi === "plaintext"; }).length; }
+
+waitFor(function () {
+  return html.getAttribute("data-cml") === "on" && html.getAttribute("dir") === "rtl" && $("glLongAr").textContent === AR_LONG &&
+    $("glShortAr").textContent === AR_SHORT && $("glMixed").textContent.indexOf(AR_MIXED) >= 0 && $("glMixedNarrow").textContent.indexOf(AR_MIXED) >= 0;
+}, function () {
+  check("المحرّك عامل: الصفحة RTL، والأسماء الثلاثة معرَّبة (والمختلط معزول)، والإنجليزية الاصطناعية على حالها",
+    "on/rtl/" + [AR_LONG, AR_SHORT, RLI + AR_MIXED + PDI, "Zq obligations checker for every contract", "Zq Lardner"].join("|"),
+    html.getAttribute("data-cml") + "/" + html.getAttribute("dir") + "/" +
+    [$("glLongAr").textContent, $("glShortAr").textContent, $("glMixed").textContent, $("glLongEn").textContent, $("glPartnerShort").textContent].join("|"));
+  // الطول: نصُّ الطويل (مستطيل Range على نصّه كله) أعرض من عموده فيُقصّ، ونصُّ القصير أضيق (وscrollWidth لا يعدّ الفيض إلى جهة البداية
+  // في عنصرٍ اتجاهه RTL، فالقياس بالنص لا به)
+  var textW = function (id) { var r = document.createRange(); r.selectNodeContents($(id)); return r.getBoundingClientRect().width; };
+  var colW = $("glCol").getBoundingClientRect().width;
+  check("النماذج: نصوص الطويلة أعرض من عمودها والقصيرة أضيق",
+    "true,true,true|false,false,false,false",
+    ["glLongEn", "glLongAr", "glPartnerLong"].map(function (id) { return textW(id) > colW + 1; }).join(",") + "|" +
+    ["glShortEn", "glShortAr", "glPartnerShort", "glMixed"].map(function (id) { return textW(id) > colW - 8; }).join(","));
+  // ١) الإنجليزي الطويل: يبدأ من الحافة اليسرى ويُقصّ آخره عند اليمنى (ونقاط القصّ في آخره)
+  check("★ (ر28-ج2) الاسم الإنجليزي الطويل في قائمة المعرض: أول حرفٍ داخل الصندوق عند حافته اليسرى، وآخره مقصوصٌ خارج اليمنى",
+    "plaintext/right/inL/clipR", shape("glLongEn"));
+  check("★ (ر28-ج2) سطر الشريك الإنجليزي الطويل: أول حرفٍ داخل عموده عند حافته اليسرى، وآخره مقصوصٌ خارج اليمنى",
+    "plaintext/right/inL/clipR", shape("glPartnerLong", $("glCol")));
+  // ٢) العربي الطويل: أوله أقصى اليمين داخل الصندوق، وآخره مقصوصٌ خارج اليسرى؛ والمختلط المعزول من اليمين كذلك
+  check("★ (ر28-ج2) الاسم العربي الطويل (ترجمةٌ يكتبها المحرّك): أول حرفٍ داخل الصندوق عند حافته اليمنى، وآخره مقصوصٌ خارج اليسرى",
+    "plaintext/right/inR/clipL", shape("glLongAr"));
+  check("★ (ر28-ج2) الترجمة المختلطة المعزولة (RLI…PDI، اسمٌ لاتيني في آخرها): أول حرفٍ عربي عند الحافة اليمنى، وآخرها داخل الصندوق",
+    "plaintext/right/inR/inM", shape("glMixed"));
+  // ★ (مراجعة ر28-ج2) والمختلطة المعزولة إذا فاضت (قائمةٌ أضيق): من اليمين كذلك. وplaintext وحده يجعل العزل الخالص من اليسار (P3)، فكان
+  // أولها يُقصّ خارج الحافة اليمنى ونقاطه هناك («…لطلبات عبر Harvey»)؛ وعلامة RLM بعد الاسم (::after) تردّه من اليمين
+  var mxText = (function () { var r = document.createRange(); r.selectNodeContents($("glMixedNarrow")); return r.getBoundingClientRect().width; })();
+  check("★ (مراجعة ر28-ج2) الترجمة المختلطة المعزولة إذا فاضت عن صندوقها: أول حرفٍ عربي داخل الصندوق عند حافته اليمنى، والقصّ من جهة اليسار وحدها",
+    "true|plaintext/right/inR|clipL",
+    (mxText > $("glMixedNarrow").getBoundingClientRect().width + 1) + "|" + shape("glMixedNarrow").split("/").slice(0, 3).join("/") + "|" + clipSides("glMixedNarrow"));
+  // ٣) القصير يمينًا: آخر حرفٍ عند الحافة اليمنى وأوله داخلٌ بعيدٌ عن اليسرى؛ وسطر الشريك القصير تحت الاسم العربي يمينًا في عموده
+  check("★ (ر28-ج2) الاسم الإنجليزي القصير يمينًا: أوله داخل الصندوق بعيدًا عن اليسرى، وآخره عند الحافة اليمنى",
+    "plaintext/right/inM/inR", shape("glShortEn"));
+  check("★ (ر28-ج2) سطر الشريك الإنجليزي القصير تحت الاسم العربي يمينًا في عموده، والاسم العربي القصير يمينًا",
+    "plaintext/right/inM/inR|plaintext/right/inR/inM", shape("glPartnerShort", $("glCol")) + "|" + shape("glShortAr"));
+  // ٤) لا يتّسع: الأشباه الخمسة على حالها بالورقة وبدونها، وليس فيها plaintext
+  check("★ (ر28-ج2) لا يتّسع: الأشباه الخمسة (ينقص كلًّا شرطٌ واحد) رسمُها بالورقة وبدونها واحد، ولا plaintext فيها",
+    "true/true|0", sameWithout(MISS) + "|" + plainCount(MISS));
+
+  // ٥) قلب الصفحة مطفأ: القاعدة خاملة
+  chrome.storage.local.set({ cml_rtl: false });
+  waitFor(function () { return html.getAttribute("dir") !== "rtl"; }, function () {
+    check("★ (ر28-ج2) قلب الصفحة مطفأ: القاعدة خاملة (رسم القائمة بالورقة وبدونها واحد، ولا plaintext)، والتعريب قائم",
+      "on/(لا شيء)/true/true|0|" + AR_LONG,
+      html.getAttribute("data-cml") + "/" + (html.getAttribute("dir") || "(لا شيء)") + "/" + sameWithout(LIST) + "|" + plainCount(LIST) + "|" + $("glLongAr").textContent);
+    // ٦) الإضافة مطفأة والصفحة RTL بسمةٍ من الموقع: القاعدة خاملة، والاسم الإنجليزي يُقصّ من أوله كما يرسمه الموقع (ملاحظة المالك)
+    chrome.storage.local.set({ cml_rtl: true });
+    waitFor(function () { return html.getAttribute("dir") === "rtl"; }, function () {
+      chrome.storage.local.set({ cml_enabled: false });
+      waitFor(function () { return !html.hasAttribute("data-cml") && $("glLongAr").textContent === "AI use-case inventory"; }, function () {
+        html.setAttribute("dir", "rtl"); // الموقع نفسه RTL والإضافة مطفأة
+        var siteRtl = sameWithout(LIST) + "|" + plainCount(LIST) + "|" + shape("glLongEn").split("/").slice(2).join("/");
+        html.removeAttribute("dir");
+        var off = sameWithout(LIST) + "|" + plainCount(LIST);
+        check("★ (ر28-ج2) الإضافة مطفأة: القاعدة خاملة ولو كانت الصفحة RTL من الموقع (والإنجليزي الطويل فيها يُقصّ من أوله كما يرسمه الموقع)، وبلا RTL",
+          "true/true|0|clipL/inR||true/true|0", siteRtl + "||" + off);
+        finish();
+      }, 4000);
+    });
+  });
+}, 4000);
+</script>

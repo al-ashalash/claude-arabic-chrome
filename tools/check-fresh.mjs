@@ -40,7 +40,10 @@ try {
   if (!b.ok) { console.error("✗ البناء نفسه أخفق:\n" + b.out); process.exit(1); }
   // قاموس كل نطاق من جدول النطاقات (dictionary.js للتطبيق وdict-<نطاق>.js للبقية)
   await import(pathToFileURL(path.join(EXT, "cml-const.js")).href);
-  globalThis.CMLConst.DOMAINS.map((d) => d.dict).concat(["languages.json", "manifest.json"]).forEach(same);
+  // ★ (ر20-أ) وقاموس كل صنف مسار (dict-console.js لوحة المطوّرين في مدخل الوثائق) — مولَّدٌ يُفحص كسائر القواميس، قادمًا كان أو مشحونًا
+  globalThis.CMLConst.DOMAINS.map((d) => d.dict)
+    .concat(...globalThis.CMLConst.DOMAINS.map((d) => globalThis.CMLConst.routeClasses(d.id).map((c) => c.dict)))
+    .concat(["languages.json", "manifest.json"]).forEach(same);
   // قطع المتون (المرحلة ٢): الشجرة كلها في الاتجاهين — قطعةٌ ناقصة أو زائدة (صفحةٌ حُذفت) تُعدّ قِدمًا
   const listTree = (root) => {
     const out = [];
@@ -58,9 +61,10 @@ try {
   for (const f of bodiesB) { const before = stale; same(f, true); if (stale === before) bodiesOk++; }
   if (bodiesB.length) console.log(`✓ قطع المتون: ${bodiesOk}/${bodiesB.length}`);
 
-  // لقطة الاتجاه لكل هدف (التطبيق، ومنصة Intercom، والوثائق، ووثائق Claude Code، والوثائق القانونية، والأكاديمية متى وُجدت لقطتها)
+  // لقطة الاتجاه لكل هدف (التطبيق، ومنصة Intercom، والوثائق، ووثائق Claude Code، والوثائق القانونية، والأكاديمية، وclaude.com متى وُجدت لقطتها)
+  // ★ (مراجعة ر16-أ، ٦ جمادى الأولى ١٤٤٨هـ) وclaude.com: كان هدفه غائبًا هنا فمرّ rtl-com.css معدَّلًا باليد «طازجًا»
   for (const [target, outs] of [["app", ["rtl-overrides.css", "rtl-coverage.js"]], ["intercom", ["rtl-intercom.css"]], ["docs", ["rtl-docs.css"]], ["code", ["rtl-code.css"]],
-                                ["legal", ["rtl-legal.css"]], ["academy", ["rtl-academy.css"]]]) {
+                                ["legal", ["rtl-legal.css"]], ["academy", ["rtl-academy.css"]], ["com", ["rtl-com.css"]]]) {
     const g = run("gen-rtl.mjs", ["--target=" + target, "--out-dir=" + tmp]);
     if (g.ok) outs.forEach(same);
     else if (/لا لقطة CSS للموقع/.test(g.out)) {

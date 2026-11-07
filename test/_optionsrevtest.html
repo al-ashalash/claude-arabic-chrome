@@ -64,6 +64,29 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vert
       ((E.store["cml_sync_state.support"] || {}).status));
     E.$("resetWipeSync").checked = false;
 
+    // ══ ★ (ر29-ي، توجيه المالك: لا سقف طولٍ يُبقي نصَّ موقعٍ بالإنجليزية) تصحيحٌ أطول من حدّ المزامنة — عبر العامل الحقيقي والمزامنة مفعّلة ══
+    // يُحفظ على هذا الجهاز ولا يُرفع، والقصير بجواره يُرفع، وقسم المزامنة يقول عدد ما بقي على الجهاز وحده
+    try { localStorage.setItem("cml_ui_domain", "app"); } catch (e) {}
+    var LONGK = "Zq long app correction " + new Array(120).join("words "), APPOV = {};
+    APPOV.ar = { "Zq short app correction": "تصحيحٌ قصير" }; APPOV.ar[LONGK] = "تصحيحٌ طويل";
+    E = await makeFrame("options.html", { cml_sync_enabled: true, cml_overrides: APPOV });
+    function cloudApp() { var u = E.w.CMLSync.unpack(E.mock.syncStore); return u && u.payload && u.payload.overrides ? (u.payload.overrides.ar || {}) : null; }
+    E.mock.chrome.storage.local.set({ cml_sync_pending: Date.now() });
+    await until(function () { var c = cloudApp(); return c && c["Zq short app correction"]; }, 8000);
+    await until(function () { return E.$("syncLocalLine") && E.$("syncLocalLine").textContent.indexOf("ويبقى على هذا الجهاز وحده") === 0; }, 4000);
+    var appCloud = cloudApp() || {};
+    check("★ (ر29-ي) تصحيحٌ أطول من حدّ المزامنة يبقى على الجهاز ولا يُرفع، والقصير يُرفع، وقسم المزامنة يقول عدده", "تصحيحٌ قصير/false/تصحيحٌ طويل/true",
+      appCloud["Zq short app correction"] + "/" + (LONGK in appCloud) + "/" + ((E.store.cml_overrides || {}).ar || {})[LONGK] + "/" +
+      (E.$("syncLocalLine").textContent.indexOf("تصحيح واحد") >= 0));
+    // ★ (ر29-ك، طفرة UM5 الناجية في مراجعة ر29-ي) والقاعدة الذكية الأطول من حدّ المزامنة تُعدّ مع التصحيحات في سطر القسم: تصحيحٌ طويل وقاعدةٌ طويلة = اثنان
+    var LONGR = "Zq long app rule {name} " + new Array(70).join("words ").trim(), APPOV2 = { ar: {} };
+    APPOV2.ar[LONGK] = "تصحيحٌ طويل";
+    E = await makeFrame("options.html", { cml_sync_enabled: true, cml_overrides: APPOV2,
+      cml_user_patterns: [{ en: LONGR, re: "^Zq long app rule (.+?) words(?: words)*$", ar: "قاعدةٌ طويلة $1" }] });
+    await until(function () { return E.$("syncLocalLine") && E.$("syncLocalLine").textContent.indexOf("ويبقى على هذا الجهاز وحده") === 0; }, 6000);
+    check("★ (ر29-ك) وقاعدةٌ ذكية أطول من حدّ المزامنة تُعدّ مع التصحيح الطويل في سطر قسم المزامنة (اثنان، لا واحد)", "true/false/" + (LONGR.length > 300),
+      (E.$("syncLocalLine").textContent.indexOf("تصحيحان") >= 0) + "/" + (E.$("syncLocalLine").textContent.indexOf("تصحيح واحد") >= 0) + "/true");
+
     // ══ ٢) «فحص» صفٍّ بلا تبويبٍ مفتوح في «الكل» ══
     try { localStorage.setItem("cml_ui_domain", "docs"); } catch (e) {}
     var now = Date.now();
@@ -92,7 +115,8 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vert
     await until(function () { return E.$("scanStatus").textContent === ""; }, 3000);
     check("★ عرضُ موقعٍ بلا فحص يمحو سطر الحال (لا يرث نصّ «الكل»)", "", E.$("scanStatus").textContent);
 
-    var IDS = CMLConst.DOMAINS.map(function (d) { return d.id; });
+    // ★ (ر15) المواقع المشحونة: النطاق القادم (status.upcoming) لا تعرضه الصفحة
+    var IDS = CMLConst.shipped().map(function (d) { return d.id; });
     // ══ (ج٣) وصول المتصفح مقيَّد: السبب «لا وصول» لا «مطفأة في الجدول» ══
     try { localStorage.setItem("cml_ui_domain", "all"); } catch (e) {}
     var A = await makeFrame("options.html", {}, { noAccess: true });

@@ -14,6 +14,7 @@
 html[data-cml="on"][dir="rtl"] #content .code-block,
 html[data-cml="on"][dir="rtl"] #content [data-component-part="code-block-root"] {
   direction: ltr;
+  --cml-island: ltr;
 }
 
 /* ٢) مسار «هيكل فقط» (سجلّ الإصدارات ‎/docs/en/changelog‎ — routes.shell): المحرّك لا يعرّب محتوى #content
@@ -21,6 +22,7 @@ html[data-cml="on"][dir="rtl"] #content [data-component-part="code-block-root"] 
    يكتبها المحرّك على html بحسب حارس المسار؛ والرأس (العنوان والوصف) خارج #content فيُعرَّب */
 html[data-cml="on"][data-cml-route="shell"] #content {
   direction: ltr;
+  --cml-island: ltr;
 }
 
 /* ٣) الرموز الاتجاهية — بخاصية scale لا transform: تتركّب مع rotate/transform التي يضعها الموقع فيبقى المعنى
@@ -129,12 +131,13 @@ html[data-cml-rtl] .pl-needs-label { margin-right: 0; margin-inline-end: 6px; }
 /* ١١) مخطط نطاقات الإعدادات في صفحة settings (.ssc-canvas): سكربت الصفحة يضع المجلدات والحلقة والتسميات بإحداثياتٍ
    مطلقة يكتبها left في style، فلا يقلبها شيء، وكانت تحت حاويةٍ RTL منذ عُرّب المتن (فحص الاتجاه، ر5: 24 عنصرًا).
    والمخطط صورةٌ لشجرة ملفاتٍ بأسماء ومسارات إنجليزية تُقرأ من اليسار؛ فيبقى كله على هيئته الأصلية جزيرةً LTR
-   ككتل الشيفرة في ١). والنصّ المعرَّب الوحيد فيه تسمية الجهاز («جهازك» وأيقونتها): تأخذ اتجاه العربية، وموضعُها كما هو */
+   ككتل الشيفرة في ١).
+   ★ (ر24-ب4، ١٢ جمادى الأولى ١٤٤٨هـ) وكانت تسمية الجهاز وحدها تُردّ RTL (كانت معرَّبةً يوم كُتبت القاعدة)، واليوم في المخطط ثلاث تسمياتٍ
+   إنجليزية لا ترجمة لها في الحزمة، فكانت القاعدة تقلب ترتيب أيقونة كلٍّ منها ونصّها داخل الجزيرة (فحص أمانة الجزر، الصنف dc369114969b:
+   6 من 50 حفيدًا). فأُسقطت: الجزيرة كلها على هيئتها الأصلية، وتسميةٌ تُعرَّب بعدُ يُقرأ نصّها العربي صحيحًا داخل صندوقها كما هو */
 html[data-cml="on"][dir="rtl"] #content .ssc-canvas {
   direction: ltr;
-}
-html[data-cml="on"][dir="rtl"] #content .ssc-canvas .ssc-machine-label {
-  direction: rtl;
+  --cml-island: ltr;
 }
 
 /* ★ العلاج النقطي للقصّ مع الخط العربي المضاف (DESIGN-fonts §٤.٦؛ قرار المالك — الخيار ٢، ١٩ ربيع الآخر ١٤٤٨هـ).

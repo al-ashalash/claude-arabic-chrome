@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>mirror test</title>
+<!--
+  اختبار الهندسة المرآوية (ر24-ب2، ١٢ جمادى الأولى ١٤٤٨هـ — ملحق مراجعة Codex AD-002 بلا مكتبةٍ من طرفٍ ثالث، ومعه برهان CX-006 وCX-007 في المتصفح).
+  CSS «موقعٍ» اصطناعي بالأنماط الفيزيائية الشائعة (الهوامش والحشوات والحدود والمواضع والتحويلات والإزاحة المستقلة ومتغيّر تايلويند والعوائم
+  والمختصرات ومحاذاة النص، وقيد @media متداخل)، تُبنى منه ورقة الاتجاه في الصفحة بمحرّك الإضافة نفسه (CMLRtl.buildLiveSheet، وهو ما يبني
+  به gen-rtl الأوراق المشحونة)، ثم يُقاس كل صندوقٍ نسبةً إلى إطاره بعرضٍ ثابت:
+   ١) خارج الجزر: هندسة RTL مرآةُ هندسة LTR الأصلية (اليسار في RTL = اليمين في الأصل، والعرض والأعلى كما هما) بتسامح بكسلٍ واحد.
+   ٢) داخل الجزر (pre، وcode كتلةً، و[data-cml-noflip="ltr"]، وحفيدٌ عميق فيها): الهندسة تساوي الأصل نفسه، لا مرآته (CX-007).
+   ٣) الورقة نفسها ببوابة v2 (المشحونة) تعطي النتيجة نفسها.
+   ٤) ★ (ر24-ب4، بقية CX-007) جزيرة ورقةٍ نقطية اصطناعية (قاعدةٌ تعلن ‎direction:ltr‎ وعلامتنا ‎--cml-island: ltr‎ بمحدِّد «الموقع» وبوابة
+      ‎html[data-cml="on"][dir="rtl"]‎ كما في ‎*-point.css‎): محدِّدها من CMLRtl.islandSelectors ويُمرَّر إلى البناء كما يمرّره gen-rtl والعامل،
+      فالهندسة داخلها وفي حفيدٍ عميق تساوي الأصل، وجذرُ الجزيرة نفسُه كذلك؛ وبلا تمرير الجزر تنقلب القيمة الفيزيائية داخلها (إثبات أن التمرير
+      هو الفاعل)؛ وحين يسقط شرط الجزيرة (بوابة html) تعود مرآةً كسائر الصفحة. ومتغيّر الإزاحة المعلن خارج الجزيرة والمستعمل داخلها يبقى
+      مقلوبًا (حدٌّ معروف، RULES §1): الفحص يثبّت السلوك الحاضر.
+  العقد: document.title = "mirror N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}
+#tbl td,#tbl th{border:1px solid #ccc;padding:4px 6px;font-size:13px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+pre,code{margin:0;padding:0;font:inherit;white-space:normal}
+code.zq-blockcode{display:block}</style>
+<style id="site">
+.zq-f{position:relative;width:400px;height:24px;margin:2px 0;background:#eee;padding:0;border:0}
+.zq-b{height:10px;background:#c00;display:block}
+.zq-ml{margin-left:30px;width:50px}
+.zq-mr{margin-right:20px;margin-left:auto;width:50px}
+.zq-pl{padding-left:40px}
+.zq-bl{border-left:12px solid #00c;width:50px}
+.zq-al{position:absolute;left:25px;top:0;width:30px}
+.zq-ar{position:absolute;right:15px;top:0;width:30px}
+.zq-tx{position:absolute;left:0;top:0;width:20px;transform:translateX(60px)}
+.zq-ct{position:absolute;left:30%;top:0;width:20px;transform:translateX(-50%)}
+.zq-it{position:absolute;left:10px;top:0;width:20px;translate:30px 0}
+.zq-fl{float:left;width:40px}
+.zq-fr{float:right;width:40px}
+.zq-in4{position:absolute;inset:0 auto 0 35px;width:20px}
+.zq-ms{margin:0 0 0 45px;width:20px}
+.zq-tw{--tw-translate-x:30px;position:absolute;left:0;top:0;width:20px;transform:translate(var(--tw-translate-x),0)}
+.zq-ns{width:20px;margin-left:10px;@media (min-width:0px){margin-left:20px}}
+.zq-ta{text-align:left}
+.zq-ib{display:inline-block;width:20px;height:10px;background:#0a0}
+.zq-twv{--tw-translate-x:30px}
+.zq-twu{position:absolute;left:0;top:0;width:20px;transform:translate(var(--tw-translate-x),0)}
+</style>
+<!-- ★ (ر24-ب4) «ورقةٌ نقطية» اصطناعية: جزيرةٌ بعلامتنا، وشرطها بوابة html كما في *-point.css -->
+<style id="point">
+html[data-cml="on"][dir="rtl"] .zq-pisl{direction:ltr;--cml-island:ltr}
+</style>
+<h1>اختبار الهندسة المرآوية</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<div id="stage"></div>
+<script src="../extension/cml-rtl.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+// الأنماط: صنف الصندوق المقيس، أو صنف الإطار الداخلي مع ابنٍ يُقاس (الحشوة والحدّ ومحاذاة النص)
+var CASES = [
+  ["هامش أيسر", '<div class="zq-b zq-ml" data-m></div>'],
+  ["هامش أيمن مع auto", '<div class="zq-b zq-mr" data-m></div>'],
+  ["حشوة يسرى", '<div class="zq-pl"><div class="zq-b" style="width:20px" data-m></div></div>'],
+  ["حدٌّ أيسر", '<div class="zq-b zq-bl"><div class="zq-ib" data-m></div></div>'],
+  ["موضع left", '<div class="zq-b zq-al" data-m></div>'],
+  ["موضع right", '<div class="zq-b zq-ar" data-m></div>'],
+  ["تحويل translateX", '<div class="zq-b zq-tx" data-m></div>'],
+  ["توسيطٌ غير متناظر (left:30% مع translateX(-50%))", '<div class="zq-b zq-ct" data-m></div>'],
+  ["إزاحة مستقلة translate", '<div class="zq-b zq-it" data-m></div>'],
+  ["عائمٌ يسارًا", '<div class="zq-b zq-fl" data-m></div>'],
+  ["عائمٌ يمينًا", '<div class="zq-b zq-fr" data-m></div>'],
+  ["المختصر inset", '<div class="zq-b zq-in4" data-m></div>'],
+  ["المختصر margin", '<div class="zq-b zq-ms" data-m></div>'],
+  ["متغيّر تايلويند --tw-translate-x", '<div class="zq-b zq-tw" data-m></div>'],
+  ["قيد @media متداخل بعد إعلانٍ يغلبه (CX-006)", '<div class="zq-b zq-ns" data-m></div>'],
+  ["محاذاة النص يسارًا", '<div class="zq-ta"><span class="zq-ib" data-m></span></div>'],
+];
+// السياقات: خارج الجزر (مرآة)، وجزرٌ ثلاث وحفيدٌ عميق (مساواة)
+var CTX = [
+  ["خارج الجزر", "mirror", function (f) { return f; }],
+  ["داخل pre", "equal", function (f) { var p = document.createElement("pre"); p.appendChild(f); return p; }],
+  ["داخل code كتلةً", "equal", function (f) { var c = document.createElement("code"); c.className = "zq-blockcode"; c.appendChild(f); return c; }],
+  ["داخل [data-cml-noflip=ltr]", "equal", function (f) { var d = document.createElement("div"); d.setAttribute("data-cml-noflip", "ltr"); d.appendChild(f); return d; }],
+  ["حفيدٌ عميق في الجزيرة", "equal", function (f) { var d = document.createElement("div"); d.setAttribute("data-cml-noflip", "ltr");
+    var a = document.createElement("section"), b = document.createElement("div"); d.appendChild(a); a.appendChild(b); b.appendChild(f); return d; }],
+  // ★ (ر24-ب4) جزيرة الورقة النقطية: بصنف «الموقع» وحده، لا بسمةٍ منّا على العنصر
+  ["داخل جزيرة ورقةٍ نقطية", "equal", function (f) { var d = document.createElement("div"); d.className = "zq-pisl"; d.appendChild(f); return d; }, "P"],
+  ["حفيدٌ عميق في جزيرة الورقة النقطية", "equal", function (f) { var d = document.createElement("div"); d.className = "zq-pisl";
+    var a = document.createElement("section"), b = document.createElement("div"); d.appendChild(a); a.appendChild(b); b.appendChild(f); return d; }, "P"],
+];
+var stage = document.getElementById("stage"), ITEMS = [];
+CTX.forEach(function (cx, ci) {
+  CASES.forEach(function (cs, k) {
+    var f = document.createElement("div"); f.className = "zq-f"; f.innerHTML = cs[1];
+    stage.appendChild(cx[2](f));
+    ITEMS.push({ name: cs[0] + " — " + cx[0], mode: cx[1], frame: f, el: f.querySelector("[data-m]"), ci: ci, pt: cx[3] === "P" });
+  });
+});
+// ★ (ر24-ب4) جذر الجزيرة نفسُه: التوسيط غير المتناظر على عنصر الجزيرة ذاته يبقى كالأصل (المسمّاة تستثني الجذر وأحفاده، وكذلك هذه)
+(function () {
+  var f = document.createElement("div"); f.className = "zq-f"; f.innerHTML = '<div class="zq-b zq-ct zq-pisl" data-m></div>';
+  stage.appendChild(f);
+  ITEMS.push({ name: "توسيطٌ غير متناظر على جذر جزيرة الورقة النقطية نفسه", mode: "equal", frame: f, el: f.querySelector("[data-m]"), ci: 99, pt: true });
+})();
+// ★ (ر24-ب4، حدٌّ معروف) متغيّر الإزاحة السينية معلنٌ على سلفٍ خارج الجزيرة ومستعملٌ داخلها: يرث المقلوب
+(function () {
+  var w = document.createElement("div"); w.className = "zq-twv";
+  w.innerHTML = '<div class="zq-pisl"><div class="zq-f"><div class="zq-b zq-twu" data-m></div></div></div>';
+  stage.appendChild(w);
+  window.TWV = { frame: w.querySelector(".zq-f"), el: w.querySelector("[data-m]") };
+})();
+function rel(it) {
+  var a = it.el.getBoundingClientRect(), f = it.frame.getBoundingClientRect();
+  return { l: a.left - f.left, r: f.right - a.right, w: a.width, t: a.top - f.top };
+}
+function near(x, y) { return Math.abs(x - y) <= 1; }
+function verdict(it, o, n) {
+  var ok = it.mode === "mirror" ? near(n.l, o.r) && near(n.w, o.w) && near(n.t, o.t) : near(n.l, o.l) && near(n.w, o.w) && near(n.t, o.t);
+  return ok ? it.mode : "l=" + Math.round(n.l) + " (الأصل l=" + Math.round(o.l) + " r=" + Math.round(o.r) + ")";
+}
+// ورقة الاتجاه من CSS «الموقع» بالمحرّك نفسه، مع ألف قاعدة حشوٍ مقلوبة تتجاوز عتبتَي المدخل الهزيل
+var siteText = document.getElementById("site").textContent;
+for (var i = 0; i < 1000; i++) siteText += ".zq-fill" + i + "{margin-left:" + (i + 1) + "px}\n";
+// ★ (ر24-ب4) جزر «الورقة النقطية» بالدالّة نفسها التي يقرؤها بها gen-rtl والعامل، وتُمرَّر إلى البناء
+var ISL = CMLRtl.islandSelectors(document.getElementById("point").textContent);
+check("★ جزر الورقة النقطية: محدِّدٌ واحد بعلامة ‎--cml-island‎ وبشرطه (بوابة html)", '1/0/html[data-cml="on"][dir="rtl"] .zq-pisl',
+  ISL.sels.length + "/" + ISL.errors.length + "/" + ISL.sels[0]);
+var built = CMLRtl.buildLiveSheet([{ text: siteText }], {}, { islands: ISL.sels });
+var bare = CMLRtl.buildLiveSheet([{ text: siteText }]);
+var H = document.documentElement;
+var ltr = ITEMS.map(rel), twv0 = rel(TWV);
+check("★ بُنيت الورقة من CSS الموقع الاصطناعي (الحيّة)", "true", String(!!(built && built.css)));
+var st = document.createElement("style"); st.textContent = built ? built.css : ""; document.head.appendChild(st);
+H.setAttribute("dir", "rtl"); H.setAttribute("data-cml-rtl", "live"); H.setAttribute("data-cml", "on");
+var live = ITEMS.map(rel), twv1 = rel(TWV);
+ITEMS.forEach(function (it, k) {
+  check((it.mode === "mirror" ? "★ مرآة: " : "★ مساواة الأصل: ") + it.name, it.mode, verdict(it, ltr[k], live[k]));
+});
+// ★ (ر24-ب4) الحدّ المعروف: الإزاحة الموروثة من خارج الجزيرة تبقى مقلوبة داخلها (30px في الأصل ⇒ ‎-30px‎ داخل الجزيرة LTR)
+check("حدٌّ معروف (RULES §1): متغيّر الإزاحة المعلن خارج جزيرة الورقة النقطية والمستعمل داخلها يرث المقلوب", "30/-30",
+  Math.round(twv0.l) + "/" + Math.round(twv1.l));
+// ★ (ر24-ب4) إثبات أن تمرير الجزر هو الفاعل: الورقة نفسها بلا جزر الورقة النقطية تقلب القيمة الفيزيائية داخلها
+st.textContent = bare ? bare.css : "";
+var noIsl = ITEMS.map(rel), flippedIn = 0, ptN = 0;
+ITEMS.forEach(function (it, k) { if (!it.pt) return; ptN++; if (verdict(it, ltr[k], noIsl[k]) !== "equal") flippedIn++; });
+check("بلا تمرير جزر الورقة النقطية: التحويلات والإزاحات الفيزيائية داخلها تنقلب (أربع حالاتٍ في السياقين، والجذر)", "9/33", flippedIn + "/" + ptN);
+// ★ (ر24-ب4) وحين يسقط شرط الجزيرة (بوابة html للورقة النقطية) تعود مرآةً كسائر الصفحة: الاستثناء يتبع محدِّد الجزيرة بشرطه
+st.textContent = built ? built.css : "";
+H.removeAttribute("data-cml");
+var off = ITEMS.map(rel), offBad = [];
+ITEMS.forEach(function (it, k) { if (it.pt && it.ci !== 99 && verdict({ mode: "mirror", el: it.el, frame: it.frame }, ltr[k], off[k]) !== "mirror") offBad.push(it.name); });
+check("شرط الجزيرة ساقطٌ (لا بوابة html): ما في جزيرة الورقة النقطية مرآةٌ كسائر الصفحة", "0", offBad.length + (offBad.length ? " (" + offBad.slice(0, 3).join("؛ ") + ")" : ""));
+H.setAttribute("data-cml", "on");
+// الورقة نفسها ببوابة المشحونة (v2): النتيجة نفسها
+st.textContent = built ? built.css.split(CMLRtl.LIVE_GATE).join(CMLRtl.GATE) : "";
+H.setAttribute("data-cml-rtl", "v2");
+var v2 = ITEMS.map(rel), bad = [];
+ITEMS.forEach(function (it, k) { if (verdict(it, ltr[k], v2[k]) !== it.mode) bad.push(it.name); });
+check("★ ببوابة v2 (الورقة المشحونة): الحالات كلها كما في الحيّة", "0", bad.length + (bad.length ? " (" + bad.slice(0, 3).join("؛ ") + ")" : ""));
+// وبلا بوابةٍ يعود الأصل
+H.removeAttribute("data-cml-rtl"); H.removeAttribute("data-cml"); H.setAttribute("dir", "ltr");
+var back = ITEMS.map(rel), drift = 0;
+ITEMS.forEach(function (it, k) { if (!(near(back[k].l, ltr[k].l) && near(back[k].w, ltr[k].w))) drift++; });
+check("بلا البوابة تعود الهندسة كلها إلى الأصل", "0", drift);
+document.title = "mirror " + pass + "/" + total;
+var h = document.createElement("p");
+h.className = pass === total ? "ok" : "bad";
+h.textContent = "MIRROR: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+document.body.appendChild(h);
+</script>

@@ -1,0 +1,207 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>batch test</title>
+<!--
+  ★ (ر24-ج2، ١٠ جمادى الأولى ١٤٤٨هـ) دفعة الطفرات:
+   ١) مراجعة Codex AD-001 — جذور الدفعة: أصغرُ مجموعةٍ من العقد المضافة تغطّيها. دفعةٌ كبيرة في مهمةٍ واحدة (آباءٌ وأبناؤهم وأحفادهم، وإخوةٌ، وعقدةٌ
+      أُضيفت ثم أُزيلت، وأخرى أُضيفت ثم أُزيلت ثم أُعيدت، وعقدةُ نصٍّ في أبٍ مضاف، وسلسلةٌ بعمق 40): كلُّ عقدةٍ يمرّ بها المشي مرّةً واحدة (عدّادٌ على
+      مرشِّح المشي)، والناتج هو ناتجُ المرور الكامل على الشجرة نفسها (الإطفاء ثم التشغيل) حرفًا بحرف — والمقارنة بالمحرّك السابق في تقرير المرحلة.
+   ٢) ما حملته ر24-ج1 — عنصرٌ معرَّب (لا عقدةُ نصٍّ مجرّدة) نُقل إلى محادثةٍ أو إلى حاوٍ قابلٍ للتحرير: يُرجع ما كتبناه فيه نصًّا وسمة، ومنه جذرٌ جديد فيه
+      محادثةٌ نُقل إليها عنصرٌ في الدفعة نفسها؛ والضابط: المنقول إلى حاوٍ عاديّ يبقى معرَّبًا. وجوابٌ يُبثّ في المحادثة (2,000 قطعة نصُّها من القاموس) لا
+      يُعرَّب منه شيء. وجاسوسٌ عامّ على القراءة (نموذج _blockprotspytest): 0 قراءةٍ لنصّ المستخدم في المحادثة والمحرِّر.
+  العقد: document.title = "batch N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right;word-break:break-word}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}#arena,#streamBox{max-height:60px;overflow:hidden}</style>
+<div id="arena"></div>
+<div id="src"><span id="mvA">Settings</span><span id="mvB">New chat</span><span id="mvC">Search</span><span id="mvD">Help</span><span id="mvE" title="Share">Copy</span></div>
+<div id="src2"><span id="mvF">Retry</span><span id="mvG">Rename</span><span id="mvH">Cancel</span><span id="mvI">Upgrade</span><span id="mvK">Upgrade</span></div>
+<div class="prose" id="chatDst"><p>Zqsentinel user message</p></div>
+<div id="edDst" contenteditable="true"><p>Zqsentinel user draft</p></div>
+<div id="plainDst"></div>
+<div id="islWrap"><div id="islBox" contenteditable="true"><p><span contenteditable="false" id="islS">Edit</span></p></div></div>
+<div class="prose" id="streamBox"></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>
+var jsErrors = 0; window.onerror = function () { jsErrors++; };
+// عدّاد الزيارات: كل نداءٍ لمرشِّح مشيٍ بالعناصر والنصوص (مشي walk) لكل عقدة — يُركَّب قبل المحرّك
+var VISITS = new Map(), COUNT = false, CTW = Document.prototype.createTreeWalker;
+Document.prototype.createTreeWalker = function (root, what, filter) {
+  if (COUNT && filter && typeof filter.acceptNode === "function" && what === (NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT)) {
+    var f = filter.acceptNode;
+    filter = { acceptNode: function (n) { VISITS.set(n, (VISITS.get(n) || 0) + 1); return f.call(this, n); } };
+  }
+  return CTW.call(this, root, what, filter);
+};
+// الجاسوس العامّ: كل getter يقرأ نصًّا، وكل عنصرٍ يحوي نصَّ المستخدم (فتُرى قراءة السلف)
+var SENT = new Set(), SPY_ON = false, HITS = {};
+function hit(where, t) {
+  if (!SPY_ON) return;
+  var ok = false;
+  if (t && t.nodeType === 3) ok = SENT.has(t);
+  else if (t && t.contains) SENT.forEach(function (s) { if (!ok && t !== s && t.contains(s)) ok = true; });
+  if (ok) HITS[where] = (HITS[where] || 0) + 1;
+}
+[[Node.prototype, "nodeValue"], [CharacterData.prototype, "data"], [Node.prototype, "textContent"], [HTMLElement.prototype, "innerText"],
+ [Element.prototype, "innerHTML"], [Element.prototype, "outerHTML"], [Text.prototype, "wholeText"], [HTMLElement.prototype, "outerText"]].forEach(function (x) {
+  var d = Object.getOwnPropertyDescriptor(x[0], x[1]); if (!d || !d.get) return;
+  Object.defineProperty(x[0], x[1], { configurable: true, enumerable: d.enumerable, get: function () { hit(x[1], this); return d.get.call(this); }, set: d.set });
+});
+function spyReport() { return JSON.stringify(HITS) === "{}" ? "0" : JSON.stringify(HITS); }
+["chatDst", "edDst"].forEach(function (id) {
+  var w = document.createTreeWalker(document.getElementById(id), NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) SENT.add(t);
+});
+</script>
+<link rel="stylesheet" href="../extension/base.css">
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dictionary.js"></script>
+<script src="_chrome-mock.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true, cml_chatrtl: false });
+window.chrome = MOCK.chrome;
+SPY_ON = true;
+</script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function $(id) { return document.getElementById(id); }
+var BIDI = new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + String.fromCharCode(0x200E) + String.fromCharCode(0x200F) + "]", "g");
+function quiet(fn) { var was = SPY_ON; SPY_ON = false; try { return fn(); } finally { SPY_ON = was; } }
+function txt(el) { return quiet(function () { return el.textContent.replace(BIDI, ""); }); }
+function master(on) { MOCK.localStore.cml_enabled = on; MOCK.fireChanged({ cml_enabled: { newValue: on } }, "local"); }
+var KEYS = ["Settings", "New chat", "Search", "Help", "Upgrade", "Share", "Copy", "Retry", "Edit", "Delete", "Rename", "Cancel", "Save"];
+(async function () {
+  await wait(500);
+  check("الإقلاع: العناصر المنقولة لاحقًا معرَّبة (نصًّا وسمة)", "الإعدادات|محادثة جديدة|بحث|المساعدة|نسخ|مشاركة",
+        [$("mvA"), $("mvB"), $("mvC"), $("mvD"), $("mvE")].map(txt).join("|") + "|" + $("mvE").getAttribute("title").replace(BIDI, ""));
+  // ١) AD-001: دفعةٌ كبيرة في مهمةٍ واحدة
+  VISITS.clear(); COUNT = true;
+  var arena = $("arena"), Ps = [], added = 0;
+  for (var i = 0; i < 60; i++) {
+    var P = document.createElement("div"); arena.appendChild(P); Ps.push(P); added++;
+    for (var j = 0; j < 6; j++) {
+      var C = document.createElement("span"); P.appendChild(C);
+      C.appendChild(document.createTextNode(KEYS[(i + j) % KEYS.length]));
+      var G = document.createElement("b"); G.setAttribute("title", KEYS[(i * 3 + j) % KEYS.length]); C.appendChild(G);
+      G.appendChild(document.createTextNode(KEYS[(i * 7 + j) % KEYS.length]));
+      added += 4;
+    }
+  }
+  for (var s = 0; s < 40; s++) { var S = document.createElement("span"); S.textContent = KEYS[s % KEYS.length]; arena.appendChild(S); added++; }
+  var R = document.createElement("span"); R.textContent = "Settings"; arena.appendChild(R); arena.removeChild(R);
+  var X = document.createElement("span"); X.textContent = "Cancel"; arena.appendChild(X); arena.removeChild(X); Ps[1].appendChild(X);
+  var Y = document.createElement("span"); Y.textContent = "Rename"; arena.appendChild(Y); arena.removeChild(Y); arena.appendChild(Y);
+  Ps[2].appendChild(document.createTextNode("Save"));
+  var deep = arena;
+  for (var k = 0; k < 40; k++) { var L = document.createElement("div"); deep.appendChild(L); L.appendChild(document.createTextNode(KEYS[k % KEYS.length])); deep = L; }
+  await wait(1200);
+  COUNT = false;
+  var all = [], tw = CTW.call(document, arena, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, null), n, maxV = 0, multi = 0, unseen = 0;
+  while ((n = tw.nextNode())) all.push(n);
+  all.forEach(function (x) { var v = VISITS.get(x) || 0; if (v > maxV) maxV = v; if (v > 1) multi++; if (x.nodeType === 3 && v === 0) unseen++; });
+  check("★ (ر24-ج2، AD-001) دفعةٌ كبيرة متداخلة (آباءٌ وأبناءٌ وأحفاد، وإخوة، ومُزالٌ لا يُمسّ، ومُعادٌ مرّتين، ونصٌّ في أبٍ مضاف، وسلسلةٌ بعمق 40): كلُّ عقدةٍ يمرّ بها المشي مرّةً واحدة",
+        "1|0|0|" + all.length + "|Settings", maxV + "|" + multi + "|" + unseen + "|" + all.length + "|" + txt(R));
+  var H1 = quiet(function () { return arena.innerHTML; }), tr1 = (H1.match(/الإعدادات|بحث|نسخ|حفظ|إلغاء/g) || []).length;
+  // المرجع: المرور الكامل على الشجرة نفسها (الإطفاء يُرجع الإنجليزية كلّها، والتشغيل يمشي الصفحة كلّها)
+  master(false);
+  var EN = quiet(function () { return /[؀-ۿ]/.test(arena.textContent) || /[؀-ۿ]/.test(arena.innerHTML); });
+  master(true);
+  await wait(300);
+  var H2 = quiet(function () { return arena.innerHTML; });
+  check("★ (ر24-ج2، AD-001) وناتج الدفعة هو ناتج المرور الكامل على الشجرة نفسها حرفًا بحرف (نصوصًا وسمات)، والإطفاء بينهما يُرجعها كلَّها", "true|true|false",
+        (H1 === H2) + "|" + (tr1 > 300) + "|" + EN);
+  // ٢ب) جزيرةٌ غير قابلةٍ للتحرير داخل حاوٍ قابل (كما يعرّبها مسار العقدة: أبوها غير قابل): إعادةُ إدراج الحاوي لا تُرجعها — الإرجاع كقاعدة translateText
+  var isl = $("islS").firstChild; quiet(function () { isl.nodeValue = "Delete"; });
+  await wait(700);
+  var islBefore = txt(isl.parentNode), islW = 0, islO = new MutationObserver(function (l) { islW += l.length; });
+  islO.observe(isl, { characterData: true });
+  $("islBox").parentNode.appendChild($("islBox"));
+  await wait(900);
+  islO.disconnect();
+  check("والضابط: جزيرةٌ غير قابلةٍ للتحرير داخل حاوٍ قابل معرَّبةٌ بمسار العقدة تبقى معرَّبةً بعد إعادة إدراج الحاوي بلا كتابةٍ فيها ولو عابرة (الإرجاع لنصٍّ أبوه قابلٌ للتحرير وحده، كقاعدة translateText)", "حذف|حذف|0", islBefore + "|" + txt(isl.parentNode) + "|" + islW);
+  // ٢) عنصرٌ معرَّب نُقل إلى محادثةٍ أو إلى حاوٍ قابلٍ للتحرير
+  $("chatDst").appendChild($("mvA"));
+  $("edDst").appendChild($("mvB"));
+  var W = document.createElement("div"), CC = document.createElement("div"); CC.className = "prose"; W.appendChild(CC);
+  document.body.appendChild(W); CC.appendChild($("mvC"));
+  $("chatDst").appendChild($("mvE"));
+  $("plainDst").appendChild($("mvD"));
+  await wait(900);
+  check("★ (ر24-ج2) عنصرٌ معرَّب نُقل إلى محادثةٍ يُرجع نصُّه وسمتُه (title)، ونُقل إلى حاوٍ قابلٍ للتحرير يُرجع نصُّه",
+        "Settings|Copy|Share|New chat", [$("mvA"), $("mvE")].map(txt).join("|") + "|" + $("mvE").getAttribute("title") + "|" + txt($("mvB")));
+  check("★ (ر24-ج2) وجذرٌ جديد فيه محادثةٌ نُقل إليها عنصرٌ معرَّب في الدفعة نفسها: يُرجع (المشي يُرجع ما يرفضه في الدفعة)", "Search", txt($("mvC")));
+  check("والضابط: المنقول إلى حاوٍ عاديّ يبقى معرَّبًا", "المساعدة", txt($("mvD")));
+  // ٢ج) (المراجعة المستقلة لـر24-ج2) العقدة المغطّاة لا تُسقط إلا إن بلغها مشيُ سلفها: (أ) محرِّرٌ فيه جزيرةٌ غير قابلةٍ للتحرير أُدرج في الدفعة داخل جذرٍ
+  // أُدرج فيها قبله — المحرّك السابق كان يمشي المحرِّر وحده فيعرّب الجزيرة، ومشيُ السلف يرفض المحرِّر كلَّه؛ (ب) عنصرٌ معرَّب نُقل إلى ‎<pre>‎ تحت
+  // ‎.ProseMirror‎ مع جذرٍ جديد — المشي يرفض ‎<pre>‎ وسمًا متخطًّى قبل المستثنى فلا يُرجعه
+  var W3 = document.createElement("div"); document.body.appendChild(W3);
+  var ctl3 = document.createElement("span"); ctl3.textContent = "Upgrade"; W3.appendChild(ctl3);
+  var E3 = document.createElement("div"); E3.setAttribute("contenteditable", "true");
+  var I3 = document.createElement("span"); I3.setAttribute("contenteditable", "false"); I3.textContent = "Upgrade"; E3.appendChild(I3);
+  W3.appendChild(E3);
+  var W4 = document.createElement("div"), PM4 = document.createElement("div"), PRE4 = document.createElement("pre");
+  PM4.className = "ProseMirror"; PM4.setAttribute("contenteditable", "false"); PM4.appendChild(PRE4); W4.appendChild(PM4);
+  document.body.appendChild(W4); PRE4.appendChild($("mvD"));
+  await wait(900);
+  check("★ (مراجعة ر24-ج2، AD-001) جزيرةٌ غير قابلةٍ للتحرير في محرِّرٍ أُدرج مع سلفه في الدفعة نفسها تُعرَّب كما عرّبها المحرّك السابق (كالضابط بجوارها)",
+        "true|true", (txt(ctl3) !== "Upgrade") + "|" + (txt(I3) === txt(ctl3)));
+  check("★ (مراجعة ر24-ج2) وعنصرٌ معرَّب نُقل إلى ‎<pre>‎ تحت ‎.ProseMirror‎ مع جذرٍ جديدٍ في الدفعة نفسها: يُرجع", "Help", txt($("mvD")));
+  // ٢د) (المراجعة المستقلة لـر24-ج2) عناصرُ معرَّبة نُقلت إلى محادثةٍ وإلى محرِّرٍ وإلى كتلةٍ تحت ‎.ProseMirror‎ داخل فرعٍ مفصول، ثم أُلحق الفرع: لا سجلَّ
+  // إضافةٍ لها هي (النقل إلى المفصول لا يُرى)، فمشيُ الجذر وحده يُرجعها بما يرفضه (walkPruned)
+  var F5 = $("mvF"), G5 = $("mvG"), H5 = $("mvH");
+  var D5 = document.createElement("div"), C5 = document.createElement("div"), E5 = document.createElement("div"), P5 = document.createElement("div"), B5 = document.createElement("p");
+  C5.className = "prose"; E5.setAttribute("contenteditable", "true"); P5.className = "ProseMirror"; P5.setAttribute("contenteditable", "false"); P5.appendChild(B5);
+  D5.appendChild(C5); D5.appendChild(E5); D5.appendChild(P5);
+  C5.appendChild(F5); E5.appendChild(G5); B5.appendChild(H5);
+  await wait(300);
+  document.body.appendChild(D5);
+  await wait(900);
+  check("★ (مراجعة ر24-ج2) عنصرٌ معرَّب نُقل داخل فرعٍ مفصول إلى محادثةٍ وإلى محرِّرٍ وإلى كتلةٍ تحت ‎.ProseMirror‎ ثم أُلحق الفرع: يُرجع كلٌّ منها", "Retry|Rename|Cancel", [F5, G5, H5].map(txt).join("|"));
+  // ٢هـ) (ر24-هـ — ما حملته ر24-ج2، «حالة وسم التخطّي أولًا») عنصرٌ معرَّب نُقل داخل فرعٍ مفصول إلى ‎<pre>‎ مباشرةً تحت ‎.ProseMirror‎ ثم أُلحق الفرع: المشي يرفض
+  // ‎<pre>‎ وسمًا متخطًّى قبل المستثنى فكان لا يُرجعه (ولا المحرّك السابق)؛ والضابط بالبناء نفسه في محرِّرٍ بلا الصنف (‎<pre>‎ نصّ موقع) يبقى كما كان
+  var I6 = $("mvI"), K6 = $("mvK");
+  check("والعنصران معرَّبان قبل النقل", "true|true", (txt(I6) !== "Upgrade") + "|" + (txt(K6) !== "Upgrade"));
+  var D6 = document.createElement("div"), P6 = document.createElement("div"), R6 = document.createElement("pre"), Q6 = document.createElement("div"), S6 = document.createElement("pre");
+  P6.className = "ProseMirror"; P6.setAttribute("contenteditable", "false"); P6.appendChild(R6);
+  Q6.className = "PlainMirror"; Q6.setAttribute("contenteditable", "false"); Q6.appendChild(S6);
+  D6.appendChild(P6); D6.appendChild(Q6);
+  R6.appendChild(I6); S6.appendChild(K6);
+  await wait(300);
+  document.body.appendChild(D6);
+  await wait(900);
+  check("★ (ر24-هـ) عنصرٌ معرَّب نُقل داخل فرعٍ مفصول إلى ‎<pre>‎ مباشرةً تحت ‎.ProseMirror‎ ثم أُلحق الفرع: يُرجع من سجلّاتنا", "Upgrade", txt(I6));
+  check("★ (ر24-هـ، AD-005) والضابط: ‎<pre>‎ بالبناء نفسه في محرِّرٍ بلا الصنف يبقى كما كان (معرَّبًا)", "true", txt(K6) !== "Upgrade");
+  // جوابٌ يُبثّ في المحادثة: 2,000 قطعةٍ نصُّها من القاموس في 20 مهمّة
+  var box = $("streamBox"), pp = null;
+  for (var b = 0; b < 20; b++) {
+    for (var c = 0; c < 100; c++) {
+      if (c % 10 === 0) { pp = document.createElement("p"); box.appendChild(pp); }
+      var sp = document.createElement("span"); sp.appendChild(document.createTextNode(KEYS[(b + c) % KEYS.length])); pp.appendChild(sp);
+      SENT.add(sp.firstChild);
+    }
+    await wait(16);
+  }
+  await wait(900);
+  var streamedAr = quiet(function () { return /[؀-ۿ]/.test(box.textContent); });
+  check("★ (ر24-ج2) جوابٌ يُبثّ في المحادثة (2,000 قطعة نصُّها من القاموس): لا يُعرَّب منه شيء", "false|2000", streamedAr + "|" + box.getElementsByTagName("span").length);
+  check("★ (ر24-ج2) ولا يُقرأ نصُّ المستخدم في المحادثة ولا في المحرِّر ولا في الجواب المبثوث بأي getter ولا بسلفٍ يحويه (الإقلاع والدفعة والنقل والبثّ)", "0", spyReport());
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "batch " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "BATCH: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

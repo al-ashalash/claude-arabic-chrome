@@ -235,6 +235,9 @@
 
   // ---- التعقيم (مراجعة الأمن) ------------------------------------------------
   var LANG_RE = /^[a-z]{2,3}(?:-[A-Za-z]{2,4})?$/;
+  // ★ (ر29-ي) حدُّ المزامنة وحدها لتصحيح المستخدم (300 للنص و600 للترجمة)، لا حدُّ ما يُحفظ: التصحيح الأطول يُحفظ على الجهاز (editLocal بلا حدّ طول)
+  // ولا يُرفع، ويبقى محليًّا بعد كل دمج (withLocalExtras). ويبقى الحدّ كما هو لأن معقِّم أجهزة 1.0.0 و2.0.0 يُسقط ما فوقه من اللقطة، فلو رُفع
+  // الطويل لدفعت تلك الأجهزة لقطةً بدونه ومتّجهُها يغطّي نقطته، فيُعدّ «حُذف عن علم» فيُحذف من الجهاز الذي كتبه
   var TEXT_CAP = (C && C.TEXT_MAX) || 300;
   // lim (اختياري، لكل مساحة): {keyMax, valMax, keyRe} — مساحة الفقرات مفاتيحُها بصماتٌ وقيمُها قوالب طويلة
   function sanitizePayload(payload, lim) {
@@ -899,7 +902,7 @@
         return pGetLocal(env, [L.overrides, L.patterns, K.SYNC_GEN]).then(function (r) {
           if (typeof gen === "number" && (r[K.SYNC_GEN] || 0) !== gen) return { stale: true };
           var res = g.CMLShared.applyTermEdits(r[L.overrides], r[L.patterns], lang, ops,
-            { textMax: LIM ? Math.ceil(LIM.valMax / 2) : TEXT_CAP, maxTerms: C.IMPORT_MAX_TERMS, maxRules: C.IMPORT_MAX_RULES,
+            { textMax: LIM ? Math.ceil(LIM.valMax / 2) : Infinity, maxTerms: C.IMPORT_MAX_TERMS, maxRules: C.IMPORT_MAX_RULES, // ★ (ر29-ي) تصحيح الواجهة بلا حدّ طول
               keyRe: LIM && LIM.keyRe });
           var w = {};
           if (res.ovChanged) w[L.overrides] = res.overrides;

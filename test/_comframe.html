@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<script>
+  // أصل الملفات قبل نقل العنوان إلى مسار الصفحة: الروابط النسبية أدناه تُحسم به لا بالمسار الجديد
+  document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');
+  // الخادم كتب لغةً أخرى في <html lang> من البداية (صفحةٌ بغير الإنجليزية) — حارس siteLang
+  document.documentElement.lang = "xx";
+</script>
+<title>Zq Plans | Claude by Anthropic</title>
+<!--
+  إطار اختبارٍ لصفحة _comtest.html (claude.com، ر15) — ليس صفحة اختبارٍ بنفسه، والصفحة الأم تقرأ window.state():
+  com مشحونٌ (status يبدّله الإطار قبل المحرّك، كما يبدّله CM-د في الجدول) و<html lang> بلغةٍ أخرى من البداية على مسارٍ مترجَم بعينه:
+  خاملٌ بحارس لغة الموقع (meta.siteLang) — لا سمة ولا إمساك ولا تعريب ولا عنوان. (وخمول النطاق القادم في الصفحة العليا _cominerttest.html:
+  النافذة لا تسأل إلا الإطار الأعلى.) محتوى اصطناعي من صنع المشروع يحاكي بنية claude.com.
+-->
+<link rel="stylesheet" href="../extension/base.css">
+<body>
+<header data-cta-section="nav" id="nav"><a href="#" id="navA">Pricing</a></header>
+<main id="main-content"><h1 id="h1">Zq Plans</h1><p id="p1">Pricing</p></main>
+<footer data-cta-section="footer"><span id="ft">Pricing</span></footer>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var CM = CMLConst.domain("com");
+CM.status = { full: true };
+var CALLS = { get: 0 };
+var MOCK = makeChromeMock({ session: false, sendMessage: function (m, cb) { if (cb) cb(null); } });
+var realGet = MOCK.chrome.storage.local.get;
+MOCK.chrome.storage.local.get = function () { CALLS.get++; return realGet.apply(this, arguments); };
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "com", meta: Object.assign({}, CM.meta, { live: false }), default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Pricing": "أسعارٌ تجريبية", "Zq Plans": "خططٌ تجريبية" }, patterns: [], plurals: {} } } };
+// المسار مترجَمٌ بعينه في القائمة المولَّدة (حارس المسار يرى location.pathname قبل المحرّك)
+history.replaceState({}, "", "/pricing");
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+setTimeout(function () { document.body.appendChild(document.createElement("next-route-announcer")); }, 150);
+window.state = function () {
+  var H = document.documentElement;
+  return {
+    attrs: ["dir", "lang", "data-cml", "data-cml-boot", "data-cml-hold", "data-cml-route", "data-cml-font", "data-cml-rtl", "data-cml-body"]
+      .map(function (a) { return String(H.getAttribute(a)); }).join("|"),
+    text: ["navA", "h1", "p1", "ft"].map(function (i) { return document.getElementById(i).textContent; }).join("|"),
+    title: document.title, gets: CALLS.get, vis: getComputedStyle(H).visibility, errors: jsErrors
+  };
+};
+</script>

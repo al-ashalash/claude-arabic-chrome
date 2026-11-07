@@ -2,9 +2,11 @@
 // تفحص: المانيفست (بنيته، صلاحياته المقتصرة على storage، وجود كل ملف يشير إليه)،
 // ومصنوعات محرّك الاتجاه، والخطوط العربية المحزومة (fonts.mjs)، وألّا يتسرب ملفٌ ممنوع إلى مجلد الإضافة،
 // ★ (ر8-ب) ومطابقةَ قائمتي المعاجم والمصادر في «حول» وREADME لملف المصادر حيث يوجد (check-sources.mjs).
-//   node verify-package.mjs [--release]
+//   node verify-package.mjs [--release] [--final]
 // مع --release (تمرّره make-store-zip و make-release وسير الإصدار) يصير كل فحصٍ معلَّق خطأً،
 // فلا تُحزم حزمةٌ خطوطها بلا معايرة أو قيمها مبدئية (provisional).
+// ★ (ر24-و) ‎--final‎ (ويتضمّن --release): الإصدار الذي يُنشر — يرفض باسمه كل نطاقٍ قادم له مطابقةٌ في المانيفست، وكل صنف مسارٍ قادم حُقن قاموسه
+// (PLAN §٧ الخطر 3: لا مطابقة خاملة في إصدار). يطلبه المسار الحقيقي لـmake-release (الذي يكتب بنية النشر) وتشغّله ر28؛ وبوابات اليوم بلا --final كما هي
 import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
@@ -13,8 +15,10 @@ import { EXT, GLOSSARY } from "./paths.mjs";
 import { siwarViolations, siwarCsvViolations, proseViolations, loadAdopted, docsCsvFiles } from "./siwar-lib.mjs";
 import { verifyFonts } from "./fonts.mjs";
 import { checkSources } from "./check-sources.mjs";
+import { translatesNothing, inertInRelease } from "./domain-arg.mjs";
 
-const RELEASE = process.argv.includes("--release");
+const FINAL = process.argv.includes("--final");
+const RELEASE = process.argv.includes("--release") || FINAL;
 const errs = [];
 function need(cond, msg) { if (!cond) errs.push(msg); }
 function exists(rel) { return fs.existsSync(path.join(EXT, rel)); }
@@ -42,7 +46,8 @@ for (const k of ["optional_permissions", "optional_host_permissions", "externall
 // يمرّ من هنا بالتصريح.
 await import(pathToFileURL(path.join(EXT, "cml-const.js")).href);
 const DOMAINS = globalThis.CMLConst.DOMAINS;
-const SNAPSHOTS = ["rtl-overrides.css", "rtl-intercom.css", "rtl-docs.css", "rtl-code.css", "rtl-legal.css", "rtl-academy.css"];
+// ★ (مراجعة ر16-أ) وrtl-com.css لقطة claude.com، فيُعدّ في «أكثر من لقطة اتجاه» كسائر اللقطات
+const SNAPSHOTS = ["rtl-overrides.css", "rtl-intercom.css", "rtl-docs.css", "rtl-code.css", "rtl-legal.css", "rtl-academy.css", "rtl-com.css"];
 const seenDomains = new Set();
 for (const cs of mf.content_scripts || []) {
   need(Array.isArray(cs.matches) && cs.matches.length > 0, "content_scripts بلا matches");
@@ -51,7 +56,9 @@ for (const cs of mf.content_scripts || []) {
   if (!dom) { errs.push("مدخلٌ لا يطابق نطاقًا في الجدول: " + JSON.stringify(cs.matches)); continue; }
   need(!seenDomains.has(dom.id), "نطاقٌ بمدخلين: " + dom.id);
   seenDomains.add(dom.id);
-  const wantJs = ["cml-const.js", "cml-shared.js", "cml-rtl.js"].concat(dom.id === "app" ? ["rtl-coverage.js"] : [], ["cml-font.js", dom.dict, "engine.js"]);
+  // ★ (ر20-أ) وقاموس كل صنف مسارٍ مشحون بعد قاموس النطاق (لوحة المطوّرين في مدخل الوثائق)، والقادم لا يُحقن
+  const classDicts = globalThis.CMLConst.routeClasses(dom.id).filter((c) => !globalThis.CMLConst.classUpcoming(c)).map((c) => c.dict);
+  const wantJs = ["cml-const.js", "cml-shared.js", "cml-rtl.js"].concat(dom.id === "app" ? ["rtl-coverage.js"] : [], ["cml-font.js", dom.dict], classDicts, ["engine.js"]);
   need(JSON.stringify(cs.js) === JSON.stringify(wantJs), dom.id + ": ترتيب السكربتات ليس الإلزامي: " + JSON.stringify(cs.js));
   need(Array.isArray(cs.css) && cs.css[0] === "base.css", dom.id + ": base.css أولًا (يعلن الطبقات) — وجدت: " + JSON.stringify(cs.css));
   need((cs.css || []).filter((c) => SNAPSHOTS.includes(c)).length <= 1, dom.id + ": أكثر من لقطة اتجاه");
@@ -65,9 +72,42 @@ for (const cs of mf.content_scripts || []) {
     vm.runInNewContext(src, ctx, { timeout: 20000 });
     const payload = ctx.CLAUDE_L10N || null;
     need(payload && payload.domain === dom.id, dom.id + ": قاموسه " + dom.dict + " لا يعلن نطاقه");
+    // ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) نطاقٌ مشحون (لا status.upcoming) يلزمه ما يعرّبه، وإلا قلبت الإضافة صفحاته الإنجليزية بلا تعريب: فتبديلُ صيغة
+    // status وحدها قبل أن يُشحن القاموس (claude.com في CM-د) يُرفض هنا. والنطاق القادم يُشحن بقاموسٍ فارغ ومحرّكُه خامل
+    if (payload && !globalThis.CMLConst.upcoming(dom.id))
+      need(!translatesNothing(payload), dom.id + ": نطاقٌ مشحون بلا قاموسٍ ولا فقرات — أبقه قادمًا (status.upcoming) حتى يُشحن قاموسه");
   } catch (e) { errs.push(dom.id + ": تعذّر فحص قاموسه " + dom.dict + ": " + e.message); }
+  // ★ (ر20-أ، ١٢ جمادى الأولى ١٤٤٨هـ) قاموس كل صنف مسار (لوحة المطوّرين في مدخل الوثائق): ملفُّه حاضرٌ ويعلن نطاقه وصنفه. والصنف المشحون (لا
+  // status.upcoming) يلزمه ما يعرّبه كالنطاق المشحون، فشحنُ صنفٍ قبل قاموسه يُرفض هنا لا يُشحن صامتًا.
+  // ★ (ر20-ج، ١٢ جمادى الأولى ١٤٤٨هـ) والمحرّك يبدّل القاموس والبيانات بالمسار منذ ر20-ج (engine.js setView وswapView)، فلا يُفحص نصُّه بعد اليوم
+  // (كان الحاجز يرفض الصنف المشحون ما دام المحرّك يحكم على مساره بالخمول). والحاجز للصنف المشحون ثلاثة: قاموسٌ يعرّب شيئًا (هنا)، وقاموسُه محقونٌ في
+  // مدخل نطاقه بعد قاموس النطاق وقبل المحرّك (ترتيب السكربتات أعلاه؛ وبلاه يبقى مساره خاملًا في المحرّك)، ومحدِّدات محتوى مستخدمه في بياناته المبنيّة
+  // (meta.skipSel): منظر الصنف لا يأخذ من صفّ النطاق إلا حقول المضيف (CONST.CLASS_HOST_META)، فصنفٌ بلا محدِّداتٍ يعرّب محتوى المستخدم بلا حماية
+  for (const cls of globalThis.CMLConst.routeClasses(dom.id)) {
+    try {
+      const ctx = {}; ctx.globalThis = ctx;
+      vm.runInNewContext(fs.readFileSync(path.join(EXT, cls.dict), "utf8"), ctx, { timeout: 20000 });
+      const p = ctx.CLAUDE_L10N_CLASSES && ctx.CLAUDE_L10N_CLASSES[cls.id];
+      need(!!p && p.domain === dom.id && p.routeClass === cls.id, dom.id + "/" + cls.id + ": قاموسه " + cls.dict + " لا يعلن نطاقه وصنفه");
+      if (p && !globalThis.CMLConst.classUpcoming(cls)) {
+        need(!translatesNothing(p), dom.id + "/" + cls.id + ": صنفٌ مشحون بلا قاموس — أبقه قادمًا (status.upcoming) حتى يُشحن قاموسه");
+        need(!!(p.meta && typeof p.meta.skipSel === "string" && p.meta.skipSel.trim()),
+             dom.id + "/" + cls.id + ": صنفٌ مشحون بلا محدِّدات محتوى المستخدم في بياناته (meta.skipSel) — منظر الصنف لا يرثها من النطاق");
+      }
+    } catch (e) { errs.push(dom.id + "/" + cls.id + ": تعذّر فحص قاموس الصنف " + cls.dict + ": " + e.message); }
+  }
 }
-for (const d of DOMAINS) need(seenDomains.has(d.id), "نطاقٌ في الجدول بلا مدخلٍ في المانيفست: " + d.id);
+// ★ (ر28-ب، ٢٠ جمادى الأولى ١٤٤٨هـ — السؤال 2 على افتراضه) كل نطاقٍ مشحون له مدخله؛ والقادم (status.upcoming) محجوبٌ عن المانيفست كما يبنيه build.mjs
+// (manifest-entry.mjs ‏packageEntries)، فلا يُعلن مضيفُه حتى يُشحن بقاموسه. ومدخلُه إن وُجد يُفحص فوق كغيره، ويرفضه ‎--final‎ باسمه أدناه
+for (const d of DOMAINS) if (!globalThis.CMLConst.upcoming(d.id)) need(seenDomains.has(d.id), "نطاقٌ مشحون في الجدول بلا مدخلٍ في المانيفست: " + d.id);
+// ★ (ر24-و، PLAN §٧ الخطر 3) الإصدار النهائي لا يحمل مطابقةً خاملة: نطاقٌ قادم له مدخل، أو صنفُ مسارٍ قادم حُقن قاموسه — بالاسم
+if (FINAL) {
+  for (const x of inertInRelease(mf, globalThis.CMLConst)) {
+    errs.push(x.kind === "domain"
+      ? x.id + ": نطاقٌ قادم (status.upcoming) له مطابقةٌ في المانيفست (" + x.matches.join(" ") + ") — الإصدار النهائي لا يحمل مطابقةً خاملة (PLAN §٧ الخطر 3): اشحنه بقاموسه، أو احجب صفّه ومطابقته معًا"
+      : x.id + ": صنفُ مسارٍ قادم حُقن قاموسه " + x.dict + " في المانيفست — الإصدار النهائي لا يحمله (PLAN §٧ الخطر 3)");
+  }
+}
 need(!mf.permissions.some((p) => /^(?:https?|file|ftp):|^\*|^<all_urls>$/.test(p)), "نطاق مضيف مدسوس في permissions");
 need(mf.background && mf.background.service_worker === "sw.js", "background.service_worker يجب أن يكون sw.js");
 
@@ -255,4 +295,4 @@ if (errs.length) {
   for (const e of errs) console.error("  - " + e);
   process.exit(1);
 }
-console.log(`✓ الحزمة سليمة${RELEASE ? " للإصدار" : ""}: الإصدار ${mf.version} | صلاحيات [storage] | ${refs.length} ملفًا مُشارًا إليه كلها موجودة${fontsSummary}`);
+console.log(`✓ الحزمة سليمة${FINAL ? " للإصدار النهائي (لا نطاق قادم بمطابقة)" : RELEASE ? " للإصدار" : ""}: الإصدار ${mf.version} | صلاحيات [storage] | ${refs.length} ملفًا مُشارًا إليه كلها موجودة${fontsSummary}`);

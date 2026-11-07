@@ -5,9 +5,12 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { ROOT } from "./paths.mjs";
+import { testRoute } from "./cdp-lib.mjs";
+const routeHits = new Map(); // ★ (ر24-د2) مسارات اختبار التحويل لـ_rtldoctest، كخادم المشغّل
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8", ".png": "image/png" };
 
 http.createServer((req, res) => {
+  if (testRoute(req, res, routeHits)) return;
   // الحارسان نفسا حارسَي خادم مشغّل CDP (دحض مؤكد): ترميز مشوّه كان يقتل العملية،
   // وstartsWith بلا فاصلٍ لاحق كانت تُخرج مجلدًا شقيقًا يشارك البادئة
   let url;

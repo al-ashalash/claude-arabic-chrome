@@ -1,9 +1,13 @@
 // diff-engine.mjs — قياس التغطية بسلسلة المحرك نفسها (قاموس ← جموع ← قواعد)
 // (وُطّن من مساحة العمل المؤقتة في المرحلة ٠ — 2026-08-29)
 // فرز مطابق لسلسلة المحرّك: قاموس ← جموع ← أنماط (بدلالات %M/%W/%P/%C نفسها)
+// ★ (ر12، ٥ جمادى الأولى ١٤٤٨هـ — PLAN-3.0.0 E2) و%T<n> كالمحرّك: الالتقاط مفتاحٌ حرفيٌّ في القاموس (cml-shared litLookup) وإلا لم يطابق النمط
 import fs from "node:fs";
 import path from "node:path";
-import { ROOT, GLOSSARY, DICTS } from "./paths.mjs";
+import { pathToFileURL } from "node:url";
+import { ROOT, GLOSSARY, DICTS, EXT } from "./paths.mjs";
+await import(pathToFileURL(path.join(EXT, "cml-shared.js")).href);
+const SHARED = globalThis.CMLShared;
 const G = GLOSSARY;
 const AR = path.join(DICTS, 'ar.json');
 
@@ -29,7 +33,8 @@ function coveredByPattern(text) {
     let bad = false;
     p.ar.replace(/%M(\d)/g, (t, g) => { if (!MONTHS.has(m[+g])) bad = true; return t; })
         .replace(/%W(\d)/g, (t, g) => { if (!WDAYS.has(m[+g])) bad = true; return t; })
-        .replace(/%P(\d)/g, (t, g) => { if (!PERIODS.has(m[+g])) bad = true; return t; });
+        .replace(/%P(\d)/g, (t, g) => { if (!PERIODS.has(m[+g])) bad = true; return t; })
+        .replace(/%T(\d)/g, (t, g) => { if (SHARED.litLookup([strings], m[+g]) === undefined) bad = true; return t; });
     if (!bad) return true;
   }
   return false;

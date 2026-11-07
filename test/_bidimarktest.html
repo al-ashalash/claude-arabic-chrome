@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>bidimark test</title>
+<!--
+  ★ (ر12-ب، ٥ جمادى الأولى ١٤٤٨هـ — عيوب الفحص الحيّ لـت8، وبند ت7 «للاتساق لاحقًا») على صفحةٍ بهيئة منصة Intercom (وضع الكتلة والقطعة
+  وعلامات الإبقاء)، بالمحرّك الحقيقي وقياس مواضع الحروف في السطر:
+   M1) زوج «» تختلف حكما علامتيه في خوارزمية الاتجاه تُضاف له علامةٌ واحدة: «Open Claude» بعد «Extensions > Claude >» (LRM بعد الخاتمة) سليمٌ
+       على سطرٍ واحد وحين يلتفّ، و«إدارة SSO» يليها «> «Reset Connection»» (RLM بعد الخاتمة)، وعنوانٌ لاتيني يليه «، 2023» (RLM)، وفي نص واجهةٍ
+       «مضيف SSH» ثم «(user@host)»؛ والزوج المتّفق لا يُمسّ: العربي، واللاتيني بين عربيَّين، وما يحسمه قوسٌ حوله (N0).
+   M2) بنود قائمةٍ مرقّمة ترجمتُها كثيرة اللاتينية (li > div > p): كلُّ بندٍ RTL ورقمُه يمينًا، والقائمة وغلافها RTL؛ والبند الإنجليزي الذي لم
+       يُعرَّب يبقى لحكم نصّه.
+   L1) «*.Selected» تُرسم بترتيبها (LRM قبل «*»). L3) «+ Create» بين «» تُرسم بترتيبها (LRM قبل «+»)، و«المحادثة + Claude Code» بلا علامة.
+   L2) البند المُبقى اللاتيني كلُّه بين بنودٍ عربية: نقطته يمينًا كإخوته، ونصّه بترتيبه — الآمن (اسمٌ بلا ترقيمٍ في طرفيه) RTL، وغير الآمن (جملةٌ
+       تنتهي بنقطة) جزيرةٌ LTR داخل بندٍ RTL، والبند العربي من قاموس الواجهة (المسار الواحد) مثلهما؛ والفقرة المُبقاة الآمنة خارج القوائم
+       («Claude MSIX (x64)») RTL، وغير الآمنة LTR؛ والجدول الذي خلاياه كلُّها مُبقاة يبقى LTR.
+   L4) الشرطة المائلة في آخر مقطعٍ لاتيني في نص واجهة (المسار الواحد): «zqcommands/» لا «/zqcommands».
+   (مراجعة ر12-ب) وطرفان متناظران لا يُعلَّم أحدهما وحده: «*Zq*» في متنٍ يُرسم «*Zq*» لا «**Zq»، و«/zq/bin/» بعد كلمةٍ عربية في نص واجهة
+       يُرسم «/zq/bin/» لا «zq/bin//». وصفُّ لافتاتٍ مُبقًى (ألسنةٌ بلا نصٍّ بينها، كألسنة أمثلة الشيفرة) يبقى لحكم نصّه: LTR بترتيبه،
+       و«C#» لا «#C».
+   ثم: لا تقاذف بعد الاستقرار، والإطفاء يعيد المتن حرفًا بحرف.
+  العقد: document.title = "bidimark N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+.fx p{margin:4px 0;font-size:16px}</style>
+<div id="__next"><div dir="ltr" id="wrap">
+  <h1 id="title">Bidi marks test page</h1>
+  <div class="article_body"><article id="art" class="fx">
+    <!-- M1 -->
+    <p id="q1" style="white-space:nowrap">Go to Extensions > Claude > Open Claude:</p>
+    <p id="q1n" style="width:min-content">Go to Extensions > Claude > Open Claude:</p>
+    <p id="q2" style="white-space:nowrap">Click Manage SSO > Reset Connection.</p>
+    <p id="q3" style="white-space:nowrap">Choose Settings, then Privacy.</p>
+    <p id="q4" style="white-space:nowrap">Click Settings, then continue.</p>
+    <p id="q5" style="white-space:nowrap">Doe et al., Zq Benchmark, 2023.</p>
+    <p id="q6" style="white-space:nowrap">Contracts with Anthropic, PBC (Anthropic) apply.</p>
+    <!-- L1 وL3 -->
+    <p id="m1" style="white-space:nowrap">Use the Sites.Selected permission pattern for sites.</p>
+    <p id="m3" style="white-space:nowrap">Click Create, then pick iOS.</p>
+    <p id="m3b" style="white-space:nowrap">Chat plus Claude Code seats.</p>
+    <p id="m1c" style="white-space:nowrap">Use Zq emphasis for italics.</p>
+    <!-- M2: بنود قائمةٍ مرقّمة ترجمتُها كثيرة اللاتينية، وبندٌ إنجليزي لم يُعرَّب -->
+    <div class="intercom-interblocks-ordered-nested-list" id="olw"><ol id="ol2">
+      <li id="li21"><div class="intercom-interblocks-paragraph"><p>Under Target Platforms, choose Desktop/Mobile:</p></div></li>
+      <li id="li22"><div class="intercom-interblocks-paragraph"><p>In Profile Settings, set Minimum Display Version to 18, then press Next:</p></div></li>
+      <li id="li23"><div class="intercom-interblocks-paragraph"><p>Search for Zq Sample Application and click Select below.</p></div></li>
+      <li id="li24"><div class="intercom-interblocks-paragraph"><p>Click Next, then review.</p></div></li>
+    </ol></div>
+    <div class="intercom-interblocks-ordered-nested-list" id="olw2"><ol id="ol3">
+      <li id="li25"><div class="intercom-interblocks-paragraph"><p>This English item was not translated and stays as it is.</p></div></li>
+    </ol></div>
+    <!-- L2: بنودٌ مُبقاة بين بندٍ عربي، وفقرتان مُبقاتان خارج القوائم -->
+    <div class="intercom-interblocks-unordered-nested-list" id="ulw"><ul id="ul3">
+      <li id="li31"><div class="intercom-interblocks-paragraph"><p id="p31">Claude Code</p></div></li>
+      <li id="li32"><div class="intercom-interblocks-paragraph"><p id="p32">Zq and Zx plans</p></div></li>
+      <li id="li33"><div class="intercom-interblocks-paragraph"><p id="p33">Claude Platform (API)</p></div></li>
+      <li id="li34"><div class="intercom-interblocks-paragraph"><p id="p34">This sentence stays in English.</p></div></li>
+    </ul></div>
+    <table id="tK"><tbody><tr><td id="tdK1"><p>Free</p></td><td id="tdK2"><p>Pro</p></td></tr></tbody></table>
+    <div id="tabsK" role="tablist"><button id="tb1">Zq</button><button id="tb2">C#</button><button id="tb3">Zx</button></div>
+    <p id="pK1">Claude MSIX (x64)</p>
+    <p id="pK2">Keep this English sentence as it is.</p>
+  </article></div>
+  <!-- خارج المتن: نصوص واجهة (المسار الواحد، bidiWrap) -->
+  <div id="ui" class="fx"><p><span id="u1">Uses the old zqcommands/ layout.</span></p><p><span id="u2">Check the user in SSH Host (user@host).</span></p><p><span id="u3">Move the zq tool to its folder.</span></p></div>
+</div></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script>CMLConst.HYDRATE_MAX_MS = 60000; CMLConst.HOLD_MAX_MS = 60000; CMLConst.HOLD_ABS_MS = 60000;</script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var META = { scan: "none", live: false, chat: false, hydrate: "defer", intercom: true, bodies: true, isoLabels: true,
+             dirSel: ".article_body article, h1", bodySel: ".article_body" };
+var TR = {
+  "Go to Extensions > Claude > Open Claude:": "انتقل إلى Extensions > Claude > «Open Claude»:",
+  "Click Manage SSO > Reset Connection.": "انقر «إدارة SSO» > «Reset Connection».",
+  "Choose Settings, then Privacy.": "اختر «الإعدادات» ثم «الخصوصية».",
+  "Click Settings, then continue.": "انقر «Settings» ثم تابع.",
+  "Doe et al., Zq Benchmark, 2023.": "Doe وآخرون، «Zq: A Sample Reasoning Benchmark»، 2023.",
+  "Contracts with Anthropic, PBC (Anthropic) apply.": "تسري العقود مع Anthropic, PBC («Anthropic») عليك.",
+  "Use the Sites.Selected permission pattern for sites.": "استعمل أذونات *.Selected للمواقع.",
+  "Click Create, then pick iOS.": "انقر «+ Create» ثم اختر iOS.",
+  "Chat plus Claude Code seats.": "مقاعد المحادثة + Claude Code.",
+  "Use Zq emphasis for italics.": "استعمل *Zq* للخط المائل.",
+  "Under Target Platforms, choose Desktop/Mobile:": "ضمن Target Platforms، اختر «Desktop/Mobile»:",
+  "In Profile Settings, set Minimum Display Version to 18, then press Next:": "في Profile Settings، اضبط Minimum Display Version على 18، ثم اضغط «Next»:",
+  "Search for Zq Sample Application and click Select below.": "ابحث عن «Zq Sample Application» وانقر «Select» في الأسفل.",
+  "Click Next, then review.": "انقر «التالي»، ثم راجِع.",
+};
+var ORIG = document.querySelector(".article_body").innerHTML;
+var HV = CMLShared.harvestBlocks(document, { body: META.bodySel });
+var BLOCKS = {}, hvTpl = {};
+HV.forEach(function (h) { hvTpl[h.tpl] = h; if (Object.prototype.hasOwnProperty.call(TR, h.tpl)) BLOCKS[h.fp] = TR[h.tpl]; });
+// علامات الإبقاء (keep) في القطعة: الاسمان الآمنان، والجملتان غير الآمنتين
+var KEPT = ["Claude Code", "Claude Platform (API)", "This sentence stays in English.", "Claude MSIX (x64)", "Keep this English sentence as it is.", "Free", "Pro",
+            "<s1>Zq</s1><s2>C#</s2><s3>Zx</s3>"];
+var KEEP = KEPT.map(function (t) { return CMLShared.blockFp(t); });
+var BODY_DELAY = 300;
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) {
+  if (!msg || msg.type !== "bodies") { if (cb) cb(null); return; }
+  setTimeout(function () { if (cb) cb({ page: CMLShared.pageKey(META, msg.path), blocks: BLOCKS, keep: KEEP }); }, BODY_DELAY);
+} });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "privacy", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Bidi marks test page": "صفحة اختبار علامات الاتجاه",
+    "Zq and Zx plans": "خطتا Zq وZx",
+    "Uses the old zqcommands/ layout.": "تستخدم تخطيط zqcommands/ القديم.",
+    "Check the user in SSH Host (user@host).": "تحقّق من المستخدم في «مضيف SSH» (user@host).",
+    "Move the zq tool to its folder.": "انقل الأداة إلى /zq/bin/ ثم أعد التشغيل." }, patterns: [], plurals: {} } } };
+</script>
+<link rel="stylesheet" href="../extension/base.css">
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function $(id) { return document.getElementById(id); }
+var LRM = String.fromCharCode(0x200E), RLM = String.fromCharCode(0x200F), OPEN = String.fromCharCode(0xAB), CLOSE = String.fromCharCode(0xBB);
+var MARKS = new RegExp("[" + String.fromCharCode(0x200E, 0x200F) + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g");
+var SKIPCH = new RegExp("[\\s" + String.fromCharCode(0x200E, 0x200F) + "]"), BIDICH = new RegExp("[" + String.fromCharCode(0x200E, 0x200F) + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]");
+function bare(s) { return String(s).replace(MARKS, "").replace(/\s+/g, " ").trim(); }
+function txt(id) { return bare($(id).textContent); }
+function tn(id) { var w = document.createTreeWalker($(id), NodeFilter.SHOW_TEXT), n; while ((n = w.nextNode())) if (/\S/.test(n.nodeValue)) return n; return null; }
+function rect(n, i) { var r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + 1); return r.getBoundingClientRect(); }
+// زوجُ «» رقم k في عقدة النص سليمٌ على سطره؟ الحروف بين العلامتين في السطر هي محتواه بعينه لا غير
+function pairIntact(id, k) {
+  var n = tn(id); if (!n) return "(لا نص)";
+  var v = n.nodeValue, a = -1, z = -1, seen = 0;
+  for (var i = 0; i < v.length; i++) { if (v[i] === OPEN && seen++ === k) a = i; if (a >= 0 && v[i] === CLOSE) { z = i; break; } }
+  if (a < 0 || z < 0) return "(لا زوج)";
+  var ra = rect(n, a), rz = rect(n, z), lo = Math.min(ra.left, rz.left), hi = Math.max(ra.right, rz.right);
+  if (Math.abs(ra.top - rz.top) > 3) return false;
+  for (var j = 0; j < v.length; j++) {
+    if (j === a || j === z || SKIPCH.test(v[j])) continue;
+    var r = rect(n, j); if (!(r.width > 0) || Math.abs(r.top - ra.top) > 3) continue;
+    var cx = (r.left + r.right) / 2;
+    if ((j > a && j < z) !== (cx > lo && cx < hi)) return false;
+  }
+  return true;
+}
+// المقطع sub في عقدة النص (بلا علامات) يُرسم حروفُه من اليسار إلى اليمين بترتيبها؟
+function inOrder(id, sub) {
+  var n = tn(id); if (!n) return "(لا نص)";
+  var v = n.nodeValue, pos = [], b = "";
+  for (var i = 0; i < v.length; i++) if (!BIDICH.test(v[i])) { pos.push(i); b += v[i]; }
+  var at = b.indexOf(sub); if (at < 0) return "(لا مقطع)";
+  var xs = []; for (var k = 0; k < sub.length; k++) if (sub[k] !== " ") xs.push(rect(n, pos[at + k]).left);
+  for (k = 1; k < xs.length; k++) if (!(xs[k] > xs[k - 1])) return false;
+  return true;
+}
+// (مراجعة ر12-ب) حروف المقطع sub (بلا علامات) مرتّبةً بمواضعها في السطر من اليسار إلى اليمين: ما تراه العين
+function drawn(id, sub) {
+  var n = tn(id); if (!n) return "(لا نص)";
+  var v = n.nodeValue, pos = [], b = "";
+  for (var i = 0; i < v.length; i++) if (!BIDICH.test(v[i])) { pos.push(i); b += v[i]; }
+  var at = b.indexOf(sub); if (at < 0) return "(لا مقطع)";
+  var xs = []; for (var k = 0; k < sub.length; k++) xs.push([rect(n, pos[at + k]).left, sub[k]]);
+  xs.sort(function (p, q) { return p[0] - q[0]; });
+  return xs.map(function (p) { return p[1]; }).join("");
+}
+function dirOf(id) { return getComputedStyle($(id)).direction; }
+
+(async function () {
+  check("★ الحاصد يستخرج قوالب الترجمات والإبقاء كلها من الصفحة الخام", "0",
+        Object.keys(TR).concat(KEPT).filter(function (t) { return !hvTpl[t]; }).length);
+  await wait(300);
+  document.body.appendChild(document.createElement("next-route-announcer"));
+  await wait(BODY_DELAY + 1200);
+  check("★ وصلت القطعة: المتن معرَّب", "انتقل إلى Extensions > Claude > «Open Claude»:/null", txt("q1") + "/" + document.documentElement.getAttribute("data-cml-hold"));
+
+  // ===== M1 =====
+  var q1 = tn("q1").nodeValue;
+  check("★ (ر12-ب، M1) «Open Claude» بعد «Extensions > Claude >»: علامة LRM بعد الخاتمة، والزوج سليمٌ على سطره (بين علامتيه محتواه وحده)",
+        "true/true", (q1.indexOf("«Open Claude»" + LRM + ":") >= 0) + "/" + pairIntact("q1", 0));
+  (function () {
+    // ملتفًّا كلُّ كلمةٍ في سطر (عرض min-content، كما انقسم على 390): الخاتمة في سطر «Claude» يمينَه، والفاتحة في سطر «Open» يسارَه
+    var n = tn("q1n"), v = n ? n.nodeValue : "", a = v.indexOf(OPEN), z = v.indexOf(CLOSE), o = v.indexOf("Open"), c = v.lastIndexOf("Claude");
+    var got = "(لا نص)";
+    if (a >= 0 && z >= 0 && o >= 0 && c >= 0) {
+      var ra = rect(n, a), rz = rect(n, z), ro = rect(n, o), rc = rect(n, c + 5);
+      got = (Math.abs(rz.top - rc.top) < 3 && rz.left >= rc.right - 0.5) + "/" + (Math.abs(ra.top - ro.top) < 3 && ra.right <= ro.left + 0.5);
+    }
+    check("★ (ر12-ب، M1) والفقرة ملتفّة: الخاتمة في سطر «Claude» ملاصقةٌ يمينَه، والفاتحة في سطر «Open» ملاصقةٌ يسارَه", "true/true", got);
+  })();
+  var q2 = tn("q2").nodeValue;
+  check("★ (ر12-ب، M1) «إدارة SSO» يليها «> «Reset Connection»»: علامة RLM بعد خاتمة الأول، والزوجان سليمان",
+        "true/true/true", (q2.indexOf("«إدارة SSO»" + RLM + " >") >= 0) + "/" + pairIntact("q2", 0) + "/" + pairIntact("q2", 1));
+  var q5 = tn("q5").nodeValue;
+  check("★ (ر12-ب، M1) عنوانٌ لاتيني بين «» يليه «، 2023» (رقمٌ صار لاتينيًّا بعد اللاتيني): علامة RLM بعد الخاتمة، والزوج سليم",
+        "true/true", (q5.indexOf("Benchmark»" + RLM + "،") >= 0) + "/" + pairIntact("q5", 0));
+  check("★ (ر12-ب، M1) الزوج المتّفق لا يُمسّ: العربي، واللاتيني بين عربيَّين، وما يحسمه قوسٌ حوله — النص كما في القالب حرفًا، والأزواج سليمة",
+        "true/true/true/true/true/true/true",
+        [tn("q3").nodeValue === TR["Choose Settings, then Privacy."], tn("q4").nodeValue === TR["Click Settings, then continue."],
+         tn("q6").nodeValue === TR["Contracts with Anthropic, PBC (Anthropic) apply."], pairIntact("q3", 0), pairIntact("q3", 1), pairIntact("q4", 0), pairIntact("q6", 0)].join("/"));
+
+  // ===== L1 وL3 =====
+  check("★ (ر12-ب، L1) «*.Selected»: علامة LRM قبل «*»، ويُرسم بترتيبه (لا «Selected.*»)", "true/true",
+        (tn("m1").nodeValue.indexOf(LRM + "*.Selected") >= 0) + "/" + inOrder("m1", "*.Selected"));
+  check("★ (ر12-ب، L3) «+ Create» بين «»: علامة LRM قبل «+»، ويُرسم بترتيبه (لا «Create +»)، والزوج سليم", "true/true/true",
+        (tn("m3").nodeValue.indexOf("«" + LRM + "+ Create»") >= 0) + "/" + inOrder("m3", "+ Create") + "/" + pairIntact("m3", 0));
+  (function () {
+    // زائدٌ بعد كلمةٍ ومسافة رابطٌ لا بادئة: بلا علامة، ويُرسم بين الكلمتين (يمين «Code» ويسار «المحادثة»)
+    var n = tn("m3b"), v = n.nodeValue, p = v.indexOf("+"), e = v.indexOf("Code") + 3, h = v.indexOf("المحادثة");
+    var rp = rect(n, p);
+    check("★ (ر12-ب، L3) «المحادثة + Claude Code»: لا علامة، والزائد بين الكلمتين في السطر", "false/true",
+          (v.indexOf(LRM) >= 0) + "/" + (rp.left >= rect(n, e).right - 0.5 && rp.right <= rect(n, h + 7).right + 0.5 && rp.left < rect(n, h).left));
+  })();
+  check("★ (مراجعة ر12-ب، L1) «*Zq*» تشديدٌ لا بادئة: لا علامة قبل «*»، والطرفان متناظران حول الكلمة («*Zq*» لا «**Zq»)", "false|*Zq*",
+        (tn("m1c").nodeValue.indexOf(LRM) >= 0) + "|" + drawn("m1c", "*Zq*"));
+
+  // ===== M2 =====
+  var ol = $("ol2"), olcs = getComputedStyle(ol);
+  check("★ (ر12-ب، M2) بنود قائمةٍ مرقّمة ترجمتُها كثيرة اللاتينية: كلُّ بندٍ RTL، والقائمة وغلافها RTL وحشوة الأرقام يمينًا",
+        "rtl,rtl,rtl,rtl/rtl/rtl/true",
+        ["li21", "li22", "li23", "li24"].map(dirOf).join(",") + "/" + dirOf("ol2") + "/" + dirOf("olw") + "/" +
+        (parseFloat(olcs.paddingRight) > 0 && parseFloat(olcs.paddingLeft) === 0));
+  check("(ر12-ب، M2) والبند الإنجليزي الذي لم يُعرَّب يبقى لحكم نصّه (LTR)", "ltr/This English item was not translated and stays as it is.",
+        dirOf("li25") + "/" + txt("li25"));
+
+  // ===== L2 =====
+  var ul = getComputedStyle($("ul3"));
+  check("★ (ر12-ب، L2) بنودٌ مُبقاة بين بندٍ عربي: كلُّ بندٍ RTL ونقطته يمينًا كإخوته، والقائمة وغلافها RTL",
+        "rtl,rtl,rtl,rtl/rtl/rtl/true", ["li31", "li32", "li33", "li34"].map(dirOf).join(",") + "/" + dirOf("ul3") + "/" + dirOf("ulw") + "/" +
+        (parseFloat(ul.paddingRight) > 0 && parseFloat(ul.paddingLeft) === 0));
+  check("★ (ر12-ب، L2) المُبقى الآمن («Claude Code» و«Claude Platform (API)») RTL ونصّه بترتيبه وكما هو، وغير الآمن (جملةٌ بنقطة) LTR بترتيبه",
+        "rtl/rtl/ltr/true/true/true/Claude Code|Claude Platform (API)|This sentence stays in English.",
+        [dirOf("p31"), dirOf("p33"), dirOf("p34"), inOrder("p31", "Claude Code"), inOrder("p33", "Claude Platform (API)"), inOrder("p34", "in English.")].join("/") + "/" +
+        [tn("p31").nodeValue, tn("p33").nodeValue, tn("p34").nodeValue].join("|"));
+  check("★ (ر12-ب، L2) والفقرة المُبقاة الآمنة خارج القوائم («Claude MSIX (x64)») RTL بترتيبها، وغير الآمنة LTR", "rtl/true/ltr/true",
+        [dirOf("pK1"), inOrder("pK1", "Claude MSIX (x64)"), dirOf("pK2"), inOrder("pK2", "as it is.")].join("/"));
+
+  check("★ (ر12-ب، L2) وجدولٌ خلاياه كلُّها مُبقاةٌ إنجليزية يبقى على حاله LTR (اتجاه الجدول ترتيب أعمدته): العمود الأول يسار الثاني",
+        "ltr/true", dirOf("tK") + "/" + ($("tdK1").getBoundingClientRect().left < $("tdK2").getBoundingClientRect().left));
+  (function () {
+    var x1 = $("tb1").getBoundingClientRect().left, x2 = $("tb2").getBoundingClientRect().left, x3 = $("tb3").getBoundingClientRect().left;
+    check("★ (مراجعة ر12-ب، L2) صفُّ لافتاتٍ مُبقًى (ألسنةٌ بلا نصٍّ بينها) يبقى لحكم نصّه: LTR بترتيبه، و«C#» لا «#C»", "ltr/true/true",
+          dirOf("tabsK") + "/" + (x1 < x2 && x2 < x3) + "/" + inOrder("tb2", "C#"));
+  })();
+
+  // ===== L4 وM1 في نص واجهة (المسار الواحد) =====
+  check("★ (ر12-ب، L4) نص واجهة: «zqcommands/» تليه علامة LRM ويُرسم بترتيبه (لا «/zqcommands»)", "true/true/تستخدم تخطيط zqcommands/ القديم.",
+        (tn("u1").nodeValue.indexOf("zqcommands/" + LRM + " ") >= 0) + "/" + inOrder("u1", "zqcommands/") + "/" + txt("u1"));
+  check("★ (مراجعة ر12-ب، L4) نص واجهة: «/zq/bin/» بعد كلمةٍ عربية: لا علامة بعد الشرطة الأخيرة، ويُرسم «/zq/bin/» كما يُقرأ (لا «zq/bin//»)",
+        "false|/zq/bin/", (tn("u3").nodeValue.indexOf("/" + LRM) >= 0) + "|" + drawn("u3", "/zq/bin/"));
+  check("★ (ر12-ب، M1) نص واجهة: «مضيف SSH» ثم «(user@host)»: علامة RLM بعد الخاتمة، والزوج سليم، والقوسان وحدةٌ بترتيبها", "true/true/true",
+        (tn("u2").nodeValue.indexOf("«مضيف SSH»" + RLM) >= 0) + "/" + pairIntact("u2", 0) + "/" + inOrder("u2", "(user@host)"));
+
+  // ===== الثبات والإطفاء =====
+  var muts = 0, mo = new MutationObserver(function (l) { muts += l.length; });
+  mo.observe($("wrap"), { subtree: true, childList: true, characterData: true, attributes: true });
+  await wait(800);
+  mo.disconnect();
+  check("★ (ر12-ب) لا تقاذف بعد الاستقرار (اتجاهٌ ولا نص)", "0", muts);
+  var ch = {}; ch["cml_site.privacy"] = { newValue: false }; MOCK.localStore["cml_site.privacy"] = false;
+  MOCK.fireChanged(ch, "local");
+  await wait(500);
+  check("★ (ر12-ب) الإطفاء يعيد المتن كما كان حرفًا بحرف (العلامات والاتجاه)", "true", document.querySelector(".article_body").innerHTML === ORIG);
+  check("والإطفاء يعيد نصَّي الواجهة", "Uses the old zqcommands/ layout.|Check the user in SSH Host (user@host).", $("u1").textContent + "|" + $("u2").textContent);
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "bidimark " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "BIDIMARK: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

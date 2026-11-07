@@ -15,7 +15,7 @@
  * @typedef {Object} CmlRule            قاعدة ذكية (نمط ديناميكي)
  * @property {string} en   النص الإنجليزي الأصلي بمتغيراته {name} — للتوثيق والفرز
  * @property {string} re   تعبير نمطي مصدره en: ثوابت مهروبة و(.+?) لكل متغير، بمرساتي ^$
- * @property {string} ar   القالب العربي: $1..$9 مجموعات، و%M/%W/%P/%C رموز المحرك
+ * @property {string} ar   القالب العربي: $1..$9 مجموعات، و%M/%W/%P/%C/%T رموز المحرك (fillPattern)
  *
  * @typedef {Object} CmlScanResult      نتيجة «تحديث المصدر — فحص الموقع»
  * @property {"running"|"done"|"error"|"cancelled"} status
@@ -26,7 +26,9 @@
  * @property {number} [shown]   المعروض في القائمتين بعد القص
  * @property {string[]} [list]     غير المترجَم الثابت
  * @property {string[]} [varList]  غير المترجَم ذو المتغيرات
- * @property {boolean} [capped] قُصّت القائمتان عند SCAN_CAP
+ * @property {boolean} [capped] قُصّت القائمتان عند SCAN_MAX_BYTES (★ ر29-ز: حدّ حجمٍ لا عدد، ولا حالة له اليوم)
+ * @property {number} [omitted] ما بقي خارج القائمتين عند القصّ (يُقال في الإعدادات وملف «أمر الترجمة»)
+ * @property {number} [omittedVars] ومنه ما فيه متغيّرات
  * @property {number} at        نبض آخر تحديث — غيابه أو تقادمه = فحص متعثر
  * @property {number} [seconds] زمن الفحص الكلي
  * @property {string} [error]
@@ -69,6 +71,21 @@
     t = t.replace(/\\[\s\S]|"/g, function (x) { return x === '"' ? '\\"' : x; });
     try { return JSON.parse('"' + t + '"'); } catch (e) { return null; }
   }
+  /**
+   * ★ (ر29-ي) فكُّ حرفيّة القالب (`…`) بلا استيفاء — نُقلت من harvest-live.mjs (templateToQuoted) فصار للماسح وأداة الحصاد مصدرٌ واحد:
+   * هروبُ ` و$ و' يُفكّ (JSON لا يعرفه) بتمريرةٍ ذرّية تبتلع كل هروبٍ بأكمله، ووصلُ السطر (\ ثم سطر) يُحذف كما في اللغة،
+   * والأسطر الخام تصير \n والجدولة \t (JSON يرفض محارف التحكم الخام)، ثم يفكّ unescapeLiteral الباقي كحرفيّةٍ بعلامتي اقتباس.
+   * والحرفية التي فيها ‎${‎ لا تصل إلى هنا: تعبير الماسح لا يطابقها (نصُّها يُبنى وقت التشغيل فلا مفتاح ثابتًا له).
+   * @param {string} raw ما بين العلامتين المائلتين في الحزمة
+   * @returns {string|null} النص المفكوك، أو null إن تعذّر
+   */
+  function unescapeTemplate(raw) {
+    if (raw == null) return null;
+    var q = String(raw).replace(/\r\n?/g, "\n")
+      .replace(/\\([\s\S])/g, function (x, c) { return c === "`" || c === "$" || c === "'" ? c : c === "\n" ? "" : x; })
+      .replace(/\n/g, "\\n").replace(/\t/g, "\\t");
+    return unescapeLiteral(q, false);
+  }
 
   /**
    * توليد قاعدة ذكية من زوج {en, ar} — أو null إن لم تصلح قاعدةً آمنة.
@@ -76,9 +93,32 @@
    * ترتيب الحُرّاس هنا هو المرجع الوحيد — النسخ الأخرى أُميتت عمدًا.
    * @param {string} en  النص الإنجليزي بمتغيراته {name}
    * @param {string} ar  الترجمة العربية بالمتغيرات نفسها
+   * @param {{t?: string[]}} [opt]  (ر12) أسماء متغيّراتٍ التقاطُها مفتاحٌ حرفيٌّ في قاموس الموقع (‎%T<n>‎) — انظر dictVars
    * @returns {CmlRule|null}
    */
-  function makePattern(en, ar) {
+  // ★ (ر12، ٥ جمادى الأولى ١٤٤٨هـ — PLAN-3.0.0 E2) opt.t: متغيّراتٌ يُكتب لها ‎%T<n>‎ في العربية لا ‎$n‎ — المحرّك لا يقبل النمط إلا إن
+  // كان التقاطها مفتاحًا حرفيًّا في قاموس الموقع النشط فيضع عربيته، وإلا لم يطابق فيبقى النصّ إنجليزيًّا كلّه (fillPattern). فالتقاطٌ كهذا
+  // محدودٌ بالقاموس لا بشكله، والقاعدة: **قالبٌ متغيّراته كلُّها %T لا يُعدّ «عامًّا» لهذا السبب وحده** — فلا يُرفض لأنه محفوفٌ بمتغيّرين
+  // ولا لقِصَر ثابته (ناتجه عربيٌّ كلّه: ثابتُ القالب وعربيةُ مفاتيحَ مراجَعة)، ويبقى ما يمسّ الأمان كما هو: سقف المتغيّرات، والمتلاصقان،
+  // و‎$رقم‎، والمتغيّر المخترع، وثابتٌ غير فارغ. أما قالبٌ يخلط %T بمتغيّرٍ حرّ فتسري عليه الحرّاس كلها كما كانت: الحرّ يحمل الإنجليزية
+  // إلى ناتجٍ عربي. وحكمُ ما يُعرَّب بالقالب (لا تعرَّب أسماءٌ يكتبها المستخدم ولا محتواه) للمراجع لا للمولّد. وبلا opt فالسلوك كما كان
+  // ★ (مراجعة ر12) واسمٌ في opt.t غائبٌ من العربية يُرفض به الزوج كاسمٍ ليس في القالب: لا ‎%T‎ له في الناتج فلا يُطلب التقاطه في القاموس،
+  // فهو التقاطٌ حرٌّ بلا حدّ — وكان «Next: {title}» بعربيةٍ أسقطت {title} يُقبل بالحرّاس المخفَّفة فيبتلع كل «Next: …» ويمحو ما بعده
+  function dictVars(names, opt, ar) {
+    var t = opt && opt.t;
+    if (t === undefined || t === null) return [];
+    if (!Array.isArray(t)) return null;
+    for (var i = 0; i < t.length; i++) {
+      if (typeof t[i] !== "string" || names.indexOf(t[i]) < 0 || String(ar).indexOf("{" + t[i] + "}") < 0) return null;
+    }
+    return t;
+  }
+  function allDict(names, tv) {
+    if (!tv.length) return false;
+    for (var i = 0; i < names.length; i++) if (tv.indexOf(names[i]) < 0) return false;
+    return true;
+  }
+  function makePattern(en, ar, opt) {
     VAR_RE.lastIndex = 0;
     var names = [], m;
     while ((m = VAR_RE.exec(en))) names.push(m[1]);
@@ -89,15 +129,21 @@
     if (/\}[\s ]*\{/.test(en)) return null;
     // حارس رمز القالب: $رقم في الترجمة يُقرأ مجموعة ملتقطة فيفسد الناتج
     if (/\$\d/.test(ar)) return null;
+    var tv = dictVars(names, opt, ar);
+    if (tv === null) return null;                   // (ر12) اسمٌ في opt.t ليس متغيّرًا في القالب، أو (مراجعة ر12) غائبٌ من العربية
 
     var literal = en.replace(VAR_RE, "").trim();
-    if (literal.length < 6) return null;            // ثابت أقصر من أن يميّز
-    if (!/[A-Za-z]{3}/.test(literal)) return null;  // رموز بلا كلمات
+    if (allDict(names, tv)) {
+      if (!literal) return null;                    // (ر12) قالبٌ كلُّه %T: الحرّاس العامة أدناه لا تنطبق — ويلزمه ثابت
+    } else {
+      if (literal.length < 6) return null;          // ثابت أقصر من أن يميّز
+      if (!/[A-Za-z]{3}/.test(literal)) return null; // رموز بلا كلمات
 
-    // الأهم: الموضع لا الطول — نمط محفوف بمتغيرين من الطرفين بلا مرساة
-    // ("{a} of {b}" يطابق "Terms of Service")
-    var t = en.trim();
-    if (/^\{[A-Za-z_$][\w$]*\}/.test(t) && /\{[A-Za-z_$][\w$]*\}$/.test(t)) return null;
+      // الأهم: الموضع لا الطول — نمط محفوف بمتغيرين من الطرفين بلا مرساة
+      // ("{a} of {b}" يطابق "Terms of Service")
+      var t = en.trim();
+      if (/^\{[A-Za-z_$][\w$]*\}/.test(t) && /\{[A-Za-z_$][\w$]*\}$/.test(t)) return null;
+    }
 
     // كل متغير في العربية موجود في الإنجليزية (لا متغير مخترع)
     VAR_RE.lastIndex = 0;
@@ -115,7 +161,7 @@
 
     var arOut = ar.replace(VAR_RE, function (whole, name) {
       var pos = names.indexOf(name);
-      return pos < 0 ? whole : "$" + (pos + 1);
+      return pos < 0 ? whole : (tv.indexOf(name) >= 0 ? "%T" : "$") + (pos + 1);
     });
 
     try { new RegExp(re); } catch (e) { return null; }
@@ -136,7 +182,8 @@
   // بالتقاطٍ نصّي حوّل تحية الصفحة الرئيسية «Up late, …?» إلى «ارتفاع late, …?» — وقيمته نسبةٌ منسَّقة
   var NUMERIC_VAR = /^(count|n|num|number|total|percent|pct|percentage|amount|size|limit|days?|hours?|minutes?|mins?|seconds?|secs?|weeks?|months?|years?|remaining|used|max|min|index|position|price|cost|credits?|seats?|tokens?|quantity|qty|value|delta)$/i;
   var NUMERIC_CAP = "([^\\s]*\\d[^\\s]*)";
-  function makePatternBounded(en, ar) {
+  // (ر12) ومتغيّر %T (opt.t، كما في makePattern) يلتقط (.+?): حدُّه القاموس لا الشكل — عنوانُ درسٍ من خمس كلماتٍ يتجاوز أربعة رموز
+  function makePatternBounded(en, ar, opt) {
     VAR_RE.lastIndex = 0;
     var names = [], m;
     var t = String(en).trim();
@@ -144,22 +191,27 @@
     if (!names.length || names.length > 3) return null;
     if (/\}[\s\u00A0]*\{/.test(t)) return null;
     if (/\$\d/.test(ar)) return null;
+    var tv = dictVars(names, opt, ar);
+    if (tv === null) return null;
     var literal = t.replace(VAR_RE, "").trim();
-    if (!/[A-Za-z]{2}/.test(literal)) return null;
-    if (/^\{[A-Za-z_$][\w$]*\}/.test(t) && /\{[A-Za-z_$][\w$]*\}$/.test(t)) return null;
+    if (allDict(names, tv)) { if (!literal) return null; }
+    else {
+      if (!/[A-Za-z]{2}/.test(literal)) return null;
+      if (/^\{[A-Za-z_$][\w$]*\}/.test(t) && /\{[A-Za-z_$][\w$]*\}$/.test(t)) return null;
+    }
     VAR_RE.lastIndex = 0;
     var m2;
     while ((m2 = VAR_RE.exec(ar))) if (names.indexOf(m2[1]) < 0) return null;
     var re = "^", idx = 0, mm;
     VAR_RE.lastIndex = 0;
     while ((mm = VAR_RE.exec(t))) {
-      re += escapeRe(t.slice(idx, mm.index)) + (NUMERIC_VAR.test(mm[1]) ? NUMERIC_CAP : BOUNDED_CAP);
+      re += escapeRe(t.slice(idx, mm.index)) + (tv.indexOf(mm[1]) >= 0 ? "(.+?)" : NUMERIC_VAR.test(mm[1]) ? NUMERIC_CAP : BOUNDED_CAP);
       idx = mm.index + mm[0].length;
     }
     re += escapeRe(t.slice(idx)) + "$";
     var arOut = String(ar).trim().replace(VAR_RE, function (whole, name) {
       var pos = names.indexOf(name);
-      return pos < 0 ? whole : "$" + (pos + 1);
+      return pos < 0 ? whole : (tv.indexOf(name) >= 0 ? "%T" : "$") + (pos + 1);
     });
     try { new RegExp(re); } catch (e) { return null; }
     return { en: t, re: re, ar: arOut, b: 1 };
@@ -390,6 +442,19 @@
     return null;                                    // لم نجزم ⇒ اتركها لـdir="auto"
   }
 
+  // ★ (ر24-د2، مراجعة ر24-د F-05) ما يقبله «فحص الاتجاه» وفحص الحزم من روابط الصفحة: https وحدها، ومضيفُ الصفحة أو عائلتا claude.ai وanthropic.com.
+  // وhttp لأصل الصفحة نفسه حين تكون الصفحة نفسها http لا غير — صفحات الاختبار المحلية (127.0.0.1)؛ ومواقع Claude كلها https فلا يُقبل فيها http أبدًا
+  // (كان يُقبل http لكل مضيفٍ مسموح، بخلاف جلب عامل الخدمة hostOf الذي لا يقبل إلا https). يُرجع الرابط المطلق أو null.
+  function scanUrlOk(u, loc) {
+    try {
+      var p = new URL(u, loc.href);
+      if (p.protocol !== "https:" && !(p.protocol === "http:" && loc.protocol === "http:" && p.host === loc.host)) return null;
+      var h = p.hostname;
+      if (h === loc.hostname || /(^|\.)claude\.ai$/.test(h) || /(^|\.)anthropic\.com$/.test(h)) return p.href;
+    } catch (e) {}
+    return null;
+  }
+
   // ★ تعديلٌ جزئي للتصحيحات (مراجعة كودكس، ١-٠ج): الصفحة ترسل «ماذا تغيّر» لا الكائن كله،
   // ويطبّقه العامل على قراءةٍ طازجة تحت قفل دفتر المزامنة — فلا تكتب صفحةٌ فوق دمجٍ وقع بين
   // قراءتها وكتابتها. وهو المعقِّم الواحد للحفظ والإضافة والاستيراد (حدود النص كحدود المزامنة،
@@ -401,11 +466,14 @@
   function badKey(k) { return k === "__proto__" || k === "constructor" || k === "prototype"; }
   function applyTermEdits(overrides, patterns, lang, ops, lim) {
     lim = lim || {};
-    var textMax = lim.textMax || 300;
+    // ★ (ر29-ي، توجيه المالك) بلا حدّ طولٍ ما لم يمرّر المستدعي حدًّا (مساحة الفقرات تمرّر حدّها): كان الافتراض 300، وتصحيحُ نصِّ موقعٍ طويلٍ يُهمَل
+    var textMax = lim.textMax > 0 ? lim.textMax : Infinity;
     var maxTerms = lim.maxTerms || Infinity, maxRules = lim.maxRules || Infinity;
     var root = {}, k0;
     var src = overrides && typeof overrides === "object" && !Array.isArray(overrides) ? overrides : {};
-    for (k0 in src) if (hasOwn(src, k0)) root[k0] = src[k0];
+    // ★ (ر24-د2، مراجعة ر24-د) نسخُ المفاتيح المخزَّنة يتخطّى ‎__proto__‎ وconstructor وprototype (badKey، كما يرفضها «set»): مفتاحٌ ‎"__proto__"‎ مملوكٌ
+    // في المخزَّن (JSON.parse يصنعه مملوكًا) كان يُسنَد إلى كائنٍ عاديّ فيبدّل نموذجه، فتُقرأ لغةٌ موروثة كأنها مخزَّنة وتُرقّى إلى مملوكة في أول تعديل
+    for (k0 in src) if (hasOwn(src, k0) && !badKey(k0)) root[k0] = src[k0];
     var rep = { set: 0, del: 0, rule: 0, unrule: 0, capped: 0, skipped: 0 };
     var pats = Array.isArray(patterns) ? patterns.slice() : [];
     ops = Array.isArray(ops) ? ops : [];
@@ -415,7 +483,7 @@
     }
     var cur = root[lang] && typeof root[lang] === "object" && !Array.isArray(root[lang]) ? root[lang] : {};
     var ov = {};
-    for (k0 in cur) if (hasOwn(cur, k0)) ov[k0] = cur[k0];
+    for (k0 in cur) if (hasOwn(cur, k0) && !badKey(k0)) ov[k0] = cur[k0];
     var nTerms = Object.keys(ov).length, ovCh = false, patCh = false;
     for (var n = 0; n < ops.length; n++) {
       var o = ops[n];
@@ -473,11 +541,128 @@
     // ورسالة المستخدم ‎[data-testid="user-message"]‎ مشمولة، ومربع الكتابة قابلٌ للتحرير (isContentEditable) أو textarea.
     CHAT_ANCESTOR: ".prose, .font-claude-message, [data-testid*='user-message'], [data-testid*='message-content'], .standard-markdown, .progressive-markdown, .epitaxy-markdown",
   };
-  // مفتاح البحث من نصٍّ خام: القصّ وحده؛ وما فرغ أو تجاوز السقف فلا مفتاح له
+  // مفتاح البحث من نصٍّ خام: القصّ وحده؛ وما فرغ أو تجاوز السقف فلا مفتاح له. ★ (ر29-ي، توجيه المالك) وبلا سقفٍ ممرَّر فلا سقف (كان 300)
   function textKey(raw, max) {
     if (!raw) return null;
     var k = String(raw).trim();
-    return !k || k.length > (max || 300) ? null : k;
+    return !k || k.length > (max > 0 ? max : Infinity) ? null : k;
+  }
+
+  // ★ (ت14-هـ0ب، القرار 142) العدد بفاصلة الآلاف كما تكتبه الصفحة («1,000» و«12,345» و«1,000,000»): مداخل الجمع تلتقط أرقامًا وحدها (‎(\d+)‎)،
+  // وكذلك أنماط أقسام الجمع العربية (CAT_RE في merge-icu)، فكان «1,000 sessions» يبقى إنجليزيًّا. degroupDigits يُرجع المفتاح بأعدادٍ بلا فاصلة
+  // ({key, map}) أو null: عددٌ صحيحُ التجميع وحده (رقمٌ إلى ثلاثة ثم مجموعاتٌ من ثلاثة بالضبط)، لا يسبقه رقمٌ أو فاصلةٌ أو نقطة، ولا يليه رقمٌ
+  // أو «,رقم» أو «.رقم» (فلا يُمسّ «1,00» ولا «1,0000» ولا «1,000.5» ولا قائمةٌ «1,2,3»). والمحرّك لا يطلبه إلا للجموع والأنماط بعد إخفاق النصّ
+  // نفسه في السلسلة كلها، فلا يتغيّر حكم نصٍّ كان يُترجم؛ وregroupDigits يعيد كلَّ عددٍ في الناتج إلى صورته في الصفحة بترتيبه
+  var GROUPED_RE = /(^|[^\d,.])(\d{1,3}(?:,\d{3})+)(?!\d|[,.]\d)/g;
+  function degroupDigits(text) {
+    var s = String(text || "");
+    if (s.indexOf(",") < 0) return null;
+    var map = [];
+    var key = s.replace(GROUPED_RE, function (w, pre, num) { var plain = num.replace(/,/g, ""); map.push([plain, num]); return pre + plain; });
+    return map.length ? { key: key, map: map } : null;
+  }
+  function regroupDigits(out, dg) {
+    if (out === null || out === undefined || !dg) return out;
+    var s = String(out), from = 0;
+    for (var i = 0; i < dg.map.length; i++) {
+      var plain = dg.map[i][0], grouped = dg.map[i][1], at = -1, j = from;
+      while ((j = s.indexOf(plain, j)) >= 0) {
+        if (!/\d/.test(s.charAt(j - 1) || "") && !/\d/.test(s.charAt(j + plain.length) || "")) { at = j; break; }
+        j++;
+      }
+      if (at < 0) continue;                       // العربية تكتب العدد بغير أرقامه (صيغةٌ بلا عدد): يبقى ناتجها كما هو
+      s = s.slice(0, at) + grouped + s.slice(at + plain.length);
+      from = at + grouped.length;
+    }
+    return s;
+  }
+
+  // ★ (ر12) جداول رموز القالب المغلقة — نُقلت حرفًا بحرف من engine.js: الشهر (%M) واليوم (%W) وص/م (%P)، والأماكن (%C؛ غير الموجود يبقى
+  // كما ورد). مصدرٌ واحدٌ للمحرّك وللأدوات (patternRes)، فنمطٌ بشهرٍ لا يعرفه الجدول لا يطابق عند هذا ولا تلك
+  var PAT_MAPS = {
+    M: { Jan: "يناير", January: "يناير", Feb: "فبراير", February: "فبراير", Mar: "مارس", March: "مارس", Apr: "أبريل", April: "أبريل", May: "مايو", Jun: "يونيو", June: "يونيو", Jul: "يوليو", July: "يوليو", Aug: "أغسطس", August: "أغسطس", Sep: "سبتمبر", Sept: "سبتمبر", September: "سبتمبر", Oct: "أكتوبر", October: "أكتوبر", Nov: "نوفمبر", November: "نوفمبر", Dec: "ديسمبر", December: "ديسمبر" },
+    W: { Mon: "الاثنين", Monday: "الاثنين", Tue: "الثلاثاء", Tuesday: "الثلاثاء", Wed: "الأربعاء", Wednesday: "الأربعاء", Thu: "الخميس", Thursday: "الخميس", Fri: "الجمعة", Friday: "الجمعة", Sat: "السبت", Saturday: "السبت", Sun: "الأحد", Sunday: "الأحد" },
+    P: { AM: "صباحًا", PM: "مساءً" },
+    C: {
+      Riyadh: "الرياض", Jeddah: "جدة", Jiddah: "جدة", Mecca: "مكة المكرمة", Makkah: "مكة المكرمة",
+      Medina: "المدينة المنورة", Madinah: "المدينة المنورة", Dammam: "الدمام", Khobar: "الخبر",
+      Dhahran: "الظهران", Buraydah: "بريدة", Buraidah: "بريدة", Unaizah: "عنيزة", Tabuk: "تبوك",
+      Abha: "أبها", "Khamis Mushait": "خميس مشيط", Taif: "الطائف", "Ta'if": "الطائف",
+      Hail: "حائل", "Ha'il": "حائل", Najran: "نجران", Jazan: "جازان", Yanbu: "ينبع",
+      Jubail: "الجبيل", Qatif: "القطيف", Hofuf: "الهفوف", Sakaka: "سكاكا", Arar: "عرعر",
+      "Al-Qassim": "القصيم", Qassim: "القصيم", "'Asir": "عسير", Asir: "عسير",
+      "Al-Bahah": "الباحة", Bahah: "الباحة", "Al-Jawf": "الجوف", Jawf: "الجوف",
+      "Eastern Province": "المنطقة الشرقية", "Northern Borders": "الحدود الشمالية",
+    },
+  };
+  /* ---------- fillPattern: قالبُ نمطٍ طابق تعبيرُه ← الناتج، أو null (ر12، ٥ جمادى الأولى ١٤٤٨هـ — PLAN-3.0.0 E2) ----------
+   * المصدر الواحد للمحرّك (tryPatterns) ولأدوات البناء والقياس (build وcross-check-patterns وcompleteness وharvest-live…)، فلا يختلف
+   * حكمهما على نمط. رموز القالب:
+   *   $n           الالتقاط n كما هو؛ وcap (اختياري — عنوان التبويب) التقاطٌ لا يقبله يُفشل النمط؛
+   *   %M/%W/%P<n>  شهرٌ أو يومٌ أو ص/م من جدولٍ مغلق (res.M/W/P)، وما لا يُعرف يُفشل النمط فيُجرَّب التالي؛
+   *   %C<n>        مكانٌ (res.C) يُعرَّب إن عُرف وإلا بقي كما ورد — لا يُفشل النمط؛
+   *   %T<n>        ★ الالتقاط مفتاحٌ حرفيٌّ في قاموس الموقع النشط (res.T، litLookup) فتُوضع عربيته؛ وما ليس مفتاحًا يُفشل النمط كـ%M
+   *                فيُجرَّب التالي، ويبقى النصّ إنجليزيًّا كلّه لا مختلطًا. ولا تداخل: لا يُطلب الالتقاط في الجموع ولا في الأنماط.
+   * تمريرةٌ واحدة على القالب: ما يُوضع فيه (عربية مفتاحٍ، أو التقاطٌ خام) لا يُقرأ ثانيةً بحثًا عن رمز — عربيةٌ فيها «$20» أو «%M1» كانت
+   * تُقرأ مجموعةً لو عُوِّضت الرموز تتابعًا كما كانت قبل %T (والنتيجة للرموز القديمة هي هي: قيمها جداولُ عربيةٌ ثابتة). */
+  var PAT_TOKEN = /%([MWPCT])(\d)|\$(\d)/g;
+  function fillPattern(ar, m, res, cap) {
+    res = res || {};
+    var bad = false;
+    var out = String(ar).replace(PAT_TOKEN, function (t, k, g, d) {
+      if (d !== undefined) {
+        var c = m[+d];
+        if (c === undefined) return "";
+        if (cap && !cap(c)) bad = true;
+        return c;
+      }
+      var raw = m[+g], fn = res[k];
+      if (k === "C") {
+        if (raw === undefined) return "";
+        var pv = typeof fn === "function" ? fn(raw) : undefined;
+        return typeof pv === "string" ? pv : raw;
+      }
+      var v = typeof fn === "function" ? fn(raw) : undefined;
+      if (typeof v !== "string") { bad = true; return t; }
+      return v;
+    });
+    return bad ? null : out;
+  }
+  // ★ (ر12) %T: الالتقاط مفتاحٌ حرفيٌّ بتطبيع البحث الحرفي نفسه (textKey: القصّ وحده، بلا سقف طول) في جداولَ مرتّبة — المحرّك: تصحيحات
+  // المستخدم ثم قاموس الموقع النشط، كسلسلة lookup الحرفية؛ والأدوات: القاموس وحده — بالملكية لا بالوراثة، وقيمةٌ غير نصّية لا تُعدّ
+  function litLookup(tables, raw) {
+    if (typeof raw !== "string") return undefined;
+    var k = textKey(raw, Infinity);
+    if (k === null) return undefined;
+    for (var i = 0; i < tables.length; i++) {
+      var t = tables[i];
+      if (t && typeof t === "object" && hasOwn(t, k) && typeof t[k] === "string") return t[k];
+    }
+    return undefined;
+  }
+  // ★ (ر12) مُحلِّلات رموز القالب لـfillPattern، واحدةٌ للمحرّك وللأدوات: %M/%W/%P/%C من الجداول المغلقة (PAT_MAPS)، و%T في الجداول
+  // الحرفية التي تُرجعها tables() — المحرّك: تصحيحات المستخدم ثم قاموس الموقع النشط؛ والأدوات (toolRes): قاموس النطاق وحده
+  function mapGet(map) { return function (x) { return typeof x === "string" && hasOwn(map, x) ? map[x] : undefined; }; }
+  function patternRes(tables) {
+    return { M: mapGet(PAT_MAPS.M), W: mapGet(PAT_MAPS.W), P: mapGet(PAT_MAPS.P), C: mapGet(PAT_MAPS.C),
+             T: function (raw) { var t = tables(); return t ? litLookup(t, raw) : undefined; } };
+  }
+  // للأدوات (البناء والفحص والقياس): حكمُ المحرّك نفسه على قاموس النطاق المشحون (لا تصحيحات مستخدم)
+  function toolRes(strings) { return patternRes(function () { return [strings || {}]; }); }
+  // ★ (ر12) نمطٌ يعرّب النصّ حقًّا بحكم المحرّك: يطابق تعبيرُه ويقبل fillPattern رموزه ⇒ {m, out}، وإلا null (فيُجرَّب التالي)
+  function patternApply(re, ar, s, res, cap) {
+    var m = String(s).match(re);
+    if (!m) return null;
+    var out = fillPattern(ar, m, res, cap);
+    return out === null ? null : { m: m, out: out };
+  }
+  // ★ (ر12) القيم الملتقطة التي يُظهرها الناتج خامًا: كل التقاطٍ إلا ما لا يستهلكه إلا %T (تحلّ محلّه عربية مفتاح) — لفحص الخلط في الأدوات
+  function rawCaps(ar, m) {
+    var raw = {}, tOnly = {}, x, R = /%([MWPCT])(\d)|\$(\d)/g;
+    while ((x = R.exec(String(ar)))) { if (x[3] !== undefined) raw[x[3]] = 1; else if (x[1] === "T") tOnly[x[2]] = 1; }
+    var out = [];
+    for (var i = 1; i < m.length; i++) if (m[i] !== undefined && (raw[i] || !tOnly[i])) out.push(m[i]);
+    return out;
   }
   // حارس المسار: routes = meta.routes للنطاق ({full, shell} بادئات، و{exact} مساراتٌ بعينها)؛ بلا routes فالنطاق كلّه كامل
   // ★ exact (وثائق Claude Code): المطابقة بالبادئة تضيف «/» ثم تقارن، فلا تجعل ‎/docs‎ كاملًا إلا وجعلت
@@ -502,6 +687,33 @@
     if (m.echoSel) out.push(m.echoSel);
     return out.length ? out.join(", ") : null;
   }
+  // ★ (ر24-ج1، ١٠ جمادى الأولى ١٤٤٨هـ — بعد ر24-أ) صنفُ «ما تبقيه الشركة» ممّا يجمعه harvestSkip، بالجدول (meta.keepSel في cml-const.js): أجزاء keepSel،
+  // وshellSel في مسار shell (محتوى الموقع الذي لا يُعرَّب في ذلك المسار)، وechoSel (صدى عنوانٍ من المتن يكتبه echoText). وما سواه في harvestSkip
+  // محتوى مستخدم (blockProt)؛ وnull إن لا شيء
+  function harvestKeep(meta, mode) {
+    var m = meta || {}, out = [];
+    if (mode === "shell" && m.shellSel) out.push(m.shellSel);
+    if (m.keepSel) out.push(m.keepSel);
+    if (m.echoSel) out.push(m.echoSel);
+    return out.length ? out.join(", ") : null;
+  }
+  // أجزاء قائمة محدِّدات بالفاصلة في المستوى الأعلى (لا داخل :is() ولا ‎[…]‎ ولا نصٍّ منصَّص)، مقصوصةً
+  function selParts(s) {
+    var out = [], cur = "", depth = 0, q = null;
+    s = String(s || "");
+    for (var i = 0; i < s.length; i++) {
+      var ch = s.charAt(i);
+      if (ch === "\\") { cur += ch + s.charAt(i + 1); i++; continue; }
+      if (q) { cur += ch; if (ch === q) q = null; continue; }
+      if (ch === '"' || ch === "'") q = ch;
+      else if (ch === "(" || ch === "[") depth++;
+      else if (ch === ")" || ch === "]") depth--;
+      else if (ch === "," && depth === 0) { if (cur.trim()) out.push(cur.trim()); cur = ""; continue; }
+      cur += ch;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
   function closestSafe(el, sel) {
     if (el && el.nodeType !== 1) el = el.parentNode;
     if (!el || el.nodeType !== 1 || !el.closest) return false;
@@ -513,7 +725,8 @@
   //        (harvestSkip: محتوى المرجع في مسار shell، وmeta.skipSel في كل مسار — كما يستثنيهما المحرّك)}
   function harvestDom(root, opts) {
     opts = opts || {};
-    var R = DOM_RULES, chat = !!opts.chat, max = opts.max || 300, skip = opts.skip || null, out = [];
+    // ★ (ر29-ي، توجيه المالك) opts.max بلا قيمة ⇒ بلا سقف طول (كان 300)
+    var R = DOM_RULES, chat = !!opts.chat, max = opts.max > 0 ? opts.max : Infinity, skip = opts.skip || null, out = [];
     var doc = root && (root.ownerDocument || root);
     if (!root || !doc || !doc.createTreeWalker) return out;
     if (root.nodeType === 1 && chat && closestSafe(root, R.CHAT_ANCESTOR)) return out;
@@ -567,11 +780,102 @@
               LABEL: "s", BUTTON: "s", BDI: "s", FONT: "s" },
     CODE: { CODE: 1, KBD: 1, SAMP: 1, VAR: 1 },
     EMPTY: { IMG: 1, BR: 1, WBR: 1, SVG: 1, MATH: 1, INPUT: 1, PICTURE: 1 },
-    MAX: 4000,   // سقف طول القالب (البحث بالبصمة لا يمسح الأنماط، فالسقف للذاكرة لا للزمن)
+    // ★ (ر24-أ، ٨ جمادى الأولى ١٤٤٨هـ — مراجعة Codex CX-003) لا سقف لطول القالب: كان MAX (4,000) يُسقط الكتلة الأطول بصمت من الترجمة
+    // والحارس والحصاد والشمول معًا (كتلةٌ حيّة من 4,723 حرفًا في وثائق Claude Code). البحث بالبصمة جدولٌ لا مسح، والذاكرة ذاكرةُ
+    // DOM الصفحة نفسها (لا تخزين للقوالب)، فلا حدّ إلا استثناء المحتوى بالمحدِّد (blockProt)
   };
   var PH_RE = /<(\/?)([abisgc])(\d{1,4})(\/?)>/g, PH_TEST = /<\/?[abisgc]\d{1,4}\/?>/;
   function tagOf(el) { return String(el.nodeName || "").toUpperCase(); }
-  // نوع العنصر داخل الكتلة: "p" زوجيٌّ نظيف، "c" شيفرة، "g" ذرّةٌ بلا نص؛ null حدٌّ للكتلة
+  // ★★ (ر24-أ، ٨ جمادى الأولى ١٤٤٨هـ — مراجعة Codex CX-001) المحتوى المحميّ داخل التتابع. الممشى يرفض العنصر المستثنى، لكن
+  // حدود الكتلة ونوع العنصر والاستخراج كانت تعود إلى التتابع كلّه فتقرأ ما فيه وتحصده: span[data-ask-view][contenteditable] في
+  // فقرة أكاديمية دخل نصُّه القالبَ المحصود. فالحماية فحصٌ على العناصر وحدها (لا يُقرأ فيه نص) قبل أي قراءة: عنصرٌ يطابق مستثنى
+  // النطاق (meta.skipSel وما يجمعه harvestSkip)، أو محدِّدات المحادثة (حيث تُستثنى)، أو قابلٌ للتحرير (isContentEditable، أو سمة
+  // contenteditable بغير "false" — فالمستند غير المرسوم كـDOMParser لا يعرف isContentEditable). والتتابع الذي فيه عنصرٌ كهذا يُرفض كلّه:
+  // لا مطابقة ولا بصمة ولا حصاد ولا عدّ ولا كتابة، ونصُّه المؤهَّل يبقى على أصله (لا ترجمة جزئية). ولا يُجعل المحميّ ذرّة <cN>: تقرأ نصّه.
+  // blockProt(skip, chat) ← سياق الحماية P يُمرَّر إلى inlineKind وblockOwner وblockBounds وextractBlock (المحرّك والحاصد والحارس معًا)
+  // ★★ (ر24-ج1، ١٠ جمادى الأولى ١٤٤٨هـ — بعد ر24-أ، القراران 107 و113) والرفض الكامل لمحتوى المستخدم وحده: ر24-أ رفض التتابع الذي فيه أيُّ عنصرٍ من
+  // المستثنى، ومستثنى الوثائق العقدُ البرمجي الذي تبقيه الشركة إنجليزيًّا (STL_KEEP)، فبقي عنوان بطاقة المثال بجوار شارة الطريقة إنجليزيًّا في كل صفحة
+  // طريقةٍ وكان يُعرَّب في 2.0.0. فالمستثنى صنفان بالجدول (keep: أجزاء harvestKeep من skip، حرفًا بحرف):
+  //   محتوى المستخدم (P.sels: المحادثة حيث تُستثنى، وأجزاء skip التي ليست في keep — فما لم يُصنَّف محتوى مستخدمٍ احتياطًا — وقابلُ التحرير):
+  //     يرفض التتابع كلَّه بلا قراءةٍ كما في ر24-أ؛
+  //   ما تبقيه الشركة (P.keep): عنصرُه داخل التتابع ذرّةٌ معتمة (الشكل "k"): <cN>نصّها</cN> إن كان فيه نص وإلا <gN/> — لا يُكتب فيها أبدًا (ولا
+  //     تبديلُ ترقيمٍ، punctAtoms)، وقراءتها جائزة لأنها نصُّ الشركة لا نصّ المستخدم. وما فيها من محتوى مستخدمٍ يجعلها "x" فيُرفض التتابع.
+  //   والعنصر الذي يطابق الصنفين محتوى مستخدم. وkeep لا يوسّع المستثنى أبدًا: ما ليس من أجزاء skip منه يُتجاهل
+  var CE_SEL = "[contenteditable]:not([contenteditable='false' i])";
+  function blockProt(skip, chat, keep) {
+    var sels = [], kept = [];
+    if (chat) sels.push(DOM_RULES.CHAT_ANCESTOR);
+    if (skip) {
+      var kp = keep ? selParts(keep) : [], sp = selParts(skip), user = [], kk = [];
+      for (var i = 0; i < sp.length; i++) (kp.indexOf(sp[i]) >= 0 ? kk : user).push(sp[i]);
+      if (user.length) sels.push(user.join(", "));
+      if (kk.length) kept.push(kk.join(", "));
+    }
+    return { sels: sels, keep: kept };
+  }
+  function editableEl(el) {
+    if (el.isContentEditable) return true;
+    var v = el.getAttribute ? el.getAttribute("contenteditable") : null;
+    return v !== null && v !== undefined && String(v).toLowerCase() !== "false";
+  }
+  // العنصر نفسه محميّ؟
+  function protEl(el, P) {
+    if (!P || !el || el.nodeType !== 1) return false;
+    if (editableEl(el)) return true;
+    for (var i = 0; i < P.sels.length; i++) { try { if (el.matches && el.matches(P.sels[i])) return true; } catch (e) {} }
+    return false;
+  }
+  // ★ (ر24-ج1) العنصر نفسه ممّا تبقيه الشركة؟ (بالعناصر وحدها)
+  function keptEl(el, P) {
+    if (!P || !P.keep || !el || el.nodeType !== 1) return false;
+    for (var i = 0; i < P.keep.length; i++) { try { if (el.matches && el.matches(P.keep[i])) return true; } catch (e) {} }
+    return false;
+  }
+  // هو أو سلفٌ له ممّا تبقيه الشركة؟ (جذر الحصاد: لا يُمشى ما كلُّه مستثنًى)
+  function keptAbove(el, P) {
+    if (!P || !P.keep || !el || el.nodeType !== 1) return false;
+    for (var i = 0; i < P.keep.length; i++) { try { if (el.closest && el.closest(P.keep[i])) return true; } catch (e) {} }
+    return false;
+  }
+  // فيه (تحته) عنصرٌ محميّ؟ — للذرّات (الشيفرة وما لا نصّ فيه) التي لا تُمشى أبناؤها بالنوع
+  function protDesc(el, P) {
+    if (!P || !el.querySelector) return false;
+    try { if (el.querySelector(CE_SEL)) return true; } catch (e) {}
+    for (var i = 0; i < P.sels.length; i++) { try { if (el.querySelector(P.sels[i])) return true; } catch (e) {} }
+    return false;
+  }
+  // هو أو سلفٌ له محميّ؟ (المالك، وجذر الحصاد)
+  function protAbove(el, P) {
+    if (!P || !el || el.nodeType !== 1) return false;
+    if (el.isContentEditable) return true;
+    try { if (el.closest && el.closest(CE_SEL)) return true; } catch (e) {}
+    for (var i = 0; i < P.sels.length; i++) { try { if (el.closest && el.closest(P.sels[i])) return true; } catch (e) {} }
+    return false;
+  }
+  // شكل العنصر في التتابع بالعناصر وحدها (لا يُقرأ نص): null حدٌّ للكتلة (غير سطري، أو سطريٌّ في داخله ما ليس سطريًّا)، "x" محميّ (هو، أو
+  // ذرّةٌ أو سطريٌّ فيه محميّ)، "k" ممّا تبقيه الشركة (ر24-ج1: ذرّةٌ معتمة، وما تحته لا يُمشى بالنوع)، "i" سطريّ. وحدود الكتلة ومالكها بالشكل وحده كما كانا بالنوع (النوع null هو الشكل null بعينه)
+  // memo (اختياري): WeakMap لجولةٍ واحدة — قيمها {s: الشكل، k: النوع}
+  function memoOf(memo, el) { var e = memo.get(el); if (!e) { e = {}; memo.set(el, e); } return e; }
+  function shapeOf(el, memo, P) {
+    if (memo) { var mv = memo.get(el); if (mv && mv.s !== undefined) return mv.s; }
+    var t = tagOf(el), r;
+    if (!BLOCK.CODE[t] && !BLOCK.EMPTY[t] && !BLOCK.PAIRED[t]) r = null;
+    else if (protEl(el, P)) r = "x";
+    else if (keptEl(el, P)) r = protDesc(el, P) ? "x" : "k";   // ★ (ر24-ج1) ذرّةٌ معتمة ما لم يكن فيها محتوى مستخدم
+    else if (!BLOCK.PAIRED[t]) r = protDesc(el, P) ? "x" : "i";
+    else {
+      r = "i";
+      for (var c = el.firstChild; c; c = c.nextSibling) {
+        if (c.nodeType !== 1) continue;
+        var k = shapeOf(c, memo, P);
+        if (k === null) { r = null; break; }
+        if (k === "x") r = "x";
+      }
+    }
+    if (memo) memoOf(memo, el).s = r;
+    return r;
+  }
+  // نوع العنصر داخل الكتلة: "p" زوجيٌّ نظيف، "c" شيفرة، "g" ذرّةٌ بلا نص، "x" محميّ (ر24-أ: لا يُقرأ ما فيه)؛ null حدٌّ للكتلة
   // (غير سطري، أو سطريٌّ في داخله ما ليس سطريًّا — بطاقةٌ داخل رابط مثلًا)
   // ★ «فيه نص» يُحكم بالأصل (rawOf) لا بالقيمة الحالية: عربيةٌ أفرغت رابطًا («the» تسقط) كانت تجعله
   // ذرّةً في الاستخراج التالي فيتغيّر القالب وتُستعاد الإنجليزية ثم تُعرَّب — تقاذفٌ بلا نهاية
@@ -594,36 +898,49 @@
   }
   // memo (اختياري): WeakMap لجولةٍ واحدة لا يتغيّر فيها البناء — بدونها يُعاد حساب النوع لكل عقدة نصٍّ في
   // فقرةٍ طويلة فيصير العمل تربيعيًّا (مراجعة المرحلة ٢)
-  function inlineKind(el, rawOf, memo) {
-    if (memo) { var mv = memo.get(el); if (mv !== undefined) return mv; }
-    var t = tagOf(el), r;
-    if (BLOCK.CODE[t]) r = "c";
+  // ★ (ر24-أ، CX-001) والشكل (بالعناصر وحدها) قبل النص: ما شكله null أو "x" لا يُقرأ منه شيء
+  function inlineKind(el, rawOf, memo, P) {
+    if (memo) { var mv = memo.get(el); if (mv && mv.k !== undefined) return mv.k; }
+    var s = shapeOf(el, memo, P), t = tagOf(el), r;
+    if (s === null || s === "x") r = s;
+    // ★ (ر24-ج1) ما تبقيه الشركة ذرّةٌ لا خانة: <cN>نصّها</cN> بنصّها (كالشيفرة، تُنسخ ولا تُكتب) أو <gN/> بلا نص — والشيفرة والفارغ كما كانا قبل ر24-أ
+    else if (s === "k") r = BLOCK.EMPTY[t] ? "g" : BLOCK.CODE[t] || hasText(el, rawOf) ? "c" : "g";
+    else if (BLOCK.CODE[t]) r = "c";
     else if (BLOCK.EMPTY[t]) r = "g";
-    else if (!BLOCK.PAIRED[t]) r = null;
-    else {
-      r = undefined;
-      for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 1 && !inlineKind(c, rawOf, memo)) { r = null; break; }
-      if (r === undefined) r = !hasText(el, rawOf) ? "g" : hasWord(el, rawOf) ? "p" : "c";
-    }
-    if (memo) memo.set(el, r);
+    else r = !hasText(el, rawOf) ? "g" : hasWord(el, rawOf) ? "p" : "c";
+    if (memo) memoOf(memo, el).k = r;
     return r;
   }
   // موضع عقدة نصٍّ من كتلتها: {owner المالك غير السطري، top ابنُه الذي يحويها}؛ null داخل ذرّة
-  function blockOwner(node, rawOf, memo) {
-    var top = node, p = node && node.parentNode;
-    while (p && p.nodeType === 1) {
-      var k = inlineKind(p, rawOf, memo);
+  // ★ (ر24-أ، CX-001) والمالك بالشكل وحده، ثم الفحص المسبق قبل أي قراءة: المالك أو سلفٌ له محميّ، أو في التتابع عنصرٌ محميّ (ومنه
+  // ما يحوي العقدة نفسها) ⇒ {owner, top, prot: true} — التتابع مرفوضٌ كلّه، ولا يُقرأ من نصّه شيء. وبعده وحده يُنظر في الذرّات بالنص
+  function blockOwner(node, rawOf, memo, P) {
+    var top = node, p = node && node.parentNode, chain = [];
+    while (p && p.nodeType === 1 && shapeOf(p, memo, P) !== null) { chain.push(p); top = p; p = p.parentNode; }
+    if (!p || p.nodeType !== 1) return null;
+    if (P && runProt(p, blockBounds(top, rawOf, memo, P), memo, P)) return { owner: p, top: top, prot: true };
+    for (var i = 0; i < chain.length; i++) {
+      var k = inlineKind(chain[i], rawOf, memo, P);
       if (k === "c" || k === "g") return null;
-      if (!k) return { owner: p, top: top };
-      top = p; p = p.parentNode;
     }
-    return null;
+    return { owner: p, top: top };
   }
-  function inRun(n, rawOf, memo) { return n.nodeType === 3 || n.nodeType === 8 || (n.nodeType === 1 && !!inlineKind(n, rawOf, memo)); }
-  function blockBounds(top, rawOf, memo) {
+  // التتابع [first..last] تحت المالك owner مرفوض؟ بالعناصر وحدها: المالك أو سلفٌ له محميّ، أو عنصرٌ في التتابع شكله "x"
+  function runProt(owner, b, memo, P) {
+    if (!P) return false;
+    if (owner && protAbove(owner, P)) return true;
+    for (var x = b.first; x; x = x.nextSibling) {
+      if (x.nodeType === 1 && shapeOf(x, memo, P) === "x") return true;
+      if (x === b.last) break;
+    }
+    return false;
+  }
+  // (بالشكل وحده: حدود الكتلة لا تقرأ نصًّا — والنوع null هو الشكل null بعينه، فالحدود كما كانت)
+  function inRun(n, memo, P) { return n.nodeType === 3 || n.nodeType === 8 || (n.nodeType === 1 && shapeOf(n, memo, P) !== null); }
+  function blockBounds(top, rawOf, memo, P) {
     var first = top, last = top, s;
-    while ((s = first.previousSibling) && inRun(s, rawOf, memo)) first = s;
-    while ((s = last.nextSibling) && inRun(s, rawOf, memo)) last = s;
+    while ((s = first.previousSibling) && inRun(s, memo, P)) first = s;
+    while ((s = last.nextSibling) && inRun(s, memo, P)) last = s;
     return { first: first, last: last };
   }
   function collapseWs(s) { return String(s).replace(/\s+/g, " "); }
@@ -644,7 +961,7 @@
     var out = [];
     for (var i = 0; i < ex.toks.length; i++) {
       var t = ex.toks[i];
-      if (t.t !== "a" || t.k !== "c" || !t.el || !hasOwn(PUNCT_AR, t.body) || BLOCK.CODE[tagOf(t.el)]) continue;
+      if (t.t !== "a" || t.k !== "c" || !t.el || t.kept || !hasOwn(PUNCT_AR, t.body) || BLOCK.CODE[tagOf(t.el)]) continue;
       var tn = (function find(el) {
         for (var c = el.firstChild; c; c = c.nextSibling) {
           if (c.nodeType === 3 && ((rawOf ? rawOf(c) : c.nodeValue) || "").trim() === t.body) return c;
@@ -678,11 +995,22 @@
   var LTR_TAIL = new RegExp("([A-Za-z](?:[A-Za-z0-9._\\-/ ]*[A-Za-z0-9])?)(?:" +
     "((?:[#+]+[\\/\\[\\]\\\\]|\\/)[#+\\/\\[\\]\\\\]*)(?![#+\\/\\[\\]\\\\\\u200E])(?=\\s+[^\\sA-Za-z0-9]|\\s*$|[^\\sA-Za-z0-9" + LTR_AR_W + "]+(?:\\s|$|[" + LTR_AR_W + "]))" +
     "|([#+]+)(?![#+\\/\\[\\]\\\\\\u200E])(?=\\s*(?:[^\\sA-Za-z0-9]|$)))", "g");
-  var LTR_HEAD = new RegExp("(?<=^|[\\s\\u0600-\\u06FF(\\u00AB\"'])(?<![A-Za-z0-9]\\s+)([.#@~/]+)(?=[A-Za-z])", "g");
+  // ★ (ر12-ب، ٥ جمادى الأولى ١٤٤٨هـ — الفحص الحيّ لـت8، L1 وL3) والبادئة أيضًا «*» (نمط الأذونات «*.Selected» كان يُرسم «Selected.*» —
+  // المساعدة 964cdbc8c868070a)، بالشروط نفسها (لا بعد كلمةٍ لاتينية، ولا داخل مسارٍ تسبقه شرطة: «skills/*/SKILL.md» كما هو). و«+ » (زائدٌ
+  // ثم مسافةٌ واحدة) قبل كلمةٍ لاتينية في أول الوحدة وحده — أول النص أو الخانة، أو بعد «» أو قوسٍ أو علامة تنصيص: لافتة الزرّ «+ Create» كانت
+  // تُرسم «Create +» (كتلتان في ت8 و7 منشورة، و«انقر <b1>+ MCP Server</b1>» في الوثائق)، فالزائد ومسافته محايدان بين عربيٍّ ولاتيني يأخذان اتجاه
+  // الفقرة. أما زائدٌ بعد كلمةٍ ومسافة فرابطٌ بين كلمتين لا بادئة: «المحادثة + Claude Code» (نوع مقعد، 34 كتلة) يُرسم الزائد فيه بين الكلمتين كما
+  // يجب، والعلامة كانت ستنقله إلى طرف الاسم اللاتيني
+  var LTR_HEAD = new RegExp("((?<=^|[\\s\\u0600-\\u06FF(\\u00AB\"'])(?<![A-Za-z0-9]\\s+)[.#@~/*]+|(?<=^|[(\\u00AB\"'])\\+ )(?=[A-Za-z])", "g");
   function ltrMarks(s) {
     s = String(s);
-    if (!/[#+.@~\/\[\]\\]/.test(s) || !/[A-Za-z]/.test(s)) return s;
-    return s.replace(LTR_TAIL, "$1$2$3\u200E").replace(LTR_HEAD, "\u200E$1");
+    if (!/[#+.@~*\/\[\]\\]/.test(s) || !/[A-Za-z]/.test(s)) return s;
+    // ★ (مراجعة ر12-ب، ٥ جمادى الأولى ١٤٤٨هـ) إلا بادئةً فيها «*» تقابلها «*» في آخر المقطع نفسه («*text*» و«**bold**» و«*.test.*»: طرفان
+    // متناظران لا نمطُ أذونات): كلاهما محايدٌ يأخذ اتجاه الفقرة فيُرسمان متناظرَين كما يُقرآن، والعلامة قبل الأول وحده كانت تضمّه إلى المقطع دون
+    // الآخر فيُرسم «**text» و«****bold». ولا قيمة كهذه في القواميس اليوم؛ و«*.Selected» و«*args» و«**/*.ts» تُعلَّم كما في ر12-ب
+    return s.replace(LTR_TAIL, "$1$2$3\u200E").replace(LTR_HEAD, function (m, h, at, str) {
+      return h.indexOf("*") >= 0 && /^[^\s*]*\*/.test(str.slice(at + h.length)) ? m : "\u200E" + h;
+    });
   }
   // ★ (ر5، ٢٩ ربيع الآخر ١٤٤٨هـ — ملاحظة المالك ٢(ج)) قوسان في محتواهما حرفٌ لاتيني ولا حرف من اليمين داخل ترجمةٍ إلى لغةٍ من اليمين: «إدارة الهوية (SSO, JIT, SCIM)»
   // سليمةٌ على سطرٍ واحد، فإن التفّت داخل القوسين انكسرت: قاعدة الأقواس في خوارزمية الاتجاه (N0) تعطي القوسين اتجاه الفقرة متى كان أول حرفٍ قويٍّ
@@ -709,7 +1037,8 @@
   var BIDI_CTL = new RegExp("[" + String.fromCharCode(0x202A) + "-" + String.fromCharCode(0x202E) + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]");
   var PAR_TOK = /<c(\d{1,4})>[\s\S]*?<\/c\1>|<\/?[abisg]\d{1,4}\/?>/g;
   var PAR_EN = /[0-9۰-۹]/;   // أرقامٌ أوروبية (EN): تصير من اليسار بعد علامة LRM (W7) — والعربية-الهندية (AN) لا
-  function ltrParens(s, startRtl) {
+  // (ر12-ب) جولة الأقواس كما كانت حرفًا؛ وltrParens أدناه يُتبعها جولة علامتَي التنصيص «»
+  function parenPass(s, startRtl) {
     s = String(s);
     if (s.indexOf("(") < 0 || !/[A-Za-z]/.test(s)) return s;
     // نسخةٌ بالطول نفسه: الشيفرة محرفٌ داخلي محايد (PAR_CODE) والرموز مسافات — فتُقرأ الأقواس والسياق منها وتُكتب العلامات في الأصل بالمواضع نفسها
@@ -767,6 +1096,141 @@
     }
     return s;
   }
+  // ★★ (ر12-ب، ٥ جمادى الأولى ١٤٤٨هـ — الفحص الحيّ لـت8، M1) علامتا التنصيص «» ليستا قوسين في خوارزمية الاتجاه (لا يضمّهما جدول الأقواس
+  // المتزاوجة، فلا تحسمهما القاعدة N0 معًا): كلٌّ منهما محايدٌ يُحسم وحده بما حوله (N1 وN2). فإن اختلف حكماهما انكسر الزوج: «Open Claude» بعد
+  // «Extensions > Claude >» في جملةٍ عربية تُحسم فاتحتُه L (بين لاتينيَّين) وخاتمتُه R (بين لاتينيٍّ وآخر الفقرة)، فتُرسم الخاتمة في أقصى اليسار
+  // بعد النقطتين على 1366 وينقسم الزوج على 390 (المساعدة 204a268bcb7fc219، ومثلها منشورٌ في 0cc5ee260c060765). ومثله «GitHub «Enable…»» قبل
+  // كلمةٍ عربية، و«Claude — «default»» قبل قوسٍ عربي، وعنوان بحثٍ لاتيني بين «» يليه «، 2023» (الرقم بعد اللاتيني لاتينيٌّ بالقاعدة W7)، و«إدارة
+  // SSO» يليها «> «Reset Connection»» (خاتمتها بين لاتينيَّين). قِيس في كروم على أزواج القواميس كلها (4,798 زوجًا، وفي الأنماط بالتقاطٍ لاتيني):
+  // 38 مكسورة في 36 قيمة (14 كتلة في الوثائق، و6 في المساعدة، و16 نصًّا ونمطًا في claude.ai)، وبعد العلامات 0، ولم ينكسر بها زوجٌ كان سليمًا.
+  // فيُحكم كل زوجٍ بترتيبه كما تحكم N0 زوجَ أقواس، ومن زوجٍ مكسور تُضاف علامةٌ واحدة تجعل حكمَي علامتيه واحدًا:
+  //   - محتوًى آخرُ قويٍّ فيه لاتيني بعد لاتيني (الفاتحة L والخاتمة R): علامة LRM بعد الخاتمة، فينضمّ الزوج إلى العبارة اللاتينية قبله كما ينضمّ
+  //     إليها قوسٌ في موضعه (N0)، فيُرسم «Extensions > Claude > «Open Claude»» مسارًا واحدًا من اليسار؛
+  //   - الفاتحة R والخاتمة L (آخرُ قويٍّ في المحتوى لاتينيٌّ يليه لاتيني أو رقمٌ صار لاتينيًّا): علامة RLM بعد الخاتمة، فيبقى الزوج للجملة العربية
+  //     كما يبقى لها قوسٌ في موضعه، ويبقى التابع وحدةً بعده؛
+  //   - محتوًى أوله لاتيني وآخره عربي بعد لاتيني (الفاتحة L والخاتمة R): علامة RLM قبل الفاتحة.
+  // والزوج المتّفق لا يُمسّ: العربي المحتوى (3,367 زوجًا مقيسة لا تقع علامةٌ بجوار واحدٍ منها)، والمختلط المتّفق، واللاتيني بين عربيَّين (يُرسم سليمًا على سطره).
+  // والحكم بنموذجٍ مختصر لخوارزمية الاتجاه في فقرةٍ من اليمين (bidiTypes): الحروف والعلامات قوية، والرقم الأوروبي لاتينيٌّ بعد لاتيني (W7) وإلا
+  // من اليمين في أثره (W2 وN1)، والعربي-الهندي من اليمين، والأقواس المتزاوجة بحكم N0، والشيفرة المعزولة والرموز النائبة محايدة. ولا يُمسّ نصٌّ
+  // فيه علامة عزلٍ أو تضمين، ولا يُستدعى إلا لفقرةٍ من اليمين (startRtl). والعلامات في خانات النص وحدها، والدالة متكافئة التكرار
+  var Q_OPEN = String.fromCharCode(0xAB), Q_CLOSE = String.fromCharCode(0xBB), Q_ALM = String.fromCharCode(0x061C);
+  var Q_TOK = /<c(\d{1,4})>[\s\S]*?<\/c\1>|<\/?[abisgc]\d{1,4}\/?>/g;
+  var Q_PAIR = new RegExp(Q_OPEN + "([^" + Q_OPEN + Q_CLOSE + "]*)" + Q_CLOSE, "g");
+  var Q_LETTER = new RegExp("\\p{L}", "u");
+  var Q_BR_OPEN = "([{", Q_BR_CLOSE = ")]}";
+  // نسخةٌ بالطول نفسه: الشيفرة (ومنها <cN/>) محرفٌ محايد، والرموز مسافات
+  function qView(s) { return s.replace(Q_TOK, function (t) { return (/^<c/.test(t) ? PAR_CODE : " ").repeat(t.length); }); }
+  // الأنواع المحلولة لمحارف النسخة في فقرةٍ من اليمين: "L" أو "R" لما يحسم المحايدات حوله، وnull للمحايد
+  function bidiTypes(v) {
+    var n = v.length, T = new Array(n), last = null, i, c, k;
+    for (i = 0; i < n; i++) {
+      c = v.charAt(i); k = c.charCodeAt(0); T[i] = null;
+      if (c === PAR_LRM) T[i] = last = "L";
+      else if (c === PAR_RLM || c === Q_ALM) T[i] = last = "R";
+      else if ((k >= 0x0660 && k <= 0x0669) || k === 0x066B || k === 0x066C) T[i] = "R";                 // AN
+      else if ((k >= 0x30 && k <= 0x39) || (k >= 0x06F0 && k <= 0x06F9)) T[i] = last === "L" ? "L" : "R";  // EN: W7، وإلا W2/N1
+      else if (k === 0x060C || k === 0xFEFF || c === PAR_CODE) T[i] = null;                                // الفاصلة العربية (CS) وBOM والشيفرة
+      else if (RTL_ONE.test(c)) T[i] = last = "R";
+      else if (Q_LETTER.test(c)) T[i] = last = "L";
+    }
+    // N0: الأقواس المتزاوجة (BD16، بمكدسٍ سقفه 63) بترتيب فاتحاتها — فيها قويٌّ من اليمين ⇒ R؛ وإلا فيها لاتينيٌّ ⇒ سياقُها قبلها (L أو R،
+    // والبداية من اليمين)؛ وبلا قويٍّ فيها تبقى محايدة
+    var st = [], pairs = [], j, p;
+    for (i = 0; i < n; i++) {
+      c = v.charAt(i);
+      if (Q_BR_OPEN.indexOf(c) >= 0) { if (st.length >= 63) break; st.push(i); }
+      else if ((k = Q_BR_CLOSE.indexOf(c)) >= 0) {
+        for (j = st.length - 1; j >= 0; j--) if (v.charAt(st[j]) === Q_BR_OPEN.charAt(k)) { pairs.push([st[j], i]); st.length = j; break; }
+      }
+    }
+    pairs.sort(function (a, b) { return a[0] - b[0]; });
+    for (p = 0; p < pairs.length; p++) {
+      var o = pairs[p][0], z = pairs[p][1], hasL = false, hasR = false, ty = "R";
+      for (i = o + 1; i < z; i++) { if (T[i] === "R") hasR = true; else if (T[i] === "L") hasL = true; }
+      if (!hasL && !hasR) continue;
+      if (!hasR) for (i = o - 1; i >= 0; i--) if (T[i]) { ty = T[i]; break; }
+      T[o] = T[z] = ty;
+    }
+    return T;
+  }
+  // جولة علامتَي التنصيص: كل زوجٍ مكسور (الأيسر منطقيًّا أولًا) تُضاف له علامته، ثم يُعاد الحكم على النص كلّه — فزوجٌ بعده يرى علامته
+  function quotePass(s) {
+    for (var round = 0; round < 32; round++) {
+      var v = qView(s), T = bidiTypes(v), m, fix = null, i;
+      Q_PAIR.lastIndex = 0;
+      while ((m = Q_PAIR.exec(v))) {
+        var at = m.index, end = at + m[0].length, fi = null, la = null, prev = "R", next = "R";
+        for (i = at + 1; i < end - 1; i++) if (T[i]) { if (!fi) fi = T[i]; la = T[i]; }
+        if (!fi) continue;   // لا قويَّ في المحتوى: العلامتان وما بينهما محايدٌ واحد مع ما حوله، فتتّفقان
+        for (i = at - 1; i >= 0; i--) if (T[i]) { prev = T[i]; break; }
+        for (i = end; i < v.length; i++) if (T[i]) { next = T[i]; break; }
+        var open = prev === fi ? fi : "R", close = la === next ? la : "R";
+        if (open === close) continue;
+        fix = open === "R" ? [end, PAR_RLM] : la === "L" ? [end, PAR_LRM] : [at, PAR_RLM];
+        break;
+      }
+      if (!fix) break;
+      s = s.slice(0, fix[0]) + fix[1] + s.slice(fix[0]);
+    }
+    return s;
+  }
+  // الأقواس (parenPass كما كانت) ثم علامتا التنصيص، وتُعاد الجولتان حتى لا تضيف إحداهما شيئًا: علامة RLM بعد خاتمةٍ يراها قوسٌ بعدها سياقًا من
+  // اليمين فيُعلَّم (يلتفّ وحدةً)، وعلامات قوسٍ قبل زوجٍ يراها الزوج. ونصٌّ بلا «» ناتجُه ناتجُ parenPass حرفًا كما كان
+  function ltrParens(s, startRtl) {
+    var out = parenPass(s, startRtl);
+    if (!startRtl || out.indexOf(Q_OPEN) < 0 || out.indexOf(Q_CLOSE) < 0 || !/[A-Za-z]/.test(out) || BIDI_CTL.test(out)) return out;
+    for (var r = 0; r < 4; r++) {
+      var q = quotePass(out);
+      if (q === out) break;
+      out = parenPass(q, startRtl);
+    }
+    return out;
+  }
+  // ★ (ر12-ب، ٥ جمادى الأولى ١٤٤٨هـ — الفحص الحيّ لـت8، L2) قالبُ كتلةٍ لاتينيٌّ كلُّه يُرسم في فقرةٍ من اليمين بترتيبه كما يُرسم في فقرةٍ من اليسار؟
+  // كلُّ محرفٍ فيه غيرُ المسافات في طرفيه يُحسم L بنموذج bidiTypes: أوله حرفٌ لاتيني (لا رقمٌ ولا محايدٌ ولا قوس)، وآخره حرفٌ أو رقمٌ بعد لاتيني
+  // أو قوسٌ تحسمه N0 لاتينيًّا («Claude Platform (API)»)، ولا ذرّة (شيفرةٌ أو أيقونة) في طرفيه، ولا حرف من اليمين ولا علامة عزلٍ أو تضمين.
+  // فلا يُعدّ آمنًا ما ينتهي بنقطةٍ أو علامة تنصيص («Claude Code.» يُرسم «.Claude Code» في فقرةٍ من اليمين) ولا ما يبدأ برقمٍ أو قوس
+  function ltrSafe(tpl) {
+    var v = String(tpl).replace(Q_TOK, function (t) { return /^<[cg]/.test(t) ? PAR_CODE : ""; }).replace(/^\s+|\s+$/g, "");
+    if (!v || !/[A-Za-z]/.test(v) || RTL_ONE.test(v) || BIDI_CTL.test(v) || v.indexOf(PAR_RLM) >= 0 || v.indexOf(Q_ALM) >= 0) return false;
+    var T = bidiTypes(v), nextL = false, i;
+    // من الآخر: المحايد آمنٌ إن كان بعده قويٌّ لاتيني (وقبله كذلك، يُفحص من الأول أدناه)
+    var after = new Array(v.length);
+    for (i = v.length - 1; i >= 0; i--) { after[i] = nextL; if (T[i]) nextL = T[i] === "L"; }
+    var prevL = false;
+    for (i = 0; i < v.length; i++) {
+      if (T[i]) { if (T[i] !== "L") return false; prevL = true; continue; }
+      if (!prevL || !after[i]) return false;
+    }
+    return true;
+  }
+  // ★ (ر12-ب، ٥ جمادى الأولى ١٤٤٨هـ — ت7 «للاتساق لاحقًا»، L4) نصوص الواجهة (المسار الواحد، bidiWrap) لا تمرّ بـltrMarks (قرار ت7: كانت ستغيّر
+  // 87 قيمةً أخرى، منها علامةٌ داخل رمز اختصار)، فبقيت الشرطة المائلة في آخر مقطعٍ لاتيني تُرسم في أوله: «تستخدم تنسيق commands/ القديم» تُرسم
+  // «/commands»، و«في bin/، لكن» «/bin»، وعنوانٌ ينتهي بـ«/» في آخر الجملة. فيُطبَّق عليها فرعُ «/» من ذيل LTR_TAIL وحده بشروطه نفسها: علامة
+  // LRM بعد الشرطة عند نهاية الوحدة (مسافةٌ يليها غيرُ لاتيني، أو آخر النص، أو ترقيمٌ يليه ذلك)، لا ما يليه حرفٌ عربيٌّ ملاصق («Claude/وحدة
+  // التحكّم») ولا داخل مسار («skills/*/SKILL.md») ولا بعد «+» أو «#». قِيس على قواميس الواجهة كلها: 4 قيمٍ تتغيّر، كلُّها هذا العيب
+  var LTR_SLASH = new RegExp("([A-Za-z](?:[A-Za-z0-9._\\-/ ]*[A-Za-z0-9])?)(\\/[#+\\/\\[\\]\\\\]*)(?![#+\\/\\[\\]\\\\\\u200E])" +
+    "(?=\\s+[^\\sA-Za-z0-9]|\\s*$|[^\\sA-Za-z0-9" + LTR_AR_W + "]+(?:\\s|$|[" + LTR_AR_W + "]))", "g");
+  // ★ (مراجعة ر12-ب، ٥ جمادى الأولى ١٤٤٨هـ) إلا مقطعًا صدرُه شرطةٌ مائلة (أو «~/» و«./») لا حرفَ لاتينيًّا قبلها، بل كلمةٌ عربية أو أولُ النص:
+  // «انقله إلى /usr/bin/ ثم» — صدرُه محايدٌ يأخذ اتجاه الفقرة كذيله فيُرسمان متناظرَين («/usr/bin/» كما يُقرأ)، والعلامة بعد الذيل وحده كانت
+  // تضمّه إلى المقطع دون الصدر فيُرسم «usr/bin//» (ومنه مسارُ مجلدٍ يلتقطه نمطٌ من قيم المستخدم، كـ«عُثر على Git في $1»). فيبقى بلا علامة كما
+  // كان. أما صدرٌ بعد حرفٍ لاتيني («Files: /usr/bin/» و«https://…/») فيُحسم لاتينيًّا مع ما قبله، فتُعلَّم شرطته الأخيرة؛ والأرقام بينهما تتبع
+  // ما قبلها فتُتخطّى. ولا قيمة كهذه في قواميس الواجهة اليوم: القيم الأربع المتغيّرة كما هي
+  function ltrSlash(s) {
+    s = String(s);
+    if (s.indexOf("/") < 0 || !/[A-Za-z]/.test(s)) return s;
+    return s.replace(LTR_SLASH, function (m, a, b, at, str) {
+      var h = at, k, c;
+      while (h > 0 && "/~.".indexOf(str.charAt(h - 1)) >= 0) h--;
+      if (h === at) return a + b + PAR_LRM;
+      for (k = h - 1; k >= 0; k--) {
+        c = str.charAt(k);
+        if (/[A-Za-z]/.test(c)) return a + b + PAR_LRM;
+        if (RTL_ONE.test(c)) return m;
+      }
+      return m;
+    });
+  }
   function tokStr(t) {
     if (t.t === "o") return "<" + t.k + t.id + ">";
     if (t.t === "c") return "</" + t.k + t.id + ">";
@@ -778,9 +1242,19 @@
   // single: عقدة النص الوحيدة ذات المحتوى إن لم يكن في الكتلة غيرها ولا شيفرة (تُبحث في قاموس الواجهة أولًا).
   // group: صفُّ لافتاتٍ لا جملة — عنصران أو أكثر في المستوى الأعلى ولا نصَّ بينها (ألسنة «cURL/CLI/Python»،
   //        وسوم البطاقات): [عقدةُ كل بندٍ الوحيدة أو null]؛ إن لم تُترجم الكتلة كلّها عُرِّب كل بندٍ وحده.
-  // null: لا حرف لاتيني خارج الشيفرة، أو قالبٌ فوق السقف، أو نصٌّ يشبه عنصرًا نائبًا حرفيًّا.
-  function extractBlock(first, last, rawOf, max, memo) {
+  // null: لا حرف لاتيني خارج الشيفرة، أو نصٌّ يشبه عنصرًا نائبًا حرفيًّا، أو ★ (ر24-أ، CX-001) في التتابع عنصرٌ محميّ (P) — يُحكم
+  // بالعناصر وحدها قبل قراءة أي نص. ★ (ر24-أ، CX-003) ولا سقف طول: كان الوسيط الرابع (max) سقفًا يُسقط الكتلة الطويلة كلّها.
+  // التوقيع (first, last, rawOf, memo, P)؛ ورقمٌ في موضع memo (نداءٌ قديم بسقف) يُتجاهل
+  function extractBlock(first, last, rawOf, memo, P) {
     rawOf = rawOf || function (t) { return t.nodeValue; };
+    if (memo && typeof memo.get !== "function") { memo = null; P = null; }
+    if (P && !Array.isArray(P.sels)) P = null;
+    if (P) {
+      for (var y = first; y; y = y.nextSibling) {
+        if (y.nodeType === 1 && shapeOf(y, memo, P) === "x") return null;
+        if (y === last) break;
+      }
+    }
     var slots = [{ nodes: [], raw: "" }], toks = [], n = 0, filled = [], code = false, depth = 0;
     // ★ صفّ لافتاتٍ «متراصّ» وحده (لا بياض بين بنوده ولا على أطرافها): جملةٌ موزّعةٌ على وسومٍ متجاورة
     // («<a>Contact Support</a><span> if you cannot sign in.</span>») ليست لافتات فلا يُعرَّب جزؤها وحده
@@ -796,14 +1270,16 @@
         return;
       }
       if (x.nodeType !== 1) return;
-      var k = inlineKind(x, rawOf, memo), id = ++n;
+      var k = inlineKind(x, rawOf, memo, P), id = ++n;
       if (depth === 0) { if (wsGap) loose = true; wsGap = false; item = []; items.push(item); iraw.push(""); }
       if (k === "c") {
         // ★ (S6-C) محتوى الذرّة بأصلها (rawOf) لا بقيمتها الحالية: علامةُ ترقيمٍ منفردة في ذرّتها يبدّلها المحرّك عند الكتابة
         // («,» ← «،») فكانت قيمتها الجديدة تغيّر القالب والبصمة في الجولة التالية فتُستعاد الإنجليزية — تقاذف
         var body = collapseWs(rawTextOf(x, rawOf)).trim();
         if (WORD_RE.test(body)) code = true;   // شيفرةٌ حقيقية؛ أيقونةٌ أو فاصلٌ لا يمنع «العقدة الوحيدة»
-        cut({ t: "a", k: "c", id: id, body: body, el: x });
+        var tk = { t: "a", k: "c", id: id, body: body, el: x };
+        if (P && shapeOf(x, memo, P) === "k") tk.kept = 1;   // ★ (ر24-ج1) ذرّةٌ ممّا تبقيه الشركة: لا يُبدَّل فيها شيء (punctAtoms)
+        cut(tk);
         return;
       }
       if (k !== "p") { cut({ t: "a", k: "g", id: id }); return; }
@@ -830,7 +1306,6 @@
       if (toks[i].body && PH_TEST.test(toks[i].body)) return null;
       tpl += tokStr(toks[i]) + texts[i + 1];
     }
-    if (tpl.length > (max || BLOCK.MAX)) return null;
     return {
       tpl: tpl, fp: fp64("b" + BLOCK.V + "\n" + tpl), toks: toks, slots: slots, texts: texts,
       lead: /^\s*/.exec(slots[0].raw)[0], trail: /\s*$/.exec(slots[E].raw)[0],
@@ -963,18 +1438,23 @@
   // حاصد الكتل: يمشي تحت body (meta.bodySel) كما يمشي المحرّك ويستخرج كل كتلةٍ مرّةً بالتطبيع نفسه.
   // يُرجع [{fp, tpl, single, group}] بترتيب الوثيقة؛ single: نصُّ عقدةٍ وحيدة (قاموس الواجهة يسبق فيه)،
   // group: نصوص بنود صفِّ اللافتات (تُعرَّب بندًا بندًا بقاموس الواجهة إن لم تُترجم الكتلة كلّها)
+  // ★ (ر24-أ، ٨ جمادى الأولى ١٤٤٨هـ — مراجعة Codex) بلا سقف طول (CX-003: كان opts.max يُسقط ما فوق 4,000 فلا يدخل الحصاد ولا الشمول)،
+  // وبالحماية نفسها التي يكتب بها المحرّك (CX-001): opts.chat (محدِّدات المحادثة، كحاصد DOM) وopts.skip، وقابل التحرير — جذرٌ تحت محميّ
+  // يُترك كلّه، والعنصر المحميّ يُرفض قبل قراءة نصّه، وتتابعٌ فيه محميٌّ يُترك كلّه. فلا يُقرأ من المحميّ نصٌّ أبدًا
+  // ★ (ر24-ج1) وopts.keep (SHARED.harvestKeep كالمحرّك): ما تبقيه الشركة من skip ذرّةٌ داخل التتابع لا رفضٌ له. وبلا keep فالمستثنى كلُّه محتوى مستخدم
   function harvestBlocks(doc, opts) {
     opts = opts || {};
-    var R = DOM_RULES, skip = opts.skip || null, out = [], seen = [];
+    var R = DOM_RULES, skip = opts.skip || null, out = [], seen = new Set();
     if (!opts.body || !doc || !doc.querySelectorAll) return out;
+    var P = blockProt(skip, !!opts.chat, opts.keep || null), memo = new WeakMap();
     var roots = Array.prototype.slice.call(doc.querySelectorAll(opts.body));
     var NF = (doc.defaultView && doc.defaultView.NodeFilter) || { SHOW_ELEMENT: 1, SHOW_TEXT: 4, FILTER_ACCEPT: 1, FILTER_REJECT: 2, FILTER_SKIP: 3 };
     for (var r = 0; r < roots.length; r++) {
+      if (protAbove(roots[r], P) || keptAbove(roots[r], P)) continue;
       var tw = doc.createTreeWalker(roots[r], NF.SHOW_ELEMENT | NF.SHOW_TEXT, {
         acceptNode: function (n) {
           if (n.nodeType === 1) {
-            if (R.SKIP[n.nodeName] || n.isContentEditable) return NF.FILTER_REJECT;
-            try { if (skip && n.matches && n.matches(skip)) return NF.FILTER_REJECT; } catch (e) {}
+            if (R.SKIP[n.nodeName] || protEl(n, P) || keptEl(n, P)) return NF.FILTER_REJECT;
             return NF.FILTER_SKIP;
           }
           var p = n.parentNode;
@@ -985,14 +1465,15 @@
       var n;
       while ((n = tw.nextNode())) {
         if (closestSafe(n.parentNode, R.SKIP_ANCESTOR) || (skip && closestSafe(n.parentNode, skip))) continue;
-        var o = blockOwner(n);
-        if (!o) continue;
-        var b = blockBounds(o.top);
-        if (seen.indexOf(b.first) >= 0) continue;
-        seen.push(b.first);
-        var ex = extractBlock(b.first, b.last, null, opts.max);
-        if (ex) out.push({ fp: ex.fp, tpl: ex.tpl, single: ex.single ? textKey(ex.single.nodeValue, 100000) : null,
-                           group: ex.group ? ex.group.map(function (t) { return t ? textKey(t.nodeValue, 100000) : t; }) : null });
+        var o = blockOwner(n, null, memo, P);
+        if (!o || o.prot) continue;
+        var b = blockBounds(o.top, null, memo, P);
+        if (seen.has(b.first)) continue;
+        seen.add(b.first);
+        var ex = extractBlock(b.first, b.last, null, memo, P);
+        // ★ (ر24-ج1) ومفتاحا single وgroup بلا سقف كالمحرّك (KEY_MAX = Infinity): كان 100,000 فعقدةٌ أطول تُصنَّف «للترجمة» والمحرّك يطلبها في قاموس الواجهة
+        if (ex) out.push({ fp: ex.fp, tpl: ex.tpl, single: ex.single ? textKey(ex.single.nodeValue, Infinity) : null,
+                           group: ex.group ? ex.group.map(function (t) { return t ? textKey(t.nodeValue, Infinity) : t; }) : null });
       }
     }
     return out;
@@ -1084,6 +1565,7 @@
     resolveDir: resolveDir,
     escapeRe: escapeRe,
     unescapeLiteral: unescapeLiteral,
+    unescapeTemplate: unescapeTemplate,
     makePattern: makePattern,
     makePatternBounded: makePatternBounded,
     patternLiteralLen: patternLiteralLen,
@@ -1092,14 +1574,32 @@
     patLiterals: patLiterals,
     litMayMatch: litMayMatch,
     patternIndex: patternIndex,
+    PAT_MAPS: PAT_MAPS,
+    fillPattern: fillPattern,
+    litLookup: litLookup,
+    patternRes: patternRes,
+    toolRes: toolRes,
+    patternApply: patternApply,
+    rawCaps: rawCaps,
     sortUserRules: sortUserRules,
     applyTermEdits: applyTermEdits,
+    scanUrlOk: scanUrlOk,
     DOM_RULES: DOM_RULES,
     textKey: textKey,
+    degroupDigits: degroupDigits,
+    regroupDigits: regroupDigits,
     harvestDom: harvestDom,
     routeMode: routeMode,
     harvestSkip: harvestSkip,
+    harvestKeep: harvestKeep,
+    selParts: selParts,
     BLOCK: BLOCK,
+    blockProt: blockProt,
+    blockShape: shapeOf,
+    protEl: protEl,
+    keptEl: keptEl,
+    protDesc: protDesc,
+    protAbove: protAbove,
     inlineKind: inlineKind,
     blockOwner: blockOwner,
     blockBounds: blockBounds,
@@ -1111,6 +1611,8 @@
     PUNCT_AR: PUNCT_AR,
     ltrMarks: ltrMarks,
     ltrParens: ltrParens,
+    ltrSafe: ltrSafe,
+    ltrSlash: ltrSlash,
     checkBlock: checkBlock,
     fp64: fp64,
     blockFp: blockFp,

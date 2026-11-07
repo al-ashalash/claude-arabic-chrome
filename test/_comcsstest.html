@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>comcss</title>
+<!--
+  ★ اتجاه claude.com (ر16-أ، ٦ جمادى الأولى ١٤٤٨هـ): مدخل claude.com في المانيفست يحقن base.css ثم rtl-com.css (المولَّدة من لقطة sitecss-com)
+  ثم com-point.css، في كل صفحةٍ من المضيف والنطاق قادمٌ خامل (status.upcoming). فيُفحص هنا:
+   ١) قائمة الأوراق في مدخل claude.com بترتيبها؛ ★ (ر28-ب، ٢٠ جمادى الأولى ١٤٤٨هـ — السؤال 2 على افتراضه) وصار مانيفست الحزمة يحجب المدخل ما دام
+      النطاق قادمًا، فيُفحص هنا أن لا مدخل يطابق مضيفه أو يحقن قاموسه أو أوراقه، وترتيبُها في مدخل النسخة المشغَّلة لفحص الاتجاه في selftest-tools؛
+   ٢) البوابة: كل قاعدة أسلوبٍ في الأوراق الثلاث تبدأ بسمةٍ على <html> لا يكتبها إلا المحرّك (‎html[data-cml…]‎)، وحساب الأسلوب لكل عنصرٍ في
+      البنية التجريبية هو هو بالأوراق وبدونها ما دامت السمات غائبة — ولو كتب الموقع dir="rtl" نفسه؛
+   ٣) القواعد النقطية (com-point.css) مشغَّلةً بسمات المحرّك: مؤشر التبويبات تحت التبويب النشط مع قلبٍ مولَّدٍ لمرساته (بشكل قاعدة rtl-com.css
+      وتخصيصها، على أصنافٍ تجريبية)، والأسهم الأربعة من القائمة المغلقة تنقلب وغيرها لا ينقلب ولا ما في جزر LTR، والشريط المتحرك جزيرة LTR،
+      وإطارا الأدراج الثلاثة يتبعان حافّتها الجديدة، ومتن مسار الهيكل LTR والترويسة RTL.
+  البنية اصطناعيةٌ من صنع المشروع تحاكي أصناف claude.com (CSS Modules ببصمةٍ تجريبية Zq) ومسارات أيقوناته، بلا نصٍّ من الموقع.
+  العقد: document.title الختامي = "comcss N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1100px;margin:auto}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}
+#tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+/* أسلوب الموقع كما في أوراقه (مؤشر التبويبات، والشريط، والأدراج) بأصنافٍ تجريبية */
+.Tabs-module-scss-module__Zq1aB__tabNav{position:relative;display:flex;gap:8px;width:600px}
+.Tabs-module-scss-module__Zq1aB__button{width:120px;height:32px}
+.Tabs-module-scss-module__Zq1aB__indicator{width:var(--indicator-w,0);height:4px;transform:translateX(var(--indicator-x,0));position:absolute;left:0;bottom:0;background:#d97757}
+/* قلب الورقة المولَّدة لمرساته بشكلها وتخصيصها (المصفِّر ×2 ثم المنطقي ×3) */
+html[data-cml-rtl="v2"]:not(#cml0#cml1) :where(.Tabs-module-scss-module__Zq1aB__indicator){left:unset}
+html[data-cml-rtl="v2"]:not(#cml0#cml1#cml2) :where(.Tabs-module-scss-module__Zq1aB__indicator){inset-inline-start:0}
+.Marquee-module-scss-module__Zq2cD__marquee{overflow:hidden}
+.Marquee-module-scss-module__Zq2cD__scroller{width:max-content;display:flex}
+.FilterDrawer-module-scss-module__Zq3eF__panel{animation:FilterDrawer-module-scss-module__Zq3eF__panel-in .4s both;position:absolute;right:0}
+.FilterDrawer-module-scss-module__Zq3eF__closing .FilterDrawer-module-scss-module__Zq3eF__panel{animation:FilterDrawer-module-scss-module__Zq3eF__panel-out .3s both}
+.CustomerPanel-module-scss-module__Zq4gH__panel{animation:CustomerPanel-module-scss-module__Zq4gH__panel-in .4s both}
+.CustomerPanel-module-scss-module__Zq4gH__panel.CustomerPanel-module-scss-module__Zq4gH__exiting{animation:CustomerPanel-module-scss-module__Zq4gH__panel-out .4s both}
+#fx svg{width:20px;height:20px}
+/* ★ (ر16-ب) رسومٌ بإحداثياتٍ من اليسار (القاعدة ٥): أسلوب الموقع، ثم قلب الورقة المولَّدة لمراسيها بشكله وتخصيصه */
+.ConstellationMap-module-scss-module__Zq6kL__frame{position:relative;width:300px;height:40px;overflow:hidden}
+.ConstellationMap-module-scss-module__Zq6kL__stage{position:absolute;left:0;top:0;width:400px;height:40px;transform:scale(.75);transform-origin:0 0}
+.ConstellationMap-module-scss-module__Zq6kL__s{position:absolute;left:0;top:0;width:10px;height:10px}
+.StepPanel-module-scss-module__Zq7mN__artifact{position:relative;width:200px;height:30px;margin:0;overflow:hidden}
+.StepPanel-module-scss-module__Zq7mN__artifact iframe{position:absolute;left:0;top:0;width:400px;height:60px;border:0;transform-origin:0 0}
+.UseCaseLibrary-module-scss-module__Zq8pQ__stage{position:relative;width:300px;height:30px}
+.UseCaseLibrary-module-scss-module__Zq8pQ__panel{position:absolute;left:50%;top:0;width:100px;height:30px;transform:translateX(-50%)}
+.OverviewHero-module-scss-module__Zq9rS__stage{position:relative;width:300px;height:30px}
+.OverviewHero-module-scss-module__Zq9rS__ring{position:absolute;left:0;top:0;width:300px;height:30px}
+.OverviewHero-module-scss-module__Zq9rS__tile{position:absolute;left:50%;top:0;width:20px;height:20px}
+.Testimonials-module-scss-module__Zq0tU__carouselViewport{width:100px;overflow:hidden}
+.Testimonials-module-scss-module__Zq0tU__carouselTrack{display:flex;width:100px}
+html[data-cml-rtl="v2"]:not(#cml0#cml1) :where(.ConstellationMap-module-scss-module__Zq6kL__stage,.ConstellationMap-module-scss-module__Zq6kL__s,
+  .StepPanel-module-scss-module__Zq7mN__artifact iframe,.UseCaseLibrary-module-scss-module__Zq8pQ__panel,.OverviewHero-module-scss-module__Zq9rS__ring,
+  .OverviewHero-module-scss-module__Zq9rS__tile){left:unset}
+html[data-cml-rtl="v2"]:not(#cml0#cml1#cml2) :where(.ConstellationMap-module-scss-module__Zq6kL__stage,.ConstellationMap-module-scss-module__Zq6kL__s,
+  .StepPanel-module-scss-module__Zq7mN__artifact iframe,.OverviewHero-module-scss-module__Zq9rS__ring){inset-inline-start:0}
+html[data-cml-rtl="v2"]:not(#cml0#cml1#cml2) :where(.UseCaseLibrary-module-scss-module__Zq8pQ__panel,.OverviewHero-module-scss-module__Zq9rS__tile){inset-inline-start:50%}
+/* ★ (ر16-ج) المعاينة الحيّة المضمَّنة (5و)، وصورة التطبيق (5ز)، ومسار البطاقات الجانبية بالتمرير (5ح): أسلوب الموقع، ثم قلب الورقة المولَّدة */
+.EmbedFrame-module-scss-module__ZqEmB__slot{position:relative;width:200px;height:30px;overflow:hidden}
+.EmbedFrame-module-scss-module__ZqEmB__live{position:absolute;inset:0}
+.EmbedFrame-module-scss-module__ZqEmB__iframe{transform-origin:0 0;border:0;max-width:none;position:absolute;top:0;left:0;width:400px;height:60px}
+.AppShell-module-scss-module__ZqApS__window{position:relative;width:300px;height:30px}
+.AppShell-module-scss-module__ZqApS__titlebar{position:absolute;top:0;left:0;display:flex;padding:0 8px}
+.AppShell-module-scss-module__ZqApS__titlebar button{width:30px;height:20px;padding:0;border:0}
+.MarginaliaRail-module-scss-module__ZqMrL__track{display:flex;width:100px;height:30px;overflow:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.MarginaliaRail-module-scss-module__ZqMrL__slide{flex:0 0 100px;width:100px;scroll-snap-align:start}
+html[data-cml-rtl="v2"]:not(#cml0#cml1) :where(.EmbedFrame-module-scss-module__ZqEmB__iframe,.AppShell-module-scss-module__ZqApS__titlebar){left:unset}
+html[data-cml-rtl="v2"]:not(#cml0#cml1#cml2) :where(.EmbedFrame-module-scss-module__ZqEmB__iframe,.AppShell-module-scss-module__ZqApS__titlebar){inset-inline-start:0}</style>
+<link rel="stylesheet" href="../extension/base.css" id="s-base">
+<link rel="stylesheet" href="../extension/rtl-com.css" id="s-rtl">
+<link rel="stylesheet" href="../extension/com-point.css" id="s-point">
+<div id="fx">
+<header data-cta-section="nav" id="hdr"><a href="#" id="hA">Zq nav</a>
+  <svg viewBox="0 0 20 20" id="iHdrNext"><path d="M11.1465 4.64648C11.3417 4.45127 11.6582 4.45136 11.8535 4.64648L16.8535 9.64649Z"/></svg></header>
+<main id="main-content">
+  <div class="Tabs-module-scss-module__Zq1aB__wrapper"><div class="Tabs-module-scss-module__Zq1aB__tabNav" id="tabs">
+    <button class="Tabs-module-scss-module__Zq1aB__button" id="t0">Zq one</button><button class="Tabs-module-scss-module__Zq1aB__button" id="t1">Zq two</button>
+    <button class="Tabs-module-scss-module__Zq1aB__button" id="t2">Zq three</button>
+    <span class="Tabs-module-scss-module__Zq1aB__indicator" id="ind"></span></div></div>
+  <!-- القائمة المغلقة: → و← و→| و↪ — ثم ما لا يُقلب: ↗ الخارجي، والقائمة المنسدلة، و×، والتشغيل -->
+  <svg viewBox="0 0 20 20" id="iNext"><path d="M11.1465 4.64648C11.3417 4.45127 11.6582 4.45136 11.8535 4.64648L16.8535 9.64649Z"/></svg>
+  <svg viewBox="0 0 20 20" id="iPrev"><path d="M8.14648 4.64648C8.34176 4.45136 8.6583 4.45127 8.85352 4.64648L3.14648 9.64649Z"/></svg>
+  <svg viewBox="0 0 20 20" id="iGo"><path d="M16.5 3C16.7761 3 17 3.22386 17 3.5V16.5L16.9902 16.6006L16 16.5V3.5C16 3.22386 16.2239 3 16.5 3ZM8.12793 5.16504L13.835 9.62793Z"/></svg>
+  <svg viewBox="0 0 20 20" id="iFwd"><path d="M12.1279 2.66477C12.3126 2.45986 12.6298 2.44322 12.835 2.62766L17.835 7.12773Z"/></svg>
+  <svg viewBox="0 0 20 20" id="iBar"><path d="M16.5 3C16.7761 3 17 3.22386 17 3.5V16.5L16.9902 16.6006L16 16.5V3.5C16 3.22386 16.2239 3 16.5 3Z"/></svg>
+  <svg viewBox="0 0 20 20" id="iExt"><path d="M9.5 3C9.77614 3 10 3.22386 10 3.5C10 3.77614 9.77614 4 9.5 4H4.5Z"/></svg>
+  <svg viewBox="0 0 20 20" id="iDown"><path d="M14.128 7.16482C14.3126 6.95983 14.6298 6.94336 14.835 7.12771Z"/></svg>
+  <svg viewBox="0 0 20 20" id="iClose"><path d="M15.1465 4.14642C15.3418 3.95121 15.6583 3.95118 15.8536 4.14642L10.7071 9.99997Z"/></svg>
+  <svg viewBox="0 0 20 20" id="iPlay"><path d="M4 4.0465C4.00028 2.87121 5.29098 2.15224 6.29005 2.7711L15.8927 8.72526Z"/></svg>
+  <p dir="ltr" id="pLtr">Zq English block <svg viewBox="0 0 20 20" id="iInLtr"><path d="M11.1465 4.64648C11.3417 4.45127 11.6582 4.45136 11.8535 4.64648L16.8535 9.64649Z"/></svg></p>
+  <div class="text-rich-text"><p dir="auto" data-cml-dir id="pAuto">Zq kept English block <svg viewBox="0 0 20 20" id="iInAuto"><path d="M11.1465 4.64648C11.3417 4.45127 11.6582 4.45136 11.8535 4.64648L16.8535 9.64649Z"/></svg></p></div>
+  <div class="Marquee-module-scss-module__Zq2cD__marquee" id="mq"><div class="Marquee-module-scss-module__Zq2cD__scroller" id="mqs"><span>Zq a</span><span>Zq b</span>
+    <svg viewBox="0 0 20 20" id="iInMq"><path d="M11.1465 4.64648C11.3417 4.45127 11.6582 4.45136 11.8535 4.64648L16.8535 9.64649Z"/></svg></div></div>
+  <!-- ★ (ر16-ب) القاعدة ٥: خريطة النجوم (مسرحٌ بمقياسٍ من اليسار ونجمةٌ بـtranslate)، ومعاينةٌ مصغّرة، ولوحةٌ متوسّطة، وبلاطةٌ حول المركز -->
+  <div class="ConstellationMap-module-scss-module__Zq6kL__frame" id="cmF"><div class="ConstellationMap-module-scss-module__Zq6kL__stage" id="cmS">
+    <span class="ConstellationMap-module-scss-module__Zq6kL__s" id="cmStar" style="transform:translate(200px, 5px)"></span></div></div>
+  <figure class="StepPanel-module-scss-module__Zq7mN__artifact" id="spA"><iframe id="spF" title="Zq" style="transform:scale(.5)"></iframe></figure>
+  <div class="UseCaseLibrary-module-scss-module__Zq8pQ__stage" id="ucS"><div class="UseCaseLibrary-module-scss-module__Zq8pQ__panel" id="ucP"></div></div>
+  <div class="OverviewHero-module-scss-module__Zq9rS__stage" id="ohS"><div class="OverviewHero-module-scss-module__Zq9rS__ring" id="ohR">
+    <div class="OverviewHero-module-scss-module__Zq9rS__tile" id="ohT" style="transform:translate(-120px, 0)"></div></div></div>
+  <!-- ★ (ر16-ج) 5و: iframe بعرضٍ مضاعف ومقياسٍ من اليسار؛ 5ز: نافذةٌ مرسومة بشريط عنوانٍ مرساته يسارًا وسهمين من القائمة المغلقة؛ 5ح: مسارٌ بالتمرير -->
+  <div class="EmbedFrame-module-scss-module__ZqEmB__slot" id="efS"><div class="EmbedFrame-module-scss-module__ZqEmB__live">
+    <iframe class="EmbedFrame-module-scss-module__ZqEmB__iframe" id="efF" title="Zq" style="transform:scale(.5)"></iframe></div></div>
+  <div class="AppShell-module-scss-module__ZqApS__window" id="asW"><div class="AppShell-module-scss-module__ZqApS__titlebar" id="asT">
+    <button id="asB"><svg viewBox="0 0 20 20" id="iAsBack"><path d="M8.14648 4.64648C8.34176 4.45136 8.6583 4.45127 8.85352 4.64648L3.14648 9.64649Z"/></svg></button>
+    <button id="asF"><svg viewBox="0 0 20 20" id="iAsFwd"><path d="M11.1465 4.64648C11.3417 4.45127 11.6582 4.45136 11.8535 4.64648L16.8535 9.64649Z"/></svg></button></div></div>
+  <div class="MarginaliaRail-module-scss-module__ZqMrL__track" id="mrT"><div class="MarginaliaRail-module-scss-module__ZqMrL__slide" id="mrS0">Zq a</div>
+    <div class="MarginaliaRail-module-scss-module__ZqMrL__slide" id="mrS1">Zq b</div></div>
+  <div class="Testimonials-module-scss-module__Zq0tU__carouselViewport" id="tsV"><div class="Testimonials-module-scss-module__Zq0tU__carouselTrack" id="tsT" style="transform:translateX(-100px)">
+    <div class="Testimonials-module-scss-module__Zq0tU__carouselItem" style="width:100px;flex:0 0 auto">Zq a</div><div class="Testimonials-module-scss-module__Zq0tU__carouselItem" id="tsI1" style="width:100px;flex:0 0 auto">Zq b</div></div></div>
+</main>
+<div class="FilterDrawer-module-scss-module__Zq3eF__root" id="fdRoot"><div class="FilterDrawer-module-scss-module__Zq3eF__panel" id="fd"><div class="FilterDrawer-module-scss-module__Zq3eF__panelScroll" id="fds"></div></div></div>
+<aside class="CustomerPanel-module-scss-module__Zq4gH__panel" id="cp"></aside>
+<footer data-cta-section="footer" id="ftr">Zq footer</footer>
+</div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>
+var jsErrors = 0; window.onerror = function () { jsErrors++; };
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function $(id) { return document.getElementById(id); }
+var H = document.documentElement, EXT = "../extension/";
+var ENGINE = ["data-cml", "data-cml-rtl", "data-cml-route", "data-cml-body"];
+function setOn(route) { H.setAttribute("data-cml", "on"); H.setAttribute("dir", "rtl"); H.setAttribute("lang", "ar"); H.setAttribute("data-cml-rtl", "v2");
+  if (route) H.setAttribute("data-cml-route", route); else H.removeAttribute("data-cml-route"); }
+function setOff() { ENGINE.forEach(function (a) { H.removeAttribute(a); }); H.removeAttribute("dir"); H.setAttribute("lang", "en"); }
+function sheetsOf() { return ["s-base", "s-rtl", "s-point"].map(function (id) { return $(id).sheet; }); }
+// ‎CSSStyleSheet.disabled‎ لا ‎link.disabled‎: هذا يعيد تحميل الورقة بعد رفعه فلا تنطبق في الحال
+function setSheets(on) { ["s-base", "s-rtl", "s-point"].forEach(function (id) { $(id).sheet.disabled = !on; }); }
+// حساب الأسلوب لكل عنصرٍ في البنية التجريبية (خصائص التخطيط والاتجاه والتحويل والحركة)
+var PROPS = ["direction", "unicode-bidi", "text-align", "left", "right", "margin-left", "margin-right", "padding-left", "padding-right", "border-left-width",
+  "border-right-width", "float", "transform", "scale", "translate", "animation-name", "line-height", "visibility", "display", "position", "inset-inline-start"];
+function computedAll() {
+  var out = [], els = $("fx").querySelectorAll("*");
+  out.push(PROPS.map(function (p) { return getComputedStyle(document.body).getPropertyValue(p); }).join(","));
+  for (var i = 0; i < els.length; i++) { var cs = getComputedStyle(els[i]); out.push(PROPS.map(function (p) { return cs.getPropertyValue(p); }).join(",")); }
+  return out;
+}
+// قواعد الأسلوب في ورقة (ومنها ما في @layer و@media) — محدِّداتها مقسومةً على الفواصل العليا.
+// ★ (مراجعة ر16-أ) والقواعد العامة التي تعمل بلا محدِّد تُعدّ غير مبوَّبة باسمها: @keyframes باسمٍ بلا بادئتنا (يحلّ محلّ إطار الموقع
+// الذي يحمل اسمه ولو خمدت الأوراق)، و@layer باسمٍ بلا بادئتنا (أوراقنا تُحقن قبل أوراق الموقع فيعيد ترتيب طبقاته)، وكل قاعدةٍ أخرى
+// تُسجَّل للمستند كله (@font-face و@property و@import و@counter-style…). والمسموح: قواعد الأسلوب، و@media و@supports و@container، والطبقات
+// والإطارات ببادئة cml-
+function styleRules(sheet) {
+  var out = [], OURS = /^cml-/;
+  (function walk(list) {
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i], kind = r.constructor ? r.constructor.name : "";
+      if (r.type === 1) out.push(r.selectorText);
+      else if (r.type === 7) { if (!OURS.test(r.name)) out.push("@keyframes " + r.name); }   // الإطارات لا ترسم بنفسها إلا باسمٍ يطابق اسم الموقع
+      else if (kind === "CSSLayerStatementRule") [].forEach.call(r.nameList, function (n) { if (!OURS.test(n)) out.push("@layer " + n); });
+      else if (kind === "CSSLayerBlockRule") { if (!OURS.test(r.name)) out.push("@layer " + r.name); walk(r.cssRules); }
+      else if (r.type === 4 || r.type === 12 || kind === "CSSContainerRule") walk(r.cssRules);    // @media و@supports و@container
+      else out.push(r.type === 5 ? "@font-face" : "@" + (kind || "rule-" + r.type));              // وجه خطٍّ أو قاعدةٌ عامةٌ أخرى بلا بوابة
+    }
+  })(sheet ? sheet.cssRules : []);
+  return out;
+}
+function splitTop(s) { var out = [], lvl = 0, cur = ""; for (var i = 0; i < s.length; i++) { var ch = s[i];
+  if (ch === "(" || ch === "[") lvl++; else if (ch === ")" || ch === "]") lvl--; if (ch === "," && !lvl) { out.push(cur.trim()); cur = ""; } else cur += ch; }
+  if (cur.trim()) out.push(cur.trim()); return out; }
+var GATE = /^html\[data-cml(?:-[a-z]+)?(?:[\]=^])/;
+function rectX(el) { var r = el.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.width)]; }
+// ما يفعله الموقع بجافاسكربت: المتغيّران من يسار شريط التبويبات (offsetLeft) لعرض التبويب النشط
+function activate(i) { var t = $("t" + i), nav = $("tabs"); nav.style.setProperty("--indicator-x", t.offsetLeft + "px"); nav.style.setProperty("--indicator-w", t.offsetWidth + "px"); }
+function underActive(i) { var a = rectX($("t" + i)), b = rectX($("ind")); return Math.abs(a[0] - b[0]) <= 1 && Math.abs(a[1] - b[1]) <= 1 ? "تحت التبويب" : "خارجه " + JSON.stringify([a, b]); }
+function sc(id) { var v = getComputedStyle($(id)).scale; return v === "-1 1" ? "مقلوب" : v === "none" ? "-" : v; }
+function anim(id) { return getComputedStyle($(id)).animationName; }
+// ★ (ر16-ب) مواضع رسوم القاعدة ٥ من حاوياتها (بكسلٌ صحيح): النجمة والمسرح من الإطار، والمعاينة من الشكل، واللوحة من المسرح، والبلاطة من الحلقة
+function islandPos() {
+  function dx(a, b) { return Math.round($(a).getBoundingClientRect().left - $(b).getBoundingClientRect().left); }
+  return [dx("cmStar", "cmF"), dx("cmS", "cmF"), dx("spF", "spA"), dx("ucP", "ucS"), dx("ohT", "ohR"), dx("tsI1", "tsV")].join(",");
+}
+// ★ (ر16-ج) جزر 5و–5ح: موضع المعاينة من إطارها، وموضع شريط العنوان من النافذة وترتيب زرّيه (الرجوع قبل التقدّم من اليسار)، وتمرير المسار
+// إلى البطاقة الثانية كما يمرّره الموقع (scrollLeft موجب) — ثم القيمة المقروءة وموضع البطاقة الثانية من المسار
+function dx2(a, b) { return Math.round($(a).getBoundingClientRect().left - $(b).getBoundingClientRect().left); }
+function efPos() { return String(dx2("efF", "efS")); }
+function asPos() { return dx2("asT", "asW") + "," + ($("asB").getBoundingClientRect().left < $("asF").getBoundingClientRect().left ? "رجوع←تقدّم" : "مقلوب"); }
+function mrPos() { var t = $("mrT"); t.scrollLeft = 100; var sl = Math.round(t.scrollLeft), d1 = dx2("mrS1", "mrT"); t.scrollLeft = 0; return sl + "," + d1; }
+function islandPos2() { return { ef: efPos(), as: asPos(), mr: mrPos() }; }
+function dirOf(id) { return getComputedStyle($(id)).direction; }
+// درج الفهرس في إطارٍ بعرضٍ معلوم (استعلام الوسائط بعرض الإطار): فوق 52.125em يدخل من الجانب، ودونه صفحةٌ من أسفل لا تُمسّ.
+// وأسلوب الموقع فيه كما في ورقته (الإطار الرأسي دون 52.125em)
+var TOC_CSS = ".TocDrawer-module-scss-module__Zq5iJ__panel{animation:TocDrawer-module-scss-module__Zq5iJ__panel-in .4s both}" +
+  ".TocDrawer-module-scss-module__Zq5iJ__closing .TocDrawer-module-scss-module__Zq5iJ__panel{animation:TocDrawer-module-scss-module__Zq5iJ__panel-out .3s both}" +
+  "@media (max-width:52.124em){.TocDrawer-module-scss-module__Zq5iJ__panel{animation-name:TocDrawer-module-scss-module__Zq5iJ__panel-in-up}" +
+  ".TocDrawer-module-scss-module__Zq5iJ__closing .TocDrawer-module-scss-module__Zq5iJ__panel{animation-name:TocDrawer-module-scss-module__Zq5iJ__panel-out-down}}";
+function tocAt(w) {
+  return new Promise(function (res) {
+    var f = document.createElement("iframe"); f.style.width = w + "px"; f.style.height = "60px";
+    f.onload = function () {
+      var d = f.contentDocument, h = d.documentElement, p = d.getElementById("td"), out = [];
+      out.push(getComputedStyle(p).animationName);
+      h.setAttribute("data-cml", "on"); h.setAttribute("dir", "rtl"); h.setAttribute("data-cml-rtl", "v2"); h.setAttribute("data-cml-route", "full");
+      out.push(getComputedStyle(p).animationName);
+      d.getElementById("tdRoot").classList.add("TocDrawer-module-scss-module__Zq5iJ__closing");
+      out.push(getComputedStyle(p).animationName);
+      f.remove(); res(out.join("|").replace(/TocDrawer-module-scss-module__Zq5iJ__/g, ""));
+    };
+    f.srcdoc = '<!doctype html><html><head><base href="' + location.href + '"><link rel="stylesheet" href="' + EXT + 'base.css"><link rel="stylesheet" href="' +
+      EXT + 'rtl-com.css"><link rel="stylesheet" href="' + EXT + 'com-point.css"><style>' + TOC_CSS + '</style></head><body><div class="TocDrawer-module-scss-module__Zq5iJ__root" id="tdRoot">' +
+      '<div class="TocDrawer-module-scss-module__Zq5iJ__panel" id="td"></div></div></body></html>';
+    document.body.appendChild(f);
+  });
+}
+
+(async function () {
+  // ١) المانيفست — ★ (ر28-ب، ٢٠ جمادى الأولى ١٤٤٨هـ — السؤال 2 على افتراضه) مانيفست الحزمة يحجب مدخل claude.com ما دام النطاق قادمًا (build.mjs
+  // ‏packageEntries)، فلا يُعلن مضيفُه ولا يُحقن قاموسه ولا أوراقه في صفحةٍ مشحونة. وترتيب أوراقه (base.css ثم rtl-com.css ثم com-point.css) في المدخل الذي
+  // تضيفه النسخة المشغَّلة لفحص الاتجاه يمتحنه selftest-tools (switchedOn.com.entry)
+  var MF = await fetch(EXT + "manifest.json").then(function (r) { return r.json(); }, function () { return {}; });
+  var CS = MF.content_scripts || [];
+  var comHost = CS.filter(function (c) { return (c.matches || []).indexOf("https://claude.com/*") >= 0 || (c.js || []).indexOf("dict-com.js") >= 0; }).length;
+  var comCss = CS.filter(function (c) { return (c.css || []).some(function (f) { return f === "rtl-com.css" || f === "com-point.css"; }); }).length;
+  check("★ مانيفست الحزمة يحجب مدخل claude.com (النطاق قادمٌ خامل): لا مدخل يطابق مضيفه أو يحقن قاموسه، ولا مدخل يحقن rtl-com.css أو com-point.css",
+        "0|0|true", comHost + "|" + comCss + "|" + (CS.length > 0 && CS.every(function (c) { return c.run_at === "document_start"; })));
+
+  // ٢) البوابة: كل قاعدة أسلوبٍ في الأوراق الثلاث خلف سمةٍ يكتبها المحرّك وحده
+  var counts = [], ungated = [];
+  sheetsOf().forEach(function (sh, k) {
+    var sels = styleRules(sh); counts.push(sels.length);
+    sels.forEach(function (s) { splitTop(s).forEach(function (one) { if (!GATE.test(one)) ungated.push(["base", "rtl", "point"][k] + ": " + one.slice(0, 90)); }); });
+  });
+  check("★ البوابة: كل قاعدة أسلوبٍ في base.css وrtl-com.css (أكثر من 2,000) وcom-point.css تبدأ بسمةٍ على <html> يكتبها المحرّك وحده، ولا وجه خطٍّ ولا قاعدة عامة أخرى، وأسماء الطبقات والإطارات ببادئتنا",
+        "0|true|true", ungated.length + "|" + (counts[1] > 2000) + "|" + (counts[2] >= 8) + (ungated.length ? " " + ungated.slice(0, 3).join(" ¦ ") : ""));
+  // وحساب الأسلوب هو هو بالأوراق وبدونها والسمات غائبة (النطاق القادم)، ولو كتب الموقع dir="rtl" على <html> بنفسه
+  setOff();
+  setSheets(false); var c0 = computedAll().join("|");
+  setSheets(true); var c1 = computedAll().join("|");
+  H.setAttribute("dir", "rtl");
+  setSheets(false); var d0 = computedAll().join("|");
+  setSheets(true); var d1 = computedAll().join("|");
+  H.removeAttribute("dir");
+  check("★ خامل بلا سمات المحرّك: حساب الأسلوب لكل عنصرٍ في البنية التجريبية هو هو بالأوراق الثلاث وبدونها، ومعه dir=\"rtl\" من الموقع وحده",
+        "true|true|" + $("fx").querySelectorAll("*").length, (c0 === c1) + "|" + (d0 === d1) + "|" + (computedAll().length - 1));
+  activate(1); var off = [underActive(1), sc("iNext"), getComputedStyle($("mq")).direction].join("|");
+  var islOff = islandPos(), isl2Off = islandPos2();
+
+  // ٣) مشغَّلًا بسمات المحرّك (data-cml="on" وdir="rtl" وdata-cml-rtl="v2"، والمسار كامل)
+  setOn("full");
+  activate(1); var a1 = underActive(1);
+  activate(2); var a2 = underActive(2);
+  activate(0); var a0 = underActive(0);
+  check("★ مؤشر التبويبات تحت التبويب النشط في RTL رغم قلب الورقة المولَّدة لمرساته (يحسب الموقع موضعه من اليسار)، لثلاثة تبويبات",
+        "تحت التبويب|تحت التبويب|تحت التبويب|0px", [a1, a2, a0, getComputedStyle($("ind")).left].join("|"));
+  check("★ الأسهم الاتجاهية الأربعة من القائمة المغلقة تنقلب (→ و← و→| و↪)، وفي الترويسة كذلك", "مقلوب|مقلوب|مقلوب|مقلوب|مقلوب",
+        ["iNext", "iPrev", "iGo", "iFwd", "iHdrNext"].map(sc).join("|"));
+  check("★ وما سواها لا ينقلب: خطٌّ بلا سهم، و↗ الخارجي، والقائمة المنسدلة، و×، والتشغيل", "-|-|-|-|-",
+        ["iBar", "iExt", "iDown", "iClose", "iPlay"].map(sc).join("|"));
+  check("★ ولا سهمٌ في جزر LTR: كتلةٌ تعلن dir=\"ltr\"، وكتلةٌ من dirSel حُسمت إنجليزيةً (auto)، والشريط المتحرك", "-|-|-",
+        ["iInLtr", "iInAuto", "iInMq"].map(sc).join("|"));
+  check("★ الشريط المتحرك (Marquee) جزيرة LTR في صفحةٍ RTL، وما حوله RTL", "ltr|rtl", getComputedStyle($("mq")).direction + "|" + getComputedStyle($("main-content")).direction);
+  check("★ رسومٌ بإحداثياتٍ من اليسار جزرٌ LTR رغم قلب الورقة المولَّدة لمراسيها: نجمة الخريطة ومسرحها، والمعاينة المصغّرة، واللوحة المتوسّطة، والبلاطة حول المركز، والشهادة الظاهرة في مسار الشريحة — مواضعها هي مواضع LTR",
+        "150,0,0,100,30,0|ltr|ltr|ltr|ltr|rtl|ltr|rtl", islandPos() + "|" + ["cmF", "spA", "ucS", "ohR", "ohS", "tsT", "tsI1"].map(function (id) { return getComputedStyle($(id)).direction; }).join("|"));
+  check("★ (ر16-ج) المعاينة الحيّة المضمَّنة (EmbedFrame) جزيرة LTR: الإطار المصغَّر من زاويته اليسرى يبدأ من يسار إطاره كما قبل السمات",
+        isl2Off.ef + "|ltr", efPos() + "|" + dirOf("efS"));
+  check("★ (ر16-ج) صورة التطبيق المرسومة (AppShell) جزيرة LTR حرفية: شريط عنوانها يسارًا، وزرّا الرجوع والتقدّم في ترتيبهما، وسهماهما (من القائمة المغلقة) لا ينقلبان",
+        isl2Off.as + "|-|-|ltr", asPos() + "|" + sc("iAsBack") + "|" + sc("iAsFwd") + "|" + dirOf("asW"));
+  check("★ (ر16-ج) مسار البطاقات الجانبية (MarginaliaRail) LTR: يُمرَّر إلى بطاقته الثانية بقيمة scrollLeft موجبة كما يمرّره الموقع (وفي RTL تُقصّ إلى الصفر)، وكل بطاقةٍ فيه RTL",
+        isl2Off.mr + "|ltr|rtl", mrPos() + "|" + dirOf("mrT") + "|" + dirOf("mrS1"));
+  var dr = [anim("fd"), anim("cp"), anim("fds")];
+  $("fdRoot").classList.add("FilterDrawer-module-scss-module__Zq3eF__closing"); $("cp").classList.add("CustomerPanel-module-scss-module__Zq4gH__exiting");
+  dr.push(anim("fd"), anim("cp"));
+  check("★ درج الفلاتر ولوحة العميل (مرساتهما يسارًا في RTL) يدخلان من اليسار ويخرجان إليه، والمحتوى الداخلي لا يُمسّ",
+        "cml-com-from-left-in|cml-com-from-left-in|none|cml-com-from-left-out|cml-com-from-left-out", dr.join("|"));
+  var tw = await tocAt(900), tn = await tocAt(600);
+  check("★ ودرج الفهرس (مرساته يمينًا في RTL) يدخل من اليمين ويخرج إليه في إطارٍ بعرض 900، وفي إطارٍ بعرض 600 صفحته الرأسية من أسفل على أصلها، وخاملٌ قبل السمات",
+        "panel-in|cml-com-from-right-in|cml-com-from-right-out/panel-in-up|panel-in-up|panel-out-down", tw + "/" + tn);
+  setOn("shell");
+  check("★ مسار الهيكل: المتن LTR على أصله وسهمه لا ينقلب، والترويسة والتذييل RTL وسهم الترويسة ينقلب", "ltr|-|rtl|rtl|مقلوب",
+        [getComputedStyle($("main-content")).direction, sc("iNext"), getComputedStyle($("hdr")).direction, getComputedStyle($("ftr")).direction, sc("iHdrNext")].join("|"));
+  setOn("full");
+  check("وفي المسار الكامل المتن RTL", "rtl", getComputedStyle($("main-content")).direction);
+  // والاتجاه مطفأٌ (data-cml="on" بلا dir="rtl"): لا قاعدة نقطية
+  H.removeAttribute("dir"); H.removeAttribute("data-cml-rtl");
+  check("ومع التعريب بلا قلب الاتجاه: لا سهم مقلوب ولا جزيرة ولا إطار مبدَّل", "-|ltr|FilterDrawer-module-scss-module__Zq3eF__panel-out",
+        sc("iNext") + "|" + getComputedStyle($("mq")).direction + "|" + anim("fd"));
+  setOff();
+  check("وقبل السمات (خامل): المؤشر بأسلوب الموقع، والسهم على أصله، والشريط باتجاه الصفحة", "تحت التبويب|-|ltr", off);
+  check("وقبل السمات: رسوم القاعدة ٥ بمواضع الموقع نفسها (المرجع الذي تُقاس عليه الجزر)", "150,0,0,100,30,0", islOff);
+  check("وقبل السمات: جزر 5و–5ح بمواضع الموقع (المعاينة وشريط العنوان من اليسار، والمسار يُمرَّر 100 إلى بطاقته الثانية)", "0,0,رجوع←تقدّم,100,0", [isl2Off.ef, isl2Off.as, isl2Off.mr].join(","));
+
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "comcss " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "COMCSSTEST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})().catch(function (e) { jsErrors++; document.title = "comcss 0/1"; var p = document.createElement("pre"); p.textContent = String(e && e.stack || e); document.body.appendChild(p); });
+</script>

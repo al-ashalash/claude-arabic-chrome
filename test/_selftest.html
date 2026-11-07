@@ -48,15 +48,25 @@
     <div class="item" data-expect="خيارات إضافية لـ«خطة البحث»" aria-label="More options for خطة البحث">aria-label pattern test</div>
     <div class="item" data-expect="بريدة، منطقة القصيم، السعودية">Buraydah, Al-Qassim Region, SA</div>
     <div class="item" data-expect="Zurich، منطقة Zurich، CH">Zurich, Zurich Region, CH</div>
-    <div class="item" data-expect="Electron على ويندوز · الرياض">Electron on Windows · الرياض</div>
+    <!-- ★ (ت14-هـ3، ٢٦ جمادى الأولى ١٤٤٨هـ) أسماء المنصّات بحروفها (RULES §2، وصفّ المصطلحات 103 في موافقة ت14-و): Windows لا «ويندوز»، فهذا الصف و«Chrome (Windows)» أدناه بالقيمة المراجَعة -->
+    <div class="item" data-expect="Electron على Windows · الرياض">Electron on Windows · الرياض</div>
     <div class="item" data-expect="Ctrl+B">Ctrl+B</div>
     <div class="item" data-expect="سياسة الاستخدام">Usage Policy</div>
-    <div class="item" data-expect="Chrome (ويندوز)">Chrome (Windows)</div>
+    <div class="item" data-expect="Chrome (Windows)">Chrome (Windows)</div>
     <!-- ★ (ت6-ب، المراجعة، ٥ جمادى الأولى ١٤٤٨هـ — القرار 99) «Created {date}» مقصورٌ على التواريخ بأسماء الشهور فيُعرَّب الشهر،
          وما ليس تاريخًا يبقى بالإنجليزية كاملًا؛ و«{activeCount} running» العام محذوف: شقيقه الرقمي يُعرّب العدد، والنص الحرّ لا يُمسّ -->
     <div class="item" data-expect="أُنشئ في 16 أكتوبر 2026">Created Oct 16, 2026</div>
     <div class="item" data-expect="أُنشئ في 16 أكتوبر">Created Oct 16</div>
     <div class="item" data-expect="Created folder X">Created folder X</div>
+    <!-- ★ (ت14-هـ4، ٢٦ جمادى الأولى ١٤٤٨هـ) متغيّرٌ يحمل تاريخًا واسمه غير «date»: الصفحة تكتب {created} و{expires} تاريخًا بأسماء الشهور
+         (FormattedDate بـdateStyle medium في صفحات الإدارة)، و{day} في رسالة نفاد الرصيد شهرًا ويومًا ({month: short, day: numeric})؛ فلكلٍّ
+         توأمٌ بشكل التاريخ قبل شقيقه العام، والوقت {time} يبقى كما تكتبه الصفحة (وقتٌ لا تاريخ). وكانت تخرج «أُنشئ في Mar 14, 2027 · …» -->
+    <div class="item" data-expect="أُنشئ في 14 مارس 2027 · تنتهي الصلاحية في 14 مارس 2028">Created Mar 14, 2027 · Expires Mar 14, 2028</div>
+    <div class="item" data-expect="أُنشئ في 14 مارس 2027 · لا تنتهي صلاحيته">Created Mar 14, 2027 · Doesn’t expire</div>
+    <div class="item" data-expect="يتوقف «Zeddicus» (تنتهي صلاحيته في 14 مارس 2028) عن العمل فورًا. وكل ما لا يزال يستخدمه سيتلقّى خطأً في المصادقة.">“Zeddicus” (expires Mar 14, 2028) stops working immediately. Anything still using it will get an authentication error.</div>
+    <div class="item" data-expect="نفد رصيد استخدام مؤسستك. تواصل مع فريق حسابك لإضافة مزيد من الاستخدام، أو انتظر حتى 14 مارس في 3:00 PM حين يُعاد ضبط استخدام خطتك.">Your org is out of usage credits. Contact your account team to add usage, or wait until Mar 14 at 3:00 PM when your plan usage resets.</div>
+    <!-- ★ (ت14-هـ4) صفّ الوصفة اليدوية v01#298: {files} أسماء الملفات التي لم تُضف (لا عدد)، فكان نمطه بالعدد لا يطابق أبدًا -->
+    <div class="item" data-expect="أُضيف 3 من أصل 5 إلى تطبيق الصور. لم يُضَف: IMG_0001.HEIC, IMG_0002.HEIC">3 of 5 added to Photos. Not added: IMG_0001.HEIC, IMG_0002.HEIC</div>
     <div class="item" data-expect="12 قيد التشغيل">12 running</div>
     <div class="item" data-expect="Trail running">Trail running</div>
     <!-- ★ (ت6-ج، المراجعة، ٥ جمادى الأولى ١٤٤٨هـ) «Out of free messages (again) until …»: اليوم والوقت يُعرَّبان بالصيغ الصارمة لا خامًا،
@@ -65,6 +75,83 @@
     <div class="item" data-expect="نفدت الرسائل المجانية حتى 9:00 مساءً">Out of free messages until 9:00 PM</div>
     <div class="item" data-expect="نفدت الرسائل المجانية مرة أخرى حتى الغد في 9:00 صباحًا">Out of free messages again until tomorrow at 9:00 AM</div>
     <div class="item" data-expect="نفدت الرسائل المجانية حتى يوم الاثنين في 9:00 مساءً">Out of free messages until Mon at 9:00&#8239;PM</div>
+    <!-- ★ (ت7، ٥ جمادى الأولى ١٤٤٨هـ — PLAN-3.0.0 أ4) «{spend} of {limit}» المضيَّق لا يلتقط إلا مقدارًا أو عددًا أو نسبةً أو وقتًا:
+         المبلغ والمدى والوقت تُعرَّب كما كانت، وما التقاطه كلمةٌ فيها رقم (ربعٌ وسنةٌ مالية، واسمٌ بشرطة، وعددٌ ترتيبي) يبقى بالإنجليزية
+         كاملًا، وكان يخرج مختلطًا («Q1 من FY24») -->
+    <div class="item" data-expect="$5.00 من $20.00">$5.00 of $20.00</div>
+    <div class="item" data-expect="1&ndash;10 من 42">1&ndash;10 of 42</div>
+    <div class="item" data-expect="1:23 من 4:56">1:23 of 4:56</div>
+    <div class="item" data-expect="Q1 of FY24">Q1 of FY24</div>
+    <div class="item" data-expect="COVID-19 of 2020">COVID-19 of 2020</div>
+    <div class="item" data-expect="2nd of 3">2nd of 3</div>
+    <!-- ★ (ت7، المراجعة المستقلة، ٥ جمادى الأولى ١٤٤٨هـ) ما يقبله «{spend} of {limit}» المضيَّق ولم يمسكه فحص: طفراتٌ تحذف النسبة أو فواصل
+         الآلاف أو اللاحقة K أو العلامة قبل العدد كانت تنجو. وتوسيعان كان التعبير القديم يقبلهما والمضيَّق الأول يتركهما إنجليزيين: رمزٌ
+         من كتلة رموز العملات غير الستة (₱ كما يكتبه Intl بلغة en-US)، وتجميع اللاك كما يكتبه en-IN -->
+    <div class="item" data-expect="75% من 100%">75% of 100%</div>
+    <div class="item" data-expect="1,234 من 5,000">1,234 of 5,000</div>
+    <div class="item" data-expect="1.5K من 10K">1.5K of 10K</div>
+    <div class="item" data-expect="&lt;$0.01 من $20.00">&lt;$0.01 of $20.00</div>
+    <div class="item" data-expect="&#8369;5.00 من &#8369;20.00">&#8369;5.00 of &#8369;20.00</div>
+    <div class="item" data-expect="&#8377;1,23,456 من &#8377;5,00,000">&#8377;1,23,456 of &#8377;5,00,000</div>
+    <!-- ★ (ت7) بنود CHANGE من مراجعة شكوك ت5 والملاحظة العابرة: «جارٍ» للحال الجارية (البند 27، دليل الأسلوب §5)، والفعل قبل العدد في
+         أسرة العدّ (البند 6: «فشل 3» لا «3 فاشل»)، و«تعذّر» لا «فشل» (الملاحظة العابرة، §5) -->
+    <div class="item" data-expect="جارٍ الفحص">Scan in progress</div>
+    <div class="item" data-expect="فشل 3">3 failed</div>
+    <div class="item" data-expect="تعذّر رفع المهارة. يمكنك إعادة المحاولة.">Skill upload failed. You can try again.</div>
+    <!-- ★ (ت7، البند 8) أمر الشرطة المائلة أو المسار بعد كلمةٍ عربية: علامة LRM ملاصقةٌ قبل الشرطة في البيانات، فيُرسم «/mcp» لا «mcp/»،
+         في نصٍّ حرفي وفي نمطٍ التقاطه اسم مضيف. والمتوقَّع يحمل العلامة نفسها (&lrm;)، فترجمةٌ بلا علامةٍ تُخفق -->
+    <div class="item" data-expect="اربط أداة عبر &lrm;/mcp">Connect a tool with /mcp</div>
+    <div class="item" data-expect="نفدت مساحة القرص على devbox. فرّغ بعض المساحة هناك (المجلد الرئيسي أو &lrm;/tmp)، ثم أعد المحاولة.">devbox is out of disk space. Free some space there (home directory or /tmp), then retry.</div>
+    <!-- ★ (ر12، ٥ جمادى الأولى ١٤٤٨هـ — PLAN-3.0.0 E2) %T<n>: الالتقاط مفتاحٌ حرفيٌّ في قاموس الموقع النشط فتُوضع عربيته، وإلا يبقى النصّ إنجليزيًّا
+         كلّه لا مختلطًا. الأنماط أنماطُ اختبارٍ تُلحق بنسخة الصفحة من القاموس (E2P أدناه)، والمفاتيح مفاتيح قاموس التطبيق الحقيقي -->
+    <div class="item" data-expect="فتح الإعدادات">Zqt open Settings</div>
+    <div class="item" data-expect="Zqt open Zeddicus">Zqt open Zeddicus</div>
+    <div class="item" data-expect="الأحدث ثم الإعدادات">Zqt Recents then Settings</div>
+    <div class="item" data-expect="Zqt Recents then Zeddicus">Zqt Recents then Zeddicus</div>
+    <div class="item" data-expect="الإعدادات من Ann في 5 أكتوبر">Zqt Settings by Ann on Oct 5</div>
+    <div class="item" data-expect="Zqt Settings by Ann on Foo 5">Zqt Settings by Ann on Foo 5</div>
+    <div class="item" data-expect="Zqt Zeddicus by Ann on Oct 5">Zqt Zeddicus by Ann on Oct 5</div>
+    <div class="item" data-expect="فتح: الإعدادات">Zqt open:   Settings</div>
+    <div class="item" data-expect="فتح: الإعدادات">Zqt open:&nbsp;Settings</div>
+    <!-- مفتاحٌ في قاموس موقعٍ آخر وحده (الأكاديمية) لا يُعدّ؛ ولا تداخل: نصٌّ يعرّبه نمطٌ أو جمعٌ وليس مفتاحًا حرفيًّا لا يُعدّ؛ ولا عضوٌ موروث -->
+    <div class="item" data-expect="Zqt open Adoption signals">Zqt open Adoption signals</div>
+    <div class="item" data-expect="Zqt open Message 1 of 2">Zqt open Message 1 of 2</div>
+    <div class="item" data-expect="Zqt open 3 chats">Zqt open 3 chats</div>
+    <div class="item" data-expect="Zqt open constructor">Zqt open constructor</div>
+    <!-- تمريرةٌ واحدة: عربية المفتاح لا يُقرأ ما فيها رمزًا («$20» و«%M1» مفتاحان تجريبيان) -->
+    <div class="item" data-expect="فتح السعر $20 شهريًا">Zqt open Zqt price key</div>
+    <div class="item" data-expect="فتح شهر %M1">Zqt open Zqt month key</div>
+    <!-- السمة كالعقدة؛ والمستثنى مستثنًى: متن المحادثة، ومربع الكتابة، واسمٌ كتبه المستخدم (meta.skipSel) -->
+    <div class="item" data-expect="فتح الإعدادات" aria-label="Zqt open Settings">aria-label %T test</div>
+    <div class="item" data-expect="Zqt open Settings"><div class="prose">Zqt open Settings</div></div>
+    <div class="item" data-expect="Zqt open Settings"><div contenteditable="true">Zqt open Settings</div></div>
+    <div class="item" data-expect="Zqt open Settings"><span data-testid="chat-title-standin">Zqt open Settings</span></div>
+    <!-- وتصحيح المستخدم يسبق القاموس داخل %T كما في البحث الحرفي (المرحلة الحيّة أدناه) -->
+    <div class="item" data-expect="فتح الأحدث" id="e2ov">Zqt open Recents</div>
+    <!-- ★ (ر12، ج3) العدد ومعدوده في عقدتين يُقرنان في الأكاديمية وحدها (meta.countNoun، _countnountest): في التطبيق يبقى المعدود على حرفيّه -->
+    <div class="item" data-expect="2 المحادثات"><span>2<!-- --> <!-- -->chats</span></div>
+    <!-- ★ (ر29-م، ١٩ جمادى الأولى ١٤٤٨هـ) ثلاثة أنماطٍ في القاموس المشحون كان التقاطها الخام يترك لفظًا عاديًّا داخل العربية («اسأل legal»
+         في نافذة الخدمات القانونية). ضُيّقت إلى ما يضعه الموقع فيها: «Ask {name}» اسمُ مؤسسةٍ أو مشروعٍ أوله ليس حرفًا صغيرًا، و«Effective {date}»
+         تاريخٌ بشهرٍ ويومٍ وسنة، و«Claude’s {field}» اسمُ حقلٍ هو مفتاحٌ حرفي (%T). وما سوى ذلك يبقى إنجليزيًّا كلّه لا مختلطًا.
+         ★ (ت10-هـ2ب، ٢٠ جمادى الأولى ١٤٤٨هـ) صار للنصّين الحقيقيين «Ask legal» و«Claude’s username» حرفيّان مراجَعان من ت10، فلم يعودا يمتحنان التضييق:
+         مكانهما نصّان مخترعان بالشكل نفسه لا يحملهما مدخل (لفظٌ عاديٌّ بحرفٍ صغير لا مفتاح له، وصيغته بالحرف الكبير مفتاح: finance/Finance
+         وemail/Email كما كان legal/Legal وusername/Username) فيبقيان إنجليزيين كلّهما، والنصّان الحقيقيان يُعرَّبان كاملين بحرفيّيهما (آخر الصفوف) -->
+    <div class="item" data-expect="Ask finance">Ask finance</div>
+    <div class="item" data-expect="اسأل Anthropic">Ask Anthropic</div>
+    <div class="item" data-expect="Effective immediately">Effective immediately</div>
+    <div class="item" data-expect="Effective date">Effective date</div>
+    <div class="item" data-expect="سارٍ اعتبارًا من 1 نوفمبر 2026">Effective November 1, 2026</div>
+    <div class="item" data-expect="Claude’s confidence: medium">Claude’s confidence: medium</div>
+    <div class="item" data-expect="Claude’s confidence: high">Claude’s confidence: high</div>
+    <div class="item" data-expect="Claude’s email">Claude’s email</div>
+    <div class="item" data-expect="كلمة المرور لدى Claude">Claude’s Password</div>
+    <!-- والنصّان الحقيقيان بحرفيّيهما المراجَعَين كاملين (النمطان المضيَّقان لا يطابقانهما: «legal» أوله حرفٌ صغير، و«username» ليس مفتاحًا).
+         ★ (ر28-ج2، ٢٥ جمادى الأولى ١٤٤٨هـ — القرار 140 وجواب السؤال 64 على افتراضه (أ)) «Ask legal» صار «الاستفسارات القانونية» بتجاوز المدخل القائم -->
+    <div class="item" data-expect="الاستفسارات القانونية">Ask legal</div>
+    <div class="item" data-expect="اسم المستخدم لدى Claude">Claude’s username</div>
+    <!-- ★ (ر28-ج2) نمط «Built with {partner}» من p33 (نصٌّ لقارئ الشاشة في معاينة بطاقة الشريك): اسم الشريك كما هو، من كلمةٍ إلى ثلاث -->
+    <div class="item" data-expect="طُوِّر بالتعاون مع Foley &amp; Lardner">Built with Foley &amp; Lardner</div>
+    <div class="item" data-expect="طُوِّر بالتعاون مع The Access Project">Built with The Access Project</div>
   </div>
   <div id="patResult" style="margin-top:12px;font-weight:bold"></div>
 
@@ -104,6 +191,35 @@
   <script src="../extension/cml-const.js"></script>
   <script src="../extension/cml-shared.js"></script>
   <script src="../extension/dictionary.js"></script>
+  <script>
+    // ★ (ر12، ٥ جمادى الأولى ١٤٤٨هـ — PLAN-3.0.0 E2) أنماط اختبارٍ لـ%T تُلحق بنسخة الصفحة من القاموس المبنيّ وحدها (لا تمسّ القاموس المشحون؛
+    // أنماط ت9 بمترجمها ومراجعها)، ومفتاحان تجريبيان عربيتهما فيها «$20» و«%M1». الثابت «Zqt» لا يطابق نصًّا في الموقع
+    var E2D = CLAUDE_L10N.dicts.ar;
+    E2D.strings["Zqt price key"] = "السعر $20 شهريًا";
+    E2D.strings["Zqt month key"] = "شهر %M1";
+    var E2P = [
+      { en: "Zqt open {page}", re: "^Zqt open (.+)$", ar: "فتح %T1" },
+      { en: "Zqt open:{page}", re: "^Zqt open:(.+)$", ar: "فتح: %T1" },
+      { en: "Zqt {a} then {b}", re: "^Zqt (.+?) then (.+)$", ar: "%T1 ثم %T2" },
+      { en: "Zqt {page} by {name} on {month} {day}", re: "^Zqt (.+?) by (\\w+) on (\\w+) (\\d{1,2})$", ar: "%T1 من $2 في $4 %M3" },
+    ];
+    E2D.patterns = E2P.concat(E2D.patterns);
+    // ★ (مراجعة ر12) لا سقف طولٍ على التقاط %T (RULES §1): مفتاحٌ حقيقيٌّ من 250–290 محرفًا عربيتُه بلا لاتيني (دون PATTERN_CAPTURE_MAX) يُعرَّب
+    // كاملًا في القالب — سقفٌ يُدسّ في البحث عن الالتقاط يُبقيه إنجليزيًّا فيُخفق الصفّ؛ وبلا مفتاحٍ كهذا في القاموس يُخفق الصفّ نفسه
+    var E2LONG = Object.keys(E2D.strings).filter(function (k) {
+      return k.length >= 250 && k.length <= 290 && /^[A-Z]/.test(k) && !/[\n{}]/.test(k) && E2D.strings[k] !== k && !/[A-Za-z]/.test(E2D.strings[k]);
+    })[0];
+    (function () {
+      var lr = document.createElement("div"); lr.className = "item";
+      lr.setAttribute("data-expect", E2LONG ? "فتح " + E2D.strings[E2LONG] : "(لا مفتاح طويل في القاموس)");
+      lr.textContent = "Zqt open " + (E2LONG || "no long key");
+      document.getElementById("pat").appendChild(lr);
+    })();
+    // أصول صفوف %T قبل المحرّك (لا المستثنى ولا السمة): بها يُمتحن حكم الأدوات على النصّ نفسه (التكافؤ أدناه)
+    var E2_ROWS = Array.prototype.filter.call(document.querySelectorAll('#pat .item'), function (r) {
+      return /^Zqt /.test(r.textContent.trim()) && !r.querySelector('*') && !r.hasAttribute('aria-label');
+    }).map(function (r) { return { row: r, src: r.textContent.trim() }; });
+  </script>
   <script src="../extension/engine.js"></script>
   <script>
     // simulate claude.ai's SPA adding nodes later (tests the MutationObserver)
@@ -124,6 +240,22 @@
       var el = document.getElementById('patResult');
       el.textContent = 'PATTERNS: ' + pass + '/' + rows.length + (fails.length ? ' | FAIL: ' + fails.join(' ; ') : ' — all pass');
 
+      // ===== (ر12) التكافؤ: حكمُ الأدوات (فهرس الأنماط وpatternApply وtoolRes في cml-shared — completeness وcross-check وharvest-live)
+      // على أصل كل صفٍّ من صفوف %T هو حكمُ المحرّك: نمطٌ يعرّبه أو لا شيء، والناتج نفسه حيث لا رمز شهرٍ أو يومٍ أو مكان =====
+      var E2T = E2D.patterns.map(function (p) { try { return { re: new RegExp(p.re), ar: p.ar, src: p.re, mwpc: /%[MWPC]\d/.test(p.ar) }; } catch (e) { return null; } }).filter(Boolean);
+      var E2I = CMLShared.patternIndex(E2T.map(function (p) { return p.src; })), E2R = CMLShared.toolRes(E2D.strings);
+      var ppass = 0, pfails = [];
+      E2_ROWS.forEach(function (x) {
+        var want = x.row.getAttribute('data-expect');
+        var hit = E2I.find(x.src, function (i) { var r = CMLShared.patternApply(E2T[i].re, E2T[i].ar, x.src, E2R); return r ? { i: i, out: r.out } : null; }, CMLConst.PATTERN_CAPTURE_MAX);
+        var ok = hit === null ? want === x.src : E2T[hit.i].mwpc ? want !== x.src : hit.out === want;
+        if (ok) ppass++; else pfails.push(x.src + ' ⇒ ' + (hit ? hit.out : '(none)') + ' ≠ ' + want);
+      });
+      var parLine = document.createElement('div');
+      parLine.style.cssText = 'margin-top:8px;font-weight:bold';
+      parLine.textContent = 'PARITY: ' + ppass + '/' + E2_ROWS.length + (pfails.length ? ' | FAIL: ' + pfails.join(' ; ') : ' — all pass');
+      el.parentNode.insertBefore(parLine, el.nextSibling);
+
       // ===== الترقية: بيانات ميزة الرصد المحذوفة يجب أن تُمحى من التخزين =====
       var mchecks = [
         { key: 'cml_collect', want: true },    // يجب أن يكون قد حُذف
@@ -141,7 +273,7 @@
       migLine.textContent = 'PURGE: ' + mpass + '/' + mchecks.length + (mfails.length ? ' | FAIL: ' + mfails.join(' ; ') : ' — all pass');
       mEl.parentNode.appendChild(migLine);
 
-      var total = pass + mpass, max = rows.length + mchecks.length;
+      var total = pass + mpass + ppass, max = rows.length + mchecks.length + E2_ROWS.length;
       document.title = 'selftest ' + total + '/' + max + ' …'; // وسطية — لا يطابقها مشغّل CDP
 
       // ===== القواعد الذكية: أنماط وَلّدها الاستيراد من نصوص فيها متغيّرات =====
@@ -179,12 +311,17 @@
           'live correction: recentsItem = ' + document.getElementById('recentsItem').textContent.trim());
         check(document.getElementById('count').textContent.trim() === '4 محادثات',
           'external update: count = ' + document.getElementById('count').textContent.trim());
+        // ★ (ر12) وتصحيح المستخدم يسبق القاموس داخل %T (سلسلة البحث الحرفي نفسها)
+        check(noBidi(document.getElementById('e2ov').textContent.trim()) === 'فتح سجلّي',
+          'live correction inside %T: e2ov = ' + document.getElementById('e2ov').textContent.trim());
 
         // إزالة التصحيح: يجب أن تعود العقدة لترجمة القاموس («الأحدث») فورًا
         window.__applyOverrides({});
         setTimeout(function () {
           check(document.getElementById('recentsItem').textContent.trim() === 'الأحدث',
             'live revert: recentsItem = ' + document.getElementById('recentsItem').textContent.trim());
+          check(noBidi(document.getElementById('e2ov').textContent.trim()) === 'فتح الأحدث',
+            'live revert inside %T: e2ov = ' + document.getElementById('e2ov').textContent.trim());
 
           // ===== إيقاف الترجمة يجب أن يُرجع الإنجليزية بلا تحديث الصفحة =====
           var fire = function (ch) { MOCK.fireChanged(ch, 'local'); };
@@ -206,9 +343,9 @@
 
               var lEl = document.createElement('div');
               lEl.style.cssText = 'margin-top:8px;font-weight:bold';
-              lEl.textContent = 'LIVE: ' + lpass + '/7' + (lfails.length ? ' | FAIL: ' + lfails.join(' ; ') : ' — all pass');
+              lEl.textContent = 'LIVE: ' + lpass + '/9' + (lfails.length ? ' | FAIL: ' + lfails.join(' ; ') : ' — all pass');
               document.getElementById('ruleResult').parentNode.appendChild(lEl);
-              document.title = 'selftest ' + (total + lpass) + '/' + (max + 7);
+              document.title = 'selftest ' + (total + lpass) + '/' + (max + 9);
             }, 800);
           }, 800);
         }, 1000);

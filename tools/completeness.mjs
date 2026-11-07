@@ -23,7 +23,8 @@
 //   ‎--strict‎: رمز خروج 1 إن وُجد خللُ سلامة أو نطاق، أو باقٍ غير مفسَّر فوق ‎--max-missing‎ (افتراضه 0).
 //   ★ (S7-B، ٢١ ربيع الآخر ١٤٤٨هـ — مرجع الواجهة البرمجية صار مسارًا كاملًا في الوثائق، فصفحاته الـ492 مقصودةٌ كلّها لا عيّنةَ هيكل):
 //   ‎--harvest-dir=<مجلد>[,<مجلد>…]‎: مجلدات حصادٍ إضافية للنطاق (حصادٌ مستقلّ لقسمٍ منه، كمرجع الوثائق) — أحدثُ حصاد DOM وأحدثُ
-//        حصاد كتلٍ في كلٍّ منها يُضمّان إلى أحدثهما في مجلد عمل النطاق: صفحاتٍ ومفاتيحَ وكتلًا.
+//        حصاد كتلٍ في كلٍّ منها يُضمّان إلى حصادات مجلد عمل النطاق: صفحاتٍ ومفاتيحَ وكتلًا. ★ (ر13-ج، ٦ جمادى الأولى ١٤٤٨هـ) وحصادات
+//        مجلد عمل النطاق كلّها لا أحدثُها وحده، بترتيب زمنها والأحدثُ يغلب في الصفحة كما في merge-blocks (domain-arg.mjs).
 //   ‎--section=<بادئة مسار>[,…]‎: قسمٌ يُقاس وحده أيضًا (المقصود والمحصود ولم يُحصد، وكتل صفحاته) — ‎--section=/docs/en/api/‎.
 //   والعنوان يُقارن بمساره القانوني ومنه meta.pageAlias (صفحات SDK في المرجع هي صفحاتها القانونية).
 import fs from "node:fs";
@@ -31,15 +32,20 @@ import path from "node:path";
 import vm from "node:vm";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { DICTS, EXT as EXT0 } from "./paths.mjs";
+import { DICTS, CODE, EXT as EXT0 } from "./paths.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const { C, SHARED, domainArg, domainsOf, dictFile, workDir, batchDir, label, blocksDictFile, blockBatchDir, latestBlocksHarvest, latestHarvest } =
+const { C, SHARED, domainArg, domainsOf, dictFile, workDir, batchDir, label, blocksDictFile, blockBatchDir, latestBlocksHarvest, latestHarvest,
+  blocksHarvests, domHarvests, mergeDomHarvests, labelRow } =
   await import(new URL("./domain-arg.mjs", import.meta.url).href);
 const argv = process.argv.slice(2);
 const opt = (k, d) => { const a = argv.find((x) => x.startsWith("--" + k + "=")); return a ? a.slice(k.length + 3) : d; };
 const flag = (k) => argv.includes("--" + k);
 const SEL = domainArg(process.argv, { allowAll: true, fallback: "all" });
+// ★ (ر15، ٦ جمادى الأولى ١٤٤٨هـ) «all» = النطاقات المشحونة: النطاق القادم (status.upcoming — claude.com حتى CM-د) لم يُحصد ولا يُشحن تعريبه بعد، فشمولُه
+// لا يُحسب في البوابة العامة؛ ويُقاس صراحةً بـ--domain=<id> في مراحل حصاده وترجمته
+const DOMS = SEL === "all" ? domainsOf(SEL).filter((d) => !C.upcoming(d)) : domainsOf(SEL);
+if (SEL === "all") for (const d of domainsOf(SEL)) if (C.upcoming(d)) console.log(`ℹ ${label(d)}: نطاقٌ قادم — خارج «all»، ويُقاس بـ--domain=${d}`);
 const EXT = path.resolve(opt("ext", EXT0));
 const STRICT = flag("strict"), OFFLINE = flag("offline");
 const MAX_MISSING = +opt("max-missing", "0");
@@ -53,7 +59,8 @@ function latestIn(dir, re) {
 }
 
 const report = { at: new Date().toISOString(), ext: EXT, domains: {}, failures: [], warnings: [] };
-const fail = (d, layer, msg, detail) => { report.failures.push({ d, layer, msg, detail }); };
+// ★ (ر28-ج2) x = { kind, n }: نوع الإخفاق الثابت وعدده، ليُطابَق باستثناءٍ مسجَّل (completeness-exceptions.json) لا بنصّ الرسالة
+const fail = (d, layer, msg, detail, x) => { report.failures.push(x ? { d, layer, msg, detail, kind: x.kind, n: x.n } : { d, layer, msg, detail }); };
 const warn = (d, layer, msg, detail) => { report.warnings.push({ d, layer, msg, detail }); };
 const readJson = (f) => JSON.parse(fs.readFileSync(f, "utf8"));
 const VAR = /\{([A-Za-z_$][\w$]*)\}/g;
@@ -72,10 +79,17 @@ function matcherOf(dict) {
   // ★ (٢١ ربيع الآخر ١٤٤٨هـ، توجيه المالك: لا سقف طول) الأنماط بفهرس المحرّك نفسه (cml-shared patternIndex) وشرطه: ما تلتقطه
   // المتغيّرات من النص مجتمعةً ≤ PATTERN_CAPTURE_MAX — فالنص الطويل يُقاس كما يعرضه المحرّك (قالبه الطويل يغطّيه، ونمطٌ قصيرٌ
   // عامّ لا يُعدّ غطاءً له)، وبلا مسحٍ خطيٍّ لآلاف التعبيرات على كل نصٍّ طويل
-  const rawPats = (dict.patterns || []).map((p) => { try { return { re: new RegExp(p.re), ar: p.ar, src: p.re }; } catch { return null; } }).filter(Boolean);
+  const rawPats = (dict.patterns || []).map((p) => { try { return { re: new RegExp(p.re), ar: p.ar, src: p.re, t: /%T\d/.test(p.ar), fill: /%[MWPT]\d/.test(p.ar) }; } catch { return null; } }).filter(Boolean);
   const pidx = SHARED.patternIndex(rawPats.map((p) => p.src));
   const CAPMAX = C.PATTERN_CAPTURE_MAX;
-  const firstPat = (s) => { const r = pidx.find(s, (i) => (rawPats[i].re.test(s) ? { i } : null), CAPMAX); return r ? rawPats[r.i] : null; };
+  // ★ (ر12، ٥ جمادى الأولى ١٤٤٨هـ — PLAN-3.0.0 E2) أول نمطٍ يعرّب النصّ حقًّا كالمحرّك: نمطٌ بـ%T لا يُعدّ مطابقًا إلا إن كان كلُّ التقاطٍ
+  // %T فيه مفتاحًا حرفيًّا في قاموس النطاق (cml-shared fillPattern)، وإلا يُجرَّب التالي — كما يتخطّاه المحرّك. وكذلك %M/%W/%P بجداول المحرّك
+  // نفسها (patternRes): قيمةٌ لا يعرفها الجدول لا تطابق (تعابير القواميس قوائمُ مغلقة من مفاتيحها، فلا يتغيّر عدٌّ قائم)
+  const TRES = SHARED.toolRes(S);
+  const firstPat = (s) => {
+    const r = pidx.find(s, (i) => (rawPats[i].fill ? (SHARED.patternApply(rawPats[i].re, rawPats[i].ar, s, TRES) ? { i } : null) : (rawPats[i].re.test(s) ? { i } : null)), CAPMAX);
+    return r ? rawPats[r.i] : null;
+  };
   const plur = [];
   for (const [en, sp] of Object.entries(dict.plurals || {}))
     for (const p of [en, sp && sp.plural]) if (p) plur.push(new RegExp("^" + esc(p).replace("%d", "(\\d+)") + "$"));
@@ -98,16 +112,21 @@ function matcherOf(dict) {
     const p = firstPat(t);
     if (!p) return null;
     const m = t.match(p.re);
-    const out = p.ar.replace(/\$(\d)/g, (x, g) => (m[+g] !== undefined ? m[+g] : ""));
+    // (ر12) ونمطٌ بـ%T: موضع عربية المفتاح فارغٌ في هذا الفحص (كلامٌ مراجَع، وما فيه من أسماء منتجاتٍ لاتينية ليس خلطًا) — فالعدّ لما يحمله
+    // ‎$n‎ خامًا وحده؛ والرموز الأخرى كما كانت (‎%M1‎ حرفٌ واحد لا كلمة)
+    const out = p.t ? SHARED.fillPattern(p.ar, m, Object.assign({}, TRES, { M: () => "%M", W: () => "%W", P: () => "%P", C: () => "%C",
+      T: (x) => (TRES.T(x) === undefined ? undefined : "") })) : p.ar.replace(/\$(\d)/g, (x, g) => (m[+g] !== undefined ? m[+g] : ""));
     const allowed = new Set(["Zeddicus", ...(p.ar.match(/[A-Za-z]{2,}/g) || [])]);
     return (out.split("Zeddicus").join(" ").match(/[A-Za-z]{2,}/g) || []).some((w) => !allowed.has(w)) ? null : "pattern";
   };
   // ناتج النمط الأول المطابق بترتيب القاموس (كالمحرّك): $n وحدها تُعوَّض؛ وقواعد الشهور والأيام والأماكن تُترك (صحيحةٌ حتمًا)
+  // ★ (ر12) ونمطٌ بـ%T: الناتج بعربية مفاتيحه (fillPattern)، والقيم الملتقطة الظاهرة خامًا وحدها (rawCaps: لا التقاطَ لا يستهلكه إلا %T)
   f.render = (s) => {
     const p = firstPat(s);
     if (!p) return null;
     const m = s.match(p.re);
     if (/%[MWPC]\d/.test(p.ar)) return null;
+    if (p.t) return { out: SHARED.fillPattern(p.ar, m, TRES), caps: SHARED.rawCaps(p.ar, m) };
     return { out: p.ar.replace(/\$(\d)/g, (x, g) => (m[+g] !== undefined ? m[+g] : "")), caps: m.slice(1).filter((c) => c !== undefined) };
   };
   f.S = S;
@@ -207,14 +226,17 @@ function matchesUrl(patterns, url) {
 }
 
 // ================================================================
-for (const d of domainsOf(SEL)) {
+for (const d of DOMS) {
   const domain = C.domain(d);
   const R = report.domains[d] = { name: domain.name, scope: {}, text: {}, integrity: {} };
 
   // ---------- ١) النطاق ----------
   if (manifest) {
     const cs = (manifest.content_scripts || []).find((c) => (c.js || []).includes(domain.dict));
-    if (!cs) fail(d, "scope", "لا مدخل مانيفست يحمل " + domain.dict);
+    // ★ (ر28-ب، ٢٠ جمادى الأولى ١٤٤٨هـ — السؤال 2 على افتراضه) النطاق القادم محجوبٌ عن مانيفست الحزمة (build.mjs ‏packageEntries)، فلا مطابقة له تُفحص،
+    // ويُقاس نصُّه كما كان؛ والمشحون بلا مدخلٍ يُخفق كما كان
+    if (!cs && C.upcoming(d)) { R.scope.withheld = true; console.log(`ℹ ${label(d)}: نطاقٌ قادم محجوبٌ عن المانيفست — لا مطابقة تُفحص`); }
+    else if (!cs) fail(d, "scope", "لا مدخل مانيفست يحمل " + domain.dict);
     else {
       const a = JSON.stringify([...cs.matches].sort()), b = JSON.stringify([...domain.matches].sort());
       if (a !== b) fail(d, "scope", "مطابقات المانيفست تخالف الجدول", { manifest: cs.matches, table: domain.matches });
@@ -233,9 +255,16 @@ for (const d of domainsOf(SEL)) {
   // ★ (S9-M، ٢٢ ربيع الآخر ١٤٤٨هـ) وحصادُ ‎--harvest-dir‎ لنطاقه وحده (حقل domain فيه): مع ‎--domain=all‎ كان حصاد مرجع الوثائق يُضمّ
   // إلى مركز المساعدة والخصوصية ووثائق Claude Code فتُعدّ كتله الـ2,421 وصفحاته الـ501 «باقيةً» فيها (88.48% و29.68% كذبًا)
   const ofDomain = (f) => { try { const h = readJson(f); return !h.domain || h.domain === d; } catch { return false; } };
-  const harvests = [latestHarvest(d)].concat(HARVEST_DIRS.map((x) => latestIn(x, /^harvest-.*\.json$/)).filter((f) => f && ofDomain(f))).filter(Boolean);
-  const blocksHvs = [latestBlocksHarvest(d)].concat(HARVEST_DIRS.map((x) => latestIn(x, /^blocks-.*\.json$/)).filter((f) => f && ofDomain(f))).filter(Boolean);
-  const harvest = harvests[0] || null, blocksHv = blocksHvs[0] || null;
+  // ★ (ر13-ج، ٦ جمادى الأولى ١٤٤٨هـ) حصاداتُ مجلد عمل النطاق كلها بترتيب زمنها (ترتيبُ merge-blocks: domain-arg.mjs) لا أحدثُها وحده — حصاد
+  // الأكاديمية في ر13-ب ثماني دفعاتٍ لصفحاتٍ مختلفة وملحقٌ لسبعٍ وستين صفحة، فكان أحدثُها يقيس 60 صفحةً أو 67 من 741. ولكل صفحةٍ أحدثُ حصادٍ لها:
+  // حصادُ DOM يُضمّ بـmergeDomHarvests (المفاتيح وحال الصفحات)، وحصاد الكتل خريطةُ صفحاته الأحدثُ يغلب وكتلُه ما تشير إليه الخريطة. وأحدثُ ما في
+  // مجلدات ‎--harvest-dir‎ بعدها كما كان
+  const domFiles = domHarvests(d), domMerged = domFiles.length ? mergeDomHarvests(domFiles) : null;
+  const extraDom = HARVEST_DIRS.map((x) => latestIn(x, /^harvest-.*\.json$/)).filter((f) => f && ofDomain(f));
+  const harvests = domFiles.concat(extraDom);
+  const domSets = (domMerged ? [domMerged] : []).concat(extraDom.map((f) => readJson(f)));
+  const blocksHvs = blocksHarvests(d).concat(HARVEST_DIRS.map((x) => latestIn(x, /^blocks-.*\.json$/)).filter((f) => f && ofDomain(f)));
+  const blocksHv = blocksHvs[blocksHvs.length - 1] || null;
   // العنوان بمساره القانوني ومنه meta.pageAlias (صفحة SDK في المرجع هي صفحتها القانونية) — لا مفتاح Intercom (رقمٌ لا مسار)
   const dmeta = domain.meta || {};
   const canonD = (u) => {
@@ -247,7 +276,7 @@ for (const d of domainsOf(SEL)) {
   // ★ (مراجعتا القيود والمحرّك، ١٦ ربيع الآخر ١٤٤٨هـ) صفحةٌ أخفق حصادها (خطأٌ مسجَّل: تحدّي Cloudflare، أو تحويلٌ إلى خارج
   // النطاق، أو مهلة) أو لم يُحصد منها مفتاحٌ واحد ليست «محصودة»: تُعدّ وحدها بسببها، وتبقى في «لم تُحصد» ما لم يُعفِها قرار
   const failedPages = [];
-  for (const hf of harvests) for (const p of readJson(hf).pages || []) {
+  for (const hs of domSets) for (const p of hs.pages || []) {
     if (p.error || !p.keys) { failedPages.push({ url: p.url, why: p.error || "لم يُحصد منها مفتاح (مهلة أو صفحة فارغة)" }); continue; }
     harvestedUrls.add(p.url); if (p.final) harvestedUrls.add(p.final);
   }
@@ -285,7 +314,7 @@ for (const d of domainsOf(SEL)) {
       // الهيكل (سجلّ إصدارات Claude Code؛ وكان مرجع الوثائق قبل S7-B): المتن إنجليزي بقرار، والواجهة مشتركة — يكفي أن تُحصد منه صفحاتٌ تمثّل قوالبه
       const shellHarvested = shellPages.filter((u) => hv.has(norm(u))).length;
       R.scope.shell = shellPages.length; R.scope.shellHarvested = shellHarvested;
-      if (shellPages.length && !shellHarvested) fail(d, "scope", `${shellPages.length} صفحة هيكلٍ ولا واحدة منها محصودة — واجهة قالبها غير مقيسة`);
+      if (shellPages.length && !shellHarvested) fail(d, "scope", `${shellPages.length} صفحة هيكلٍ ولا واحدة منها محصودة — واجهة قالبها غير مقيسة`, undefined, { kind: "shell-unharvested", n: shellPages.length });
       R.scope.index = idx.urls.length; R.scope.intended = intended.length; R.scope.idle = idle.length;
       R.scope.harvested = [...hv].length; R.scope.notHarvested = notHarvested.length; R.scope.exempted = exempted.length;
       if (notHarvested.length) fail(d, "scope", `${notHarvested.length} صفحةً مقصودة من ${intended.length} لم تُحصد — نصوصها لم تدخل القاموس`, notHarvested.slice(0, 50));
@@ -312,7 +341,7 @@ for (const d of domainsOf(SEL)) {
     const live = path.join(workDir(d), "_live-catalog.txt");
     if (fs.existsSync(live)) inventories.push({ name: "حزم claude.ai (harvest-live)", source: true, at: fs.statSync(live).mtime.toISOString().slice(0, 10),
       items: fs.readFileSync(live, "utf8").split(/\r?\n/).filter(Boolean) });
-    else fail(d, "text", "لا حصاد حيّ للتطبيق — شغّل harvest-live.mjs");
+    else fail(d, "text", "لا حصاد حيّ للتطبيق — شغّل harvest-live.mjs", undefined, { kind: "no-live-harvest", n: 1 });
     const cat = opt("catalog", "");
     if (cat) {
       // كتالوج رسائل الواجهة (مفتاح ← نص) — الرسائل بصيغة ICU المركّبة تُعدّ ولا تُقاس حرفيًّا (يغطيها النمط والجمع وقت العرض)
@@ -324,14 +353,14 @@ for (const d of domainsOf(SEL)) {
   } else if (harvests.length) {
     // المتن (zone=body) يُترجم بوضع الكتلة فيُقاس في طبقة المتون؛ هنا الواجهة وما يتكرر فيها وفي المتن (ui/both)
     // (والحصادات كلها معًا: مجلد عمل النطاق ومجلدات ‎--harvest-dir‎)
-    const hk = [].concat(...harvests.map((f) => readJson(f).keys || []));
+    const hk = [].concat(...domSets.map((h) => h.keys || []));
     inventories.push({ name: "واجهة (حصاد DOM " + harvests.map((f) => path.basename(f)).join(" + ") + ")", dom: true, items: hk.filter((r) => r.zone !== "body").map((r) => r.key) });
     // ★ (ر5، ٢٩ ربيع الآخر ١٤٤٨هـ — ملاحظة ر3) السمات داخل المتن (aria-label وtitle وalt وplaceholder، zone=body): لا تقيسها طبقة المتون (الكتلة
     // عقدُ نصٍّ لا سمات) ولا الواجهة أعلاه (منطقتها body)، ويترجمها قاموس الواجهة وحده. تُقاس بمنطقه هنا فئةً مستقلة تُذكر ولا تُسقط البوابة
     // ولو مع ‎--strict‎ (تنبيهٌ وحده) — شرط البوابة كما كان حتى يقرّر المنسِّق
     if (domain.meta && domain.meta.bodySel)
       bodyAttrKeys = [...new Set(hk.filter((r) => r.zone === "body" && (r.kinds || []).some((k) => String(k).indexOf("attr:") === 0)).map((r) => r.key))];
-  } else fail(d, "text", "لا حصاد DOM لـ" + label(d));
+  } else fail(d, "text", "لا حصاد DOM لـ" + label(d), undefined, { kind: "no-dom-harvest", n: 1 });
   R.text.inventories = [];
   for (const inv of inventories) {
     const uniq = [...new Set(inv.items)];
@@ -361,7 +390,7 @@ for (const d of domainsOf(SEL)) {
     R.text.inventories.push(rec);
     fs.mkdirSync(workDir(d), { recursive: true });
     fs.writeFileSync(path.join(workDir(d), `_completeness-missing-${R.text.inventories.length}.txt`), miss.join("\n") + "\n", "utf8");
-    if (miss.length > MAX_MISSING) (STRICT ? fail : warn)(d, "text", `${inv.name}: ${miss.length} نصًّا بلا ترجمة ولا قرار إبقاء`, miss.slice(0, 20));
+    if (miss.length > MAX_MISSING) (STRICT ? fail : warn)(d, "text", `${inv.name}: ${miss.length} نصًّا بلا ترجمة ولا قرار إبقاء`, miss.slice(0, 20), { kind: "ui-missing", n: miss.length });
     const mixedFile = path.join(workDir(d), "_completeness-mixed.txt");
     if (mixed.length) {
       fail(d, "text", `${inv.name}: ${mixed.length} نصًّا حرفيًّا لا يغطّيه إلا نمط — سيُعرض مختلطًا`, mixed.slice(0, 20));
@@ -391,6 +420,8 @@ for (const d of domainsOf(SEL)) {
     if (!blocksHv) warn(d, "text", "لا حصاد كتل — المتون غير مقيسة");
     else {
       // حصادات الكتل كلها معًا: الكتلة ببصمتها مرّةً (الأحدث يغلب، فحاله أطزج)، وخريطة الصفحات مضمومة
+      // ★ (ر13-ج) بترتيب زمنها (merge-blocks): الأحدث يغلب في الصفحة، والكتل المقيسة ما تشير إليه الخريطة الناتجة وحده — كتلةٌ لم تبقَ إلا في
+      // حصادٍ أقدم لصفحةٍ أُعيد حصادها ليست في الموقع اليوم ولا في القطع (merge-blocks يأخذ الخريطة نفسها)
       const hv = { blocks: [], pages: {} };
       const byFp = new Map();
       for (const bf0 of blocksHvs) {
@@ -398,15 +429,44 @@ for (const d of domainsOf(SEL)) {
         for (const b of h0.blocks || []) byFp.set(b.fp, b);
         Object.assign(hv.pages, h0.pages || {});
       }
-      hv.blocks = [...byFp.values()];
+      const liveFp = new Set([].concat(...Object.values(hv.pages)));
+      hv.blocks = [...byFp.values()].filter((b) => liveFp.has(b.fp));
       const bf = blocksDictFile(d);
       const bd = fs.existsSync(bf) ? readJson(bf) : { blocks: {}, kept: [] };
       const B = bd.blocks || {}, K = new Set(bd.kept || []);
-      let tr = 0, kp = 0, single = 0; const missFp = [];
+      const hasB = (fp) => Object.prototype.hasOwnProperty.call(B, fp);
+      // ★ (ر17، ٨ جمادى الأولى ١٤٤٨هـ) وقائمة الإبقاء في مجلد التقسيم (‎_blk_todo/kept-as-is.json‎، صيغة الأكاديمية): ما قضى الحصاد بإبقائه — تبقيه الشركة
+      // إنجليزيًّا، أو لا نصَّ فيه يُترجم. ★ (ر24-و، ١٢ جمادى الأولى ١٤٤٨هـ — شرط AC-د من ر13-ج) بالصفحة كما يعدّها حارس المتن: قطعة الصفحة المشحونة تحمل في
+      // keep ما يكتبه merge-blocks في keepPages، فالقاعدة قاعدته: بصمةٌ أبقاها المترجم (kept في قاموس الكتل) أو التحضير (سببٌ لا يبدأ بـui، وبلا keepOn) ولا
+      // ترجمة لها — في كل صفحةٍ تحملها؛ ومدخلٌ بنطاق صفحاتٍ (keepOn) — في صفحاته وحدها ولو تُرجمت البصمة؛ وسببٌ يبدأ بـui ليس علامة (يترجمه قاموس الواجهة).
+      // وتُقرأ القائمة قبل الدمج وبعده: كانت لا تُقرأ متى وُجد ملف قاموس الكتل ولو فارغًا (الأكاديمية: 0 كتلة مُبقاة من 37,023)، وبعد الدمج كان يُقرأ kept
+      // وحده والتحضير في keepPages (6,043 بصمة في دمجٍ تجريبي لم يُعدّ منها شيء)، وkeepOn لا يُعدّ في صفحاته. والكتلة تُحكم في كل صفحةٍ تحملها: مُبقاةٌ في
+      // صفحاتٍ وغير مغطّاةٍ في غيرها ناقصةٌ في تلك وحدها (pagesIncomplete والأقسام)
+      const pkC = (pk) => SHARED.pageKey(domain.meta || {}, pk);
+      const keptListF = path.join(workDir(d), "_blk_todo", "kept-as-is.json");
+      const prepKeep = new Set(), scopedKeep = new Map();
+      if (fs.existsSync(keptListF)) {
+        try {
+          for (const k of readJson(keptListF).blocks || []) {
+            if (!k || typeof k.fp !== "string" || typeof k.why !== "string") continue;
+            if (Array.isArray(k.keepOn)) {
+              const s0 = scopedKeep.get(k.fp) || new Set();
+              for (const pk of k.keepOn) if (typeof pk === "string" && pk) s0.add(pkC(pk));
+              scopedKeep.set(k.fp, s0); continue;
+            }
+            if (!/^ui/.test(k.why)) prepKeep.add(k.fp);
+          }
+        } catch { fail(d, "integrity", "قائمة الإبقاء تالفة: _blk_todo/kept-as-is.json"); }
+      }
+      const keepAt = (fp, pk) => ((K.has(fp) || prepKeep.has(fp)) && !hasB(fp)) || (scopedKeep.has(fp) && scopedKeep.get(fp).has(pk));
+      const pagesOfFp = new Map();
+      for (const [pk, fps] of Object.entries(hv.pages || {})) for (const fp of fps) { const a = pagesOfFp.get(fp) || []; a.push(pkC(pk)); pagesOfFp.set(fp, a); }
+      let tr = 0, kp = 0, single = 0, keptList = 0, keptPartial = 0; const missFp = [], missOn = new Map();
       const tplOf = new Map((hv.blocks || []).map((b) => [b.fp, b]));
       for (const b of hv.blocks || []) {
-        if (Object.prototype.hasOwnProperty.call(B, b.fp)) { tr++; continue; }
-        if (K.has(b.fp)) { kp++; continue; }
+        if (hasB(b.fp)) { tr++; continue; }
+        const onPk = pagesOfFp.get(b.fp) || [], keptPk = onPk.filter((pk) => keepAt(b.fp, pk));
+        if (onPk.length && keptPk.length === onPk.length) { kp++; if (!K.has(b.fp)) keptList++; continue; }
         // ما صنّفه الحاصد واجهةً (status=ui: العناوين وبنود الفهرس و«مقالات ذات صلة») أو كتلةً من عقدةٍ واحدة يمرّ بقاموس
         // الواجهة (المحرّك: الواجهة ثم الكتلة) — مغطًّى إن غطّى القاموسُ نصَّه، وإلا فهو باقٍ حقيقي
         const plain = String(b.tpl || "").replace(/<c\d+>[\s\S]*?<\/c\d+>/g, " ").replace(/<\/?[abisgc]\d+\/?>/g, "").replace(/\s+/g, " ").trim();
@@ -419,11 +479,20 @@ for (const d of domainsOf(SEL)) {
             .map((x) => x.replace(/\s+/g, " ").trim()).filter(Boolean);
           if (items.length && items.every((x) => covers(x) || keep.has(x) || !/[A-Za-z]{2}/.test(x))) { single++; continue; }
         }
+        // ★ (ر13-ج، ٦ جمادى الأولى ١٤٤٨هـ) وصفُّ لافتاتٍ بشكل قالبه أيًّا كان حاله في الحصاد (domain-arg.mjs: labelRow — حكمُ ex.group في المحرّك): حالُ الحصاد
+        // حكمُ قاموس يوم الحصاد، والمحرّك يعرّب الصفّ بندًا بندًا بالقاموس الحاضر. فصفوف العدّاد الزمني في أفلام الأكاديمية (عبارةٌ وثوانٍ تتبدّل)
+        // مغطّاةٌ متى تُرجمت عبارتها (AC-U1) أيًّا كانت ثوانيها، كما يعدّها حارس المتن؛ وبندٌ بعقدٍ عدّة فيها حروف (false) يُبقي الصفّ باقيًا
+        const row = labelRow(b.tpl);
+        if (row && row.every((x) => x === null || (x !== false && (covers(x) || keep.has(x) || !/[A-Za-z]{2}/.test(x))))) { single++; continue; }
         missFp.push(b.fp);
+        // (ر24-و) مُبقاةٌ في بعض صفحاتها: ناقصةٌ في الأخرى وحدها
+        if (keptPk.length) { keptPartial++; missOn.set(b.fp, new Set(onPk.filter((pk) => !keptPk.includes(pk)))); }
       }
+      const missAt = (fp, pk) => (missOn.has(fp) ? missOn.get(fp).has(pkC(pk)) : true);
+      const missSet0 = new Set(missFp);
       const pagesIncomplete = [];
       for (const [pk, fps] of Object.entries(hv.pages || {})) {
-        const m = fps.filter((fp) => missFp.includes(fp)).length;
+        const m = fps.filter((fp) => missSet0.has(fp) && missAt(fp, pk)).length;
         if (m) pagesIncomplete.push([pk, m, fps.length]);
       }
       // ★ (S7-B) الأقسام (‎--section‎): كتل صفحاتها وحدها — مترجمٌ أو عبر الواجهة أو باقٍ
@@ -432,15 +501,15 @@ for (const d of domainsOf(SEL)) {
       for (const sp of SECTIONS) {
         const pks = Object.keys(hv.pages || {}).filter((pk) => pk.indexOf(sp) === 0 || (pk + "/").indexOf(sp) === 0);
         const fps = new Set([].concat(...pks.map((pk) => hv.pages[pk])));
-        const miss = [...fps].filter((fp) => missSet.has(fp)).length;
+        const miss = [...fps].filter((fp) => missSet.has(fp) && pks.some((pk) => hv.pages[pk].includes(fp) && missAt(fp, pk))).length;
         R.text.sections[sp] = { pages: pks.length, blocks: fps.size, missing: miss, pagesIncomplete: pagesIncomplete.filter(([pk]) => pks.includes(pk)).length,
           pct: +(100 * (fps.size - miss) / Math.max(1, fps.size)).toFixed(2) };
       }
-      R.text.bodies = { harvest: blocksHvs.map((f) => path.basename(f)).join(" + "), blocks: (hv.blocks || []).length, translated: tr, keptSource: kp, viaUi: single,
+      R.text.bodies = { harvest: blocksHvs.map((f) => path.basename(f)).join(" + "), blocks: (hv.blocks || []).length, translated: tr, keptSource: kp, keptList, keptPartial, viaUi: single,
         missing: missFp.length, pages: Object.keys(hv.pages || {}).length, pagesIncomplete: pagesIncomplete.length,
         pct: +(100 * (tr + kp + single) / Math.max(1, (hv.blocks || []).length)).toFixed(2) };
       if (missFp.length) (STRICT ? fail : warn)(d, "text", `المتون: ${missFp.length} كتلةً بلا ترجمة في ${pagesIncomplete.length} صفحة من ${Object.keys(hv.pages || {}).length}`,
-        pagesIncomplete.slice(0, 15).map(([pk, m, n]) => `${pk}: ${m}/${n}`));
+        pagesIncomplete.slice(0, 15).map(([pk, m, n]) => `${pk}: ${m}/${n}`), { kind: "bodies-missing", n: missFp.length });
       void tplOf;
     }
   }
@@ -495,7 +564,7 @@ for (const d of domainsOf(SEL)) {
       warn(d, "integrity", `${guarded.length} نصًّا بمتغيّرات مترجمًا يرفضه حارس الأنماط (عامٌّ جدًّا أو يتعارض مع مفتاحٍ حرفي) — يبقى إنجليزيًّا حتى يُعالَج`, guarded.slice(0, 15));
       fs.writeFileSync(path.join(workDir(d), "_completeness-guarded.txt"), guarded.join("\n") + "\n", "utf8");
     }
-    if (lost.length) fail(d, "integrity", `${lost.length} عنصرًا مترجمًا في الدفعات غائبٌ عن القاموس (سقط في الدمج أو حُذف بلا أثر)`, lost.slice(0, 25));
+    if (lost.length) fail(d, "integrity", `${lost.length} عنصرًا مترجمًا في الدفعات غائبٌ عن القاموس (سقط في الدمج أو حُذف بلا أثر)`, lost.slice(0, 25), { kind: "batch-lost", n: lost.length });
     // القاموس المبنيّ ← المصدر: مفتاحًا مفتاحًا وقيمةً قيمة
     const built = builtDict(domain);
     if (!built) fail(d, "integrity", "لا قاموس مبنيّ في الإضافة: " + domain.dict);
@@ -529,7 +598,7 @@ for (const d of domainsOf(SEL)) {
         }
       }
       I.blockBatches = { items, lost: lost.length };
-      if (lost.length) fail(d, "integrity", `${lost.length} كتلةً مترجمة في الدفعات غائبةٌ عن قاموس الكتل (رفضها الدمج أو سقطت)`, lost.slice(0, 25));
+      if (lost.length) fail(d, "integrity", `${lost.length} كتلةً مترجمة في الدفعات غائبةٌ عن قاموس الكتل (رفضها الدمج أو سقطت)`, lost.slice(0, 25), { kind: "block-batch-lost", n: lost.length });
       // قاموس الكتل ← القطع المبنية
       const dir = path.join(EXT, "bodies", d, "ar");
       const idxF = path.join(dir, "index.json");
@@ -551,7 +620,7 @@ for (const d of domainsOf(SEL)) {
 }
 
 // ---------- lint-dict: عقود القاموس الآلية (مفاتيح لا يطابقها المحرّك، قواعد فاسدة…) ----------
-for (const d of domainsOf(SEL)) {
+for (const d of DOMS) {
   if (!fs.existsSync(dictFile(d))) continue;
   const r = spawnSync(process.execPath, [path.join(HERE, "lint-dict.mjs"), "--domain=" + d], { encoding: "utf8" });
   report.domains[d].integrity.lint = r.status === 0 ? "ok" : "fail";
@@ -564,7 +633,7 @@ for (const [d, R] of Object.entries(report.domains)) {
   console.log(`\n■ ${label(d)}`);
   if (R.scope.index !== undefined) console.log(`  النطاق: فهرس ${R.scope.index} عنوانًا ← مقصود ${R.scope.intended}${R.scope.shell ? ` · هيكل ${R.scope.shell} (محصودٌ منها ${R.scope.shellHarvested})` : ""} · خامل ${R.scope.idle} · محصود ${R.scope.harvested} · مقصودٌ لم يُحصد ${R.scope.notHarvested}${R.scope.exempted ? ` · معفًى بقرار ${R.scope.exempted}` : ""}${(R.scope.failed || []).length ? ` · أخفق حصاده ${R.scope.failed.length}` : ""}`);
   for (const inv of R.text.inventories || []) console.log(`  النصوص: ${inv.name}: ${inv.total} ← مغطّى ${inv.covered} (حرفي ${inv.by.literal} · نمط ${inv.by.pattern} · جمع ${inv.by.plural}) + مُستبقًى ${inv.keptEnglish} = ${inv.pct}% · باقٍ ${inv.missing}${inv.mixed ? ` · خطر خلط ${inv.mixed}` : ""}${inv.icu ? ` · ICU مركّبة ${inv.icu}` : ""}`);
-  if (R.text.bodies) { const b = R.text.bodies; console.log(`  المتون: ${b.blocks} كتلة في ${b.pages} صفحة ← مترجم ${b.translated} · مُستبقًى ${b.keptSource} · عبر الواجهة ${b.viaUi} = ${b.pct}% · باقٍ ${b.missing} (صفحاتٌ ناقصة ${b.pagesIncomplete})`); }
+  if (R.text.bodies) { const b = R.text.bodies; console.log(`  المتون: ${b.blocks} كتلة في ${b.pages} صفحة ← مترجم ${b.translated} · مُستبقًى ${b.keptSource}${b.keptList ? ` (منها من قائمة الإبقاء ${b.keptList})` : ""} · عبر الواجهة ${b.viaUi} = ${b.pct}% · باقٍ ${b.missing} (صفحاتٌ ناقصة ${b.pagesIncomplete})`); }
   if (R.text.bodyAttrs) { const a = R.text.bodyAttrs; console.log(`  سمات المتن (فئةٌ مستقلة، لا تُسقط البوابة): ${a.total} ← مغطّى ${a.covered} + مُستبقًى ${a.keptEnglish} = ${a.pct}% · باقٍ ${a.missing}${a.mixed ? ` · خطر خلط ${a.mixed}` : ""}`); }
   else if (R.text.bodyAttrs === null) console.log("  سمات المتن (فئةٌ مستقلة): لا حصاد DOM — غير مقيسة");
   for (const [sp, x] of Object.entries(R.scope.sections || {})) console.log(`  القسم ${sp}: مقصود ${x.intended} · محصود ${x.harvested} · لم يُحصد ${x.notHarvested}${x.exempted ? ` · معفًى ${x.exempted}` : ""}`);
@@ -574,6 +643,30 @@ for (const [d, R] of Object.entries(report.domains)) {
   if (I.build) console.log(`  البناء: مصدر ${I.build.source} ↔ مبنيّ ${I.build.built} · ناقص ${I.build.notBuilt} · زائد ${I.build.extra} · مختلف ${I.build.differ} · أنماط ${I.build.patterns.join("/")}`);
   if (I.blockBatches) console.log(`  الكتل: دفعات ${I.blockBatches.items} · ضائع ${I.blockBatches.lost}${I.shards ? ` · القطع: ${I.shards.pages} صفحة، ناقص/قديم ${I.shards.missingOrStale}` : ""}`);
   if (I.lint) console.log(`  lint-dict: ${I.lint}`);
+}
+// ★ (ر28-ج2، ٢٥ جمادى الأولى ١٤٤٨هـ — ما حملته ر28-ب: 16 إخفاقًا كلها فجواتُ نطاقٍ قديمة) استثناءاتٌ مسجَّلة بسببها، كما سُبِّبت إخفاقات ر8 في 2.0.0:
+// web/code/test/completeness-exceptions.json ({items:[{d, layer, kind, max, why, date, ref}]}، أنواعٌ وأعدادٌ وأسبابٌ بلا نصّ موقع). إخفاقٌ نوعُه ونطاقه
+// وطبقته في القائمة وعدده في حدّه المسجَّل (n ≤ max) يُذكر بسببه في «استثناءات مسجَّلة» ولا يُسقط البوابة؛ وما سواه إخفاقٌ كما كان: نوعٌ بلا استثناء،
+// أو عددٌ فوق حدّه (فجوةٌ جديدة لا تُخفى). والصفحات التي لم تُحصد تُعفى بعناوينها في scope-exempt.json لا هنا. ‎--exceptions=none‎ يعطّلها،
+// واستثناءٌ لم يعد يقع يُذكر ليُحذف
+{
+  const ef = opt("exceptions", path.join(CODE, "test", "completeness-exceptions.json"));
+  const items = ef !== "none" && fs.existsSync(ef) ? readJson(ef).items || [] : [];
+  const used = new Set();
+  report.excepted = [];
+  report.failures = report.failures.filter((x) => {
+    const i = x.kind ? items.findIndex((e) => e.d === x.d && e.layer === x.layer && e.kind === x.kind) : -1;
+    // ★ (مراجعة ر28-ج2) الاستثناء الواحد يُسقط إخفاقًا واحدًا: إخفاقٌ ثانٍ بالنطاق والطبقة والنوع أنفسها (كجردٍ جديد للواجهة بجوار القديم) فجوةٌ جديدة لا تُخفى
+    if (i < 0 || used.has(i)) return true;
+    const e = items[i];
+    if (!(typeof x.n === "number" && typeof e.max === "number" && x.n <= e.max)) { x.msg += ` — فوق الاستثناء المسجَّل (${e.max})`; return true; }
+    used.add(i);
+    report.excepted.push({ d: x.d, layer: x.layer, kind: x.kind, n: x.n, max: e.max, msg: x.msg, why: e.why, ref: e.ref });
+    return false;
+  });
+  report.staleExceptions = items.filter((e, i) => !used.has(i) && DOMS.includes(e.d)).map((e) => e.d + "/" + e.layer + "/" + e.kind);
+  if (report.excepted.length) { console.log(`\nاستثناءات مسجَّلة (${report.excepted.length}، ${path.basename(ef)}):`); for (const x of report.excepted) console.log(`  ⊘ [${x.d}/${L[x.layer]}] ${x.msg} — ${x.why}`); }
+  if (report.staleExceptions.length) console.log(`\nℹ استثناءٌ مسجَّل لم يعد يقع (يُحذف من ${path.basename(ef)}): ${report.staleExceptions.join("، ")}`);
 }
 if (report.warnings.length) { console.log(`\nتنبيهات (${report.warnings.length}):`); for (const w of report.warnings) console.log(`  ⚠ [${w.d}/${L[w.layer]}] ${w.msg}`); }
 if (report.failures.length) { console.log(`\nإخفاقات (${report.failures.length}):`); for (const f of report.failures) console.log(`  ✗ [${f.d}/${L[f.layer]}] ${f.msg}`); }

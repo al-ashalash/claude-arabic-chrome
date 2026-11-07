@@ -1,0 +1,143 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>scanexport test</title>
+<!--
+  ★ (ر29-ك) والنصّ بأسطره أو بمسافةٍ خاصة يُصدَّر سطرًا واحدًا بصيغة JSON يُفكّ إلى نصّه بعينه (مفتاح المحرّك)، وتشرحه القاعدة 7.
+  ★ (ر29-ز، ١٩ جمادى الأولى ١٤٤٨هـ) «تنزيل أمر الترجمة» لا يُسقط سطرًا بصمت: كان سطر الحال يقول «(عُرض أول 4000 نصّ)» وحده، والملف لا يقول
+  شيئًا، فأسقط تصديرُ المالك في ١٨ جمادى الأولى خمسة أسطر لم يعلم بها. والآن: نتيجةٌ قُصّت بحدّ الحجم (omitted) أو خزّنها محرّكٌ أقدم بسقف
+  العدد (capped بلا omitted، والعدد الحقيقي أكبر من المخزَّن) ⇒ أول الملف وقسمُ موقعه يقولان عدد ما بقي خارجه وطريق الحصول عليه، وكذلك سطر
+  الحال ورسالة التنزيل؛ ونتيجةٌ كاملة ⇒ لا تنبيه. بصفحة الإعدادات الحقيقية (options.html + options.js) في إطارٍ بقشرة chrome (_options-harness.js)،
+  وبنصوص «Zq…» اصطناعية.
+  العقد: document.title = "scanexport N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1000px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;vertical-align:top}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+#frames iframe{width:900px;height:700px;border:1px solid #999;display:block;margin-top:8px}</style>
+<h1>اختبار «تنزيل أمر الترجمة»: ما بقي خارج القائمة يُقال بعدده وطريقه</h1>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<div id="frames"></div>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script>var TEST_NAME = "scanexport";</script>
+<script src="_options-harness.js"></script>
+<script>
+(async function () {
+  try {
+    OPTS_HTML = await fetch(EXT + "options.html").then(function (r) { return r.text(); });
+    POPUP_HTML = await fetch(EXT + "popup.html").then(function (r) { return r.text(); });
+    try { localStorage.removeItem("cml_ui_domain"); } catch (e) {}
+    function lines(n, tag) { var a = []; for (var i = 1; i <= n; i++) a.push("Zq" + ("0000" + i).slice(-4) + " " + tag); return a; }
+    var seed = {};
+    // التطبيق: نتيجةٌ قُصّت بحدّ الحجم — 12 غير مترجَم، في القائمة 10، وخارجها 2 (منها 1 بمتغيّر)
+    seed[CMLConst.key("cml_scan_result", "app")] = { status: "done", fetched: 3, found: 40, missing: 12, shown: 10, capped: true, omitted: 2, omittedVars: 1,
+      list: lines(9, "app"), varList: ["Zq {count} app"], at: Date.now(), seconds: 2 };
+    // الوثائق: نتيجةٌ خزّنها محرّكٌ أقدم بسقف العدد (4,000): العدد الحقيقي 4,005 والمخزَّن 4,000، بلا omitted
+    seed[CMLConst.key("cml_scan_result", "docs")] = { status: "done", source: "llms", fetched: 1, found: 4100, missing: 4005, shown: 4000, capped: true,
+      list: lines(4000, "docs"), varList: [], at: Date.now(), seconds: 1 };
+    var E = await makeFrame("options.html", seed);
+    await until(function () { return E.$("masterState").textContent.length > 0; });
+
+    await pick(E, "app");
+    await until(function () { return E.$("scanStatus").textContent.length > 0; }, 3000);
+    var st = E.$("scanStatus").textContent;
+    check("★ (ر29-ز) سطر الحال لنتيجةٍ مقصوصة يقول عدد ما بقي خارج القائمة وطريق الحصول عليه، لا «عُرض أول 4000»", "true/true/false",
+      (st.indexOf("بقي خارج القائمة سطران غير مترجَم (منها سطر واحد فيها متغيّرات)") >= 0) + "/" +
+      (st.indexOf("ثم أعد «فحص الترجمة» ونزّل «أمر الترجمة» من جديد") >= 0) + "/" + (st.indexOf("عُرض أول") >= 0));
+    E.$("scanExport").click();
+    await until(function () { return E.blobs.length >= 1; }, 3000);
+    var p1 = await blobText(E);
+    check("★ (ر29-ز) ملف «أمر الترجمة» يبدأ بتنبيهٍ صريح بعدد ما بقي خارجه، وفيه القائمة كلها كما خُزّنت", "true/true/true",
+      (p1.indexOf("⚠ تنبيهٌ لك قبل اللصق: هذا الملف لا يضمّ كل غير المترجَم — بقي خارجه سطران") === 0) + "/" +
+      (p1.indexOf("Zq0009 app") >= 0) + "/" + (p1.indexOf("Zq {count} app") >= 0));
+    check("★ (ر29-ز) وقسمُ الموقع يقول ما بقي وأين هو في الترتيب وطريق الحصول عليه", "true/true",
+      (p1.indexOf("⚠ بقي خارج القائمة سطران غير مترجَم") >= 0) + "/" +
+      (p1.indexOf("وللحصول عليها: ترجم ما في القائمة واستورده، ثم أعد «فحص الترجمة» ونزّل «أمر الترجمة» من جديد، فيظهر الباقي.") >= 0));
+    var fl = (E.$("xferStatus") || E.$("termsStatus")).textContent;
+    check("★ (ر29-ز) ورسالة التنزيل تقول إن في الملف ما بقي خارجه", "true", fl.indexOf("⚠ وبقي خارجه سطران") >= 0);
+
+    await pick(E, "docs");
+    E.$("scanExport").click();
+    await until(function () { return E.blobs.length >= 2; }, 3000);
+    var p2 = await blobText(E);
+    check("★ (ر29-ز) نتيجةُ محرّكٍ أقدم بسقف العدد (4,005 والمخزَّن 4,000، بلا omitted): الملف يقول إن 5 أسطر بقيت خارجه", "true/true",
+      (p2.indexOf("بقي خارجه 5 أسطر") >= 0) + "/" + (p2.indexOf("⚠ بقي خارج القائمة 5 أسطر غير مترجَم") >= 0));
+
+    // نتيجةٌ كاملة: لا تنبيه ولا «بقي خارج»
+    var seed2 = {};
+    seed2[CMLConst.key("cml_scan_result", "app")] = { status: "done", fetched: 3, found: 40, missing: 3, shown: 3, capped: false, omitted: 0, omittedVars: 0,
+      list: lines(3, "app"), varList: [], at: Date.now(), seconds: 2 };
+    var E2 = await makeFrame("options.html", seed2);
+    await until(function () { return E2.$("masterState").textContent.length > 0; });
+    await pick(E2, "app");
+    E2.$("scanExport").click();
+    await until(function () { return E2.blobs.length >= 1; }, 3000);
+    var p3 = await blobText(E2);
+    check("★ (ر29-ز) ونتيجةٌ كاملة: الملف بلا تنبيهٍ ولا «بقي خارج»، وسطر الحال كذلك", "false/false/true",
+      (p3.indexOf("⚠") >= 0) + "/" + (E2.$("scanStatus").textContent.indexOf("بقي خارج") >= 0) + "/" + (p3.indexOf("Zq0003 app") >= 0));
+
+    // (مراجعة ر29-ز) فوق السقف القديم: نتيجةٌ كاملة بـ4,008 أسطر (4,005 ثابتة و3 بمتغيّرات) كما يخزّنها المحرّك الآن ⇒ الملف يضمّها كلها بلا تنبيه،
+    // وعددُ ما يطلبه الأمر 4008 (كان يُصدَّر أول 4,000 وحده)
+    var seed3 = {};
+    seed3[CMLConst.key("cml_scan_result", "app")] = { status: "done", fetched: 3, found: 4100, missing: 4008, shown: 4008, capped: false, omitted: 0,
+      omittedVars: 0, list: lines(4005, "big"), varList: ["Zq {count} big 1", "Zq {count} big 2", "Zq {count} big 3"], at: Date.now(), seconds: 2 };
+    var E3 = await makeFrame("options.html", seed3);
+    await until(function () { return E3.$("masterState").textContent.length > 0; });
+    await pick(E3, "app");
+    E3.$("scanExport").click();
+    await until(function () { return E3.blobs.length >= 1; }, 3000);
+    var p4 = await blobText(E3);
+    var nPlain = (p4.match(/^Zq\d{4} big$/gm) || []).length, nVar = (p4.match(/^Zq \{count\} big \d$/gm) || []).length;
+    check("★ (مراجعة ر29-ز) 4,008 أسطر (فوق السقف القديم) تُصدَّر كلها: الثابتة 4,005 والمتغيّرات 3، وآخر الثابتة فيه، وعددُ الأمر 4008، بلا تنبيه",
+      "4005/3/true/true/false", nPlain + "/" + nVar + "/" + (p4.indexOf("Zq4005 big") >= 0) + "/" + (p4.indexOf("(4008)") >= 0) + "/" + (p4.indexOf("⚠") >= 0));
+
+    // ★ (ر29-ط، ١٩ جمادى الأولى ١٤٤٨هـ) ولا سقف طول في التصدير: نصٌّ من 1,200 حرف وآخر بمتغيّرٍ من 450 (كما يخزّنهما الماسح الآن بلا سقف طول)
+    // يُصدَّر كلٌّ منهما كاملًا في سطره
+    function longLine(tag, n) { var s = "Zq " + tag; while (s.length < n) s += " alpha bravo"; s = s.slice(0, n); return s.charAt(n - 1) === " " ? s.slice(0, n - 1) + "z" : s; }
+    var LONG1 = longLine("long plain line", 1200), LONGV = "Zq {count} " + longLine("long variable line", 450).slice(3);
+    var seed4 = {};
+    seed4[CMLConst.key("cml_scan_result", "app")] = { status: "done", fetched: 3, found: 40, missing: 3, shown: 3, capped: false, omitted: 0, omittedVars: 0,
+      list: [LONG1, "Zq0001 short"], varList: [LONGV], at: Date.now(), seconds: 2 };
+    var E4 = await makeFrame("options.html", seed4);
+    await until(function () { return E4.$("masterState").textContent.length > 0; });
+    await pick(E4, "app");
+    E4.$("scanExport").click();
+    await until(function () { return E4.blobs.length >= 1; }, 3000);
+    var p5 = await blobText(E4), ls5 = p5.split("\n");
+    check("★ (ر29-ط) نصٌّ من 1,200 حرف وآخر بمتغيّرٍ من 450 يُصدَّران كاملين، كلٌّ في سطره، وعددُ الأمر 3", "1200/true/true/true",
+      LONG1.length + "/" + (ls5.indexOf(LONG1) >= 0) + "/" + (ls5.indexOf(LONGV) >= 0) + "/" + (p5.indexOf("(3)") >= 0));
+
+    // ★ (ر29-ك) نصٌّ بأسطره أو بمسافةٍ خاصة (U+00A0) أو يبدأ بعلامة اقتباس يُصدَّر سطرًا واحدًا بصيغة JSON يُفكّ إلى نصّه بعينه — مفتاح المحرّك
+    // (textKey يقصّ ولا يضمّ) — فترجمةُ المالك تطابق الصفحة؛ والقاعدة 7 في الأمر حين يكون فيه سطرٌ كهذا وحده
+    var NB = String.fromCharCode(0xa0);
+    var K_NL = "Zq first line of a note\n\n- Zq second line", K_NB = "Zq manage" + NB + "your zq plan", K_Q = '"Zq quoted" label', K_V = "Zq {count} line\none", K_P = "Zq0002 plain";
+    var seed5 = {};
+    seed5[CMLConst.key("cml_scan_result", "app")] = { status: "done", fetched: 3, found: 40, missing: 5, shown: 5, capped: false, omitted: 0, omittedVars: 0,
+      list: [K_NL, K_NB, K_Q, K_P], varList: [K_V], at: Date.now(), seconds: 2 };
+    var E5 = await makeFrame("options.html", seed5);
+    await until(function () { return E5.$("masterState").textContent.length > 0; });
+    await pick(E5, "app");
+    E5.$("scanExport").click();
+    await until(function () { return E5.blobs.length >= 1; }, 3000);
+    var p6 = await blobText(E5), ls6 = p6.split("\n");
+    function parsedLine(k) {
+      for (var i = 0; i < ls6.length; i++) { var x = ls6[i]; if (x.charAt(0) !== '"') continue; try { if (JSON.parse(x) === k) return x; } catch (e2) {} }
+      return null;
+    }
+    var lNl = parsedLine(K_NL), lNb = parsedLine(K_NB), lQ = parsedLine(K_Q), lV = parsedLine(K_V);
+    check("★ (ر29-ك) نصٌّ بأسطره وآخر بمسافةٍ خاصة وثالثٌ يبدأ بعلامة اقتباس ورابعٌ بمتغيّرٍ وأسطر: كلٌّ سطرٌ واحد بصيغة JSON يُفكّ إلى نصّه بعينه، والمسافة الخاصة مهرَّبة",
+      "true/true/true/true/true", [!!lNl, !!lNb && lNb.indexOf(NB) < 0 && lNb.indexOf("\\u00a0") >= 0, !!lQ, !!lV, ls6.indexOf(K_P) >= 0].join("/"));
+    check("★ (ر29-ك) والأمر يشرح الصيغة (القاعدة 7) ويطلب العدد كما هو (5)، ولا سطرَ مضمومًا ولا مكسورًا", "true/true/false/false",
+      (p6.indexOf("7) السطر الذي يبدأ بعلامة اقتباس") >= 0) + "/" + (p6.indexOf("(5)") >= 0) + "/" +
+      (ls6.indexOf("Zq first line of a note - Zq second line") >= 0) + "/" + (ls6.indexOf("Zq first line of a note") >= 0));
+    check("★ (ر29-ك) وأمرٌ بلا سطرٍ كهذا بلا القاعدة 7 (كما كان)", "false", p5.indexOf("7) السطر الذي يبدأ") >= 0);
+    check("لا أخطاء جافاسكربت في الصفحة", 0, jsErrors);
+  } catch (e) {
+    check("استثناء في الاختبار", "", String(e && (e.stack || e.message) || e).slice(0, 400));
+  }
+  document.title = "scanexport " + pass + "/" + total;
+  try { localStorage.removeItem("cml_ui_domain"); } catch (e) {}
+})();
+</script>

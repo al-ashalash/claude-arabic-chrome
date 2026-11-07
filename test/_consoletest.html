@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<script>document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');</script>
+<title>console test</title>
+<!--
+  ★ (ر20-أ، ١٢ جمادى الأولى ١٤٤٨هـ) لوحة المطوّرين (Console) صنفُ مسارٍ في مدخل الوثائق نفسه (جدول النطاقات: صفّ docs ‏classes)، قادمٌ خاملٌ حتى CN1:
+  (أ) الجدول ومسارات الصنف من الحزم العامة، وما خارجها؛ (ب) الإقلاع في قسمٍ من اللوحة خاملٌ تمامًا (لا سمة ولا نصّ ولا عنوان ولا خط ولا طلب إلى العامل)،
+  وتجيب النافذة بالصنف؛ (ج) التنقّل بطريقة Next.js بين الوثائق واللوحة ومرجع الواجهة وعودته: كل انتقالٍ إلى اللوحة يعيد الصفحة إلى أصلها بلا أثر (ولا
+  ورقتنا الحيّة)، ولقطة المستند فيها هي لقطة إطارٍ لم يعمل فيه المحرّك قط بايتًا بايتًا، والمرجع على معاملته؛ والجدول بلا الصنف (محرّك المرحلة بلا صنفه)
+  يعطي اللقطة نفسها في كل محطة؛ وصنف المسار يسبق بادئةً كاملة؛ (د) محتوى المستخدم في أسطح اللوحة بمحدِّدات الصنف، مشغَّلًا في إطارٍ وحده كما سيشغّله
+  CN1: لا يُعرَّب ولا يُقرأ (الجاسوس 0)، والبنية نفسها بلا الحماية تُعرَّب (AD-005). محتوى اصطناعي من صنع المشروع، والأطر _consoleframe.html.
+  العقد: document.title = "consoletest N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1100px;margin:auto}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}
+#tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:13px;text-align:right;word-break:break-all}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+iframe{width:300px;height:120px;border:1px solid #ccc}</style>
+<h1>اختبار صنف لوحة المطوّرين في مدخل الوثائق</h1>
+<div id="frames"></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+// النافذة تسأل الإطار الأعلى وحده: محرّكٌ في هذه الصفحة نفسها على مسارٍ من اللوحة، بجدول النطاقات الحقيقي وقاموسٍ تجريبي (مساره يُنقل قبل المحرّك)
+var HOME = location.pathname + location.search, TOPSEND = 0, HELLO = null;
+var TM = makeChromeMock({ session: false, sendMessage: function (m, cb) { TOPSEND++; if (cb) cb(null); } });
+Object.assign(TM.localStore, { cml_enabled: true, cml_rtl: true });
+TM.chrome.runtime.onMessage = { addListener: function (fn) { HELLO = fn; } };
+window.chrome = TM.chrome;
+window.CLAUDE_L10N = { domain: "docs", meta: Object.assign({}, CMLConst.domain("docs").meta, { live: false, hydrate: "none" }), default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Zq Keys": "مفاتيحُ تجريبية", "Claude Platform Docs": "وثائقُ تجريبية" }, patterns: [], plurals: {} } } };
+function topHello() { var r = null; if (HELLO) HELLO({ type: "cml-hello" }, {}, function (x) { r = x; }); return r || {}; }
+history.replaceState({}, "", "/settings/keys");
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function frame(q) {
+  return new Promise(function (res) {
+    var f = document.createElement("iframe");
+    f.onload = function () { res(f.contentWindow); };
+    f.src = "_consoleframe.html?" + q;
+    document.getElementById("frames").appendChild(f);
+  });
+}
+var C = CMLConst, S = CMLShared, DOC = C.domain("docs");
+var NONE = "null|en|null|null|null|null|null|null|null|null";
+function inert(w) { var t = w.trace(); return t.html + "/" + t.marks + "/" + t.live + "/" + t.bidi + "/" + t.langs + "/" + t.fonts + "/" + t.vis; }
+var INERT = NONE + "/0/false/0/0/0/visible";
+
+(async function () {
+  // ---- (أ) الجدول والمسارات ----
+  var cls = C.routeClasses("docs"), cc = cls[0] || {};
+  check("★ الجدول: صنفٌ واحد في مدخل الوثائق، لوحة المطوّرين قادمة بقاموسها، وخارج meta (قاموس الوثائق المبنيّ لا يحمله)",
+        '1/console/{"upcoming":true}/dict-console.js/false/0',
+        cls.length + "/" + cc.id + "/" + JSON.stringify(cc.status) + "/" + cc.dict + "/" + ("classes" in DOC.meta) + "/" +
+        C.DOMAINS.filter(function (d) { return d.id !== "docs" && C.routeClasses(d.id).length; }).length);
+  var R = cc.routes || {}, paths = (R.exact || []).slice();
+  (R.full || []).forEach(function (p) { paths.push(p.slice(0, -1), p + "zq-id"); });
+  var inCls = paths.filter(function (p) { var k = C.routeClass("docs", p); return k && k.id === "console"; }).length;
+  var docsFull = paths.filter(function (p) { return S.routeMode(DOC.meta.routes, p) !== "inactive"; }).length;
+  check("★ مسارات اللوحة من الحزم العامة (الجذر بعينه و33 قسمًا ببادئاتها): كلها من الصنف، وحارس الوثائق يخمدها كما اليوم",
+        "1/33/67/67/0", (R.exact || []).length + "/" + (R.full || []).length + "/" + paths.length + "/" + inCls + "/" + docsFull);
+  var OUT = ["/docs/en/intro", "/docs/en/api/messages", "/docs/en/api/python/messages/create", "/docs", "/docs/zz/intro", "/cookbook", "/cookbook/zq",
+             "/zq-new-section", "/limits", "/workspaces", "/loginx", "/settingsx", "/docs/en/settings/keys"];
+  check("★ وما خارجها ليس منها: الوثائق ومرجع الواجهة (كاملان) وCookbook وما لا يُعرف (خاملة بحارس الوثائق)",
+        "0/full,full,full,inactive,inactive,inactive,inactive,inactive,inactive,inactive,inactive,inactive,full",
+        OUT.filter(function (p) { return C.routeClass("docs", p); }).length + "/" + OUT.map(function (p) { return S.routeMode(DOC.meta.routes, p); }).join(","));
+  check("★ ومحتوى المستخدم في بيانات الصنف لا في meta الوثائق (الوثائق على محدِّداتها حرفًا)",
+        "true/false/false", (cc.meta && cc.meta.skipSel.indexOf("[data-row-key]") === 0) + "/" + (DOC.meta.skipSel.indexOf("[data-row-key]") >= 0) +
+        "/" + (DOC.meta.skipSel.indexOf("bg-user-message") >= 0));
+  check("★ (الإعدادات) جملة «يعمل في» للوثائق تذكر اللوحة قادمةً تحت موقعها، ولا تذكرها لغيرها", "true/false/1",
+        (C.caps("docs").where.indexOf("وتعريب «لوحة المطوّرين (Console)» على المضيف نفسه قادمٌ في تحديثٍ لاحق") > 0) + "/" +
+        (C.caps("code").where.indexOf("لوحة المطوّرين") >= 0) + "/" + C.caps("docs").whereSeg.filter(function (s) { return s.p !== undefined; }).length);
+
+  // ---- (ب) الإقلاع في قسمٍ من اللوحة ----
+  var B = await frame("mode=boot");
+  var bootNow = inert(B);
+  await wait(1100);
+  check("★ الإقلاع في ‎/settings/keys‎ خاملٌ من بدء المستند وبعد إشارة الترطيب: لا سمة ولا علامة ولا ورقة ولا علامة اتجاه ولا خط، والصفحة ظاهرة",
+        INERT + " / " + INERT, bootNow + " / " + inert(B));
+  check("★ ولا نصّ يتغيّر (العنوان والزرّ ورأس العمود والصفّ والرأس المشترك وسمته) ولا العنوان",
+        "Zq Keys|Create Key|Name|Default|Zq Documentation|Zq menu|Zq Keys",
+        ["kh", "kb", "kth", "kname", "navDocs"].map(B.text).join("|") + "|" + B.attr("navBtn", "aria-label") + "|" + B.trace().title);
+  var bc = B.calls();
+  check("★ ولا طلب إلى عامل الخدمة (لا قطعة ولا ورقة حيّة ولا خط — فلا قراءة شبكة)، والإعدادات تُقرأ كأي مسارٍ خامل اليوم (الإعدادات ومفاتيح البقايا)", "0/2",
+        bc.send + "/" + bc.get);
+  var bh = topHello();
+  check("★ والنافذة تسأل (الإطار الأعلى في ‎/settings/keys‎) فيجاب: الوثائق، خامل، والصنف لوحة المطوّرين قادمة، ولا طلب إلى العامل",
+        "docs/inactive/false/console/true/لوحة المطوّرين (Console)/0/null",
+        bh.domain + "/" + bh.route + "/" + bh.enabled + "/" + (bh.routeClass && bh.routeClass.id) + "/" + (bh.routeClass && bh.routeClass.upcoming) + "/" +
+        (bh.routeClass && bh.routeClass.name) + "/" + TOPSEND + "/" + document.documentElement.getAttribute("data-cml"));
+  B.go("play"); await wait(400); B.go("members"); await wait(400); B.go("billing"); await wait(500);
+  check("★ والتنقّل الناعم داخل اللوحة (ساحة التجربة والأعضاء والفوترة) لا يغيّر شيئًا", INERT + "/0/Zq Billing|Default|Run",
+        inert(B) + "/" + B.calls().send + "/" + ["bh", "bbal", "bbtn"].map(B.text).join("|"));
+
+  // ---- (ج) التنقّل: الوثائق ← اللوحة ← المرجع ← اللوحة ← الوثائق، وبلا الصنف (محرّك المرحلة بلا صنفه) للمقارنة بايتًا بايتًا ----
+  var N = await frame("mode=nav"), O = await frame("mode=nav&cls=0"), REF = await frame("mode=boot");
+  await wait(1600);
+  var T = N.trace();
+  check("الوثائق (‎/docs/en/intro‎): مُعرَّبة والسمات قائمة والورقة الحيّة محقونة (أساس المقارنة)",
+        "rtl|ar|on|full|true|توثيقٌ تجريبي|قائمةٌ تجريبية",
+        T.html.split("|").slice(0, 3).concat([T.html.split("|")[5], T.live]).join("|") + "|" + N.text("navDocs") + "|" + N.attr("navBtn", "aria-label"));
+  var same = [];
+  same.push(N.snap() === O.snap());
+  N.go("keys"); O.go("keys"); await wait(900);
+  check("★ الوثائق ← اللوحة (‎/settings/keys‎): عادت الصفحة إلى أصلها بلا أثر — لا سمة على <html> ولا «data-cml…» ولا ورقتنا الحيّة ولا علامة اتجاه ولا lang ولا خط",
+        INERT, inert(N));
+  check("★ والنصوص والسمات والعنوان على أصلها (الرأس المشترك الذي عُرِّب في الوثائق، ومحتوى اللوحة الجديد)",
+        "Zq Documentation|Zq Console|Zq menu|Zq Keys|Create Key|Default|Zq Keys",
+        ["navDocs", "navCon"].map(N.text).join("|") + "|" + N.attr("navBtn", "aria-label") + "|" + ["kh", "kb", "kname"].map(N.text).join("|") + "|" + N.trace().title);
+  check("★ ولقطة المستند كلّه في اللوحة بعد الوثائق هي لقطة إطارٍ أقلع فيها ولم يعمل فيه المحرّك قط — بايتًا بايتًا", "true", N.snap() === REF.snap());
+  same.push(N.snap() === O.snap());
+  N.go("api"); O.go("api"); await wait(1300);
+  T = N.trace();
+  check("★ اللوحة ← مرجع الواجهة (‎/docs/en/api/messages‎): معاملته كما هي — مسارٌ كامل، والتوقيع على أصله (STL_KEEP)، والرأس مُعرَّب، والورقة الحيّة تعود",
+        "full|POST /v1/messages|توثيقٌ تجريبي|rtl|true", T.html.split("|")[5] + "|" + N.text("sig") + "|" + N.text("navDocs") + "|" + T.html.split("|")[0] + "|" + T.live);
+  same.push(N.snap() === O.snap());
+  N.go("play"); O.go("play"); REF.go("play"); await wait(900);
+  check("★ المرجع ← اللوحة (‎/playground‎): خاملٌ بلا أثر مرّةً ثانية، ولقطتها لقطة الإطار الخامل بعد التنقّل نفسه", INERT + "/true", inert(N) + "/" + (N.snap() === REF.snap()));
+  same.push(N.snap() === O.snap());
+  N.go("intro"); O.go("intro"); await wait(1300);
+  T = N.trace();
+  check("★ اللوحة ← الوثائق: يعود التعريب والسمات والورقة الحيّة", "rtl|on|full|true|توثيقٌ تجريبي|قائمةٌ تجريبية",
+        [T.html.split("|")[0], T.html.split("|")[2], T.html.split("|")[5], T.live].join("|") + "|" + N.text("navDocs") + "|" + N.attr("navBtn", "aria-label"));
+  same.push(N.snap() === O.snap());
+  check("★ والجدول بلا صنف المسار (محرّك هذه المرحلة بلا الصنف) يعطي المستند نفسه بايتًا بايتًا في المحطات الخمس (الوثائق، اللوحة، المرجع، اللوحة، الوثائق)",
+        "true,true,true,true,true", same.join(","));
+  // ★ (المراجعة المستقلة لـر20-أ) والإطفاء بمفتاح الموقع كما كان: رفعُ الورقة الحيّة للخمول بالمسار وحده (engine.js applyChrome)، فطافرٌ يرفعها مع كل إطفاءٍ كان ينجو
+  var SK = N.CMLConst.key(N.CMLConst.K.SITE_ON, "docs"), o1 = {}, o2 = {};
+  o1[SK] = false; N.chrome.storage.local.set(o1); await wait(900);
+  var tOff = N.trace(), xOff = N.text("navDocs");
+  o2[SK] = true; N.chrome.storage.local.set(o2); await wait(1400);
+  var tOn = N.trace();
+  check("★ (مراجعة ر20-أ) وإطفاء موقع الوثائق بمفتاحه كما كان قبل المرحلة: تُرفع السمات ويعود النص وتبقى ورقتنا الحيّة خاملةً في <head> (رفعُها للخمول بالمسار وحده)، وإعادة التشغيل تعيد التعريب",
+        "null|en|null|true|Zq Documentation / rtl|on|true|توثيقٌ تجريبي",
+        tOff.html.split("|").slice(0, 3).join("|") + "|" + tOff.live + "|" + xOff + " / " +
+        [tOn.html.split("|")[0], tOn.html.split("|")[2], tOn.live, N.text("navDocs")].join("|"));
+  // عنوان التبويب يُعالَج في الإطار الأعلى وحده (engine.js TITLE_ON): هنا يُمتحن تعريبه في الوثائق وإرجاعه في اللوحة
+  var NB = new RegExp("[" + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + String.fromCharCode(0x200e, 0x200f) + "]", "g");
+  var T0 = document.title;
+  document.title = "Zq Keys - Claude Platform Docs";
+  await wait(300);
+  var tKeys = document.title;
+  history.pushState({}, "", "/docs/en/intro"); document.body.appendChild(document.createElement("i")); await wait(700);
+  var nh = topHello(), tDocs = document.title.replace(NB, "");
+  history.pushState({}, "", "/settings/keys"); document.body.appendChild(document.createElement("i")); await wait(700);
+  var bh2 = topHello(), tBack = document.title;
+  check("★ والنافذة في الوثائق: كامل ومفعّل ولا صنف، والعودة إلى اللوحة تعيد الصنف وتُرجع الصفحة؛ وعنوان التبويب: أصله في اللوحة، ومُعرَّبٌ في الوثائق، ويعود",
+        "docs/full/true/null|inactive/console/null|Zq Keys - Claude Platform Docs|مفاتيحُ تجريبية - وثائقُ تجريبية|Zq Keys - Claude Platform Docs",
+        nh.domain + "/" + nh.route + "/" + nh.enabled + "/" + nh.routeClass + "|" + bh2.route + "/" + (bh2.routeClass && bh2.routeClass.id) + "/" +
+        document.documentElement.getAttribute("data-cml") + "|" + tKeys + "|" + tDocs + "|" + tBack);
+  document.title = T0;
+  // صنف المسار يسبق routes النطاق: بادئةٌ كاملة تشمل المضيف كلّه لا تُعرِّب مسار اللوحة
+  var V = await frame("mode=nav&over=1");
+  await wait(1500);
+  var v1 = V.trace().html.split("|")[2];
+  V.go("keys"); await wait(800);
+  check("★ وصنف المسار يسبق بادئةً كاملة تشمل المضيف كلّه (‎/‎): الوثائق مُعرَّبة واللوحة خاملة", "on/" + INERT + "/Default", v1 + "/" + inert(V) + "/" + V.text("kname"));
+
+  // ---- (د) محتوى المستخدم في أسطح اللوحة: الصنف مشغَّلًا في إطارٍ وحده (كما سيشغّله CN1) ----
+  var U = await frame("mode=uc");
+  await wait(900);
+  check("★ (المفاتيح) الواجهة تُعرَّب (العنوان والزرّ ورأس العمود)، والصفّ (‎[data-row-key]‎: اسم المفتاح وحالته) على أصله، والصفّ نفسه بلا السمة يُعرَّب",
+        "مفاتيحُ تجريبية|إنشاء مفتاحٍ تجريبي|اسمٌ تجريبي|Default|Active|افتراضيٌّ تجريبي", ["kh", "kb", "kth", "kname", "kst", "kctl"].map(U.text).join("|"));
+  U.go("play"); await wait(700);
+  check("★ (ساحة التجربة) محرِّر الموجِّه (‎.ProseMirror > *‎) ودور المستخدم (‎.bg-user-message‎) والمخرَج (‎.prose‎) على أصلها، وسمة المحرِّر والعنوان والزرّ تُعرَّب، والفقرة نفسها خارجها تُعرَّب",
+        "Hello there|Hello there|Hello there|قائمةٌ تجريبية|ساحةٌ تجريبية|شغِّل تجريبيًّا|مرحبًا تجريبيًّا",
+        ["wp", "wu", "wo"].map(U.text).join("|") + "|" + U.attr("wed", "aria-label") + "|" + ["wh", "wr", "wctl"].map(U.text).join("|"));
+  U.go("members"); await wait(700);
+  check("★ (الأعضاء) الاسم والبريد في الصفّ والعدد (‎members-count‎) على أصلها، والعنوان يُعرَّب", "Default|zq-member" + String.fromCharCode(64) + "example.invalid|Active|أعضاءٌ تجريبيون",
+        ["mname", "mmail", "mcount", "mh"].map(U.text).join("|"));
+  U.go("billing"); await wait(700);
+  check("★ (الفوترة) الرصيد (‎top-bar-balance‎) والمؤشّر (‎kpi-value‎) وحقل المتغيّر (‎[role=textbox]‎) وصفّ الفاتورة على أصلها، والعنوان والزرّ والنصّ نفسه خارجها تُعرَّب",
+        "Default|Active|Default|Default|فوترةٌ تجريبية|شغِّل تجريبيًّا|افتراضيٌّ تجريبي", ["bbal", "bkpi", "bvar", "binv", "bh", "bbtn", "bctl"].map(U.text).join("|"));
+  check("★ (AD-005) ولا يقرأ المحرّك نصَّ محتوى المستخدم بأي getter ولا بسلفٍ يحويه في الأسطح الأربعة (الجاسوس العامّ)", "0", U.spy());
+  check("لا أخطاء JS غير ملتقطة (الصفحة والأطر)", "0/0/0/0/0/0/0",
+        [jsErrors].concat([B, N, O, REF, V, U].map(function (w) { return w.jsErrors; })).join("/"));
+  history.replaceState({}, "", HOME);
+  document.title = "consoletest " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "CONSOLETEST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})().catch(function (e) { jsErrors++; document.title = "consoletest 0/1"; var p = document.createElement("pre"); p.textContent = String(e && e.stack || e); document.body.appendChild(p); });
+</script>

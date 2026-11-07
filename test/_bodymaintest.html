@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<script>
+  // أصل الملفات قبل نقل العنوان إلى مسار الوثيقة: الروابط النسبية أدناه تُحسم به لا بالمسار الجديد
+  document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');
+</script>
+<title>bodymain</title>
+<!--
+  ★ (ر29-د2، ١٤ جمادى الأولى ١٤٤٨هـ — مراجعة ر29-د F4 وF5) حاوية المتن الرئيسة (meta.bodyMain) وثغرات اختبار الصمّام. محدِّد المتن المركّب كان يُحكم
+  عليه جملةً، فيخفي جزؤه الثانوي سقوط حاوية النص. بجدول النطاقات الحقيقي (meta النطاق code: ‎#content, #header, #table-of-contents‎ وحاويته ‎#content‎)
+  وبنيةٍ مختلَقة بنصٍّ تجريبي، وفي إطارين (_bodymainframe.html) جدول وثائق المطوّرين (حاويته ‎.docs-prose‎ أو ‎.stldocs-root‎):
+   ١) الجدول: لكل نطاقٍ محدِّد متنه مركّب حاويةٌ من أجزائه، وأجزاؤها كما قيست حيًّا.
+   ٢) (F4) تغيّر اسم ‎#content‎ وبقي الرأس والفهرس يطابقان: محجوزة «nosel» والصفحة كما هي، ونتيجة «فحص الترجمة» تسمّي bodyMain وحده.
+   ٣) (F5 RV13) ونتيجة الفحص لا تحكم على الإبقاء في الصفحة الواحدة (محدِّد إبقاءٍ تجريبي لا يطابق شيئًا هنا).
+   ٤) (F4) الحاوية حاضرة والفهرس غائب (جزءٌ ثانوي): لا حجز، والمتن مترجَمٌ بقطعته، ولا مفتاح ساقطٌ في نتيجة الفحص.
+   ٥) (F5 RV4) تنقّلٌ إلى صفحةٍ يتأخر متنها 0.8 ث (قبل أن يحكم الصمّام) وفيها رأسٌ وفهرس، ومتنها غير مغطًّى: يُحكم لها حين يظهر فتُحجز «drift».
+   ٦) (F5 RV10) ثم تنقّلٌ إلى صفحةٍ يتأخر متنها 1.5 ث، والعدّ السابق قديم: العدّ من التنقّل، فلا حجز «nosel» لحظةً.
+   ٧) (F4) الإطارات: شرحٌ تغيّر اسم ‎.docs-prose‎ فيه وبقي الفهرس — محجوز «nosel»؛ ومرجعٌ فيه ‎.stldocs-root‎ وحده بلا شرحٍ ولا فهرس — لا حجز؛
+      وتنقّلٌ يُبقي الصفحة السابقة مخبوءةً بحاويتها إلى صفحةٍ تغيّر اسم حاويتها — محجوز «nosel» (المخبوء لا يُعدّ).
+   ٨) (مراجعة ر29-د2) ونتيجة «فحص الترجمة» تحكم على حاوية الصمّام بحكمه: الصفحة السابقة مخبوءةٌ بحاويتها والحاضرة تغيّر اسم حاويتها ⇒ محجوزة
+      «nosel» والمفتاح الساقط bodyMain (كان querySelector يعدّ الحاوية المخبوءة فتقول النتيجة «محجوزة» بلا مفتاحٍ ساقط).
+  النصوص العربية هنا تجريبيةٌ للاختبار لا ترجمات. العقد: document.title الختامي = "bodymain N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1100px;margin:auto}iframe{width:300px;height:120px;border:1px solid #ccc}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}
+#tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<link rel="stylesheet" href="../extension/base.css">
+<div id="frames"></div>
+<main id="main">
+  <div id="header"><h1 id="h1">Zq page title</h1><p id="hd">Zq page description sentence for the header.</p></div>
+  <div id="content"><p id="c1">Zq first body paragraph of the page.</p><p id="c2">Zq second body paragraph of the page.</p></div>
+  <div id="table-of-contents"><ul><li><a href="#c1" id="t1">Zq toc entry</a></li></ul></div>
+</main>
+<p id="wake">-</p>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dict-code.js"></script>
+<script>
+var BUILT = globalThis.CLAUDE_L10N;
+var CM = CMLConst.domain("code").meta;
+// جدول النطاقات الحقيقي بلا ترطيبٍ ولا ورقةٍ حيّة؛ ومحدِّد إبقاءٍ تجريبي لا يطابق شيئًا هنا (RV13: لا يُحكم على الإبقاء في الصفحة الواحدة)
+var META = Object.assign({}, CM, { hydrate: "none", live: false, keepSel: ".zq-keep-none" });
+var TR = {
+  "Zq page title": "عنوان صفحةٍ تجريبي",
+  "Zq page description sentence for the header.": "وصفٌ تجريبي في رأس الصفحة.",
+  "Zq first body paragraph of the page.": "الفقرة الأولى التجريبية من المتن.",
+  "Zq second body paragraph of the page.": "الفقرة الثانية التجريبية من المتن.",
+  "<a1>Zq toc entry</a1>": "<a1>بندٌ تجريبي في الفهرس</a1>",   // البند رابطٌ كلّه: قالبه برمز الرابط
+};
+var HV = CMLShared.harvestBlocks(document, { body: CM.bodySel, skip: CMLShared.harvestSkip(CM, "full") });
+var BLOCKS = {};
+HV.forEach(function (h) { if (Object.prototype.hasOwnProperty.call(TR, h.tpl)) BLOCKS[h.fp] = TR[h.tpl]; });
+var CONTENT_HTML = document.getElementById("content").innerHTML;
+// (٢) البنية الأولى: الموقع غيّر اسم الحاوية (‎#content‎ ⇐ ‎#content-zq‎)، والرأس والفهرس كما هما
+document.getElementById("content").id = "content-zq";
+var bodyReqs = [];
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) {
+  if (!msg || msg.type !== "bodies") { if (cb) cb(null); return; }
+  var pk = CMLShared.pageKey(META, msg.path);
+  bodyReqs.push(pk);
+  setTimeout(function () { if (cb) cb({ page: pk, blocks: BLOCKS, keep: [] }); }, 40);
+} });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+var HELLO = null;
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { HELLO = fn; } };
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "code", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: {}, patterns: BUILT.dicts.ar.patterns, plurals: {} } } };
+// «فحص الترجمة» من فهرسٍ تجريبي (META.llms) بلا شبكة
+var LLMS_FIX = "# Zq\n\n## Zq Group\n\n- [Zq toc entry](/docs/en/zq-a.md)\n";
+var realFetch = window.fetch;
+window.fetch = function (u) {
+  if (String(u && u.url || u).indexOf(META.llms) >= 0)
+    return Promise.resolve(new Response(LLMS_FIX, { status: 200, headers: { "content-type": "text/plain" } }));
+  return realFetch.apply(window, arguments);
+};
+history.replaceState({}, "", "/docs/en/zq-a");
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+var MARKS = new RegExp("[" + String.fromCharCode(0x200E) + String.fromCharCode(0x200F) + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g");
+var AR = /[؀-ۿ]/;
+function $(id) { return document.getElementById(id); }
+function txt(id) { return $(id) ? $(id).textContent.replace(MARKS, "").replace(/\s+/g, " ").trim() : "(none)"; }
+var H = document.documentElement;
+function attrs() { return ["dir", "lang", "data-cml", "data-cml-body"].map(function (a) { return H.getAttribute(a) || "-"; }).join("|"); }
+function heldAttr() { return H.getAttribute("data-cml-held") || "-"; }
+function hello() { var r = null; if (HELLO) HELLO({ type: "cml-hello" }, {}, function (x) { r = x; }); return r; }
+function go(p) { history.pushState({}, "", p); $("wake").textContent = p; }
+var heldLog = [];
+new MutationObserver(function () { heldLog.push(heldAttr()); }).observe(H, { attributes: true, attributeFilter: ["data-cml-held"] });
+var arLog = [];   // عقدٌ عربية ظهرت داخل الحاوية في مرحلة (٥)
+var KSCAN = CMLConst.key("cml_scan_result", "code"), scanN = 0;
+async function scan() {
+  delete MOCK.localStore[KSCAN];
+  MOCK.chrome.storage.local.set({ cml_scan_request: { d: "code", kind: "scan", at: Date.now(), id: "bm" + (++scanN) } });
+  for (var i = 0; i < 60; i++) { await wait(100); var r = MOCK.localStore[KSCAN]; if (r && r.status !== "running") return r; }
+  return MOCK.localStore[KSCAN] || {};
+}
+function selOf(r) { var x = r && r.sel; return x ? (x.held || "-") + "|" + (x.miss || []).join(",") + "|" + x.page : "(no sel)"; }
+var F = {};
+["rename", "stl", "cached"].forEach(function (m) {
+  var f = document.createElement("iframe"); f.src = "_bodymainframe.html?m=" + m; $("frames").appendChild(f); F[m] = f;
+});
+function frameState(m) {
+  var d = F[m].contentDocument, h = d.documentElement;
+  return ["dir", "lang", "data-cml", "data-cml-body", "data-cml-held"].map(function (a) { return h.getAttribute(a) || "-"; }).join("|") + "|" +
+    (F[m].contentWindow.probe ? F[m].contentWindow.probe() : "?");
+}
+
+(async function () {
+  // ١) الجدول
+  var rows = CMLConst.DOMAINS.filter(function (d) { return d.meta && d.meta.bodySel; }).map(function (d) { return d.id + ":" + (d.meta.bodyMain || "-"); });
+  check("★ الجدول: حاوية المتن الرئيسة لكل نطاقٍ محدِّد متنه مركّب (والقانونية وclaude.com جزءٌ واحد فلا حاوية)",
+        "support:.article_body|privacy:.article_body|legal:-|academy:article.mdx-article|docs:.docs-prose, .stldocs-root|code:#content|com:-", rows.join("|"));
+  check("القاموس المبنيّ يحمل الحاوية من الجدول (build.mjs يحقن meta)", "#content", BUILT.meta.bodyMain);
+
+  // ٢) (F4) تغيّر اسم ‎#content‎ وبقي الرأس والفهرس
+  await wait(1000);
+  check("★ (F4) قبل استقرار الصفحة (1 ث): لا حجز، ولا شيء مترجَم (لا حكم بلا الحاوية ولو طابق الرأس والفهرس)", "-|Zq page title|Zq toc entry", heldAttr() + "|" + txt("h1") + "|" + txt("t1"));
+  await wait(2300);
+  check("★ (F4) الحاوية ساقطة والرأس والفهرس يطابقان: محجوزة «nosel» والصفحة كما هي (لا dir ولا lang=ar ولا data-cml)", "-|en|-|held|nosel", attrs() + "|" + heldAttr());
+  check("★ (F4) ولا شيء مترجَمٌ فيها: الرأس والفهرس والمتن، والصفحة من اليسار", "Zq page title|Zq toc entry|Zq first body paragraph of the page.|false|ltr",
+        txt("h1") + "|" + txt("t1") + "|" + txt("c1") + "|" + AR.test($("main").textContent) + "|" + getComputedStyle(H).direction);
+  var hl = hello();
+  check("جواب النافذة: خاملةٌ في الصفحة، والحارس «محجوبة» بسببها nosel", "false|full|true/nosel", hl.enabled + "|" + hl.route + "|" + hl.bodies.guard.held + "/" + hl.bodies.guard.why);
+
+  // ٢-٣) نتيجة «فحص الترجمة»: الحجز، وbodyMain وحده (المتن كلّه يطابق بجزئه الثانوي، والإبقاء لا يُحكم به في الصفحة)
+  var r1 = await scan();
+  check("★ (F4 وF5 RV13) نتيجة الفحص في الصفحة المحجوزة: «nosel» والمفتاح الساقط bodyMain وحده (لا bodySel، ولا keepSel في الصفحة الواحدة)",
+        "done|nosel|bodyMain|/docs/en/zq-a", r1.status + "|" + selOf(r1));
+
+  // ٤) (F4) الحاوية حاضرة والفهرس غائب
+  heldLog = [];
+  go("/docs/en/zq-c");
+  $("content-zq").parentNode.removeChild($("content-zq"));
+  var toc = $("table-of-contents"); toc.parentNode.removeChild(toc);
+  var c = document.createElement("div"); c.id = "content"; c.innerHTML = CONTENT_HTML; $("main").insertBefore(c, null);
+  await wait(1500);
+  check("★ (F4) الحاوية حاضرة والفهرس (جزءٌ ثانوي) غائب: لا حجز، والصفحة مقلوبة، والمتن مترجَمٌ بقطعته", "rtl|ar|on|tr|-||الفقرة الأولى التجريبية من المتن.",
+        attrs() + "|" + heldAttr() + "|" + heldLog.filter(function (v) { return v === "nosel"; }).join(",") + "|" + txt("c1"));
+  var r2 = await scan();
+  check("★ (F4) ونتيجة الفحص فيها: لا حجز ولا مفتاح ساقط (الجزء الثانوي الغائب ليس سقوطًا)", "done|-||/docs/en/zq-c", r2.status + "|" + selOf(r2));
+
+  // ٥) (F5 RV4) تنقّلٌ إلى صفحةٍ يتأخر متنها 0.8 ث، وفيها الرأس والفهرس، ومتنها غير مغطًّى
+  heldLog = [];
+  go("/docs/en/zq-d");
+  $("content").parentNode.removeChild($("content"));
+  $("h1").textContent = "Zq page title";   // الرأس يُعاد رسمه بنصّه (مغطًّى بالقطعة)
+  var toc2 = document.createElement("div"); toc2.id = "table-of-contents"; toc2.innerHTML = '<ul><li><a href="#c1" id="t2">Zq toc entry</a></li></ul>'; $("main").appendChild(toc2);
+  await wait(800);
+  var d = document.createElement("div"); d.id = "content";
+  for (var i = 1; i <= 6; i++) { var q = document.createElement("p"); q.id = "d" + i; q.textContent = "Zq drifted body paragraph number " + i + " that the shard does not know."; d.appendChild(q); }
+  var mo = new MutationObserver(function () { if (AR.test(d.textContent)) arLog.push(1); });
+  mo.observe(d, { subtree: true, childList: true, characterData: true });
+  $("main").insertBefore(d, toc2);
+  await wait(1200);
+  mo.disconnect();
+  var hl5 = hello();
+  check("★ (F5 RV4) متنٌ يظهر قبل أن يحكم الصمّام في صفحةٍ رأسها وفهرسها حاضران: يُحكم لها حين يظهر فتُحجز «drift»، ولا عربية في متنها لحظةً",
+        "held|drift|true/true/drift|0|Zq drifted body paragraph number 1 that the shard does not know.",
+        (H.getAttribute("data-cml-body") || "-") + "|" + heldAttr() + "|" + hl5.bodies.guard.judged + "/" + hl5.bodies.guard.held + "/" + hl5.bodies.guard.why + "|" + arLog.length + "|" + txt("d1"));
+
+  // ٦) (F5 RV10) تنقّلٌ إلى صفحةٍ يتأخر متنها 1.5 ث، وعدّ الصمّام السابق قديم (بدأ في المرحلة ٥ منذ أكثر من 2.5 ث)
+  await wait(600);
+  heldLog = [];
+  go("/docs/en/zq-e");
+  $("content").parentNode.removeChild($("content"));
+  await wait(1500);
+  var e = document.createElement("div"); e.id = "content"; e.innerHTML = CONTENT_HTML; $("main").insertBefore(e, toc2);
+  await wait(900);
+  check("★ (F5 RV10) تنقّلٌ من صفحة متن إلى صفحةٍ يتأخر متنها 1.5 ث: العدّ من التنقّل فلا حجز «nosel» لحظةً، ثم يُحكم للمتن بقطعته",
+        "|rtl|ar|on|tr|الفقرة الأولى التجريبية من المتن.",
+        heldLog.filter(function (v) { return v === "nosel"; }).join(",") + "|" + attrs() + "|" + txt("c1"));
+
+  // ٧) (F4) الإطاران بجدول وثائق المطوّرين
+  check("★ (F4) وثائق المطوّرين: شرحٌ تغيّر اسم ‎.docs-prose‎ وبقي فهرسه: محجوز «nosel» والصفحة كما هي", "-|en|-|held|nosel|false", frameState("rename"));
+  check("★ (F4) وثائق المطوّرين: مرجعٌ فيه ‎.stldocs-root‎ وحده (أحد نوعي المتن يكفي) بلا شرحٍ ولا فهرس: لا حجز، ومقلوبٌ ومترجَم", "rtl|ar|on|tr|-|true", frameState("stl"));
+  check("★ (F4) وثائق المطوّرين: حاويةٌ مخبوءة لصفحةٍ سابقة (‎display:none‎) ليست حاويةَ الحاضرة: تنقّلٌ إلى صفحةٍ تغيّر اسم حاويتها ⇒ محجوزة «nosel»",
+        "-|en|-|held|nosel|false", frameState("cached"));
+
+  // ٨) (مراجعة ر29-د2) الصفحة السابقة (zq-e) مخبوءةٌ بحاويتها (‎display:none‎ كما في Next.js)، والحاضرة تغيّر اسم حاويتها وبقي الرأس والفهرس
+  var prev = $("content"), wrap = document.createElement("div");
+  wrap.setAttribute("style", "display: none !important");
+  prev.parentNode.insertBefore(wrap, prev); wrap.appendChild(prev);
+  go("/docs/en/zq-f");
+  var nf = document.createElement("div"); nf.id = "content-zq2"; nf.innerHTML = "<p>Zq new page body paragraph after the cached one.</p>"; $("main").insertBefore(nf, toc2);
+  await wait(3600);
+  var r3 = await scan();
+  check("★ (مراجعة ر29-د2) حاويةٌ مخبوءة لصفحةٍ سابقة وحاوية الحاضرة تغيّر اسمها: محجوزة «nosel»، ونتيجة الفحص تسمّي bodyMain بحكم الصمّام (لا المخبوءة)",
+        "nosel|done|nosel|bodyMain|/docs/en/zq-f", heldAttr() + "|" + r3.status + "|" + selOf(r3));
+
+  check("لا أخطاء JavaScript في الصفحة ولا في الإطارات", 0, jsErrors + ["rename", "stl", "cached"].reduce(function (n, m) { return n + (F[m].contentWindow.jsErr || 0); }, 0));
+  document.title = "bodymain " + pass + "/" + total;
+})();
+</script>

@@ -112,7 +112,8 @@ var STR = {
   "Response 200": "الاستجابة 200", "Expand": "توسيع", "Copy code": "نسخ الشيفرة", "number": "رقم", "max_tokens": "أقصى الرموز",
   "Breadcrumb": "مسار التنقّل",
 };
-var HV = CMLShared.harvestBlocks(document, { body: DM.bodySel, skip: CMLShared.harvestSkip(DM, "full") });
+// ★ (ر24-ج1، ١٠ جمادى الأولى ١٤٤٨هـ) وصنفُ ما تبقيه الشركة (harvestKeep، meta.keepSel) كما يمرّره harvest-dom.mjs والمحرّك
+var HV = CMLShared.harvestBlocks(document, { body: DM.bodySel, skip: CMLShared.harvestSkip(DM, "full"), keep: CMLShared.harvestKeep(DM, "full") });
 var HK = CMLShared.harvestDom(document.documentElement, { chat: false, max: Infinity /* بلا سقف طولٍ كالمحرّك وharvest-dom.mjs منذ S8-A */, skip: CMLShared.harvestSkip(DM, "full") })
   .map(function (h) { return h.key; });
 // ★ (ر8-ج) حصادُ الشريط اللاصق وحده بمستثنى الجدول، قبل المحرّك: لافتة «القسم الحالي» (meta.echoSel) يكتبها المحرّك من عنوانها فلا تُحصد
@@ -182,7 +183,9 @@ var H = document.documentElement;
   check("★ ولا يقرأ من العقد البرمجي شيئًا: لا كتلة ولا مفتاح ولا سمة", "/",
         KEEP_TXT.filter(function (k) { return HV.some(function (h) { return h.tpl === k || h.single === k; }); }).join(",") + "/" +
         KEEP_TXT.filter(function (k) { return HK.indexOf(k) >= 0; }).join(","));
-  check("والأسماء في المرجع يقرؤها الحاصد كتلًا من عقدةٍ واحدة (لقاموس الواجهة)", "true/true/true/true",
+  // ★ (ر24-ج1، ١٠ جمادى الأولى ١٤٤٨هـ) وعنوان بطاقة المثال في تتابعٍ واحد مع شارة الطريقة ‎[data-cds=Badge]‎: الشارة من العقد البرمجي الذي تبقيه الشركة
+  // (meta.keepSel) فهي ذرّةٌ <cN> لا رفضٌ للتتابع، فيُحصد عنوانها عقدةً وحيدة كما في 2.0.0 (كان ر24-أ يرفض التتابع كلَّه)
+  check("والأسماء في المرجع يقرؤها الحاصد كتلًا من عقدةٍ واحدة (لقاموس الواجهة)، وعنوان البطاقة بجوار الشارة المُبقاة منها (ر24-ج1)", "true/true/true/true",
         ["Batches", "Create a Message Batch", "List Tunnels"].every(function (k) { return HV.some(function (h) { return h.single === k; }); }) + "/" +
         HV.some(function (h) { return h.single === "Messages" && /^<c1><\/c1><a2>/.test(h.tpl.replace(ICONS, "")); }) + "/" +
         HV.some(function (h) { return h.group && h.group.indexOf("Messages") >= 0 && h.group.indexOf("Batches") >= 0; }) + "/" +
@@ -224,6 +227,8 @@ var H = document.documentElement;
         "أرسل دفعةً من طلبات إنشاء الرسائل (من القطعة)./مهملة. تحلّ محلّها /v1/tunnels في Claude API.",
         txt("sum1p") + "/" + txt("depP"));
   check("فقرةٌ ليست في القطعة تبقى إنجليزيةً كلّها", "Zq untranslated description paragraph stays in English here.", txt("d3"));
+  // ★ (ر24-ج1، ١٠ جمادى الأولى ١٤٤٨هـ) عنوان بطاقة المثال يُعرَّب كما في 2.0.0: شارة الطريقة بجواره ممّا تبقيه الشركة (meta.keepSel) فهي ذرّةٌ لا تُكتب ولا
+  // ترفض التتابع (ر24-أ كان يرفضه كلَّه فيبقى إنجليزيًّا)؛ والشارة على أصلها (فحص العقد البرمجي أدناه)
   check("★ عنوان بطاقة المثال يُعرَّب، والشريط الجانبي (الإطار) كذلك", "إنشاء دفعة رسائل/إنشاء دفعة رسائل", txt("t6") + "/" + txt("side1"));
   // ★ (ر7-ب، M2) لافتة «القسم الحالي» في الشريط اللاصق (خارج المتن) بقيت إنجليزيةً والعنوانُ الذي تحكيه عربيٌّ: تأخذ نصَّه المعروض
   check("★ (ر7-ب) لافتة القسم الحالي تأخذ نصَّ عنوانها المعرَّب من القطعة (وبصمتُه غير بصمتها)، واسم الصفحة قبلها من قاموس الواجهة كما كان",

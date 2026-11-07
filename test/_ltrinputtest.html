@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>ltr input test</title>
+<!--
+  ★ (ر30-ب، ١٣ جمادى الأولى ١٤٤٨هـ — القرار 124) حقول LTR في المواقع الأخرى (base.css، تعميم القرار 95 وقاعدة ر29-ب)، بالمحرّك الحقيقي في نطاقٍ
+  اصطناعي (zq)، على أشكال حقول المواقع:
+   ١) حقلٌ جعله الموقع LTR ونصّه المؤقت معرَّب: RTL ومحاذاته «البداية» ما دام النص المؤقت ظاهرًا، بقاعدة الموقع الجديدة (النهاية) وبدونها،
+      ومن أول حرفٍ يُكتب يعود LTR بسمة الموقع؛
+   ٢) وحقلٌ ورث اتجاه الصفحة (رابطٌ، وهاتفٌ بلا نصٍّ مؤقت، ونمط إدخال البريد، ورمز التحقق): LTR من أول حرف، والنص المؤقت قبله RTL؛
+   ٣) ولا يُمسّ حقل البحث ولا الحقل النصّي العادي (قد يُكتب فيهما بالعربية) ولا حقل البريد بنصٍّ مؤقت فارغ؛ ★ (ر30-ب2) ولحقل البحث (بالنوع أو الصنف،
+      والمعزول LTR من الموقع) اتجاهُ المكتوب من أول حرفٍ قويّ (unicode-bidi: plaintext) والعنصرُ على اتجاهه، ولا يمسّ ذلك الحقل النصّي العادي ولا البريد؛
+   ٤) ولا تعمل القواعد في claude.ai (data-cml-site="app")، ولا بإطفاء الإضافة.
+  العقد: document.title = "ltrinput N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:820px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+#fx input{display:block;width:320px;margin:6px 0;font-size:16px}
+.zq-iso{unicode-bidi:isolate}</style>
+<!-- قاعدة claude.ai الجديدة (شكلها لا نصّها): حقول البريد والرابط والهاتف LTR في صفحة RTL إلى «النهاية» ما دام النص المؤقت ظاهرًا وغير مركَّز -->
+<style id="siteNew">:where(:root[dir=rtl] input[dir=ltr]:is([type=email],[type=url],[type=tel]):placeholder-shown:not(:focus)){text-align:end}</style>
+<h1>اختبار حقول LTR</h1>
+<form id="fx" onsubmit="return false">
+  <input id="e1" type="email" dir="ltr" placeholder="أدخل بريدك الإلكتروني">
+  <input id="u1" type="url" placeholder="عنوان الموقع">
+  <input id="t1" type="tel">
+  <input id="im1" type="text" inputmode="email" placeholder="البريد">
+  <input id="ac1" type="text" autocomplete="one-time-code" placeholder="الرمز">
+  <input id="s1" type="search" placeholder="ابحث">
+  <input id="x1" type="text" placeholder="الاسم">
+  <input id="e2" type="email" dir="ltr" placeholder="">
+  <!-- ★ (ر30-ب2) حقلا بحثٍ آخران: نصّيٌّ معرّفه search (كمركز الخصوصية)، وبحثٌ جعله الموقع LTR معزولًا -->
+  <input id="s2" type="text" name="q" class="zq-search-bar" placeholder="ابحث">
+  <input id="s3" type="search" dir="ltr" class="zq-iso" placeholder="ابحث">
+  <!-- (مراجعة ر30-ب2) ونصّيٌّ لا يدلّ عليه إلا معرّفه، كحقل مركز الخصوصية -->
+  <input id="zq-search-input" type="text" placeholder="ابحث">
+</form>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+
+<link rel="stylesheet" href="../extension/base.css">
+<script>window.__jsErrors = 0; window.onerror = function () { window.__jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "zq", meta: { scan: "none", live: false, chat: false, hydrate: "none" },
+  default: "ar", langs: [{ code: "ar" }], dicts: { ar: { dir: "rtl", strings: {}, patterns: [], plurals: {} } } };
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function waitFor(cond, then, ms) { var t0 = Date.now(); (function poll() { if (cond() || Date.now() - t0 > (ms || 3000)) then(); else setTimeout(poll, 50); })(); }
+function st(id) { var c = getComputedStyle(document.getElementById(id)); return c.direction + "/" + c.textAlign; }
+function dirOf(id) { return getComputedStyle(document.getElementById(id)).direction; }
+function val(id, v) { document.getElementById(id).value = v; }
+var html = document.documentElement;
+waitFor(function () { return html.getAttribute("dir") === "rtl" && html.getAttribute("data-cml-site") === "zq"; }, function () {
+  check("★ (ر30-ب) الصفحة RTL وهوية النطاق على html", "rtl|zq", html.getAttribute("dir") + "|" + html.getAttribute("data-cml-site"));
+  check("★ (ر30-ب) حقلٌ جعله الموقع LTR بنصٍّ مؤقت معرَّب: RTL والبداية بقاعدة الموقع الجديدة (النهاية)", "rtl/start", st("e1"));
+  document.getElementById("siteNew").disabled = true;
+  check("وبدون قاعدة الموقع", "rtl/start", st("e1"));
+  document.getElementById("siteNew").disabled = false;
+  check("★ (ر30-ب) فارغةً: الموروث RTL (رابطٌ، ونمط بريد، ورمز تحقق، وبحث، ونصٌّ عادي)", "rtl,rtl,rtl,rtl,rtl",
+    ["u1", "im1", "ac1", "s1", "x1"].map(dirOf).join(","));
+  var AT = String.fromCharCode(64); // (لا عنوان بريدٍ مكتوبًا في الملف)
+  val("e1", "zq" + AT + "zq.invalid"); val("u1", "https://zq.invalid/a"); val("im1", "q" + AT + "zq.invalid"); val("ac1", "123456"); val("x1", "Zq name"); val("s1", "zq");
+  check("★ (ر30-ب) بعد الكتابة LTR: البريد بسمة الموقع، والموروثة (رابطٌ ونمط بريد ورمز تحقق) بقاعدتنا، والهاتف بلا نصٍّ مؤقت", "ltr,ltr,ltr,ltr,ltr",
+    ["e1", "u1", "im1", "ac1", "t1"].map(dirOf).join(","));
+  check("★ (ر30-ب) ولا يُمسّ حقل البحث ولا النص العادي: على اتجاه الصفحة بعد الكتابة", "rtl|rtl", dirOf("s1") + "|" + dirOf("x1"));
+  check("وحقل البريد بنصٍّ مؤقت فارغ لا يُمسّ", "ltr", dirOf("e2"));
+  // ★ (ر30-ب2) حقل البحث: اتجاه المكتوب من أول حرفٍ قويّ، واتجاه العنصر كما هو؛ والحقل النصّي العادي لا يُمسّ
+  function ub(id) { return getComputedStyle(document.getElementById(id)).unicodeBidi; }
+  check("★ (ر30-ب2) حقل البحث (بالنوع، وبالصنف، والمعزول LTR من الموقع): اتجاه المكتوب من أول حرفٍ قويّ، والعنصر على اتجاهه", "plaintext/rtl,plaintext/rtl,plaintext/ltr,plaintext/rtl",
+    ["s1", "s2", "s3", "zq-search-input"].map(function (id) { return ub(id) + "/" + dirOf(id); }).join(","));
+  check("★ (ر30-ب2) والحقل النصّي العادي وحقل البريد لا يُمسّان بها (والبريد بسمة dir معزولٌ بافتراض المتصفح)", "normal|isolate", ub("x1") + "|" + ub("e1"));
+  // claude.ai: لا تعمل القواعد (يعالجها الموقع وapp-point.css)
+  html.setAttribute("data-cml-site", "app");
+  val("e1", "");
+  check("★ (ر30-ب) في claude.ai لا تعمل: البريد LTR بسمة الموقع، والرابط المكتوب على اتجاه الصفحة", "ltr|rtl", dirOf("e1") + "|" + dirOf("u1"));
+  check("★ (ر30-ب2) ولا قاعدة البحث في claude.ai", "isolate", ub("s3"));
+  html.setAttribute("data-cml-site", "zq");
+  MOCK.localStore.cml_enabled = false; MOCK.fireChanged({ cml_enabled: { newValue: false } }, "local");
+  waitFor(function () { return !html.hasAttribute("data-cml"); }, function () {
+    check("★ (ر30-ب) وبإطفاء الإضافة: لا سمة نطاق، والبريد على سمة الموقع", "false|ltr", String(html.hasAttribute("data-cml-site")) + "|" + dirOf("e1"));
+    check("لا أخطاء JS في الصفحة", "0", String(window.__jsErrors));
+    document.title = "ltrinput " + pass + "/" + total;
+    var h = document.createElement("p"); h.className = pass === total ? "ok" : "bad";
+    h.textContent = "LTRINPUT: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+    document.body.appendChild(h);
+  });
+}, 4000);
+</script>

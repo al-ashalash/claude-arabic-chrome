@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en-US">
+<meta charset="utf-8">
+<script>
+  // أصل الملفات قبل نقل العنوان إلى مسار الصفحة: الروابط النسبية أدناه تُحسم به لا بالمسار الجديد
+  document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');
+  var Q = new URLSearchParams(location.search), PROT = Q.get("prot") !== "0";
+</script>
+<title>Zq Portal</title>
+<!--
+  إطار اختبارٍ لصفحة _portaltest.html (ر20-ب، ١٢ جمادى الأولى ١٤٤٨هـ) — ليس صفحة اختبارٍ بنفسه، والصفحة الأم تقرأ window.UC حين يتمّ.
+  بوابة Anthropic مشغَّلةً في هذا الإطار وحده (كما سيشغّلها CN2): صفُّ portal بحالٍ مشحونة هنا فقط، ومحتوى المستخدم بمحدِّداته من الجدول
+  (PORTAL_USER ومعها EDITOR_USER)، وقاموسٌ تجريبي فيه نصوص الصفحة كلها — فما بقي إنجليزيًّا بقي بالحماية لا بنقص القاموس. وجاسوس القراءة
+  (نموذج _consoleframe.html) على كل getter نصّي لعقد محتوى المستخدم وأسلافها ومجال Range: يجب أن يبقى صفرًا. وprot=0 يحذف محدِّدات الحماية
+  فيبيّن أن البنية نفسها بلا الحماية تُعرَّب كلها (شاهد أن الفحص يمسك الحماية لا شيئًا آخر). محتوى اصطناعي من صنع المشروع.
+-->
+<link rel="stylesheet" href="../extension/base.css">
+<body>
+<main id="app">
+  <h1 id="h">Zq Applications</h1>
+  <table><thead><tr><th id="th">Name</th></tr></thead>
+    <tbody><tr data-row-key="a1"><td id="rname">Zq Applicant</td><td id="rst">Submitted</td></tr></tbody></table>
+  <div class="prose" id="ans"><p id="ansp">Zq Applicant</p></div>
+  <p id="sent">Check your inbox <span dir="ltr" id="mail"></span></p>
+  <div role="textbox" id="tb">Zq Applicant</div>
+  <p id="ctl">Zq Applicant</p>
+  <span id="ctl2">Submitted</span>
+  <button id="btn">Continue</button>
+</main>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var PT = CMLConst.domain("portal");
+// عنوانٌ بصيغة البريد اصطناعيٌّ يُبنى وقت التشغيل (لا بريد في ملفات المستودع)
+var ZQ_MAIL = "zq-applicant" + String.fromCharCode(64) + "example.invalid";
+document.getElementById("mail").textContent = ZQ_MAIL;
+var STR = { "Zq Applications": "طلباتٌ تجريبية", "Name": "اسمٌ تجريبي", "Zq Applicant": "متقدّمٌ تجريبي", "Submitted": "مُرسَلٌ تجريبيًّا",
+  "Check your inbox": "افحص بريدك تجريبيًّا", "Continue": "تابِع تجريبيًّا", "Zq Portal": "بوابةٌ تجريبية" };
+STR[ZQ_MAIL] = "بريدٌ تجريبي";
+var MOCK = makeChromeMock({ session: false, sendMessage: function (m, cb) { if (cb) setTimeout(function () { cb(null); }, 5); } });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+MOCK.chrome.runtime.onMessage = { addListener: function () {} };
+window.chrome = MOCK.chrome;
+// تشغيل البوابة هنا وحده: الحال مشحونة في نسخة هذا الإطار من الجدول، والبيانات بيانات الصفّ إلا الإقلاع والشبكة
+PT.status = { full: true };
+var meta = { scan: "none", live: false, chat: false, hydrate: "none", skipSel: PROT ? PT.meta.skipSel : undefined,
+             fontFamilies: PT.meta.fontFamilies, fontFallback: PT.meta.fontFallback };
+window.CLAUDE_L10N = { domain: "portal", meta: meta, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: STR, patterns: [], plurals: {} } } };
+// جاسوس القراءة: عقد نصّ محتوى المستخدم (صفّ الجدول، والمنسَّق، والبريد LTR، ومربّع النص)
+var SENT = new Set(), SPY_ON = false, HITS = {};
+var PROT_IDS = ["rname", "rst", "ansp", "mail", "tb"];
+function hit(where, t) {
+  if (!SPY_ON) return;
+  var ok = false;
+  if (t && t.nodeType === 3) ok = SENT.has(t);
+  else if (t && t.contains) SENT.forEach(function (s) { if (!ok && t !== s && t.contains(s)) ok = true; });
+  if (ok) HITS[where] = (HITS[where] || 0) + 1;
+}
+if (PROT) {
+  [[Node.prototype, "nodeValue"], [CharacterData.prototype, "data"], [Node.prototype, "textContent"], [HTMLElement.prototype, "innerText"],
+   [Element.prototype, "innerHTML"], [Element.prototype, "outerHTML"], [Text.prototype, "wholeText"], [HTMLElement.prototype, "outerText"]].forEach(function (x) {
+    var d = Object.getOwnPropertyDescriptor(x[0], x[1]); if (!d || !d.get) return;
+    Object.defineProperty(x[0], x[1], { configurable: true, enumerable: d.enumerable, get: function () { hit(x[1], this); return d.get.call(this); }, set: d.set });
+  });
+  var RTS = Range.prototype.toString;
+  Range.prototype.toString = function () { var self = this; try { SENT.forEach(function (s) { if (self.intersectsNode(s)) hit("range", s); }); } catch (e) {} return RTS.call(this); };
+}
+PROT_IDS.forEach(function (id) { var el = document.getElementById(id); if (el && el.firstChild) SENT.add(el.firstChild); });
+SPY_ON = true;
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/cml-font.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+setTimeout(function () {
+  SPY_ON = false;
+  var g = function (id) { var d = Object.getOwnPropertyDescriptor(Node.prototype, "textContent"); return document.getElementById(id).firstChild.nodeValue; };
+  var n = 0; for (var k in HITS) n += HITS[k];
+  window.UC = {
+    prot: PROT_IDS.map(g).join("|"),
+    ctl: ["h", "th", "ctl", "ctl2", "btn"].map(g).join("|"),
+    hits: n, where: Object.keys(HITS).sort().join(","),
+    dir: document.documentElement.getAttribute("dir"), cml: document.documentElement.getAttribute("data-cml"),
+    errors: jsErrors
+  };
+}, 1500);
+</script>

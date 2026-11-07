@@ -37,7 +37,10 @@ window.CLAUDE_L10N = { domain: "app",
     strings: { "Settings": "الإعدادات", "Billing": "الفوترة", "Test Center": "مركز الاختبار", "Download Claude": "تنزيل Claude",
                "Recents": "الأحدث", "New chat": "محادثة جديدة", "Keys": "API المفاتيح" },
     patterns: [{ re: "^Page ([0-9]+)$", ar: "الصفحة $1", en: "Page {n}" },
-               { re: "^Add (.+)$", ar: "إضافة $1", en: "Add {name}" }],   // نمطٌ عريض كأنماط القاموس («Add {name}»)
+               { re: "^Add (.+)$", ar: "إضافة $1", en: "Add {name}" },   // نمطٌ عريض كأنماط القاموس («Add {name}»)
+               // ★ (ر12) %T: الالتقاط مفتاحٌ حرفيٌّ في قاموس الموقع تُوضع عربيته، وإلا لم يطابق؛ ومعه ‎$n‎ يمرّ بـcapOk كما كان
+               { re: "^Open (.+)$", ar: "فتح %T1", en: "Open {page}" },
+               { re: "^Move (.+?) to (.+)$", ar: "نقل %T1 إلى $2", en: "Move {page} to {dest}" }],
     plurals: { "%d file": { plural: "%d files", forms: ["لا ملفات", "ملف واحد", "ملفان", "%d ملفات", "%d ملفًا", "%d ملف"] } } } } };
 </script>
 <script src="../extension/cml-shared.js"></script>
@@ -111,6 +114,19 @@ function loadDict(f) {
   await setTitle("Add Claude Code | Claude Code");
   check("★ لا عنوان مختلطًا من نمطٍ عريض: التقاطٌ لاتيني يُبقي العنوان على أصله، إلا اسمَ منتجٍ في titleKeep",
         "Add tests | Claude Code / Add tests - Claude / إضافة Claude Code | Claude Code", wide1 + " / " + wide2 + " / " + T());
+  // ★ (ر12، ٥ جمادى الأولى ١٤٤٨هـ — PLAN-3.0.0 E2) %T في عنوان التبويب: التقاطه مفتاحٌ حرفيٌّ تحلّ محلّه عربيته فلا يبقى منه حرفٌ لاتيني،
+  // فلا يمرّ بـcapOk (وهو ما يكتبه بحث العنوان الحرفي لذلك المفتاح)؛ والتقاطٌ ليس مفتاحًا يُبقي العنوان على أصله؛ و‎$n‎ اللاتيني بجواره
+  // يرفضه capOk كما كان، والرقم يمرّ
+  await setTitle("Open Settings - Claude");
+  var tT1 = T();
+  await setTitle("Open Quarterly roadmap - Claude");
+  var tT2 = T();
+  await setTitle("Move Settings to Billing - Claude");
+  var tT3 = T();
+  await setTitle("Move Settings to 3 - Claude");
+  check("★ (ر12) %T في عنوان التبويب: مفتاحٌ حرفيٌّ يُعرَّب، وغيرُ المفتاح يُبقيه، و‎$n‎ اللاتيني بجواره يرفضه capOk كما كان",
+        "فتح الإعدادات - Claude / Open Quarterly roadmap - Claude / Move Settings to Billing - Claude / نقل الإعدادات إلى 3 - Claude",
+        tT1 + " / " + tT2 + " / " + tT3 + " / " + T());
   await setTitle("Keys - Claude");
   check("★ ترجمةٌ أولُ حرفٍ قويٍّ فيها لاتيني: علامة RLM في أولها لتُعرض من اليمين", "8207/API المفاتيح - Claude",
         document.title.charCodeAt(0) + "/" + T());
@@ -256,7 +272,9 @@ function loadDict(f) {
     var s = d.meta && d.meta.titleSuffix;
     return d.id + ":" + (Array.isArray(s) && s.length ? s.length : 0);
   }).join(" ");
-  check("★ لكل نطاقٍ في الجدول ذيولُ عنوانه", "app:2 support:1 privacy:1 legal:1 academy:1 docs:2 code:1", sfxOk);
+  // ★ (ر15) وclaude.com « | Claude by Anthropic»
+  // ★ (ر20-ب) بوابة Anthropic القادمة بلا ذيلٍ بعد: لاحقة عنوانها تُقاس في CN2 مع قاموسها (ولا تعريب عنوانٍ وهي قادمة)
+  check("★ لكل نطاقٍ في الجدول ذيولُ عنوانه", "app:2 support:1 privacy:1 legal:1 academy:1 docs:2 code:1 com:1 portal:0", sfxOk);
   var bad = [];
   CMLConst.DOMAINS.forEach(function (d) { (d.meta.titleSkip || []).forEach(function (s) { try { new RegExp(s); } catch (e) { bad.push(s); } }); });
   check("كل تعابير titleSkip صالحة", "", bad.join(" | "));
@@ -290,11 +308,12 @@ function loadDict(f) {
       names.push(D.id + ":" + (keep ? "keep" : (strs && Object.prototype.hasOwnProperty.call(strs, nm) && AR_CH.test(strs[nm]) ? "ar" : "MISSING " + nm)));
     });
   }
-  check("★ القواميس المبنيّة تحمل ذيول الجدول (build.mjs يحقن meta)", "support:true privacy:true legal:true academy:true docs:true code:true",
+  check("★ القواميس المبنيّة تحمل ذيول الجدول (build.mjs يحقن meta)", "support:true privacy:true legal:true academy:true docs:true code:true com:true portal:true",
         Object.keys(built).map(function (k) { return k + ":" + built[k]; }).join(" "));
   // (ر3) وذيل الوثائق القانونية «\ Anthropic» اسمُ الشركة في titleKeep؛ (ر4) وذيل الأكاديمية « · Claude Academy» اسمُ المنتج فيه
+  // ★ (ر15) وذيل claude.com « | Claude by Anthropic» تبقيه الشركة إنجليزيًّا في نسخها المترجمة كلها (دراسة ر14 §٢و) فهو في titleKeep
   check("★ اسمُ كل ذيلٍ مترجَمٌ في قاموس موقعه (أو اسم منتجٍ في titleKeep)",
-        "support:ar privacy:ar legal:keep academy:keep docs:ar docs:ar code:ar", names.join(" "));
+        "support:ar privacy:ar legal:keep academy:keep docs:ar docs:ar code:ar com:keep", names.join(" "));
   check("وذيلا التطبيق اسما منتجين في titleKeep", "Claude|Claude Code", APPM.titleSuffix.map(function (s) {
     var nm = s.replace(/^\s*[|·:–—-]\s*/, "").trim(); return APPM.titleKeep.indexOf(nm) >= 0 ? nm : "?" + nm; }).join("|"));
 

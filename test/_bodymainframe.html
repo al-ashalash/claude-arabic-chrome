@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<script>
+  // أصل الملفات قبل نقل العنوان إلى مسار الوثيقة: الروابط النسبية أدناه تُحسم به لا بالمسار الجديد
+  document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');
+</script>
+<title>Zq frame</title>
+<!--
+  إطار اختبارٍ لصفحة _bodymaintest.html (ر29-د2) — ليس صفحة اختبارٍ بنفسه. جدول وثائق المطوّرين الحقيقي (حاوية المتن ‎.docs-prose, .stldocs-root‎)
+  وبنيةٌ مختلَقة بنصٍّ تجريبي:
+    m=rename  شرحٌ غيّر الموقع اسم حاويته (‎.docs-prose‎ ⇐ ‎.docs-prose-zq‎) وبقي فهرس الصفحة (‎nav‎ بروابط ‎#‎) يطابق محدِّد المتن
+    m=stl     مرجعٌ فيه ‎.stldocs-root‎ وحده، بلا شرحٍ ولا فهرس
+    m=cached  شرحٌ سليم، ثم تنقّلٌ بعد 1.5 ث يُبقي فيه الموقع الصفحة السابقة مخبوءةً في المستند (‎display: none !important‎ كما في Next.js)
+              والحاضرة غيّر الموقع اسم حاويتها وبقي فهرسها: حاويةٌ مخبوءة لصفحةٍ سابقة ليست حاويةَ الحاضرة
+  probe(): أفي الصفحة الحاضرة نصٌّ عربي.
+-->
+<script>var jsErr = 0; window.onerror = function () { jsErr++; };</script>
+<div id="root"></div>
+<script>
+var M = (/[?&]m=([a-z]+)/.exec(location.search) || [])[1] || "stl";
+var PROSE = '<div class="docs-prose"><h1 id="h">Zq frame title</h1><p id="p">Zq frame body paragraph.</p></div>' +
+    '<nav id="toc"><ul><li><a href="#h" id="a">Zq frame toc entry</a></li></ul></nav>';
+document.getElementById("root").innerHTML = M === "rename" ? PROSE : M === "cached" ? '<div id="pg1">' + PROSE + '</div>'
+  : '<div class="stldocs-root"><h1 id="h">Zq frame title</h1><p id="p">Zq frame body paragraph.</p></div>';
+</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dict-docs.js"></script>
+<script>
+var BUILT = globalThis.CLAUDE_L10N;
+var DM = CMLConst.domain("docs").meta;
+var META = Object.assign({}, DM, { hydrate: "none", live: false });
+var TR = { "Zq frame title": "عنوان إطارٍ تجريبي", "Zq frame body paragraph.": "فقرةٌ تجريبية في الإطار.", "<a1>Zq frame toc entry</a1>": "<a1>بندٌ تجريبي في فهرس الإطار</a1>" };
+var HV = CMLShared.harvestBlocks(document, { body: DM.bodySel, skip: CMLShared.harvestSkip(DM, "full") });
+var BLOCKS = {};
+HV.forEach(function (h) { if (Object.prototype.hasOwnProperty.call(TR, h.tpl)) BLOCKS[h.fp] = TR[h.tpl]; });
+// الموقع غيّر اسم الحاوية بعد الحصاد (القطعة من البنية السابقة)
+if (M === "rename") document.querySelector(".docs-prose").className = "docs-prose-zq";
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) {
+  if (!msg || msg.type !== "bodies") { if (cb) cb(null); return; }
+  var pk = CMLShared.pageKey(META, msg.path);
+  setTimeout(function () { if (cb) cb({ page: pk, blocks: BLOCKS, keep: [] }); }, 40);
+} });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "docs", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: {}, patterns: BUILT.dicts.ar.patterns, plurals: {} } } };
+history.replaceState({}, "", "/docs/en/zq-frame-" + M + location.search);
+function probe() { return /[؀-ۿ]/.test((document.getElementById("pg2") || document.getElementById("root")).textContent); }
+if (M === "cached") setTimeout(function () {
+  history.pushState({}, "", "/docs/en/zq-frame-cached-2");
+  document.getElementById("pg1").setAttribute("style", "display: none !important");
+  var p2 = document.createElement("div"); p2.id = "pg2";
+  p2.innerHTML = PROSE.replace('class="docs-prose"', 'class="docs-prose-zq"').replace(/ id="[a-z]+"/g, "");
+  document.getElementById("root").appendChild(p2);
+}, 1500);
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>

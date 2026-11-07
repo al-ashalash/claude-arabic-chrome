@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>grouped start</title>
+<!--
+  ★ (ت14-هـ0ب، القرار 142) العدد بفاصلة الآلاف كما تكتبه الصفحة («1,000» و«12,345» و«1,000,000»). مداخل الجمع تلتقط أرقامًا وحدها (‎(\d+)‎)،
+  وكذلك أنماط أقسام الجمع العربية التي يولّدها merge-icu (CAT_RE)، فكانت رسالة الجمع تبقى إنجليزية من 1,000 فأكثر. المحرّك الحقيقي
+  (engine.js وcml-shared degroupDigits) بقاموسٍ تجريبي:
+   ١) مدخل جمع: 1,000 (قسم other) و12,345 (many) و1,000,000 (other) و2,003 (few) تُترجم، والعدد بصورته في الصفحة؛ و1000 بلا فاصلة كما كان.
+   ٢) نمط قسمٍ عربي (أرقام القسم وحدها) يأخذ 1,000 و1,011، ونمطٌ بعددين مجمَّعين يعيد كلًّا إلى موضعه.
+   ٣) ما لا يُمسّ: تجميعٌ خاطئ («1,00» و«1,0000»)، وعددٌ عشري («1,000.5»)، وقائمة أرقام («1,2,3»)، ومدخلٌ حرفيٌّ بأرقامٍ بلا فاصلة لا يُطلب
+      بالمجمَّع، ونمطٌ بالتقاطٍ حرّ يُخرج العدد كما ورد.
+   ٤) الحيّ: الموقع يكتب عددًا مجمَّعًا جديدًا، والإطفاء يعيد الإنجليزية.
+   ٥) (ت14-هـ2) ترتيب السلسلة نفسه للعدد المجمَّع: مدخل الجمع يسبق نمطًا عامًّا يقبل «1,000 findings» قيمةً لمتغيّره، والنمط الأخصّ (الأسبق) يفوز
+      بالعدد بلا فاصلة على نمطٍ عامٍّ بعده يقبل النصّ كما هو؛ ونصٌّ لا عدد مجمَّعًا فيه يبقى للنمط العامّ كما كان.
+  العقد: document.title = "grouped N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<main id="main">
+  <p><span id="p1">1,000 zq runs ahead of you</span></p>
+  <p><span id="p2">12,345 zq runs ahead of you</span></p>
+  <p><span id="p3">1,000,000 zq runs ahead of you</span></p>
+  <p><span id="p4">2,003 zq runs ahead of you</span></p>
+  <p><span id="p5">1000 zq runs ahead of you</span></p>
+  <p><span id="c1">Step 3 of 1,000 zq tasks done</span></p>
+  <p><span id="c2">Step 3 of 1,011 zq tasks done</span></p>
+  <p><span id="c3">Moved 1,200 of 3,400 zq rows</span></p>
+  <p><span id="n1">1,00 zq runs ahead of you</span></p>
+  <p><span id="n2">1,0000 zq runs ahead of you</span></p>
+  <p><span id="n3">1,000.5 zq runs ahead of you</span></p>
+  <p><span id="n4">1,2,3 zq runs ahead of you</span></p>
+  <p><span id="n5">Up to 1,000 zq files</span></p>
+  <p><span id="n6">Zq label 1,000 apples</span></p>
+  <p><span id="g1">Zq dismissed 1,000 findings</span></p>
+  <p><span id="g2">Zq dismissed yesterday</span></p>
+  <p><span id="s1">Zq 3 of 1,000 items done</span></p>
+  <p><span id="s2">Zq 3 of many items done</span></p>
+  <p><span id="live">Waiting</span></p>
+</main>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script>CMLConst.HYDRATE_MAX_MS = 60000; CMLConst.HOLD_MAX_MS = 60000; CMLConst.HOLD_ABS_MS = 60000;</script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: false });
+window.chrome = MOCK.chrome;
+var META = { scan: "none", live: true, chat: false, hydrate: "none" };
+// أقسام CAT_RE في merge-icu كما يكتبها نمط القسم: other ‎[1-9]\d*0[0-2]‎ وmany ‎(?:[1-9]\d*)?(?:1[1-9]|[2-9]\d)‎
+var OTHER = "([1-9]\\d*0[0-2])", MANY = "((?:[1-9]\\d*)?(?:1[1-9]|[2-9]\\d))";
+window.CLAUDE_L10N = { domain: "app", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl",
+    strings: { "Waiting": "في الانتظار", "Up to 1000 zq files": "حتى 1000 ملف تجريبي" },
+    plurals: { "Zq dismissed %d finding": { plural: "Zq dismissed %d findings",
+      forms: ["لم تُتجاهل أي نتيجة تجريبية", "تُجوهلت نتيجة تجريبية واحدة", "تُجوهلت نتيجتان تجريبيتان", "تُجوهلت %d نتائج تجريبية", "تُجوهلت %d نتيجة تجريبية", "تُجوهلت %d نتيجة تجريبية"] },
+      "%d zq run ahead of you": { plural: "%d zq runs ahead of you",
+      forms: ["لا تشغيل تجريبي أمامك", "أمامك تشغيلٌ تجريبي واحد", "أمامك تشغيلان تجريبيان", "أمامك %d تشغيلات تجريبية", "أمامك %d تشغيلًا تجريبيًّا", "أمامك %d تشغيل تجريبي"] } },
+    patterns: [
+      { en: "Step {n} of {total} zq tasks done", re: "^Step (\\d+) of " + OTHER + " zq tasks done$", ar: "الخطوة $1 من $2 مهمة تجريبية منجزة" },
+      { en: "Step {n} of {total} zq tasks done", re: "^Step (\\d+) of " + MANY + " zq tasks done$", ar: "الخطوة $1 من $2 مهمةً تجريبية منجزة" },
+      { en: "Moved {done} of {total} zq rows", re: "^Moved (\\d+) of " + OTHER + " zq rows$", ar: "نُقل $1 من $2 صف تجريبي" },
+      { en: "Zq label {name}", re: "^Zq label (.+?)$", ar: "تسمية تجريبية $1" },
+      { en: "Zq {done} of {total} items done", re: "^Zq (\\d+) of " + OTHER + " items done$", ar: "اكتمل $1 من $2 عنصر تجريبي" },
+      { en: "Zq {done} of {total} items done", re: "^Zq (.+?) of (.+?) items done$", ar: "اكتمل $1 من أصل $2" },
+      { en: "Zq dismissed {ago}", re: "^Zq dismissed (.+?)$", ar: "تجاهلٌ تجريبي $1" },
+    ] } } };
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function $(id) { return document.getElementById(id); }
+// علامات الاتجاه التي يضيفها المحرّك حول ناتجٍ فيه حروفٌ لاتينية (bidiWrap) خارج المقارنة: المقصود النصّ
+var MARKS = new RegExp("[" + String.fromCharCode(0x200E, 0x200F) + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g");
+function t(id) { return $(id).textContent.replace(MARKS, ""); }
+(async function () {
+  var t0 = Date.now();
+  while (Date.now() - t0 < 8000 && t("p5") === "1000 zq runs ahead of you") await wait(100);
+  await wait(400);
+  check("★ الجمع: 1,000 (other) يُترجم والعدد بصورته في الصفحة", "أمامك 1,000 تشغيل تجريبي", t("p1"));
+  check("★ الجمع: 12,345 (many) و1,000,000 (other) و2,003 (few)", "أمامك 12,345 تشغيلًا تجريبيًّا|أمامك 1,000,000 تشغيل تجريبي|أمامك 2,003 تشغيلات تجريبية", [t("p2"), t("p3"), t("p4")].join("|"));
+  check("الجمع بلا فاصلة كما كان: 1000", "أمامك 1000 تشغيل تجريبي", t("p5"));
+  check("★ نمط القسم العربي يأخذ 1,000 (other) و1,011 (many)", "الخطوة 3 من 1,000 مهمة تجريبية منجزة|الخطوة 3 من 1,011 مهمةً تجريبية منجزة", t("c1") + "|" + t("c2"));
+  check("★ عددان مجمَّعان في نمطٍ واحد: كلٌّ إلى موضعه", "نُقل 1,200 من 3,400 صف تجريبي", t("c3"));
+  check("★ ما لا يُمسّ: «1,00» و«1,0000» و«1,000.5» و«1,2,3» تبقى إنجليزية", "1,00 zq runs ahead of you|1,0000 zq runs ahead of you|1,000.5 zq runs ahead of you|1,2,3 zq runs ahead of you",
+    [t("n1"), t("n2"), t("n3"), t("n4")].join("|"));
+  check("★ المدخل الحرفي بأرقامٍ بلا فاصلة لا يُطلب بالمجمَّع", "Up to 1,000 zq files", t("n5"));
+  check("النمط بالتقاطٍ حرّ يُخرج العدد كما ورد (لم يتغيّر)", "تسمية تجريبية 1,000 apples", t("n6"));
+  check("★ (ت14-هـ2) مدخل الجمع يسبق نمطًا عامًّا يقبل «1,000 findings» قيمةً لمتغيّره", "تُجوهلت 1,000 نتيجة تجريبية", t("g1"));
+  check("نصٌّ بلا عددٍ مجمَّع يبقى للنمط العامّ كما كان", "تجاهلٌ تجريبي yesterday", t("g2"));
+  check("★ (ت14-هـ2) النمط الأخصّ (الأسبق) بالعدد بلا فاصلة يفوز على نمطٍ عامٍّ بعده", "اكتمل 3 من 1,000 عنصر تجريبي", t("s1"));
+  check("وما لا يطابقه الأخصّ يبقى للعامّ", "اكتمل 3 من أصل many", t("s2"));
+  $("live").textContent = "4,005 zq runs ahead of you";
+  await wait(900);
+  check("★ الحيّ: عددٌ مجمَّع يكتبه الموقع بعد الإقلاع", "أمامك 4,005 تشغيلات تجريبية", t("live"));
+  MOCK.localStore.cml_enabled = false;
+  MOCK.fireChanged({ cml_enabled: { newValue: false } }, "local");
+  await wait(900);
+  check("الإطفاء يعيد الإنجليزية", "1,000 zq runs ahead of you|Step 3 of 1,000 zq tasks done", t("p1") + "|" + t("c1"));
+  check("لا أخطاء JS", 0, jsErrors);
+  document.title = "grouped " + pass + "/" + total;
+})();
+</script>

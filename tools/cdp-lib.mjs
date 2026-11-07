@@ -136,9 +136,19 @@ export async function launch({ chrome, extraArgs = [], headless = true } = {}) {
     });
   }
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-  async function openPage(url) {
-    const { targetId } = await send("Target.createTarget", { url: "about:blank" });
+  // ★ (ر17، ٨ جمادى الأولى ١٤٤٨هـ) ‎{fresh: true}‎: الصفحة في سياق متصفحٍ جديد معزول (كملف تعريفٍ جديد: لا كعكات ولا تخزين من تحميلٍ سابق)،
+  // يُتلف عند إغلاقها — claude.com يحوّل الزائر العائد (كعكة claude_visited) إلى claude.ai، فكل تحميلٍ له زائرٌ أول (دراسة ر14 §٣ج)
+  const ctxOf = new Map();
+  async function newTarget({ fresh = false } = {}) {
+    let browserContextId = null;
+    if (fresh) ({ browserContextId } = await send("Target.createBrowserContext", { disposeOnDetach: true }));
+    const { targetId } = await send("Target.createTarget", { url: "about:blank", ...(browserContextId ? { browserContextId } : {}) });
+    if (browserContextId) ctxOf.set(targetId, browserContextId);
     const { sessionId } = await send("Target.attachToTarget", { targetId, flatten: true });
+    return { targetId, sessionId };
+  }
+  async function openPage(url, { fresh = false } = {}) {
+    const { targetId, sessionId } = await newTarget({ fresh });
     await send("Page.enable", {}, sessionId);
     await send("Page.navigate", { url }, sessionId);
     return { targetId, sessionId };
@@ -160,14 +170,18 @@ export async function launch({ chrome, extraArgs = [], headless = true } = {}) {
     }
     return v;
   }
-  async function closePage(targetId) { try { await send("Target.closeTarget", { targetId }); } catch {} }
+  async function closePage(targetId) {
+    try { await send("Target.closeTarget", { targetId }); } catch {}
+    const c = ctxOf.get(targetId);
+    if (c) { ctxOf.delete(targetId); try { await send("Target.disposeBrowserContext", { browserContextId: c }); } catch {} }
+  }
   // الأنابيب تُغلق مع العملية وإلا أبقت Node حيًّا بعد انتهاء الأداة. ★ (ر5) ويُعاد وعدٌ يتمّ بعد خروج كروم وحذف ملفه
   // (tempProfile): من ينتظره يجد الملف محذوفًا، ومن لا ينتظره تبقى عمليته حيّةً حتى يتمّ (أو يحذفه احتياط الخروج)
   function close() {
     for (const s of [out, inp, proc.stderr]) { try { s.destroy(); } catch {} }
     return prof.close();
   }
-  return { send, openPage, evalIn, until, closePage, close, wait };
+  return { send, openPage, newTarget, evalIn, until, closePage, close, wait };
 }
 
 // ينتظر هدوء الصفحة: اكتمال التحميل ثم فترةٌ بلا طفراتٍ في DOM (الترطيب والبيانات المتأخرة)
@@ -182,4 +196,32 @@ export async function settle(cdp, sessionId, { quietMs = 1500, maxMs = 20000 } =
       setTimeout(tick, 100);
     })();
   })`, maxMs + 5000);
+}
+
+// ★ (ر29-ط، ١٩ جمادى الأولى ١٤٤٨هـ — C1 من ر29-ز) نُقل هذا الفحص من rtl-audit.mjs بنصّه إلى هنا، فتشترك فيه أداتا فحص الاتجاه واللقطة (snapshot-css.mjs):
+// تعبيرٌ يُقيَّم في الصفحة (evalIn)، جوابُه "" لصفحةٍ عادية أو {status, title} لصفحة التحقّق.
+// ★ (ر29-ح) صفحة التحقّق: سكربت التحدّي نفسه (‎…/orchestrate/…‎ كما في فحصَي الإحصاء وصحة المحدِّدات، لا سكربت الرصد الذي يُحقن في صفحاتٍ عادية)
+// أو متغيّره أو نموذجه، أو عنوانها ونصّها المعروفان؛ والجواب حالة المستند (403 عادةً) وعنوانه، وإلا ''
+// ★ (ر29-ز، ١٩ جمادى الأولى ١٤٤٨هـ — مراجعة ر29-ح F3) والعنوان والنصّ وحدهما لا يكفيان إلا بحالة 403 أو 503 (حالة صفحة التحقّق): صفحةٌ حقيقية تُرجع
+// 200 وفي عنوانها أو أول نصّها «Just a moment» (مقالٌ أو درسٌ بهذا العنوان) كانت تُعدّ تحقّقًا فلا تُقاس. والسكربت والمتغيّر والنموذج بلا شرط
+export const CHALLENGE_PROBE = `(function(){ var t = document.title + " " + ((document.body && document.body.innerText) || "").slice(0, 300);
+  var nav = (performance.getEntriesByType("navigation") || [])[0] || {}, st = nav.responseStatus || 0;
+  var hit = typeof window._cf_chl_opt !== "undefined" || !!document.querySelector('script[src*="/cdn-cgi/challenge-platform/"][src*="/orchestrate/"], form#challenge-form') ||
+    ((st === 403 || st === 503) && /just a moment|attention required|verify you are human|performing security verification/i.test(t));
+  if (!hit) return "";
+  return { status: st, title: String(document.title || "").slice(0, 60) }; })()`;
+
+// ★ (ر24-د2، مراجعة ر24-د F-05) مساراتُ اختبار التحويل (_rtldoctest): ‎/__redirect/<رمز>/…‎ يحوّل (302) إلى أصلٍ آخر (localhost بدل 127.0.0.1)،
+// و‎/__target/<رمز>/…‎ يخدم ورقةً بـACAO:* (فلو اتُّبع التحويل لقُرئت) ويعدّ طلبه، و‎/__hits/<رمز>‎ يعيد العددين — فيُرى أن الهدف لم يُطلب أصلًا
+export function testRoute(req, res, hits) {
+  const m = /^\/__(redirect|target|hits)\/([A-Za-z0-9_-]{1,40})(\/[^?]*)?$/.exec(req.url.split("?")[0]);
+  if (!m) return false;
+  const [, kind, tok, rest] = m, h = hits.get(tok) || { redirect: 0, target: 0 };
+  hits.set(tok, h);
+  if (kind === "hits") { res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" }); res.end(JSON.stringify(h)); return true; }
+  h[kind]++;
+  if (kind === "redirect") { res.writeHead(302, { Location: `http://localhost:${req.socket.localPort}/__target/${tok}${rest || "/"}`, "Cache-Control": "no-store" }); res.end(); return true; }
+  res.writeHead(200, { "Content-Type": "text/css; charset=utf-8", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" });
+  res.end(".zq-d-redir{padding-left:3px}");
+  return true;
 }

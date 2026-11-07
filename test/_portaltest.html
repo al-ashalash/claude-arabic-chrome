@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en-US">
+<meta charset="utf-8">
+<script>
+  // أصل الملفات قبل نقل العنوان إلى مسار الصفحة: الروابط النسبية أدناه تُحسم به لا بالمسار الجديد
+  document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');
+</script>
+<title>Zq Sign in</title>
+<!--
+  ★ بوابة Anthropic، النطاق التاسع القادم الخامل (ر20-ب، ١٢ جمادى الأولى ١٤٤٨هـ): portal.anthropic.com في جدول النطاقات بصيغة status
+  {upcoming: true} حتى يُشحن قاموسه (CN2)، ومطابقة مضيفه في المانيفست (افتراض سؤال المالك 2). فالمحرّك على صفحة الدخول، بقاموسٍ فيه نصوص الصفحة
+  نفسها، لا يغيّر شيئًا: المستند (‎#app‎ وسمات <html> والعنوان وعدد عناصر الرأس) بعد التشغيل والتنقّل الناعم بين صفحاتها العامة الأربع وتغيّر
+  الإعدادات هو هو بايتًا بايتًا كما قبل تحميل المحرّك، ولا يقرأ الإعدادات ولا يرسل إلى العامل شيئًا (فلا طلب شبكة)، ويجيب النافذة وحدها بأنه قادم.
+  ثم البوابة مشغَّلةً في إطارٍ وحده (_portalframe.html): محتوى المستخدم بمحدِّدات الجدول لا يُعرَّب ولا يُقرأ (الجاسوس 0)، والبنية نفسها بلا الحماية
+  تُعرَّب. صفحةٌ عليا لا إطار: النافذة لا تسأل إلا الإطار الأعلى. محتوى اصطناعي من صنع المشروع يحاكي بنية صفحة الدخول.
+  العقد: document.title الختامي = "portaltest N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1100px;margin:auto}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}
+#tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+iframe{width:600px;height:160px;border:1px solid #ccc}</style>
+<link rel="stylesheet" href="../extension/base.css">
+<div id="app" data-cds="root"><h1 id="h1">Zq Sign in</h1><form><input data-testid="email" id="em" placeholder="Zq email"><button data-testid="continue" id="go" aria-label="Zq continue">Continue</button></form>
+<p id="p1">Continue</p><p id="sent">Continue <span dir="ltr" id="mail">zq</span></p></div>
+<p id="wake">-</p>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var HOME = location.pathname + location.search;
+var PT = CMLConst.domain("portal");
+var CALLS = { get: 0, send: 0, listen: 0 };
+var MOCK = makeChromeMock({ session: false, sendMessage: function (m, cb) { CALLS.send++; if (cb) cb(null); } });
+var realGet = MOCK.chrome.storage.local.get;
+MOCK.chrome.storage.local.get = function () { CALLS.get++; return realGet.apply(this, arguments); };
+var realOn = MOCK.chrome.storage.onChanged.addListener;
+MOCK.chrome.storage.onChanged.addListener = function () { CALLS.listen++; return realOn.apply(this, arguments); };
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+var HELLO = null;
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { HELLO = fn; } };
+window.chrome = MOCK.chrome;
+// قاموسٌ فيه نصوص الصفحة كلها (والسمات والعنوان): ما بقي إنجليزيًّا بقي بالخمول لا بنقص القاموس
+window.CLAUDE_L10N = { domain: "portal", meta: Object.assign({}, PT.meta), default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Zq Sign in": "دخولٌ تجريبي", "Continue": "تابِع تجريبيًّا", "Zq email": "بريدٌ تجريبي",
+    "Zq continue": "متابعةٌ تجريبية", "zq": "تجريبي" }, patterns: [], plurals: {} } } };
+history.replaceState({}, "", "/login");
+var FONTS0 = document.fonts ? document.fonts.size : 0;
+// حال الجدول كما شُحن تُقرأ أولًا وتُثبَّت في الفحص الأول (تتغيّر في CN2)، ثم تُكتب صيغة «قادم» صراحةً: فحوص الخمول تمتحن الآلية نفسها
+var STATUS0 = JSON.stringify(PT.status);
+PT.status = { upcoming: true };
+var H = document.documentElement;
+function docSnap() {
+  var a = []; for (var i = 0; i < H.attributes.length; i++) a.push(H.attributes[i].name + "=" + H.attributes[i].value);
+  return a.sort().join(";") + "#" + document.title + "#" + document.head.children.length + "#" + document.getElementById("app").outerHTML;
+}
+var SNAP0 = docSnap();
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/cml-font.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function $(id) { return document.getElementById(id); }
+function hello() { var r = null; if (HELLO) HELLO({ type: "cml-hello" }, {}, function (x) { r = x; }); return r; }
+function frameUC(q) {
+  return new Promise(function (res) {
+    var f = document.createElement("iframe"); f.src = "_portalframe.html" + q; document.body.appendChild(f);
+    var t0 = Date.now();
+    (function poll() { var w = f.contentWindow; if (w && w.UC) return res(w.UC); if (Date.now() - t0 > 8000) return res({}); setTimeout(poll, 100); })();
+  });
+}
+
+(async function () {
+  var boot = docSnap() === SNAP0 ? "same" : "changed";
+  var C = CMLConst, shipped = C.shipped().map(function (d) { return d.id; });
+  check("★ الجدول كما شُحن: البوابة نطاقٌ تاسع قادم (status.upcoming) حتى CN2، مضيفها كلّه ولا قاموس مشحون لها",
+        '{"upcoming":true}/9/portal.anthropic.com/https://portal.anthropic.com/*/dict-portal.js/false',
+        STATUS0 + "/" + C.DOMAINS.length + "/" + PT.host + "/" + PT.matches.join(",") + "/" + PT.dict + "/" + (shipped.indexOf("portal") >= 0));
+  var at = function (u) { var d = C.domainOfUrl ? C.domainOfUrl(u) : null; return d ? d.id : "-"; };
+  check("★ النطاق من العنوان: صفحات البوابة كلها لها، ولا تأخذ من غيرها شيئًا (القانونية وclaude.com على حالهما)",
+        "portal|portal|portal|legal|com|-",
+        [at("https://portal.anthropic.com/login"), at("https://portal.anthropic.com/"), at("https://portal.anthropic.com/zq/apply?x=1"),
+         at("https://www.anthropic.com/legal/privacy"), at("https://claude.com/pricing"), at("https://www.anthropic.com/news")].join("|"));
+  check("★ الخامل من بدء المستند: المستند قبل المحرّك وبعد تحميله هو هو (لا سمة ولا نافذة إقلاعٍ ولا إمساك) والصفحة ظاهرة",
+        "same/visible", boot + "/" + getComputedStyle(H).visibility);
+  await wait(900);
+  check("★ وبعد مهلة الترطيب: المستند هو هو بايتًا بايتًا (لا اتجاه ولا تعريب نصًّا وسمة ولا عنوان) ولا خط",
+        "same/0", (docSnap() === SNAP0 ? "same" : "changed") + "/" + ((document.fonts ? document.fonts.size : 0) - FONTS0));
+  check("★ ولا يقرأ الإعدادات ولا يستمع لتغيّرها، ولا يرسل إلى العامل شيئًا (فلا طلب شبكة: لا قطعة ولا ورقة حيّة ولا خط ولا فحص)", "0/0/0",
+        CALLS.get + "/" + CALLS.listen + "/" + CALLS.send);
+  var hl = hello() || {};
+  check("★ ويجيب النافذة بأنه قادم، ولا جواب عنده لفحص", "portal/true/false/inactive/undefined",
+        hl.domain + "/" + hl.upcoming + "/" + hl.enabled + "/" + hl.route + "/" + (function () { var r; if (HELLO) HELLO({ type: "cml-scan" }, {}, function (x) { r = x; }); return r; })());
+  // التنقّل الناعم بين صفحاتها العامة الأربع، وتغيّر الإعدادات: لا شيء
+  history.pushState({}, "", "/magic-link"); $("wake").textContent = "m"; await wait(250);
+  history.pushState({}, "", "/sso-callback"); $("wake").textContent = "s"; await wait(250);
+  history.pushState({}, "", "/logout"); $("wake").textContent = "o"; await wait(250);
+  history.pushState({}, "", "/login"); $("wake").textContent = "l"; await wait(250);
+  MOCK.fireChanged({ cml_enabled: { newValue: true }, cml_rtl: { newValue: true } }, "local");
+  await wait(300);
+  check("★ ولا يتبع التنقّل الناعم (‎/magic-link‎ و‎/sso-callback‎ و‎/logout‎ والعودة) ولا تغيّر الإعدادات: المستند هو هو ولا رسالة",
+        "same/0/0", (docSnap() === SNAP0 ? "same" : "changed") + "/" + CALLS.send + "/" + CALLS.get);
+  // البوابة مشغَّلةً في إطارٍ وحده: محتوى المستخدم لا يُعرَّب ولا يُقرأ، وما حوله يُعرَّب
+  var uc = await frameUC("?prot=1");
+  check("★ (مشغَّلةً في إطار) محتوى المستخدم بمحدِّدات الجدول على أصله: صفّ الجدول (الاسم والحال)، والمنسَّق، والبريد LTR، ومربّع النص",
+        "Zq Applicant|Submitted|Zq Applicant|zq-applicant" + String.fromCharCode(64) + "example.invalid|Zq Applicant", uc.prot);
+  check("★ (مشغَّلةً في إطار) وجاسوس القراءة على عقده وأسلافها ومجال Range صفر", "0/", uc.hits + "/" + uc.where);
+  check("(مشغَّلةً في إطار) وما حوله من نصّ الصفحة يُعرَّب، والصفحة RTL", "طلباتٌ تجريبية|اسمٌ تجريبي|متقدّمٌ تجريبي|مُرسَلٌ تجريبيًّا|تابِع تجريبيًّا/rtl/0",
+        uc.ctl + "/" + uc.dir + "/" + uc.errors);
+  var un = await frameUC("?prot=0");
+  check("والبنية نفسها بلا محدِّدات الحماية تُعرَّب كلها (فالفحص يمسك الحماية لا شيئًا آخر)",
+        "متقدّمٌ تجريبي|مُرسَلٌ تجريبيًّا|متقدّمٌ تجريبي|بريدٌ تجريبي", (un.prot || "").split("|").slice(0, 4).join("|"));
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  history.replaceState({}, "", HOME);
+  document.title = "portaltest " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "PORTALTEST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})().catch(function (e) { jsErrors++; document.title = "portaltest 0/1"; var p = document.createElement("pre"); p.textContent = String(e && e.stack || e); document.body.appendChild(p); });
+</script>

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>bot</title>
+<!--
+  ★ (ر29-د، ١٣ جمادى الأولى ١٤٤٨هـ — ر29-أ §٤ و§٧ ب10) صفحة التحقق التي تسبق الصفحة الحقيقية: كانت الإضافة تقلبها وتكتب مقطعًا معرَّبًا داخل جملةٍ
+  إنجليزية. تُعرف بعلامات الصفحة نفسها (engine.js botCheckPage)، لا بأداةٍ في نموذج دخولٍ حقيقي. أربعة إطارات (_botframe.html) بجدول legal الحقيقي:
+  ثلاث صفحات تحقّقٍ بعلاماتها الثلاث — الإضافة خاملةٌ فيها كلها (لا اتجاه ولا lang ولا data-cml ولا ترجمة، وعنوان التبويب كما هو)؛ وصفحةٌ
+  حقيقية فيها سكربت الكشف وأداة Turnstile — تعمل فيها الإضافة كالعادة. العقد: document.title الختامي = "bot N/N".
+-->
+<style>body{font-family:system-ui;padding:16px}iframe{width:300px;height:120px;border:1px solid #ccc}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}#tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<div id="frames"></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>
+var jsErrors = 0; window.onerror = function () { jsErrors++; };
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+var MARKS = new RegExp("[" + String.fromCharCode(0x200E) + String.fromCharCode(0x200F) + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g");
+var F = {};
+["src", "opt", "form", "neg", "bare"].forEach(function (m) {
+  var f = document.createElement("iframe"); f.src = "_botframe.html?m=" + m; document.getElementById("frames").appendChild(f); F[m] = f;
+});
+function state(m) {
+  var d = F[m].contentDocument, h = d.documentElement;
+  var t = function (id) { return d.getElementById(id).textContent.replace(MARKS, "").replace(/\s+/g, " ").trim(); };
+  return ["dir", "lang", "data-cml"].map(function (a) { return h.getAttribute(a) || "-"; }).join("|") + "|" + t("h") + "|" + t("a") + "|" +
+    d.title.replace(MARKS, "") + "|" + F[m].contentWindow.getComputedStyle(d.getElementById("p")).direction;
+}
+(async function () {
+  await wait(1500);
+  var IDLE = "-|en|-|Settings|Settings|Zq check|ltr";
+  check("★ صفحة تحقّقٍ بسكربت منسِّق صفحة التحدّي: الإضافة خاملة (لا اتجاه ولا lang ولا ترجمة، والعنوان كما هو)", IDLE, state("src"));
+  check("★ صفحة تحقّقٍ بكائن خياراتها في سكربتٍ مضمَّن: خاملة", IDLE, state("opt"));
+  check("★ صفحة تحقّقٍ بنموذجها القديم: خاملة", IDLE, state("form"));
+  // (وعنوان التبويب لا يُعرَّب في إطارٍ داخلي أصلًا: TITLE_ON للإطار الأعلى وحده)
+  check("★ صفحةٌ حقيقية فيها سكربت الكشف المحقون وأداة Turnstile في نموذجها: تعمل الإضافة كالعادة (مقلوبةٌ ومعرَّبة)",
+        "rtl|ar|on|الإعدادات|الإعدادات|Zq check|rtl", state("neg"));
+  // ★ (ر29-د2، مراجعة ر29-د F5 RV6) نموذجٌ بمعرّف نموذج التحدّي بلا علامة رمزه: صفحةٌ حقيقية — كان طافرٌ يعدّ كل ‎#challenge-form‎ فلا يُكشف
+  check("★ (مراجعة ر29-د F5) نموذجٌ بمعرّف نموذج التحدّي بلا علامة رمزه في action: صفحةٌ حقيقية، تعمل فيها الإضافة كالعادة",
+        "rtl|ar|on|الإعدادات|الإعدادات|Zq check|rtl", state("bare"));
+  check("لا أخطاء JavaScript في الصفحة ولا في الإطارات", 0, jsErrors + ["src", "opt", "form", "neg", "bare"].reduce(function (n, m) { return n + (F[m].contentWindow.jsErr || 0); }, 0));
+  document.title = "bot " + pass + "/" + total;
+})();
+</script>

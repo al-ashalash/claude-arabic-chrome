@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<script>
+  // أصل الملفات قبل نقل العنوان إلى مسار الصفحة: الروابط النسبية أدناه تُحسم به لا بالمسار الجديد
+  document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');
+  var Q = new URLSearchParams(location.search), MODE = Q.get("mode") || "nav", CLS = Q.get("cls") !== "0";
+</script>
+<title>Zq Intro - Claude Platform Docs</title>
+<!--
+  إطار اختبارٍ لصفحة _consoletest.html (ر20-أ، ١٢ جمادى الأولى ١٤٤٨هـ) — ليس صفحة اختبارٍ بنفسه، والصفحة الأم تقرأ window.snap() وتقود window.go().
+  مدخل الوثائق بجدول النطاقات الحقيقي (صفّ docs ومعه صنف مسار لوحة المطوّرين في classes) وقاموسٍ تجريبي فيه نصوص الصفحة، والتنقّل بطريقة Next.js:
+  pushState ثم تبديل محتوى الصفحة والرأس باقٍ. الأوضاع (mode): nav يبدأ في ‎/docs/en/intro‎؛ boot يبدأ في قسمٍ من اللوحة (‎/settings/keys‎)؛ uc صنف
+  اللوحة مشغَّلًا في هذا الإطار وحده (بيانات الصنف، ومحتوى المستخدم بمحدِّداته) لفحص الحماية قبل CN1. وcls=0 يحذف صنف المسار من الجدول قبل المحرّك
+  (محرّك هذه المرحلة بلا صنفه — لا محرّك ما قبلها: ذاك كان يُبقي ورقته الحيّة الخاملة في <head> في محطتي اللوحة، والمقارنة به شاهدُ المرحلة لا اختبار) للمقارنة بايتًا بايتًا. محتوى اصطناعي من صنع المشروع يحاكي بنية الوثائق ولوحة المطوّرين، بلا نصّ من الموقع ولا بيانات مستخدم.
+  ★ (ر20-ج، ١٢ جمادى الأولى ١٤٤٨هـ، لـ_consoleswaptest.html) ship=1: صنف اللوحة مشحونًا في هذا الإطار وحده كما سيشحنه CN1 — حاله بلا upcoming، وقاموسه
+  التجريبي (CSTR، ترجماتٌ غير ترجمات الوثائق فيُرى أيّ القاموسين عمل) محقونٌ كما يحقنه المانيفست (CLAUDE_L10N_CLASSES)، والوثائق بقاموسها وبياناتها؛
+  ومعه nodict=1 بلا قاموس الصنف، وinject=1 قاموسه محقونٌ والصنف قادم؛ وspy=1 جاسوس القراءة وpop=1 الرسم عند popstate والصنف قادم (المراجعة المستقلة). وفيه التنقّل بـreplaceState (rgo) وpopstate (history.back يعيد رسم المحطة كما يفعل الموقع). sitelang=1: الموقع يعيد
+  كتابة ‎<html lang="en">‎ بعد كل تنقّل (go وrgo) في مهمةٍ لاحقة، كما قِيس على الموقع الحيّ عند العودة من اللوحة إلى الوثائق (مراجعة ر20-أ).
+-->
+<link rel="stylesheet" href="../extension/base.css">
+<link rel="stylesheet" href="../extension/docs-point.css">
+<body>
+<header id="hdr"><a href="#" id="navDocs">Zq Documentation</a> <a href="#" id="navCon">Zq Console</a> <button id="navBtn" aria-label="Zq menu">x</button></header>
+<main id="app"></main>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script>
+var DOC = CMLConst.domain("docs");
+if (!CLS) delete DOC.classes;
+var SHIP = Q.get("ship") === "1", SITE_LANG_W = Q.get("sitelang") === "1", SPY_Q = Q.get("spy") === "1", POP_Q = Q.get("pop") === "1";
+if (SHIP && DOC.classes && DOC.classes[0]) DOC.classes[0].status = {};
+var CALLS = { get: 0, send: 0, types: {} };
+var LIVE_CSS = "/* zq live */ html[data-cml-rtl='live'] #hdr { padding-inline-start: 1px; }";
+var MOCK = makeChromeMock({ session: false, sendMessage: function (m, cb) {
+  CALLS.send++; var t = m && m.type || "?"; CALLS.types[t] = (CALLS.types[t] || 0) + 1;
+  if (cb) setTimeout(function () { cb(t === "rtlcss" ? { css: LIVE_CSS } : null); }, 5);
+} });
+var realGet = MOCK.chrome.storage.local.get;
+MOCK.chrome.storage.local.get = function () { CALLS.get++; return realGet.apply(this, arguments); };
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+var HELLO = null;
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { HELLO = fn; } };
+window.chrome = MOCK.chrome;
+var STR = { "Zq Documentation": "توثيقٌ تجريبي", "Zq Console": "لوحةٌ تجريبية", "Zq menu": "قائمةٌ تجريبية", "Zq Intro": "مقدّمةٌ تجريبية",
+  "Zq Keys": "مفاتيحُ تجريبية", "Create Key": "إنشاء مفتاحٍ تجريبي", "Name": "اسمٌ تجريبي", "Default": "افتراضيٌّ تجريبي", "Active": "نشطٌ تجريبي",
+  "Zq Workbench": "ساحةٌ تجريبية", "Hello there": "مرحبًا تجريبيًّا", "Create a Message": "إنشاء رسالةٍ تجريبية", "Send a structured list": "أرسل قائمةً تجريبية",
+  "POST /v1/messages": "طلبٌ تجريبي", "Zq Members": "أعضاءٌ تجريبيون", "Zq Billing": "فوترةٌ تجريبية", "Run": "شغِّل تجريبيًّا",
+  // ذيلا عنوان التبويب في الوثائق (titleSuffix) — بهما يُعرَّب العنوان كلّه، وإلا بقي على أصله
+  "Claude Platform Docs": "وثائقُ تجريبية", "Claude API Reference": "مرجعٌ تجريبي" };
+// (ر20-ج) قاموس الصنف التجريبي: ترجماتٌ تختلف عن ترجمات الوثائق للنص نفسه، وما ليس فيه («Zq menu») يبقى على أصله في اللوحة
+var CSTR = { "Zq Documentation": "توثيقٌ من اللوحة", "Zq Console": "لوحةٌ من اللوحة", "Zq Keys": "مفاتيحُ اللوحة", "Create Key": "إنشاء مفتاحٍ في اللوحة",
+  "Name": "اسمٌ في اللوحة", "Default": "افتراضيٌّ في اللوحة", "Active": "نشطٌ في اللوحة", "Zq Workbench": "ساحةُ اللوحة", "Hello there": "مرحبًا من اللوحة",
+  "Run": "شغِّل في اللوحة", "Zq Members": "أعضاءُ اللوحة", "Zq Billing": "فوترةُ اللوحة" };
+// inject=1: قاموس الصنف محقونٌ والصنف قادمٌ كما في الجدول (حالٌ يرفضها الإصدار النهائي): يبقى خاملًا
+if ((SHIP && Q.get("nodict") !== "1" || Q.get("inject") === "1") && DOC.classes && DOC.classes[0])
+  window.CLAUDE_L10N_CLASSES = { console: { domain: "docs", routeClass: "console", meta: DOC.classes[0].meta, default: "ar", langs: [{ code: "ar" }],
+    dicts: { ar: { dir: "rtl", strings: CSTR, patterns: [], plurals: {} } } } };
+var meta = Object.assign({}, DOC.meta);
+// over=1: بادئةٌ كاملة تشمل المضيف كلّه — صنف المسار يسبقها (engine.js routeMode)
+if (Q.get("over") === "1") meta.routes = { full: ["/"] };
+if (MODE === "uc") {
+  // صنف اللوحة مشغَّلًا هنا وحده (كما سيشغّله CN1): مساره كامل، ومحتوى المستخدم بمحدِّداته من الجدول؛ وصفُّ الجدول بلا صنفٍ فلا يُخمده الحارس
+  var CC = (DOC.classes || [])[0] || { meta: {} };
+  meta = { scan: "none", live: false, chat: false, hydrate: "none", routes: { full: ["/"] }, skipSel: CC.meta.skipSel,
+           fontFamilies: DOC.meta.fontFamilies };
+  delete DOC.classes;
+}
+window.CLAUDE_L10N = { domain: "docs", meta: meta, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: STR, patterns: [], plurals: {} } } };
+// عنوانٌ بصيغة البريد اصطناعيٌّ يُبنى وقت التشغيل (لا بريد في ملفات المستودع)
+var ZQ_MAIL = "zq-member" + String.fromCharCode(64) + "example.invalid";
+var VIEWS = {
+  intro: { path: "/docs/en/intro", title: "Zq Intro - Claude Platform Docs",
+    html: '<nav><ol><li><a href="#a">Zq Intro</a></li></ol></nav><div class="docs-prose"><h1 id="h1">Zq Intro</h1><p id="p1">Hello there</p></div>' },
+  api: { path: "/docs/en/api/messages", title: "Create a Message - Claude API Reference",
+    html: '<div class="stldocs-root"><h1 id="ah">Create a Message</h1><div class="stldocs-content"><p id="ap">Send a structured list</p></div>' +
+          '<div class="stldocs-method-signature" id="sig">POST /v1/messages</div></div>' },
+  keys: { path: "/settings/keys", title: "Zq Keys",
+    html: '<h1 id="kh">Zq Keys</h1><button id="kb">Create Key</button><table><thead><tr><th id="kth">Name</th></tr></thead>' +
+          '<tbody><tr data-row-key="k1"><td id="kname">Default</td><td><span id="kst">Active</span></td></tr><tr><td id="kctl">Default</td></tr></tbody></table>' },
+  play: { path: "/playground", title: "Zq Workbench",
+    html: '<h1 id="wh">Zq Workbench</h1><div class="ProseMirror" id="wed" contenteditable="false" aria-label="Zq menu"><p id="wp">Hello there</p></div>' +
+          '<div class="bg-user-message"><p id="wu">Hello there</p></div><div class="prose"><p id="wo">Hello there</p></div><div><p id="wctl">Hello there</p></div>' +
+          '<button id="wr">Run</button>' },
+  members: { path: "/settings/members", title: "Zq Members",
+    html: '<h1 id="mh">Zq Members</h1><table><tbody><tr data-row-key="u1"><td id="mname">Default</td><td id="mmail">' + ZQ_MAIL + '</td></tr></tbody></table>' +
+          '<span data-testid="members-count" id="mcount">Active</span>' },
+  billing: { path: "/settings/billing", title: "Zq Billing",
+    html: '<h1 id="bh">Zq Billing</h1><span data-testid="top-bar-balance" id="bbal">Default</span><span data-testid="kpi-value" id="bkpi">Active</span>' +
+          '<div role="textbox" id="bvar">Default</div><table><tbody><tr data-row-key="inv1"><td id="binv">Default</td></tr></tbody></table><button id="bbtn">Run</button>' +
+          '<span id="bctl">Default</span>' }
+};
+// جاسوس القراءة (نموذج _blockprotspytest و_drafttest): كل getter نصّي على عقد محتوى المستخدم أو على سلفٍ يحويها، ومجال Range — في وضع uc وحده
+var SENT = new Set(), SPY_ON = false, HITS = {};
+var PROT_IDS = ["kname", "kst", "wp", "wu", "wo", "mname", "mmail", "mcount", "bbal", "bkpi", "bvar", "binv"];
+function hit(where, t) {
+  if (!SPY_ON) return;
+  var ok = false;
+  if (t && t.nodeType === 3) ok = SENT.has(t);
+  else if (t && t.contains) SENT.forEach(function (s) { if (!ok && t !== s && t.contains(s)) ok = true; });
+  if (ok) HITS[where] = (HITS[where] || 0) + 1;
+}
+if (MODE === "uc" || SHIP || SPY_Q) {
+  [[Node.prototype, "nodeValue"], [CharacterData.prototype, "data"], [Node.prototype, "textContent"], [HTMLElement.prototype, "innerText"],
+   [Element.prototype, "innerHTML"], [Element.prototype, "outerHTML"], [Text.prototype, "wholeText"], [HTMLElement.prototype, "outerText"]].forEach(function (x) {
+    var d = Object.getOwnPropertyDescriptor(x[0], x[1]); if (!d || !d.get) return;
+    Object.defineProperty(x[0], x[1], { configurable: true, enumerable: d.enumerable, get: function () { hit(x[1], this); return d.get.call(this); }, set: d.set });
+  });
+  var RTS = Range.prototype.toString;
+  Range.prototype.toString = function () { var self = this; try { SENT.forEach(function (s) { if (self.intersectsNode(s)) hit("range", s); }); } catch (e) {} return RTS.call(this); };
+}
+function collect() {
+  SENT.clear();
+  PROT_IDS.forEach(function (id) {
+    var e = document.getElementById(id); if (!e) return;
+    var w = document.createTreeWalker(e, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) SENT.add(t);
+  });
+}
+window.spy = function () { return JSON.stringify(HITS) === "{}" ? "0" : JSON.stringify(HITS); };
+// قراءة الاختبار نفسه بلا جاسوس: يُطفأ حولها
+function quiet(fn) { var s = SPY_ON; SPY_ON = false; try { return fn(); } finally { SPY_ON = s; } }
+function paint(v) { var app = document.getElementById("app"); quiet(function () { app.innerHTML = VIEWS[v].html; }); document.title = VIEWS[v].title; collect(); }
+var START = MODE === "boot" ? "keys" : MODE === "uc" ? "keys" : "intro";
+paint(START);
+history.replaceState({}, "", VIEWS[START].path);
+var FONTS0 = document.fonts ? document.fonts.size : 0;
+// تنقّلٌ بطريقة Next.js: pushState ثم تبديل المحتوى في المهمة نفسها (المراقب يرى العنوان الجديد مع الدفعة)
+window.go = function (v) { history.pushState({}, "", VIEWS[v].path); paint(v); siteLang(); };
+// (ر20-ج) replaceState، وpopstate يعيد رسم محطة المسار (كما يفعل الموقع)، والموقع يعيد كتابة lang بعد التنقّل (sitelang=1)
+window.rgo = function (v) { history.replaceState({}, "", VIEWS[v].path); paint(v); siteLang(); };
+function siteLang() { if (SITE_LANG_W) setTimeout(function () { document.documentElement.setAttribute("lang", "en"); }, 30); }
+if (SHIP || POP_Q) window.addEventListener("popstate", function () {
+  var v = Object.keys(VIEWS).filter(function (k) { return VIEWS[k].path === location.pathname; })[0];
+  if (v) paint(v);
+});
+window.hello = function () { var r = null; if (HELLO) HELLO({ type: "cml-hello" }, {}, function (x) { r = x; }); return r; };
+// الأثر كلّه: سمات <html>، وكل سمةٍ «data-cml…» على أي عنصر، وورقتنا الحيّة، وعلامات الاتجاه في النصوص، وسمة lang على غير <html>، والخطوط
+window.trace = function () { return quiet(traceNow); };
+function traceNow() {
+  var H = document.documentElement, marks = 0, bidi = 0, langs = 0, all = document.getElementsByTagName("*");
+  for (var i = 0; i < all.length; i++) {
+    var a = all[i].attributes;
+    for (var j = 0; j < a.length; j++) if (a[j].name.indexOf("data-cml") === 0) marks++;
+    if (all[i] !== H && all[i].hasAttribute("lang")) langs++;
+  }
+  var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), t, BIDI = new RegExp("[" + String.fromCharCode(0x200e, 0x200f, 0x061c) + String.fromCharCode(0x202a) + "-" +
+    String.fromCharCode(0x202e) + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]");
+  while ((t = w.nextNode())) if (BIDI.test(t.data)) bidi++;
+  return { html: ["dir", "lang", "data-cml", "data-cml-boot", "data-cml-hold", "data-cml-route", "data-cml-rtl", "data-cml-font", "data-cml-body", "data-cml-held"]
+             .map(function (n) { return String(H.getAttribute(n)); }).join("|"),
+           marks: marks, live: !!document.getElementById("cml-live-rtl"), bidi: bidi, langs: langs,
+           fonts: (document.fonts ? document.fonts.size : 0) - FONTS0, title: document.title, vis: getComputedStyle(H).visibility };
+}
+// اللقطة بايتًا بايتًا: المستند كلّه (سماته ورأسه ومتنه) — بلا عقد الاختبار نفسه (سكربتاته ثابتةٌ في الإطارين)
+window.snap = function () { return quiet(function () { return document.documentElement.outerHTML; }); };
+window.text = function (id) { return quiet(function () { var e = document.getElementById(id); return e ? e.textContent : "?"; }); };
+window.attr = function (id, n) { var e = document.getElementById(id); return e ? String(e.getAttribute(n)) : "?"; };
+window.spyOn = function (on) { SPY_ON = !!on; };
+window.calls = function () { return CALLS; };
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/cml-font.js"></script>
+<script>if (MODE === "uc" || SHIP || SPY_Q) SPY_ON = true;</script>
+<script src="../extension/engine.js"></script>
+<script>
+setTimeout(function () { document.body.appendChild(document.createElement("next-route-announcer")); }, 150);
+</script>

@@ -46,6 +46,9 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
     <p id="pLoose"><a href="#">Contact Support</a><span> if you cannot sign in.</span></p>
     <p id="pRem">Remove <b id="remB">this</b> part.</p>
     <p id="pIns">Stable <b id="insB">text</b> here.</p>
+    <!-- ★ (ر24-أ، AD-006) زرٌّ مركَّزٌ داخل كتلةٍ تُعرَّب، وفقرةٌ يعيد الموقع رسمها بعقدٍ جديدة -->
+    <p id="pFocus">Press <button id="fBtn" type="button">Continue</button> to go on.</p>
+    <p id="pRR">Render <b>again</b> later.</p>
     <p id="pBadOv">Fallback <a href="#">link</a> case.</p>
     <div class="tabs2"><button id="g1">Copy</button><button id="g2">Share <b>link</b></button></div>
     <p id="pIcon">Open <span id="ic2" class="icon">&#xE002;</span> the settings panel.</p>
@@ -91,6 +94,7 @@ td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
   <!-- كما في شريط الوثائق الحيّ (client-sdks): بنودٌ روابطُ flex متجاورة في حاويةٍ واحدة، ونصّ كلٍّ في span كتلي -->
   <div id="sdk2"><a href="#" style="display:flex"><span id="cs2" style="display:block">C#</span></a><a href="#" style="display:flex"><span style="display:block">Go</span></a></div></nav>
 <div dir="ltr"><div><span id="csL">C#</span></div></div>
+<p id="selOut">Selection stays outside the body</p>
 <table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
 <script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
 <script src="_chrome-mock.js"></script>
@@ -103,6 +107,8 @@ var META = { scan: "none", live: false, chat: false, hydrate: "defer", intercom:
 // الترجمات بقوالبها الإنجليزية — والقاموس يُبنى من بصمات الحاصد على الصفحة الخام (الهوية مع المحرّك)
 var TR = {
   "Stable <b1>text</b1> here.": "ثابت <b1>نص</b1> هنا.",
+  "Press <s1>Continue</s1> to go on.": "اضغط <s1>متابعة</s1> للمضيّ.",
+  "Render <b1>again</b1> later.": "اعرض <b1>مجددًا</b1> لاحقًا.",
   "Remove <b1>this</b1> part.": "احذف <b1>هذا</b1> الجزء.",
   "Fallback <a1>link</a1> case.": "حالة <a1>رابط</a1> احتياطية.",
   "See <a1>best <b2>practices</b2></a1> for <c3>max_tokens</c3>.<g4/>Then <a5>the</a5> docs.":
@@ -167,6 +173,20 @@ var P1_TEXTS = [], w = document.createTreeWalker(document.getElementById("p1"), 
 while ((tn = w.nextNode())) P1_TEXTS.push(tn);
 var A1 = document.getElementById("a1"), C1 = document.getElementById("c1"), clicks = 0;
 A1.addEventListener("click", function (e) { e.preventDefault(); clicks++; });
+// ★ (ر24-أ، AD-006) قبل المحرّك: زرٌّ داخل كتلةٍ تُعرَّب وأبناء فقرته بترتيبهم، وتحديدٌ خارج ما يُكتب (والتركيز بعد ظهور الصفحة:
+// الإمساك يخفيها قبل الترطيب فلا يبقى فيها عنصرٌ مركَّز — سلوك المتصفح لا الكتابة)
+var FB = document.getElementById("fBtn"), fClicks = 0;
+FB.addEventListener("click", function () { fClicks++; });
+var PF_KIDS = Array.prototype.slice.call(document.getElementById("pFocus").childNodes), PF_BTN_KIDS = Array.prototype.slice.call(FB.childNodes);
+var SEL_T = document.getElementById("selOut").firstChild;
+(function () { var r = document.createRange(); r.setStart(SEL_T, 2); r.setEnd(SEL_T, 9); getSelection().removeAllRanges(); getSelection().addRange(r); })();
+function selSnap() { var s = getSelection(); if (!s.rangeCount) return "none"; var r = s.getRangeAt(0); return (r.startContainer === SEL_T) + ":" + r.startOffset + "-" + (r.endContainer === SEL_T) + ":" + r.endOffset + ":" + String(s); }
+var SEL0 = selSnap();
+function sameKids() {
+  var p = document.getElementById("pFocus"), k = p.childNodes, b = FB.childNodes;
+  return k.length === PF_KIDS.length && PF_KIDS.every(function (n, i) { return k[i] === n && n.parentNode === p; }) &&
+         b.length === PF_BTN_KIDS.length && PF_BTN_KIDS.every(function (n, i) { return b[i] === n; }) && FB.parentNode === p;
+}
 </script>
 <link rel="stylesheet" href="../extension/base.css">
 <script src="../extension/cml-rtl.js"></script>
@@ -199,6 +219,22 @@ var H = document.documentElement;
   await wait(1300);
   check("★ وصلت القطعة: تظهر الصفحة والمتن عربي", "null/visible", H.getAttribute("data-cml-hold") + "/" + getComputedStyle(H).visibility);
   check("★ فقرةٌ برابطٍ متداخل وشيفرةٍ وسطر تُعرَّب بقالبها", "راجع أفضل الممارسات لضبط max_tokens.ثم الوثائق.", txt("p1"));
+  // ★ (ر24-أ، AD-006 — ملحق مراجعة Codex) استقرار DOM مع كتابة الكتلة: التركيز والعقد وترتيبها والتحديد والنقر
+  FB.focus();
+  var focus0 = (document.activeElement === FB) + "/" + txt("pFocus");
+  // الموقع يغيّر نصًّا في الكتلة (فتُرجع كلُّها إلى الإنجليزية: كتاباتٌ في عقدها) ثم يعيده (فتُعرَّب: كتاباتٌ أخرى) — والزرّ مركَّز
+  var pfTail = $("pFocus").lastChild;
+  pfTail.nodeValue = " to go on now.";
+  await wait(700);
+  var focus1 = (document.activeElement === FB) + "/" + txt("pFocus") + "/" + sameKids();
+  pfTail.nodeValue = " to go on.";
+  await wait(700);
+  check("★ (ر24-أ، AD-006) كتابات الكتلة (إرجاعها ثم تعريبها) لا تمسّ التركيز ولا العقد: الزرّ المركَّز داخلها هو المركَّز نفسه", "true/اضغط متابعة للمضيّ.|true/Press Continue to go on now./true|true/اضغط متابعة للمضيّ.",
+        focus0 + "|" + focus1 + "|" + (document.activeElement === FB) + "/" + txt("pFocus"));
+  check("★ (ر24-أ، AD-006) هوية العقد وآباؤها وترتيب الأبناء كما كانت بعد التعريب (الفقرة والزرّ)", "true", sameKids());
+  check("★ (ر24-أ، AD-006) تحديدٌ خارج ما يُكتب لم يتغيّر بعد التعريب", SEL0, selSnap());
+  FB.click();
+  check("★ (ر24-أ، AD-006) معالج النقر على الزرّ المعرَّب يعمل", "1", fClicks);
   check("★ الرابط والشيفرة هما العنصران نفسهما، والشيفرة كما هي", "true/true/max_tokens",
         (document.getElementById("a1") === A1 && A1.isConnected) + "/" + (C1.isConnected && C1.parentNode === $("p1")) + "/" + C1.textContent);
   check("★ عقد النص نفسها في مواضعها (لا إنشاء ولا حذف ولا نقل)", "true",
@@ -439,6 +475,15 @@ var H = document.documentElement;
   check("★ نصٌّ أُدرج في كتلةٍ معرَّبة: تُعاد تقديرها فتعود إنجليزيةً كلّها (لا خلط)", "Stable text extra here.", txt("pIns"));
   $("insB").removeChild($("insB").lastChild);   // الصفحة إلى أصلها (تحقّق الإطفاء أدناه يقارن بالأصل حرفًا)
   await wait(500);
+  // ★ (ر24-أ، AD-006) إعادة رسمٍ لاحقة من الموقع (كما يفعل React): عقدٌ جديدة بالنص الإنجليزي نفسه تحلّ محلّ المعرَّبة — تُعرَّب بلا خطأ،
+  // والمنفصلة لا يُكتب فيها بعدها شيء
+  var rrOld = Array.prototype.slice.call($("pRR").childNodes), rrOldVals = rrOld.map(function (n) { return n.textContent; });
+  var rrPre = txt("pRR"), rrB = document.createElement("b"); rrB.textContent = "again";
+  $("pRR").replaceChildren(document.createTextNode("Render "), rrB, document.createTextNode(" later."));
+  await wait(700);
+  check("★ (ر24-أ، AD-006) إعادة رسم الموقع لفقرةٍ معرَّبة بعقدٍ جديدة: تُعرَّب الجديدة، ولا خطأ، ولا كتابة في المنفصلة", "اعرض مجددًا لاحقًا./اعرض مجددًا لاحقًا./0/true/true",
+        rrPre + "/" + txt("pRR") + "/" + jsErrors + "/" + rrOld.every(function (n) { return !n.isConnected; }) + "/" +
+        rrOld.every(function (n, i) { return n.textContent === rrOldVals[i]; }));
   check("طلبٌ واحد للقطعة، بمسار الصفحة ولغتها", "1/ar", bodyReqs.filter(function (m) { return m.type === "bodies"; }).length + "/" + bodyReqs[0].lang);
   // ★ (ر6، ٢٩ ربيع الآخر ١٤٤٨هـ) غلاف الجدول في وثائق Claude Code أغلفةٌ متداخلة لا نصَّ فيها غيرُ الجدول (وعلى الجوال شريط تمريرٍ بلا نص): الجدول
   // المعرَّب الرؤوس لاتينيُّ أغلب النص يأخذ غلافُه اتجاه الصفحة في صفحةٍ وصلت قطعتها (كان dir="auto" يتخطّى الخلايا العربية إلى أول لاتيني فيصير LTR)
@@ -472,6 +517,9 @@ var H = document.documentElement;
   await wait(500);
   check("★ الإطفاء يعيد المتن كما كان حرفًا بحرف (innerHTML)", "true", document.querySelector(".article_body").innerHTML === ORIG);
   check("★ والإطفاء يرفع عزل اللافتات (C# وC++ كما كانتا)", "C#/C++", $("cs").textContent + "/" + $("cpp").textContent);
+  FB.click();
+  check("★ (ر24-أ، AD-006) وبعد الإرجاع: التركيز نفسه، والعقد نفسها بترتيبها، والتحديد كما هو، والنقر يعمل", "true/true/" + SEL0 + "/2/Press Continue to go on.",
+        (document.activeElement === FB) + "/" + sameKids() + "/" + selSnap() + "/" + fClicks + "/" + txt("pFocus"));
   check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
   document.title = "block " + pass + "/" + total;
   var h = document.createElement("p");

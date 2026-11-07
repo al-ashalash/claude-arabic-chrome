@@ -1,0 +1,136 @@
+@charset "UTF-8";
+/* com-point.css — إصلاحاتٌ نقطية لـclaude.com وسوقه (دراسة ر14 §٤ج، ونُفّذت في ر16-أ، ٦ جمادى الأولى ١٤٤٨هـ).
+   تُحقن بعد base.css وrtl-com.css.
+   ★ كل قاعدةٍ هنا خلف سمتين لا يكتبهما إلا المحرّك على <html> (data-cml="on" وdir="rtl"، وفي القاعدة ٤ data-cml-route أيضًا): والنطاق قادمٌ
+   (status.upcoming) فالمحرّك لا يكتب على claude.com شيئًا، والمانيفست يحقن الملف في كل صفحةٍ منه، فلا تنطبق منه قاعدةٌ حتى يُشغَّل في CM-د.
+   والإطاران المسمّيان (@keyframes) لا يرسمان شيئًا إلا بقاعدةٍ مبوَّبة تسمّيهما، واسماهما ببادئتنا فلا يطابقان اسمًا من الموقع.
+   ★ لا قاعدة هنا معلَّقةٌ على سمة الخط (C.FONT_ATTR): بصمتا علاج القصّ والقطع في fonts.lock.json تشملان كل *-point.css، وأي قاعدةٍ
+   كهذه تُسقط «fonts.mjs verify» حتى تُعاد المعايرة على ويندوز (بيد المالك). */
+
+/* ١) مؤشر التبويبات (‎[class*="Tabs-module"][class*="__indicator"]‎ في قالبَي المكوّن): مطلقٌ عند left:0، ويحرّكه الموقع بـtransform من متغيّرٍ
+   يحسبه بجافاسكربت من **يسار** شريط التبويبات (‎--indicator-x‎). والورقة المولَّدة تقلب مرساته (left ← inset-inline-start = يمين في RTL) فيُزاح
+   المؤشر من اليمين بمسافةٍ محسوبة من اليسار: في المراجعة المستقلة لدراسة ر14 كانت المؤشرات السبعة في 3 صفحات بعرضين كلها خارج التبويب النشط،
+   وأربعةٌ منها خارج الشاشة. فتبقى مرساته يسارًا فيزيائيًّا لهذا العنصر وحده (توصية دراسة 2.0.0)، كما يستثني المحرّك المواضع المحسوبة في
+   claude.ai (data-cml-noflip="computed") وهذا لا يطابق محدِّدَه. في cml-point مهمّةً لتغلب الورقتين المولَّدتين (اللقطة والحيّة) */
+@layer cml-point {
+  html[data-cml="on"][dir="rtl"] [class*="Tabs-module"][class*="__indicator"] {
+    left: 0 !important;
+    right: auto !important;
+  }
+}
+
+/* ٢) الأسهم الاتجاهية: الموقع يرسم أيقوناته SVG بلا اسمٍ ولا صنفٍ يميّزها (‎_base-module…__vector‎ لكلها)، فاتجاه الصفحة لا يقلبها: زرّا
+   الشريحة تبادلا موضعيهما وبقي سهماهما، و«→» في روابط «المزيد» يبقى مشيرًا إلى اليمين ومعناه «إلى الأمام». فتنقلب **قائمةٌ مغلقة** من أربع
+   أيقوناتٍ بمسارها (‎path[d]‎، ابنُ svg مباشرةً)، حُصرت في 18 صفحة (صفحةٌ لكل قالب) من 193 أيقونةً مختلفة:
+     أ) «→» (‎M11.1465 4.64648C11.3417‎): زرّ «التالي» في الشرائح، وروابط «المزيد» ذات السهم الختامي، وأسهم قائمة السوق، وزرٌّ صغيرٌ بالسهم وحده؛
+     ب) «←» (‎M8.14648 4.64648C8.34176‎): زرّ «السابق» في الشرائح، و«السابق» في مبدِّل الأدلة؛
+     ج) «→|» (خطٌّ رأسيٌّ يسبقه سهم، ‎M16.5 3C…‎ ثم ‎M8.12793 5.16504‎): السهم الختامي في أزرار «الانتقال»؛
+     د) «↪» (‎M12.1279 2.66477C12.3126‎): سهم «إلى الأمام» المنحني في الشريط الجانبي للمقالة.
+   ولا يُقلب غيرها: الرابط الخارجي «↗» والسهم الصاعد والنازل وأسهم القوائم المنسدلة والإغلاق (ومنه «|←» لإغلاق اللوحة الجانبية و«×») والتوسيع
+   والتشغيل والبحث والشعارات، ولا أيقونات صورة التطبيق المرسومة في الصفحة (AppShell: رسمٌ لواجهة التطبيق، والصور حرفيةٌ — RULES §4). وبالخاصية
+   scale (لا transform) كقاعدة الأكاديمية: تتركّب مع تحويل الموقع وحركته. ولا تمسّ ما في جزر LTR: متن مسار الهيكل (٤)، والشريط المتحرك (٣)،
+   وما يعلن اتجاهه LTR أو تُحسم كتلته من dirSel إنجليزيةً (‎[dir]:dir(ltr)‎ يرى «auto» محسومةً) فلا ينقلب سهمٌ داخل نصٍّ لاتيني، وصورة التطبيق
+   (AppShell، جزيرة ٥ز: جزيرتُها بالخاصية direction لا بسمة dir، فلا يراها ‎:dir()‎ فتُسمّى هنا — ر16-ج) */
+html[data-cml="on"][dir="rtl"] svg:is(:has(> path[d^="M11.1465 4.64648C11.3417"]), :has(> path[d^="M8.14648 4.64648C8.34176"]),
+    :has(> path[d^="M16.5 3C16.7761 3 17 3.22386 17 3.5V16.5"][d*="ZM8.12793 5.16504"]), :has(> path[d^="M12.1279 2.66477C12.3126"])
+    ):not(:is([data-cml-route="shell"] main, [class*="Marquee-module"][class*="__marquee"], [class*="AppShell-module"][class*="__window"],
+    [dir="ltr"], [dir]:dir(ltr)) *) {
+  scale: -1 1;
+}
+
+/* ٣) الحركات الاتجاهية:
+   أ) الشريط المتحرك (‎Marquee-module…__marquee‎): مسارٌ بعرض محتواه مكرَّرٌ مرتين يتحرك إلى اليسار بنصف عرضه (translate(-50%)، إطارٌ لا تقلبه
+      الورقة المولَّدة). وفي سياقٍ RTL يبدأ المسار من اليمين فيكشف تحريكُه يسارًا فراغًا بعد نصفه. فيبقى جزيرةً LTR كما يرسمه الموقع، والقواعد
+      المولَّدة داخله منطقيةٌ فتعود فيه كما كانت */
+html[data-cml="on"][dir="rtl"] [class*="Marquee-module"][class*="__marquee"] {
+  direction: ltr;
+  --cml-island: ltr;
+}
+/* ب) الأدراج: درج الفلاتر في السوق (‎FilterDrawer‎) ولوحة العميل (‎CustomerPanel‎) مرساتهما يمينًا في الموقع، والورقة المولَّدة تجعلها يسارًا في
+      RTL؛ ودرج الفهرس في الأدلة (‎TocDrawer‎) عكسهما. وإطارا الدخول والخروج (translate(±100%)) فيزيائيان لا يقلبهما المولِّد (يبلّغ عنهما)، فكان
+      الدرج يدخل من وسط الشاشة. فيُسمّى لكلٍّ إطاران مقلوبان يدخل بهما من حافّته الجديدة ويخرج إليها؛ والمدّة والتسارع وحالة الإغلاق (‎__closing‎
+      و‎__exiting‎) من الموقع. ودرج الفهرس دون 52.125em صفحةٌ من أسفل (panel-in-up، رأسية) فلا يُمسّ. وما كان منها داخل متن مسار الهيكل (LTR
+      بالقاعدة ٤) فمرساته وإطاراه على أصلهما */
+@keyframes cml-com-from-left-in { 0% { transform: translate(-100%); } }
+@keyframes cml-com-from-left-out { to { transform: translate(-100%); } }
+@keyframes cml-com-from-right-in { 0% { transform: translate(100%); } }
+@keyframes cml-com-from-right-out { to { transform: translate(100%); } }
+@layer cml-point {
+  html[data-cml="on"][dir="rtl"] :is([class*="FilterDrawer-module"][class*="__panel"]:not([class*="__panelScroll"]),
+      [class*="CustomerPanel-module"][class*="__panel"]):not([data-cml-route="shell"] main *) {
+    animation-name: cml-com-from-left-in !important;
+  }
+  html[data-cml="on"][dir="rtl"] :is([class*="FilterDrawer-module"][class*="__closing"] [class*="FilterDrawer-module"][class*="__panel"]:not([class*="__panelScroll"]),
+      [class*="CustomerPanel-module"][class*="__panel"][class*="__exiting"]):not([data-cml-route="shell"] main *) {
+    animation-name: cml-com-from-left-out !important;
+  }
+  @media (min-width: 52.125em) {
+    html[data-cml="on"][dir="rtl"] [class*="TocDrawer-module"][class*="__panel"]:not([class*="__panelScroll"]):not([data-cml-route="shell"] main *) {
+      animation-name: cml-com-from-right-in !important;
+    }
+    html[data-cml="on"][dir="rtl"] [class*="TocDrawer-module"][class*="__closing"] [class*="TocDrawer-module"][class*="__panel"]:not([class*="__panelScroll"]):not([data-cml-route="shell"] main *) {
+      animation-name: cml-com-from-right-out !important;
+    }
+  }
+}
+
+/* ٤) مسار «هيكل فقط» (routes.shell: قصص العملاء والمقالات غير المترجمة، والأدلة والندوات وسلاسلها، ونماذج التواصل والاستمارات، والحلول غير
+   المترجمة، وصفحة إدارة الرعاية الصحية): المحرّك لا يعرّب محتوى main (meta.shellSel) ولا يحصده، والشركة تبقيه إنجليزيًّا في عروضها المترجمة،
+   فيبقى اتجاهه وتخطيطه LTR كما يرسمه الموقع داخل الصفحة RTL (كما في الأكاديمية): القواعد المولَّدة داخله منطقيةٌ فتعود فيه كما كانت. والبوابة
+   data-cml-route يكتبها المحرّك على html بحسب حارس المسار؛ والترويسة والتذييل خارج main فيُعرَّبان وينقلبان */
+html[data-cml="on"][dir="rtl"][data-cml-route="shell"] main {
+  direction: ltr;
+  --cml-island: ltr;
+}
+
+/* ٥) (ر16-ب، ٦ جمادى الأولى ١٤٤٨هـ) رسومٌ يضع الموقع عناصرها بجافاسكربت بإحداثياتٍ فيزيائية من اليسار — تحويلٌ سطري (translate) محسوب، أو
+   مقياسٌ (scale) من الزاوية اليسرى العليا لإطارٍ بعرض سطح المكتب — فقلبُ مرساتها في الورقة المولَّدة (left ← inset-inline-start، أي يمينًا في
+   RTL) يرميها خارج الشاشة. فتبقى جزرًا LTR كما يرسمها الموقع، والقواعد المولَّدة داخلها منطقيةٌ فتعود فيها كما كانت (كالشريط المتحرك في ٣أ).
+   وهي زخرفةٌ ومعايناتٌ لا يُقرأ ترتيبها، ونصوصها القصيرة تبقى باتجاهها، ومقيسةٌ في تدقيق الاتجاه على النسخة المشغَّلة بعرضين:
+     أ) خريطة المنتجات في ‎/product/overview‎ (‎ConstellationMap…__frame‎): مسرحٌ مرساته يسارًا ومقياسه من الزاوية اليسرى، ونجومه بـtranslate
+        محسوب — كانت 52 نجمةً وخيوطها خارج الشاشة، والمسرح يبدأ قبلها بـ114 بكسلًا؛
+     ب) معاينات الإطارات المصغّرة في لوحة الخطوات (‎StepPanel…__artifact‎): iframe بعرض سطح المكتب وscale من الزاوية اليسرى، فكان خارج الشاشة؛
+     ج) مكتبة الاستخدامات (‎UseCaseLibrary…__stage‎): لوحتها في الوسط بـleft:50% مع translateX(-50%) — توسيطٌ متناظر يكسره قلب المرساة وحده
+        فتخرج اللوحة يسارًا — وفيها معاينةٌ مصغّرة كـ(ب)؛
+     د) حلقة البلاطات في بطل الصفحة (‎OverviewHero…__ring‎): بلاطاتٌ حول المركز بـleft:50% وtranslate محسوب، وفي كلٍّ صورةٌ وcanvas مرساتهما يسارًا */
+html[data-cml="on"][dir="rtl"] :is([class*="ConstellationMap-module"][class*="__frame"], [class*="StepPanel-module"][class*="__artifact"],
+    [class*="UseCaseLibrary-module"][class*="__stage"], [class*="OverviewHero-module"][class*="__ring"]) {
+  direction: ltr;
+  --cml-island: ltr;
+}
+/*   هـ) شريحة الشهادات (‎Testimonials…__carouselTrack‎، على 390): مسارٌ بعرض نافذته وعناصره بعرضها تفيض منه، ويزيحه الموقع بـtranslateX(-n×العرض).
+        وفي RTL تفيض العناصر يسارًا فتزيحها الإزاحة نفسها خارج النافذة، فكانت الشهادة الظاهرة فراغًا. فالمسار وحده LTR (ترتيب العناصر كما
+        يحسبه الموقع)، وكل شهادةٍ داخله تعود RTL فيُقرأ نصّها باتجاهه */
+html[data-cml="on"][dir="rtl"] [class*="Testimonials-module"][class*="__carouselTrack"] {
+  direction: ltr;
+  --cml-island: ltr;
+}
+html[data-cml="on"][dir="rtl"] [class*="Testimonials-module"][class*="__carouselTrack"] > [class*="Testimonials-module"][class*="__carouselItem"] {
+  direction: rtl;
+}
+/*   و) (ر16-ج، ٦ جمادى الأولى ١٤٤٨هـ) المعاينة الحيّة المضمَّنة (‎EmbedFrame…__slot‎، في ‎/product/cowork‎ وأمثالها): iframe بعرض سطح المكتب مرساته
+        left:0 ومقياسه من الزاوية اليسرى (transform-origin:0 0) كمعاينة لوحة الخطوات (ب)، فكان على 390 بادئًا من يمين الإطار فيظهر طرفه الأيمن
+        وحده (الصنف c78364f715c1). فالإطار جزيرةٌ LTR، ومعه بديله (‎__fallback‎) */
+html[data-cml="on"][dir="rtl"] [class*="EmbedFrame-module"][class*="__slot"] {
+  direction: ltr;
+  --cml-island: ltr;
+}
+/*   ز) (ر16-ج) صورة التطبيق المرسومة في الصفحة (‎AppShell…__window‎، بطل ‎/product/claude-code‎): رسمٌ لنافذة التطبيق كالصورة، والصور حرفيةٌ
+        (RULES §4). كان شريط عنوانها (‎__titlebar‎: مرساته left:0) ينعكس بالوراثة فيتبادل زرّا الرجوع والتقدّم موضعيهما ويبقى سهماهما، فلا الرسم
+        حرفيٌّ ولا معكوس (الصنف bab92d6558f5). فالنافذة كلها جزيرةٌ LTR كما يرسمها الموقع، وأسهمها مستثناةٌ من قلب القاعدة ٢ */
+html[data-cml="on"][dir="rtl"] [class*="AppShell-module"][class*="__window"] {
+  direction: ltr;
+  --cml-island: ltr;
+}
+/*   ح) (ر16-ج) شريحة البطاقات الجانبية (‎MarginaliaRail…__track‎، بطل ‎/customers‎): دون 75em مسارٌ أفقيٌّ بالتمرير (scroll-snap) يمرّره زرّا الشريحة
+        بـscrollLeft موجب. وفي RTL يبدأ التمرير من اليمين وقيمته سالبة، فيُقصّ الموجب إلى الصفر: كان «التالي» يجعل الشريحة الثانية الحالية ويبقى
+        المسار على الأولى، والحالية خارج الإطار (الصنف 68bd0def0ca3؛ مقيسٌ على 390: scrollLeft يبقى 0، وفي LTR يصير 216). وفوق 75em حزمةٌ تُزاح
+        بطاقاتها بتحويلٍ فيزيائي (translateX وrotate من ‎--offset‎). فالمسار وحده LTR (تمريره وترتيبه كما يحسبه الموقع)، وكل بطاقةٍ داخله تعود RTL
+        فيُقرأ نصّها باتجاهه — كشريحة الشهادات (هـ) */
+html[data-cml="on"][dir="rtl"] [class*="MarginaliaRail-module"][class*="__track"] {
+  direction: ltr;
+  --cml-island: ltr;
+}
+html[data-cml="on"][dir="rtl"] [class*="MarginaliaRail-module"][class*="__track"] > [class*="MarginaliaRail-module"][class*="__slide"] {
+  direction: rtl;
+}

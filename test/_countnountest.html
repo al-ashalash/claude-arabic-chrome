@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<script>
+  // أصل الملفات قبل نقل العنوان إلى مسار الدورة: الروابط النسبية أدناه تُحسم به لا بالمسار الجديد
+  document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');
+</script>
+<title>countnoun start</title>
+<!--
+  العدد في عقدةٍ ومعدودُه في أخرى (ر12، ٥ جمادى الأولى ١٤٤٨هـ — PLAN-3.0.0 ج3؛ engine.js countPair، meta.countNoun للأكاديمية وحدها).
+  ترسم الأكاديمية عدد دروس القسم في صفحات الدورات «‎<span>2<!-- --> <!-- -->lessons</span>‎» (مقيسٌ في الصفحات العامة)، فكان «lessons»
+  يُطابَق حرفيًّا «دروس» مع كل عدد («2 دروس»، «13 دروس»: 35 من 64 في حصاد ت3). الآن يُكتب المعدود بصيغة الجمع للعدد من مدخل
+  «‎%d lesson‎» في القاموس المبنيّ الحقيقي (لا عربيةَ في المحرّك)، وتُفرَّغ عقدة العدد، فيُقرأ ما يقرؤه النصّ الواحد «‎13 lessons‎».
+  الصفحة بجدول نطاق الأكاديمية الحقيقي وقاموسها المبنيّ (dict-academy.js)، والمتوقَّع صيغُ القاموس كما تُعرض:
+   ١) العقد النصية في عنصرٍ واحد (شكل الموقع): 0 و1 و2 و3–10 و11–99 و100 و101 و103 و111، و«quiz» (مدخل جمعٍ بلا مفتاحٍ حرفي).
+   ٢) العدد عنصرًا سطريًّا وحده («‎<span>13</span> <span>lessons</span>‎»، و«‎<b>2</b> lessons‎»).
+   ٣) ما لا يُقرن: معدودٌ وحده، وعددٌ غير أرقام، وعنصرٌ بينهما، وخلايا جدول، وكتل، ومعدودٌ ليس «‎%d <المعدود>‎»، والمستثنى (skipSel).
+   ٤) الحيّ: الموقع يكتب عددًا جديدًا، ثم العدد والمعدود معًا، وزوجٌ يُضاف بعد الإقلاع، وعددٌ يظهر بعد معدوده، ومعدودٌ يُنقل وحده إلى
+      المستثنى فيُرجع معه عدده (وهو خارجه).
+   ٥) الإطفاء يُرجع العقدتين كلتيهما، والتشغيل يعيد الزوج.
+  العقد: document.title الختامي = "countnoun N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1100px;margin:auto}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}
+#tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<link rel="stylesheet" href="../extension/base.css">
+<main id="main">
+  <!-- ١) شكل الموقع: عقدُ نصٍّ أخوات في عنصرٍ واحد، يفصلها React بتعليق -->
+  <div id="sec">
+    <span class="shrink-0 text-footnote text-muted" id="a0">0<!-- --> <!-- -->lessons</span>
+    <span class="shrink-0 text-footnote text-muted" id="a1">1<!-- --> <!-- -->lesson</span>
+    <span class="shrink-0 text-footnote text-muted" id="a2">2<!-- --> <!-- -->lessons</span>
+    <span class="shrink-0 text-footnote text-muted" id="a3">3<!-- --> <!-- -->lessons</span>
+    <span class="shrink-0 text-footnote text-muted" id="a10">10<!-- --> <!-- -->lessons</span>
+    <span class="shrink-0 text-footnote text-muted" id="a11">11<!-- --> <!-- -->lessons</span>
+    <span class="shrink-0 text-footnote text-muted" id="a13">13<!-- --> <!-- -->lessons</span>
+    <span class="shrink-0 text-footnote text-muted" id="a100">100<!-- --> <!-- -->lessons</span>
+    <span class="shrink-0 text-footnote text-muted" id="a101">101<!-- --> <!-- -->lessons</span>
+    <span class="shrink-0 text-footnote text-muted" id="a103">103<!-- --> <!-- -->lessons</span>
+    <span class="shrink-0 text-footnote text-muted" id="a111">111<!-- --> <!-- -->lessons</span>
+    <span id="q1">1<!-- --> <!-- -->quiz</span>
+    <span id="q4">4<!-- --> <!-- -->quizzes</span>
+  </div>
+  <!-- ٢) العدد عنصرٌ سطريٌّ وحده -->
+  <div><span id="b1"><span id="b1n">13</span> <span id="b1w">lessons</span></span></div>
+  <div><span id="b2"><b id="b2n">2</b> lessons</span></div>
+  <div><span id="m1"><span id="m1n">7</span> <span id="m1w">lessons</span></span></div>
+  <!-- ٣) ما لا يُقرن -->
+  <div><span id="n1">lessons</span></div>
+  <div><span id="n2">2a<!-- --> <!-- -->lessons</span></div>
+  <div><span id="n3">13<span class="icon"></span> lessons</span></div>
+  <table><tr><td id="n4a">13</td><td id="n4b">lessons</td></tr></table>
+  <div id="n5"><div id="n5a">2</div><div id="n5b">lessons</div></div>
+  <div><span id="n6">2<!-- --> <!-- -->Courses</span></div>
+  <!-- ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) المستثنى هنا لافتة الإعلانات (skipSel): المتن (‎article.mdx-article‎) خرج من skipSel إلى meta.bodySel (وضع الكتلة)،
+       فلا يمتحن المستثنى -->
+  <div data-testid="notification-banner-zq"><span id="n7">2<!-- --> <!-- -->lessons</span></div>
+  <!-- (مراجعة ر12) عددٌ في المستثنى (‎body [lang]‎) ومعدودُه خارجه: لا قِران ولا تفريغ لعقدةٍ في المستثنى -->
+  <div><span id="x1"><span lang="en">13</span> <span id="x1w">lessons</span></span></div>
+  <!-- (مراجعة ر12) الموقع يستبدل عقدة العدد أو يزيلها، أو يزيل المعدود، أو يكتب العدد ويستبدل المعدود في دفعةٍ واحدة -->
+  <div><span id="rp">13<!-- --> <!-- -->lessons</span></div>
+  <div><span id="rm">13<!-- --> <!-- -->lessons</span></div>
+  <div><span id="nr">13<!-- --> <!-- -->lessons</span></div>
+  <div><span id="sw">13<!-- --> <!-- -->lessons</span></div>
+  <div id="late"></div>
+  <div data-testid="notification-banner-mv" id="mvArt"></div>
+</main>
+<!-- الجدول بلغته (lang): المستثنى في الأكاديمية (‎body [lang]‎) فلا تُعرَّب خلاياه — «2 lessons» في المتوقَّع نصٌّ لا واجهة -->
+<table id="tbl" lang="ar"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<!-- القاموس المبنيّ الحقيقي (build.mjs): صيغ «‎%d lesson‎» و«‎%d quiz‎» وحرفيّا «lesson» و«lessons» منه -->
+<script src="../extension/dict-academy.js"></script>
+<script>
+var BUILT = globalThis.CLAUDE_L10N;
+var LM = CMLConst.domain("academy").meta;
+// جدول النطاقات الحقيقي (ومنه countNoun)، والاختبار محلّيٌّ هرمسيّ: لا ترطيب ينتظره، ولا ورقة حيّة
+var META = Object.assign({}, LM, { hydrate: "none", live: false });
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) { if (cb) cb(null); } });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "academy", meta: META, default: "ar", langs: BUILT.langs, dicts: BUILT.dicts };
+// قبل المحرّك: أصول العُقد للمقارنة بعد الإطفاء
+var ORIG = {};
+["a2", "a13", "b1", "b2", "q1", "n4b"].forEach(function (id) { ORIG[id] = document.getElementById(id).textContent; });
+history.replaceState({}, "", "/courses/zq-course");
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+// ★ (ر16-ج، ٦ جمادى الأولى ١٤٤٨هـ) انتظارٌ بشرط: المهلة الأصلية حدًّا أدنى، ثم حتى تصدق الحال التي يُنتظر أن يكتبها المحرّك، بسقف 6 ث. السبب: المحرّك
+// يعالج الطفرات في requestIdleCallback بمهلة 500 مث (engine.js schedule)، والاختبار كان يقرأ بعد 400 مث ثابتة — فتحت حِملٍ ثقيل لا تأتي فترة خمولٍ
+// فيعمل المحرّك عند مهلته بعد القراءة («5 درسان» في ر16-ب: العدد الجديد مكتوبٌ والصيغة القديمة باقية؛ و15/19 في ر16-أ)، ووحدها تنجح لأن الخمول
+// فوري. والفحوص بعده هي هي بقيمها: حالٌ لا تصدق إلى السقف تُخفق كما كانت تُخفق
+function settle(ms, pred) {
+  return wait(ms).then(function () {
+    var t0 = Date.now();
+    return new Promise(function (r) { (function poll() { if (pred() || Date.now() - t0 > 6000) r(); else setTimeout(poll, 25); })(); });
+  });
+}
+var MARKS = new RegExp("[" + String.fromCharCode(0x200E) + String.fromCharCode(0x200F) + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g");
+function $(id) { return document.getElementById(id); }
+function txt(id) { return $(id).textContent.replace(MARKS, "").replace(/\s+/g, " ").trim(); }
+function texts(el) { var o = []; for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 3) o.push(c.nodeValue); return o; }
+function fire(ch) { MOCK.fireChanged(ch, "local"); }
+
+(async function () {
+  await settle(400, function () {
+    return ["a0", "a1", "a2", "a3", "a10", "a11", "a13", "a100", "a101", "a103", "a111", "q1", "q4", "b1", "b2", "x1"].map(txt).join("|") ===
+      "لا دروس|درس واحد|درسان|3 دروس|10 دروس|11 درسًا|13 درسًا|100 درس|101 درس|103 دروس|111 درسًا|اختبار قصير واحد|4 اختبارات قصيرة|13 درسًا|درسان|13 دروس";
+  });
+  var F = BUILT.dicts.ar.plurals;
+  check("★ القاموس المبنيّ: مدخلا «‎%d lesson‎» و«‎%d quiz‎» وصيغهما الست، والجدول يفعّل countNoun للأكاديمية", "true/6/6/true",
+        (!!F["%d lesson"] && !!F["%d quiz"]) + "/" + F["%d lesson"].forms.length + "/" + F["%d quiz"].forms.length + "/" + (LM.countNoun === true));
+  check("★ شكل الموقع: 0 و1 و2 بلا رقم (دليل الأسلوب)، و3–10 جمعًا، و11–99 تمييزًا منصوبًا", "لا دروس|درس واحد|درسان|3 دروس|10 دروس|11 درسًا|13 درسًا",
+        ["a0", "a1", "a2", "a3", "a10", "a11", "a13"].map(txt).join("|"));
+  check("★ ومئاتٌ بآخر رقمين: 100 و101 مفردًا، و103 جمعًا، و111 تمييزًا", "100 درس|101 درس|103 دروس|111 درسًا",
+        ["a100", "a101", "a103", "a111"].map(txt).join("|"));
+  check("★ «quiz» من مدخل جمعه وحده (لا مفتاح حرفيًّا له): «1 quiz» ⇒ «اختبار قصير واحد» كما في «4 lessons · 1 quiz»", "اختبار قصير واحد|4 اختبارات قصيرة",
+        txt("q1") + "|" + txt("q4"));
+  check("★ الصيغة كاملةً في عقدة المعدود وعقدة العدد فارغة، والفاصل كما هو", "[\"\",\" \",\"13 درسًا\"]/[\"\",\" \",\"درسان\"]",
+        JSON.stringify(texts($("a13")).map(function (s) { return s.replace(MARKS, ""); })) + "/" + JSON.stringify(texts($("a2")).map(function (s) { return s.replace(MARKS, ""); })));
+  check("★ العدد عنصرٌ سطريٌّ وحده: ‎<span>13</span> <span>lessons</span>‎ و‎<b>2</b> lessons‎", "13 درسًا/[\"\"]|درسان/[\"\"]",
+        txt("b1") + "/" + JSON.stringify(texts($("b1n"))) + "|" + txt("b2") + "/" + JSON.stringify(texts($("b2n"))));
+  check("★ ما لا يُقرن يبقى على الحرفيّ: معدودٌ وحده، وعددٌ غير أرقام، وعنصرٌ بينهما، وخلايا جدول، وكتل، ومعدودٌ ليس «‎%d <المعدود>‎»",
+        "دروس|2a دروس|13 دروس|13+دروس|2+دروس|2 الدورات",
+        [txt("n1"), txt("n2"), txt("n3"), txt("n4a") + "+" + txt("n4b"), txt("n5a") + "+" + txt("n5b"), txt("n6")].join("|"));
+  check("★ (ر13) المستثنى (skipSel: لافتة الإعلانات) لا يُمسّ: لا عددٌ يُفرَّغ ولا معدودٌ يُكتب", "2 lessons", txt("n7"));
+  check("★ (مراجعة ر12) عددٌ في المستثنى ومعدودُه خارجه: لا قِران ولا تفريغ لعقدةٍ في المستثنى (المعدود على حرفيّه)", "13 دروس", txt("x1"));
+
+  // ---- الحيّ ----
+  // الموقع (React) يكتب عددًا جديدًا في عقدة العدد التي فرّغناها
+  $("a2").firstChild.nodeValue = "5";
+  await settle(400, function () { return txt("a2") === "5 دروس"; });
+  var live1 = txt("a2");
+  // ثم العدد والمعدود معًا (5 دروس ⇒ 1 درس)
+  $("a2").firstChild.nodeValue = "1";
+  $("a2").lastChild.nodeValue = "lesson";
+  await settle(400, function () { return txt("a2") === "درس واحد"; });
+  check("★ الموقع يكتب عددًا جديدًا، ثم يكتب العدد والمعدود معًا: يُحلّ الزوج ويُعاد حكمه", "5 دروس|درس واحد", live1 + "|" + txt("a2"));
+  // زوجٌ يُضاف بعد الإقلاع (قسمٌ يُرسم)، وعددٌ يظهر بعد معدوده (عُرّب حرفيًّا قبل ظهوره)
+  var sp = document.createElement("span"); sp.id = "late1";
+  sp.appendChild(document.createTextNode("11")); sp.appendChild(document.createComment(" ")); sp.appendChild(document.createTextNode(" "));
+  sp.appendChild(document.createComment(" ")); sp.appendChild(document.createTextNode("lessons"));
+  $("late").appendChild(sp);
+  var sp2 = document.createElement("span"); sp2.id = "late2"; sp2.textContent = "lessons";
+  $("late").appendChild(sp2);
+  await settle(400, function () { return txt("late1") === "11 درسًا" && txt("late2") === "دروس"; });
+  var before = txt("late2");
+  sp2.insertBefore(document.createTextNode(" "), sp2.firstChild);
+  sp2.insertBefore(document.createTextNode("2"), sp2.firstChild);
+  await settle(400, function () { return txt("late2") === "درسان"; });
+  check("★ زوجٌ يُضاف بعد الإقلاع، وعددٌ يظهر بعد معدوده المعرَّب حرفيًّا", "11 درسًا|دروس > درسان", txt("late1") + "|" + before + " > " + txt("late2"));
+  // معدودٌ (عنصرٌ سطريٌّ وحده) يُنقل إلى المستثنى وعدده باقٍ مكانه: يُرجع الاثنان معًا — لا عددَ مفرَّغًا بلا معدود
+  var m1Before = txt("m1");
+  $("mvArt").appendChild($("m1w"));
+  await settle(400, function () { return txt("m1") === "7" && txt("m1w") === "lessons"; });
+  check("★ معدودٌ يُنقل وحده إلى المستثنى: يُرجع أصله ويُرجع معه عدده خارجه", "7 دروس > 7|lessons", m1Before + " > " + txt("m1") + "|" + txt("m1w"));
+  // ★ (مراجعة ر12) الموقع يستبدل عقدة العدد بعقدةٍ جديدة (React حين يتبدّل نوع الابن)، أو يزيلها، أو يزيل المعدود: يُعاد حكم الشريك.
+  // كان المعدود يبقى مقترنًا بالعدد الزائل: «5 13 درسًا» مع العدد الجديد، و«13 درسًا» بلا عدد؛ والعدد المفرَّغ يبقى فارغًا بلا معدوده
+  var rpOld = $("rp").firstChild;
+  $("rp").insertBefore(document.createTextNode("5"), rpOld); $("rp").removeChild(rpOld);
+  $("rm").removeChild($("rm").firstChild);
+  $("nr").removeChild($("nr").lastChild);
+  await settle(400, function () { return txt("rp") === "5 دروس" && txt("rm") === "دروس" && txt("nr") === "13"; });
+  check("★ (مراجعة ر12) عقدة العدد يستبدلها الموقع بعقدةٍ جديدة: الصيغة للعدد الجديد، والجديدة مفرَّغة ولا يبقى القديم", "5 دروس/[\"\",\" \",\"5 دروس\"]",
+        txt("rp") + "/" + JSON.stringify(texts($("rp")).map(function (s) { return s.replace(MARKS, ""); })));
+  check("★ (مراجعة ر12) عقدة العدد يزيلها الموقع: يعود المعدود إلى حرفيّه ولا يحمل عددًا زال", "دروس", txt("rm"));
+  check("★ (مراجعة ر12) المعدود يزيله الموقع: يُرجع العدد المفرَّغ فلا يختفي الرقم", "13", txt("nr"));
+  // والموقع يكتب العدد ويستبدل المعدود في دفعةٍ واحدة: الصيغة للعدد الذي كتبه لا لأصل العدد في سجلّنا
+  $("sw").firstChild.nodeValue = "5";
+  var swOld = $("sw").lastChild;
+  $("sw").insertBefore(document.createTextNode("lessons"), swOld); $("sw").removeChild(swOld);
+  await settle(400, function () { return txt("sw") === "5 دروس"; });
+  check("★ (مراجعة ر12) عددٌ يكتبه الموقع ومعدودٌ يستبدله في الدفعة نفسها: الصيغة للعدد الجديد", "5 دروس", txt("sw"));
+
+  // ---- الإطفاء والتشغيل ----
+  fire({ cml_enabled: { newValue: false } });
+  await settle(400, function () { return [$("a13").textContent, $("b1").textContent, $("b2").textContent, $("q1").textContent, $("late2").textContent].join("|") ===
+    [ORIG.a13, ORIG.b1, ORIG.b2, ORIG.q1, "2 lessons"].join("|"); });
+  check("★ الإطفاء يُرجع العقدتين كلتيهما (العدد والمعدود) حرفًا بحرف", [ORIG.a13, ORIG.b1, ORIG.b2, ORIG.q1, "2 lessons"].join("|"),
+        [$("a13").textContent, $("b1").textContent, $("b2").textContent, $("q1").textContent, $("late2").textContent].join("|"));
+  fire({ cml_enabled: { newValue: true } });
+  await settle(500, function () { return [txt("a13"), txt("b1"), txt("b2"), txt("q1"), txt("late2")].join("|") === "13 درسًا|13 درسًا|درسان|اختبار قصير واحد|درسان"; });
+  check("★ والتشغيل يعيد الزوج", "13 درسًا|13 درسًا|درسان|اختبار قصير واحد|درسان", [txt("a13"), txt("b1"), txt("b2"), txt("q1"), txt("late2")].join("|"));
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+})().then(finish, function (e) { check("استثناء غير متوقع", "(لا شيء)", String(e && e.message || e)); finish(); });
+function finish() {
+  document.title = "countnoun " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "COUNTNOUN: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+}
+</script>

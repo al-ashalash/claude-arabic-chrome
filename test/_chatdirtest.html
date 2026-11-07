@@ -1,0 +1,110 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>chatdir test</title>
+<!--
+  ★ (ر24-ج2، ١٠ جمادى الأولى ١٤٤٨هـ — مراجعة Codex CX-008) ملكيةُ اتجاه المحادثة: سجلٌّ لكل عنصر {الأصل، آخر ما كتبناه}، ولا يُرجَع شيءٌ إلا والقيمة
+  الحاضرة ما كتبناه نحن. كان الإرجاع يضع الأصل الأول بلا شرط فيدهس ما كتبه الموقع بعدنا.
+   ١) الموقع يكتب dir بعدنا (rtl، أو ltr على عنصرٍ بلا أصل، أو يحذفها) ثم يُطفئ المستخدم الخيار: تبقى قيمة الموقع.
+   ٢) ما كتبناه وحدنا يعود إلى أصله، والغياب غير القيمة (أصلٌ بلا سمة يعود بلا سمة).
+   ٣) كتابة الموقع وكتابتنا متداخلتان في مهمةٍ واحدة: يكتب الموقع ثم نكتب (قيمته أصلٌ جديد)، ونكتب ثم يكتب الموقع ثم نُطفئ في المهمة نفسها.
+   ٤) إعادة رسم العنصر (عنصرٌ جديد بقيمة الموقع)، وعنصرٌ فُصل ونحن نعمل ثم أُعيد بعد إيقاف الإضافة كلّها.
+  العقد: document.title = "chatdir N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:820px;margin:auto}
+table{border-collapse:collapse;width:100%;margin-top:12px}
+td,th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<div class="prose" id="cA" dir="ltr"><p>Here is the first answer.</p></div>
+<div class="prose" id="cB" dir="ltr"><p>Here is the second answer.</p></div>
+<div class="prose" id="cC"><p>Here is the third answer.</p></div>
+<div class="prose" id="cD" dir="ltr"><p>Here is the fourth answer.</p></div>
+<div class="prose" id="cE" dir="ltr"><p>Here is the fifth answer.</p></div>
+<div class="prose" id="cF"><p>Here is the sixth answer.</p></div>
+<div id="host"><div class="prose" id="cR" dir="ltr"><p>Here is a re-rendered answer.</p></div></div>
+<div id="host2"><div class="prose" id="cS" dir="rtl"><p>Here is a detached answer.</p></div></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<link rel="stylesheet" href="../extension/base.css">
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dictionary.js"></script>
+<script src="_chrome-mock.js"></script>
+<script>
+var jsErrors = 0; window.onerror = function () { jsErrors++; };
+var MOCK = makeChromeMock({ session: false });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_chatrtl: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+</script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function $(id) { return document.getElementById(id); }
+function d(el) { var v = el.getAttribute("dir"); return v === null ? "-" : v; }
+function ds(ids) { return ids.map(function (id) { return d($(id)); }).join("|"); }
+function chat(on) { MOCK.localStore.cml_chatrtl = on; MOCK.fireChanged({ cml_chatrtl: { newValue: on } }, "local"); }
+function master(on) { MOCK.localStore.cml_enabled = on; MOCK.fireChanged({ cml_enabled: { newValue: on } }, "local"); }
+(async function () {
+  await wait(500);
+  var ALL = ["cA", "cB", "cC", "cD", "cE", "cF", "cR", "cS"];
+  check("الإقلاع: اتجاهنا على كل رسالة (أصولها ltr وrtl والغياب)", "auto|auto|auto|auto|auto|auto|auto|auto|8", ds(ALL) + "|" + ALL.filter(function (id) { return $(id).hasAttribute("data-cml-dir"); }).length);
+  // ١) الموقع يكتب بعدنا: rtl على أصلٍ ltr، وltr على عنصرٍ بلا أصل، ويحذف السمة من آخر
+  $("cA").setAttribute("dir", "rtl");
+  $("cF").setAttribute("dir", "ltr");
+  $("cD").removeAttribute("dir");
+  // ٤) إعادة الرسم: عنصرٌ جديد بقيمة الموقع مكان القديم؛ وعنصرٌ يُفصل ونحن نعمل
+  var cR2 = document.createElement("div"); cR2.className = "prose"; cR2.id = "cR2"; cR2.setAttribute("dir", "ltr");
+  var p2 = document.createElement("p"); p2.textContent = "Here is a re-rendered answer."; cR2.appendChild(p2);
+  $("host").replaceChild(cR2, $("cR"));
+  var cS = $("cS"); $("host2").removeChild(cS);
+  await wait(800);
+  check("إعادة الرسم: العنصر الجديد ينال اتجاهنا، والمفصول يحمل اتجاهنا", "auto|auto|1", d(cR2) + "|" + d(cS) + "|" + cS.getAttribute("data-cml-dir"));
+  // ٣أ) في مهمةٍ واحدة: يكتب الموقع rtl ثم نكتب نحن (مرورٌ كامل بتبديلٍ آخر): قيمة الموقع أصلٌ جديد
+  $("cE").setAttribute("dir", "rtl");
+  MOCK.fireChanged({ cml_rtl: { newValue: true } }, "local");
+  var eOurs = d($("cE"));
+  // الإطفاء
+  chat(false);
+  check("★ (ر24-ج2، CX-008) كتب الموقع dir بعدنا ثم أُطفئ الخيار: تبقى قيمة الموقع (rtl على أصلٍ ltr، وltr على عنصرٍ بلا أصل، والحذف يبقى حذفًا)",
+        "rtl|ltr|-", ds(["cA", "cF", "cD"]));
+  check("★ (ر24-ج2، CX-008) في مهمةٍ واحدة: يكتب الموقع rtl ثم نكتب نحن فوقه — قيمته أصلٌ جديد يعود بالإطفاء", "auto|rtl", eOurs + "|" + d($("cE")));
+  check("★ (ر24-ج2، CX-008) وما كتبناه وحدنا يعود إلى أصله بحضوره وغيابه (ltr، وبلا سمة)، والعنصر المعاد رسمه إلى قيمة الموقع فيه، ولا وسمَ باقٍ",
+        "ltr|-|ltr|0", ds(["cB", "cC"]) + "|" + d(cR2) + "|" + document.querySelectorAll("[data-cml-dir]").length);
+  // ٣ب) في مهمةٍ واحدة: نكتب (التشغيل) ثم يكتب الموقع ثم نُطفئ
+  chat(true);
+  var bOurs = d($("cB"));
+  $("cB").setAttribute("dir", "rtl");
+  chat(false);
+  check("★ (ر24-ج2، CX-008) في مهمةٍ واحدة: نكتب ثم يكتب الموقع rtl ثم نُطفئ — تبقى قيمة الموقع", "auto|rtl", bOurs + "|" + d($("cB")));
+  // ٤ب) عنصرٌ فُصل ونحن نعمل ثم أُعيد بعد إيقاف الإضافة كلّها: يعود اتجاهه بالشرط نفسه
+  master(false);
+  await wait(300);
+  $("host2").appendChild(cS);
+  await wait(300);
+  check("★ (ر24-ج2، CX-008) عنصرٌ فُصل ونحن نعمل وأُعيد بعد إيقاف الإضافة: يعود أصله (rtl) ولا وسمَ عليه", "rtl|null", d(cS) + "|" + cS.getAttribute("data-cml-dir"));
+  // والضابط: عنصرٌ مفصولٌ كتب الموقع اتجاهه بعدنا ثم أُعيد بعد الإيقاف — تبقى قيمة الموقع
+  master(true);
+  chat(true);
+  await wait(300);
+  var cT = $("cC"), host3 = cT.parentNode, nx = cT.nextSibling;
+  host3.removeChild(cT);
+  cT.setAttribute("dir", "ltr");
+  master(false);
+  await wait(300);
+  host3.insertBefore(cT, nx);
+  await wait(300);
+  check("★ (ر24-ج2، CX-008) والمفصول الذي كتب الموقع اتجاهه بعدنا ثم أُعيد بعد الإيقاف: تبقى قيمة الموقع", "ltr|null", d(cT) + "|" + cT.getAttribute("data-cml-dir"));
+  check("لا أخطاء JS غير ملتقطة", "0", jsErrors);
+  document.title = "chatdir " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "CHATDIR: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})();
+</script>

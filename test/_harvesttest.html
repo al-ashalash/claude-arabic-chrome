@@ -113,6 +113,13 @@ function sig(key, kind) { return (kind === "text" ? "text" : kind) + "|" + key; 
   check("★ لا سقف: 300 و501 و5000 حرفٍ كلها تُحصد", "true/true/true",
         (keys.indexOf("E" + "y".repeat(299)) >= 0) + "/" + (keys.indexOf("M" + "z".repeat(500)) >= 0) + "/" +
         (keys.indexOf("L" + "x".repeat(4999)) >= 0));
+  // ★ (ر29-ي، توجيه المالك) القيمتان الافتراضيتان الكامنتان: مستدعٍ لا يمرّر سقفًا لا ينال سقفًا (كان 300 في textKey وharvestDom)
+  var nb = document.createElement("div"); nb.innerHTML = "<p>" + "N" + "w".repeat(449) + "</p>"; document.body.appendChild(nb);
+  var nk = CMLShared.harvestDom(nb, { chat: false }).map(function (h) { return h.key; });
+  check("★ (ر29-ي) بلا سقفٍ ممرَّر لا سقف: harvestDom يحصد نصًّا من 450 حرفًا، وtextKey يعيد مفتاح 1,000 حرف، والسقف الممرَّر يعمل كما كان", "true/true/null",
+        (nk.indexOf("N" + "w".repeat(449)) >= 0) + "/" + (CMLShared.textKey("  " + "k".repeat(1000) + " ") === "k".repeat(1000)) + "/" +
+        String(CMLShared.textKey("k".repeat(301), 300)));
+  nb.remove();
   check("المحرّك لا يستدعي الحاصد (القراءة للمطابقة عابرة لا تُجمع)", "false",
         /harvestDom/.test(await fetch("../extension/engine.js").then(function (r) { return r.text(); }).catch(function () { return ""; })));
   // الاستثناء بمحدِّد (مسار shell في مرجع الوثائق): ما تحته لا يُحصد نصًّا ولا سمة
@@ -128,9 +135,11 @@ function sig(key, kind) { return (kind === "text" ? "text" : kind) + "|" + key; 
   var CM = CMLConst.domain("code").meta, DM = CMLConst.domain("docs").meta;
   // ★ (ر8-ج، ٣٠ ربيع الآخر ١٤٤٨هـ) ولافتات صدى العناوين (meta.echoSel، للوثائق وحدها اليوم) في كل مسار بعد المستثنى: يكتبها المحرّك من العنوان
   // فلا تُحصد — فمستثنى الوثائق skipSel ثم echoSel بالضبط (و_apireftest يفحص أثره على الشريط اللاصق)
+  // ★ (ر24-ج2، ١٠ جمادى الأولى ١٤٤٨هـ) وبعد أجوبة المساعد مواضعُ الكتابة (EDITOR_USER) في skipSel نفسه: فالمستثنى skipSel كلُّه، وshellSel قبله في shell
   check("★ حاصد النطاق يستثني skipSel في كل مسار وshellSel في shell وحده (من الجدول)",
-        "#chat-content/#content, #chat-content/true/true/false",
-        [CMLShared.harvestSkip(CM, "full"), CMLShared.harvestSkip(CM, "shell"), CMLShared.harvestSkip(DM, "full") === DM.skipSel + ", " + DM.echoSel,
+        "#chat-content/true/#content/true/true/true/false",
+        [CMLShared.selParts(CM.skipSel)[0], CMLShared.harvestSkip(CM, "full") === CM.skipSel, CM.shellSel, CMLShared.harvestSkip(CM, "shell") === CM.shellSel + ", " + CM.skipSel,
+         CMLShared.harvestSkip(DM, "full") === DM.skipSel + ", " + DM.echoSel,
          CMLShared.harvestSkip(DM, "shell") === DM.skipSel + ", " + DM.echoSel, !!DM.shellSel].map(String).join("/"));
   var box3 = document.createElement("div");
   box3.innerHTML = '<div id="chat-content"><p>Generated answer text</p><b title="Generated answer attr">x</b></div><p>Assistant frame text</p>';

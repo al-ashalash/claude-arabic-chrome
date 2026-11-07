@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<script>
+  // أصل الملفات قبل نقل العنوان إلى مسار الوثيقة: الروابط النسبية أدناه تُحسم به لا بالمسار الجديد
+  document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');
+</script>
+<title>Zq Policy \ Anthropic</title>
+<!--
+  ★ (ر29-د، ١٣ جمادى الأولى ١٤٤٨هـ) صمّام «nosel» (engine.js): أعاد موقعٌ بناء صفحاته فلم يطابق محدِّد المتن شيئًا (ر29-أ F1: الوثائق القانونية
+  الخمس في 2.0.0 أسبوعًا: فقراتٌ إنجليزية من اليمين ومقاطع معرَّبة داخل جملها). بجدول النطاقات الحقيقي (meta النطاق legal، ومنه bodyRoutes)
+  وصفحةٍ بالبنية القديمة (LegalPageDetail) لا يطابقها محدِّد المتن الحالي، بأسماء وحداتٍ وجزءٍ مجزَّأ مختلَق ونصٍّ تجريبي:
+   ١) الجدول: مسارات المتن في النطاقات المشحونة (مقالات مركزي المساعدة والخصوصية، والوثائق الخمس، ووثائق المطوّرين وClaude Code)، ولا صمّام
+      في الأكاديمية ولا claude.ai ولا claude.com.
+   ٢) متنٌ لا يظهر أبدًا: لا حكم قبل استقرار الصفحة، ثم حجزٌ «nosel» — الصفحة كما هي (لا اتجاه ولا lang ولا ترجمة، ولا عنوانٌ في جملة ولا
+      عنوانٌ يطابق القاموس)، والفقرة القديمة LTR، والنافذة تقول السبب، وتصحيح الفقرة يقول «محجوبة».
+   ٣) التنقّل الناعم إلى مسارٍ ليس مسار متن (يمثّل الفهارس والقوائم: يُخرَج ‎/legal/aup‎ من bodyRoutes هنا وحده) يرفع الحجز، ولا يُحجز هناك.
+   ٤) الرجوع إلى مسار المتن بلا متن: حجزٌ بعد السقف لا قبله؛ ثم يظهر المتن بعد 3 ث فيُرفع الحجز وحده ويُحكم للصفحة بقطعتها.
+   ٥) صفحةٌ يطابق محدِّدُ متنها: لا حجز أبدًا.
+   ٦) طافر ر29-ج M6: عنصر منتقي اللغة (siteLangSel) لا يُترجم ولو خرج من محدِّدات الإبقاء وطابق نصُّه القاموس، فلا يتقاذف الحارس.
+   ٧) خلايا الجدول المبنيّ بعناصر div (role=cell وcolumnheader): الخليّة الإنجليزية الخالصة في متنٍ معرَّب LTR بنصّها.
+   ٨) (مراجعة ر29-د) الحجز وصفُ الصفحة لا حالُ الإضافة: إطفاء الإضافة أو الموقع ثم تشغيله (وطفرةٌ من الموقع بينهما) لا يرفعه، وصفحةٌ
+      بلا متنٍ استقرّت والإضافة مطفأة تُحجز فور تشغيلها — لا قلب ولا ترجمة لحظةً (كانا يقلبانها 2.5 ث).
+  النصوص العربية هنا تجريبيةٌ للاختبار لا ترجمات. العقد: document.title الختامي = "nosel N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1100px;margin:auto}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}
+#tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}</style>
+<link rel="stylesheet" href="../extension/base.css">
+<link rel="stylesheet" href="../extension/legal-point.css">
+<main id="main">
+  <article class="LegalArticlePage-module-scss-module__Zq2cD__Article" id="art">
+    <header class="LegalArticleHero-module-scss-module__Zq2eF__Header">
+      <h1 class="LegalArticleHero-module-scss-module__Zq2eF__Title" id="h1">Zq Policy</h1>
+      <ul class="LegalArticleHero-module-scss-module__Zq2eF__Metalist">
+        <!-- (٦) زرّ اللغة بصنفٍ خارج محدِّدات الإبقاء (لا Select-module): حارس اللغة يقرؤه، والمحرّك لا يكتب فيه -->
+        <li class="LegalArticleHero-module-scss-module__Zq2eF__Metadata"><button type="button" id="langOpts"
+          class="LegalArticleHero-module-scss-module__Zq2eF__LanguageSelect Zq-picker"><span id="langVal">English</span></button></li>
+      </ul>
+    </header>
+    <!-- البنية القديمة: محدِّد المتن الحالي لا يطابقها -->
+    <div class="LegalPageDetail-module-scss-module__Zq9aA__body" id="old">
+      <h3 id="oh">Settings</h3>
+      <p id="op">Zq old paragraph mentions <a href="#" id="ol">Settings</a> inside an English sentence.</p>
+    </div>
+  </article>
+</main>
+<!-- المتن بالبنية الحالية: يُحصد قالبه للقطعة ثم يُرفع قبل المحرّك، ويُعاد بعد 3 ث (رسمٌ متأخر) -->
+<!-- ★ (ر29-ح، ١٩ جمادى الأولى ١٤٤٨هـ) محدِّد المتن صار «ابن المقالة المباشر ذو الصنف ‎_Content‎» (صيغة الموقع الجديدة ‎<بصمة>_<اسم>‎ بلا اسم وحدة):
+     فحاوية الحصاد مقالةٌ كذلك، والأصناف هنا بالصيغة الطويلة القديمة عمدًا — المحدِّدات تطابق الصيغتين، والجديدة في _legaltest.html -->
+<article class="LegalArticlePage-module-scss-module__Zq2cD__Article" id="newWrap">
+  <div class="LegalArticlePage-module-scss-module__Zq2cD__Content" id="body">
+    <h2 id="b1">Zq sample heading of the policy</h2>
+    <p id="b2">Zq sample paragraph of the policy.</p>
+    <div role="table" id="dt"><div role="row"><div role="columnheader" id="ch1"><p>Zq column head</p></div></div>
+      <div role="row"><div role="cell" id="c1"><span>Zq pure English cell value stays as it is in the source.</span></div></div></div>
+  </div>
+</article>
+<p id="wake">-</p>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dict-legal.js"></script>
+<script>
+var BUILT = globalThis.CLAUDE_L10N;
+var LM = CMLConst.domain("legal").meta;
+// جدول النطاقات الحقيقي بلا ترطيبٍ ولا ورقةٍ حيّة؛ و‎/legal/aup‎ يُخرَج من مسارات المتن هنا وحده ليمثّل الفهرس والقائمة (مسارٌ كامل بلا متنٍ لازم)
+// ★ (ر29-ح، ١٩ جمادى الأولى ١٤٤٨هـ) والإبقاء في الجدول الحقيقي يشمل زرّ المنتقي (‎[class*='_LanguageSelect']‎ في LEGAL_CHROME)، فيُخرَج منه
+// ومن التخطّي هنا وحدهما ليبقى امتحان (٦) قائمًا كما كُتب: المحرّك لا يترجم عنصر siteLangSel ولو خرج من محدِّدات الإبقاء (الفحص يثبت خروجه)
+function dropLangSel(sel) { return sel.split(/,\s*/).filter(function (x) { return x !== "[class*='_LanguageSelect']"; }).join(", "); }
+var META = Object.assign({}, LM, { hydrate: "none", live: false,
+  bodyRoutes: { exact: LM.bodyRoutes.exact.filter(function (p) { return p !== "/legal/aup"; }) },
+  keepSel: dropLangSel(LM.keepSel), skipSel: dropLangSel(LM.skipSel) });
+var TR = {
+  "Zq sample heading of the policy": "عنوانٌ تجريبي للسياسة",
+  "Zq sample paragraph of the policy.": "فقرةٌ تجريبية من السياسة.",
+  "Zq column head": "رأس عمودٍ تجريبي",
+};
+// قاموس الواجهة التجريبي: «Settings» (عنوانٌ كاملٌ ورابطٌ داخل جملة) و«English» (قيمة المنتقي) فيه عمدًا
+var STR = { "Zq Policy": "سياسةٌ تجريبية", "Zq Policy \\ Anthropic": "سياسةٌ تجريبية كاملة \\ Anthropic", "Settings": "الإعدادات", "English": "الإنجليزية" };
+// حارس المتن بعتبته الحقيقية (5٪): عشرون فقرة حشوٍ مترجَمة تُبقي الخليّة الإنجليزية الوحيدة (c1) تحت العتبة (1 من 24)
+(function () {
+  var b = document.getElementById("body");
+  for (var i = 1; i <= 20; i++) {
+    var q = document.createElement("p"); q.textContent = "Zq filler paragraph number " + i + " of the policy."; b.appendChild(q);
+    TR["Zq filler paragraph number " + i + " of the policy."] = "فقرة الحشو رقم " + i + " من السياسة.";
+  }
+})();
+var HV = CMLShared.harvestBlocks(document, { body: LM.bodySel, skip: CMLShared.harvestSkip(LM, "full") });
+var BLOCKS = {};
+HV.forEach(function (h) { if (Object.prototype.hasOwnProperty.call(TR, h.tpl)) BLOCKS[h.fp] = TR[h.tpl]; });
+var NEW_BODY = document.getElementById("body"), NEW_HTML = NEW_BODY.innerHTML;   // قالبه الإنجليزي كما رسمه «الخادم»
+NEW_BODY.parentNode.removeChild(NEW_BODY);
+var SHARD = { "/legal/privacy": 1, "/legal/cookies": 1 }, bodyReqs = [];
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) {
+  if (!msg || msg.type !== "bodies") { if (cb) cb(null); return; }
+  var pk = CMLShared.pageKey(META, msg.path);
+  bodyReqs.push(pk);
+  setTimeout(function () { if (cb) cb(SHARD[pk] ? { page: pk, blocks: BLOCKS, keep: [] } : null); }, 40);
+} });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+var HELLO = null;
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { HELLO = fn; } };
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "legal", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: STR, patterns: BUILT.dicts.ar.patterns, plurals: {} } } };
+history.replaceState({}, "", "/legal/privacy");
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+var MARKS = new RegExp("[" + String.fromCharCode(0x200E) + String.fromCharCode(0x200F) + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g");
+var AR = /[؀-ۿ]/;
+function $(id) { return document.getElementById(id); }
+function txt(id) { return $(id).textContent.replace(MARKS, "").replace(/\s+/g, " ").trim(); }
+function dirOf(id) { return getComputedStyle($(id)).direction; }
+function T() { return document.title.replace(MARKS, ""); }
+var H = document.documentElement;
+function attrs() { return ["dir", "lang", "data-cml", "data-cml-body"].map(function (a) { return H.getAttribute(a) || "-"; }).join("|"); }
+function heldAttr() { return H.getAttribute("data-cml-held") || "-"; }
+function hello() { var r = null; if (HELLO) HELLO({ type: "cml-hello" }, {}, function (x) { r = x; }); return r; }
+function blockAt() { var r = null; if (HELLO) HELLO({ type: "cml-block-at" }, {}, function (x) { r = x; }); return r; }
+function go(p) { history.pushState({}, "", p); $("wake").textContent = p; }
+function setLocal(k, v) { var o = {}; o[k] = { oldValue: MOCK.localStore[k], newValue: v }; MOCK.localStore[k] = v; MOCK.fireChanged(o, "local"); }
+// سجلّ الحجز: كل تبدّلٍ لسمة data-cml-held بلحظته من بدء المرحلة
+var heldLog = [];
+new MutationObserver(function () { heldLog.push(heldAttr()); }).observe(H, { attributes: true, attributeFilter: ["data-cml-held"] });
+var cmlFlips = 0;
+new MutationObserver(function () { cmlFlips++; }).observe(H, { attributes: true, attributeFilter: ["data-cml"] });
+
+(async function () {
+  // ١) الجدول
+  var RM = function (d, p) { var m = CMLConst.domain(d).meta; return m.bodyRoutes ? CMLShared.routeMode(m.bodyRoutes, p) : "none"; };
+  check("★ الجدول: مسارات المتن — المقالات لا الرئيسة ولا المجموعات، والوثائق الخمس، ووثائق المطوّرين (لا رئيستها) وClaude Code (لا الجذر ولا سجلّ الإصدارات)",
+        "full,inactive,inactive|full,inactive|full,full,full,full,full,inactive|full,inactive,shell|full,inactive",
+        [RM("support", "/en/articles/123-zq"), RM("support", "/en/"), RM("support", "/en/collections/1-zq")].join(",") + "|" +
+        [RM("privacy", "/en/articles/9-zq"), RM("privacy", "/en/")].join(",") + "|" +
+        ["/legal/privacy", "/legal/non-user-privacy-policy", "/legal/cookies", "/legal/aup", "/legal/consumer-terms", "/legal/archive/zq"].map(function (p) { return RM("legal", p); }).join(",") + "|" +
+        [RM("docs", "/docs/en/intro"), RM("docs", "/settings/billing"), RM("docs", "/docs/en/home")].join(",") + "|" +
+        [RM("code", "/docs/en/overview"), RM("code", "/docs")].join(","));
+  check("★ الجدول: لا صمّام في الأكاديمية ولا claude.ai ولا claude.com", "none/none/none",
+        ["academy", "app", "com"].map(function (d) { return CMLConst.domain(d).meta.bodyRoutes ? "set" : "none"; }).join("/"));
+  check("القاموس المبنيّ يحمل مسارات المتن من الجدول (build.mjs يحقن meta)", "true", JSON.stringify(BUILT.meta.bodyRoutes) === JSON.stringify(LM.bodyRoutes));
+
+  // ٢) متنٌ لا يظهر أبدًا
+  await wait(1000);
+  check("★ لا حكم قبل استقرار الصفحة: بعد 1 ث لا حجز (السقف 2.5 ث من التحميل)", "-", heldAttr());
+  await wait(2300);
+  check("★ متنٌ لا يظهر: محجوزة «nosel» والصفحة كما هي (لا dir ولا lang=ar ولا data-cml)", "-|en|-|held|nosel", attrs() + "|" + heldAttr());
+  check("★ ولا شيء مترجَمٌ فيها: العنوان الكامل، والرابط داخل الجملة، والعنوان، وعنوان التبويب", "Settings|Settings|Zq Policy|Zq Policy \\ Anthropic|false",
+        txt("oh") + "|" + txt("ol") + "|" + txt("h1") + "|" + T() + "|" + AR.test($("art").textContent));
+  check("★ والفقرة القديمة تُقرأ من اليسار، والصفحة كذلك", "ltr|ltr", dirOf("op") + "|" + getComputedStyle(H).direction);
+  var hl = hello(), ba = blockAt();
+  check("جواب النافذة: خاملةٌ في الصفحة، والحارس «محجوبة» بسببها nosel؛ وتصحيح الفقرة يقول «محجوبة»", "false|full|true/nosel|held/nosel",
+        hl.enabled + "|" + hl.route + "|" + hl.bodies.guard.held + "/" + hl.bodies.guard.why + "|" + ba.error + "/" + ba.why);
+
+  // ٨أ) (مراجعة ر29-د) إطفاء الإضافة ثم الموقع وتشغيلهما والصفحة محجوزة، وطفرةٌ من الموقع أثناء الإطفاء: تبقى محجوزةً فور التشغيل
+  var KSITE = ((CMLConst.K && CMLConst.K.SITE_ON) || "cml_site") + ".legal", sw = [];
+  for (var sk of ["cml_enabled", KSITE]) {
+    setLocal(sk, false);
+    await wait(250);
+    $("main").appendChild(document.createElement("i")).textContent = "zq";
+    await wait(400);
+    sw.push(attrs() + "/" + heldAttr());
+    var fl = cmlFlips;
+    setLocal(sk, true);
+    await wait(400);
+    sw.push(attrs() + "/" + heldAttr() + "/" + txt("oh") + "/" + (cmlFlips - fl));
+  }
+  check("★ (مراجعة ر29-د) إطفاء الإضافة أو الموقع وتشغيله والصفحة محجوزة (وطفرةٌ أثناءه): مطفأةٌ بلا سمة حجز، ثم محجوزةٌ «nosel» فورًا بلا قلبٍ ولا ترجمة ولا تبدّلٍ في data-cml",
+        "-|en|-|-/-,-|en|-|held/nosel/Settings/0,-|en|-|-/-,-|en|-|held/nosel/Settings/0", sw.join(","));
+
+  // ٣) التنقّل إلى مسارٍ ليس مسار متن
+  heldLog = [];
+  go("/legal/aup");
+  await wait(600);
+  check("★ تنقّلٌ ناعم إلى مسارٍ ليس مسار متن (فهرس): يُرفع الحجز وتعمل الإضافة كما كانت", "rtl|ar|on|-", attrs().split("|").slice(0, 3).join("|") + "|" + heldAttr());
+  await wait(2900);
+  check("★ ولا يُحجز ما ليس مسار متن ولو لم يطابق محدِّد المتن شيئًا (بعد 3.5 ث)", "-|الإعدادات", heldAttr() + "|" + txt("oh"));
+
+  // ٤) الرجوع إلى مسار متن بلا متن، ثم يظهر المتن بعد 3 ث
+  heldLog = [];
+  go("/legal/privacy");
+  await wait(1000);
+  check("★ بعد التنقّل: لا حجز قبل السقف (1 ث)", "-|on", heldAttr() + "|" + (H.getAttribute("data-cml") || "-"));
+  await wait(1700);
+  check("★ ثم حجزٌ «nosel» بعد السقف", "nosel|-", heldAttr() + "|" + (H.getAttribute("data-cml") || "-"));
+  await wait(300);
+  $("art").appendChild(NEW_BODY);   // رسمٌ متأخر: المتن بعد 3 ث من التنقّل
+  await wait(900);
+  check("★ المتن ظهر بعد 3 ث: يُرفع الحجز وحده، وتُقلب الصفحة، ويُحكم للمتن بقطعته", "rtl|ar|on|tr|-|عنوانٌ تجريبي للسياسة|فقرةٌ تجريبية من السياسة.",
+        attrs() + "|" + heldAttr() + "|" + txt("b1") + "|" + txt("b2"));
+  check("★ (ر29-د — ر29-ج §٨) خليّة الجدول المبنيّ بعناصر div الإنجليزية الخالصة LTR، ورأس العمود المعرَّب RTL", "ltr|rtl|رأس عمودٍ تجريبي",
+        dirOf("c1") + "|" + dirOf("ch1") + "|" + txt("ch1"));
+  var hl2 = hello();
+  check("جواب النافذة بعد الرفع: عاملة، والحارس حكم «لا حجب» (وسببه لو حُجبت: لها قطعة)", "true|true/false/drift", hl2.enabled + "|" + hl2.bodies.guard.judged + "/" + hl2.bodies.guard.held + "/" + hl2.bodies.guard.why);
+
+  // ٥) صفحةٌ يطابق محدِّد متنها
+  heldLog = [];
+  go("/legal/cookies");
+  $("body").innerHTML = NEW_HTML;   // React يرسم متن الوثيقة الأخرى بعقدٍ جديدة
+  await wait(3300);
+  check("★ صفحةٌ يطابق محدِّد متنها: لا حجز أبدًا (3.3 ث)، ومتنها مترجَمٌ بقطعتها", "-||on|tr|عنوانٌ تجريبي للسياسة",
+        heldAttr() + "|" + heldLog.filter(function (v) { return v === "nosel"; }).join(",") + "|" + (H.getAttribute("data-cml") || "-") + "|" +
+        (H.getAttribute("data-cml-body") || "-") + "|" + txt("b1"));
+
+  // ٦) طافر M6: منتقي اللغة خارج الإبقاء ونصُّه في القاموس
+  var f0 = cmlFlips;
+  await wait(800);
+  var hl3 = hello();
+  check("★ (طافر ر29-ج M6) قيمة منتقي اللغة لا تُترجم أبدًا ولو خرجت من الإبقاء وطابقت القاموس، فلا يتقاذف حارس اللغة", "English|true|null|0|false/false/true",
+        txt("langVal") + "|" + hl3.enabled + "|" + hl3.siteLangBy + "|" + (cmlFlips - f0) + "|" +
+        // (ر29-ح) وهو خارج الإبقاء والتخطّي فعلًا في هذا الجدول، وداخل الإبقاء في الجدول الحقيقي
+        $("langOpts").matches(META.keepSel) + "/" + $("langOpts").matches(META.skipSel) + "/" + $("langOpts").matches(LM.keepSel));
+
+  // ٨ب) (مراجعة ر29-د) الإضافة مطفأةٌ وتنقّلٌ إلى مسار متنٍ بلا متن، فتستقرّ الصفحة، ثم تُشغَّل: محجوزةٌ فورًا (حُكم والإضافة مطفأة)، لا قلب
+  setLocal("cml_enabled", false);
+  await wait(200);
+  go("/legal/non-user-privacy-policy");
+  $("body").parentNode.removeChild($("body"));
+  await wait(3300);
+  var offA = attrs() + "/" + heldAttr(), fl2 = cmlFlips;
+  setLocal("cml_enabled", true);
+  await wait(400);
+  var hl4 = hello();
+  check("★ (مراجعة ر29-د) صفحةٌ بلا متنٍ استقرّت والإضافة مطفأة، ثم شُغّلت: محجوزةٌ «nosel» فورًا، لا قلب ولا ترجمة ولا تبدّلٍ في data-cml، والنافذة تقول السبب",
+        "-|en|-|-/-|-|en|-|held/nosel|Settings|false/nosel|0", offA + "|" + attrs() + "/" + heldAttr() + "|" + txt("oh") + "|" + hl4.enabled + "/" + hl4.bodies.guard.why + "|" + (cmlFlips - fl2));
+
+  check("لا أخطاء JavaScript", 0, jsErrors);
+  document.title = "nosel " + pass + "/" + total;
+})();
+</script>

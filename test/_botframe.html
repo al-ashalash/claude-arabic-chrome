@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<script>
+  // أصل الملفات قبل نقل العنوان إلى مسار الوثيقة: الروابط النسبية أدناه تُحسم به لا بالمسار الجديد
+  document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');
+</script>
+<title>Zq check</title>
+<!--
+  إطار اختبارٍ لصفحة _bottest.html (ر29-د) — ليس صفحة اختبارٍ بنفسه. صفحةٌ تُبنى من علامات صفحة التحقق وحدها (لا نصَّ منسوخًا من موقع):
+    m=src   سكربت منسِّق صفحة التحدّي (‎/cdn-cgi/challenge-platform/h/<x>/orchestrate/chl_page/v1‎)
+    m=opt   كائن خيارات صفحة التحدّي في سكربتٍ مضمَّن (‎window._cf_chl_opt = {…}‎)
+    m=form  نموذج صفحة التحدّي القديم (‎form#challenge-form‎ بعلامة رمزه في action)
+    m=bare  ★ (ر29-د2، مراجعة ر29-د F5 RV6) نموذجٌ بالمعرّف نفسه بلا علامة الرمز في action — صفحةٌ حقيقية، فلا تُعدّ صفحة تحقق
+    m=neg   صفحةٌ حقيقية فيها ما يُحقن في الصفحات الحقيقية: سكربت الكشف (‎/cdn-cgi/challenge-platform/scripts/jsd/main.js‎) وأداة Turnstile
+            في نموذجٍ (‎div.cf-turnstile‎ وسكربتها) — فلا تُعدّ صفحة تحقق
+  والسكربتات بنوعٍ غير منفَّذ (type="text/x-zq") فلا يُجلب شيء: الكشف بعنوان السكربت ونصّه لا بتنفيذه.
+-->
+<script>var jsErr = 0; window.onerror = function () { jsErr++; };</script>
+<script>
+(function () {
+  var m = (/[?&]m=([a-z]+)/.exec(location.search) || [])[1] || "neg";
+  var w = function (h) { document.write(h); };
+  if (m === "src") w('<script type="text/x-zq" src="/cdn-cgi/challenge-platform/h/b/orchestrate/chl_page/v1?ray=zq0"><\/script>');
+  // الاسم مقسومٌ هنا لئلا يكون هذا السكربت نفسه علامةً في الإطارات الأخرى
+  if (m === "opt") w('<script type="text/x-zq">(function(){window.' + "_cf_chl" + '_opt = {cvId: "3", cZone: "zq.invalid", cType: "managed"};})();<\/script>');
+  if (m === "form") w('<form id="challenge-form" action="/legal/privacy?__cf_chl_f_tk=zq0" method="POST"><input type="hidden" name="md" value="zq"></form>');
+  if (m === "bare") w('<form id="challenge-form" action="/legal/privacy?zq=1" method="POST"><input type="hidden" name="md" value="zq"></form>');
+  if (m === "neg") {
+    w('<script type="text/x-zq">(function(){var a=document.createElement("script");a.src="/cdn-cgi/challenge-platform/scripts/jsd/main.js";})();<\/script>');
+    w('<script type="text/x-zq" src="/cdn-cgi/challenge-platform/scripts/jsd/main.js"><\/script>');
+    w('<script type="text/x-zq" src="https://challenges.cloudflare.com/turnstile/v0/api.js"><\/script>');
+    w('<form id="login"><div class="cf-turnstile" data-sitekey="zq0"></div><button type="submit">Settings</button></form>');
+  }
+})();
+</script>
+<h1 id="h">Settings</h1>
+<p id="p">Zq check sentence mentions <a href="#" id="a">Settings</a> in English.</p>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<script src="../extension/dict-legal.js"></script>
+<script>
+var BUILT = globalThis.CLAUDE_L10N;
+// بلا صمّام «nosel» هنا (bodyRoutes: null): الإطار يمتحن صفحة التحقق وحدها، وليس فيه متن
+var META = Object.assign({}, CMLConst.domain("legal").meta, { hydrate: "none", live: false, bodyRoutes: null });
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) { if (cb) cb(null); } });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "legal", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: { "Settings": "الإعدادات", "Zq check": "تحقّقٌ تجريبي" }, patterns: BUILT.dicts.ar.patterns, plurals: {} } } };
+history.replaceState({}, "", "/legal/cookies" + location.search);
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>

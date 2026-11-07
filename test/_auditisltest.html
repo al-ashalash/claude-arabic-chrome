@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<meta charset="utf-8">
+<title>auditisl test</title>
+<!--
+  اختبار جامع فحص الاتجاه لجزر الورقة النقطية (ر24-و، ثغرة اختبارٍ من مراجعة ر24-ب4: طافرةٌ في شرط تخطّي العربية كانت تنجو من كل بوابة).
+  الجامع الحقيقي (COLLECT في rtl-audit.mjs، يُقرأ نصُّه من الأداة نفسها لا من نسخة) يُشغَّل في هذه الصفحة مرّتين كما يُشغَّل في الصفحة المفحوصة:
+  مرجعًا بلا سمات الإضافة، ومعرَّبًا بـ‎data-cml="on"‎ على html. وجزر الورقة النقطية تُمرَّر إليه بالشكل الذي يصنعه pointIslandsOf ({full, site}).
+   ١) في المرجع يُطابَق محدِّد الموقع (site) فتُجمع أحفاد الجزر الثلاث، ولو كان فيها نصٌّ عربي (لا إضافة في المرجع).
+   ٢) في المعرَّب يُطابَق المحدِّد كاملًا (full، بشرطه على html): الجزيرة اللاتينية تُجمع، والتي فيها عربية لا تُجمع (تغيّر النص يحرّكها بحقّ)،
+      والتي لا يتحقّق شرطها (مسار الهيكل) ليست جزيرة.
+   ٣) ومن أوله إلى آخره مع حكم أمانة الجزر الحقيقي (islandDrift من rtl-geom.mjs): الجزيرة كما هي لا حكم عليها، وحفيدٌ أُزيح بعد المرجع يُعدّ.
+  العقد: document.title = "auditisl N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}
+#tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+.zq-isl,.zq-shell{display:block;width:400px;margin:8px 0;padding:4px;border:1px solid #999}
+.zq-isl>span,.zq-shell>span{display:inline-block;width:120px;height:20px;margin-right:6px;background:#eef}
+html.zq-shift #isl1>.k2{margin-left:30px}</style>
+<h1>اختبار جامع فحص الاتجاه لجزر الورقة النقطية</h1>
+<div id="isl1" class="zq-isl"><span class="k1">Hello world</span><span class="k2">More text</span></div>
+<div id="isl2" class="zq-isl"><span class="k1">مرحبا بالعالم</span><span class="k2">نص عربي</span></div>
+<div id="isl3" class="zq-shell"><span class="k1">Shell</span><span class="k2">Route</span></div>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>
+var jsErrors = 0; window.onerror = function () { jsErrors++; };
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+// جزر الورقة النقطية بالشكل الذي يصنعه pointIslandsOf: full بمركّب html (شرطها في المعرَّب)، وsite بلاه (للمرجع)
+var PISL = [{ full: 'html[data-cml="on"] .zq-isl', site: ".zq-isl" },
+            { full: 'html[data-cml="on"][data-cml-route="shell"] .zq-shell', site: ".zq-shell" }];
+// نصّ الجامع من الأداة نفسها: من «function COLLECT(o, inRest) {» إلى أول سطرٍ هو «}» وحده (نهاية الدالة في أعلى الملف)
+function collectFrom(src) {
+  var a = src.indexOf("\nfunction COLLECT(o, inRest) {\n");
+  if (a < 0) return null;
+  var b = src.indexOf("\n}\n", a + 1);
+  return b < 0 ? null : (0, eval)("(" + src.slice(a + 1, b + 2) + ")");
+}
+function byId(snap, id) { return snap.recs.filter(function (r) { return r.id === id; })[0] || null; }
+function ik(snap, ids) { return ids.map(function (id) { var r = byId(snap, id); return r && r.ik && r.ik.length ? "y" : "n"; }).join(","); }
+async function main() {
+  // الأدوات في مستودع التطوير بجوار الاختبارات (code/toolchain)، وفي بنية النشر (make-release) في tools/
+  var TOOLS = (await fetch("../toolchain/rtl-geom.mjs", { method: "HEAD" }).then(function (r) { return r.ok; }, function () { return false; })) ? "../toolchain/" : "../tools/";
+  var src = await fetch(TOOLS + "rtl-audit.mjs").then(function (r) { return r.text(); });
+  var GEO = await import(TOOLS + "rtl-geom.mjs");
+  var COLLECT = collectFrom(src);
+  check("نصّ الجامع يُقرأ من rtl-audit.mjs ويُقيَّم دالّةً", "function", typeof COLLECT);
+  var H = document.documentElement, IDS = ["isl1", "isl2", "isl3"];
+  var o = { shellSel: "", forceShell: false, max: 15000, pisl: PISL };
+  // ١) المرجع: بلا سمات الإضافة
+  var ref = COLLECT(o, GEO.insideAtRest);
+  check("★ المرجع (بلا الإضافة): محدِّد الموقع يطابق الجزر الثلاث فتُجمع أحفادها، والعربية لا تمنع الجمع فيه", "y,y,y", ik(ref, IDS));
+  var r1 = byId(ref, "isl1");
+  check("وأحفاد الجزيرة بمسارها نسبةً إلى جذرها وموضعها، وعلامة الورقة النقطية pk", "/0,/1/1",
+    (r1 && r1.ik ? r1.ik.map(function (k) { return k[0]; }).join(",") : "") + "/" + (r1 && r1.pk));
+  // ٢) المعرَّب: data-cml="on" على html، وبلا مسار الهيكل
+  H.setAttribute("data-cml", "on");
+  var tr0 = COLLECT(o, GEO.insideAtRest);
+  check("★ المعرَّب: المحدِّد كاملًا بشرطه — اللاتينية تُجمع، والتي فيها عربية لا تُجمع، والتي لم يتحقّق شرطها (مسار الهيكل) ليست جزيرة", "y,n,n", ik(tr0, IDS));
+  // وبمسار الهيكل يتحقّق شرط الثالثة فتُجمع
+  H.setAttribute("data-cml-route", "shell");
+  var tr1 = COLLECT(o, GEO.insideAtRest);
+  check("★ المعرَّب بمسار الهيكل: يتحقّق شرط الثالثة فتُجمع، والعربية تبقى غير مجموعة", "y,n,y", ik(tr1, IDS));
+  H.removeAttribute("data-cml-route");
+  // ٣) أمانة الجزر من أوله إلى آخره: لا إزاحة ⇒ لا حكم؛ حفيدٌ أُزيح 30 بكسلًا بعد المرجع ⇒ يُعدّ
+  var same = GEO.islandDrift(byId(ref, "isl1"), byId(tr0, "isl1"), 2);
+  H.classList.add("zq-shift");
+  var tr2 = COLLECT(o, GEO.insideAtRest);
+  var moved = GEO.islandDrift(byId(ref, "isl1"), byId(tr2, "isl1"), 2);
+  check("★ ومع حكم أمانة الجزر الحقيقي: الجزيرة كما هي لا حكم عليها، وحفيدٌ أُزيح بعد المرجع يُعدّ (/1 بإزاحة 30)", "null/1/30",
+    String(same) + "/" + (moved && moved.n) + "/" + (moved && moved.first && moved.first.dx));
+  // والجزيرة العربية المُزاحة لا تُقارن في المعرَّب (لا أحفاد لها)، فلا حكم ولو تحرّكت
+  check("والجزيرة التي فيها عربية لا تُقارن في المعرَّب: لا أحفاد لها فلا حكم", "null", String(GEO.islandDrift(byId(ref, "isl2"), byId(tr2, "isl2"), 2)));
+  H.classList.remove("zq-shift"); H.removeAttribute("data-cml");
+  check("لا أخطاء", "0", jsErrors);
+}
+main().catch(function (e) { check("استثناء", "none", String(e && e.message || e)); }).then(function () {
+  document.title = "auditisl " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "AUDITISL: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+});
+</script>

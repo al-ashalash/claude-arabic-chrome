@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<script>
+  // أصل الملفات قبل نقل العنوان إلى مسار الصفحة: الروابط النسبية أدناه تُحسم به لا بالمسار الجديد
+  document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');
+</script>
+<title>Zq Plans | Claude by Anthropic</title>
+<!--
+  اختبار claude.com (ر15، ٦ جمادى الأولى ١٤٤٨هـ) — بجدول النطاقات الحقيقي (صفّ com وقائمته المولَّدة من خريطة الموقع) وقاموسه المبنيّ:
+   ١) الجدول: النطاق من العنوان، والصفّ «قادم» (status.upcoming) فلا تعرضه الإعدادات، وقائمة exact المولَّدة صالحةٌ بعددها (COM_EXACT_META)
+      بلا بادئة لغةٍ ولا مسارٍ تحت السوق، والقاموس المبنيّ يحمل الجدول نفسه، وجملة «يعمل في…» تذكر القائمة الطويلة بعددها.
+   ٢) حارس المسار بالقوائم الحقيقية: exact (ومنه ما تحت بادئة هيكل) ثم shell ثم full (السوق)، والخامل: ‎/<locale>/…‎ و‎/docs/‎
+      و‎/code-with-claude/‎ والمفردات التي تحوّل الشركة نسختها المترجمة إلى الإنجليزية وكل قسمٍ جديد.
+   ٣) ★ com المشحون بلغةٍ أخرى في <html lang> من البداية خاملٌ بحارسها (إطار _comframe.html). وخمول النطاق القادم في _cominerttest.html.
+   ٤) com مشغَّلًا في هذه الصفحة وحدها (status يُبدَّل قبل المحرّك — كما يبدّله CM-د في الجدول): السمات مبكرًا والنصوص بعد إشارة الترطيب
+      (hydrate "defer": next-route-announcer)، والعنوان بذيله « | Claude by Anthropic» (titleKeep)، والموافقة ومنتقي اللغة لا يُمسّان (skipSel)،
+      والمتن بلا قطعة محجوبٌ «none» (bodyGuard)، والتنقّل الناعم بين الكامل والهيكل والسوق والخامل وعودته، وحارس <html lang>.
+  النصوص العربية هنا تجريبيةٌ للاختبار لا ترجمات. العقد: document.title الختامي = "comtest N/N".
+-->
+<style>body{font-family:system-ui;padding:16px;max-width:1100px;margin:auto}
+#tbl{border-collapse:collapse;width:100%;margin-top:12px}
+#tbl td,#tbl th{border:1px solid #ccc;padding:6px 8px;font-size:14px;text-align:right}
+.ok{color:#127a2b;font-weight:700}.bad{color:#b00;font-weight:700}
+iframe{width:400px;height:120px;border:1px solid #ccc}</style>
+<link rel="stylesheet" href="../extension/base.css">
+<header data-cta-section="nav" id="nav"><a href="#" id="navP">Pricing</a> <a href="#" id="navC">Customers</a> <button aria-label="Zq menu" id="navB">x</button></header>
+<main id="main-content"><h1 id="h1">Zq Plans</h1><p id="p1">Pricing</p><p id="p2">Zq plan paragraph text that the shard would carry.</p></main>
+<div class="ConsentContainer-module-scss-module__Zq1aB__root" id="consent"><p id="cTxt">Zq cookie notice.</p><button id="cBtn">Accept all</button></div>
+<footer data-cta-section="footer" id="foot"><span id="ftP">Pricing</span>
+  <div class="LocalePicker-module-scss-module__Zq2cD__picker" id="picker"><button id="pickBtn">English</button></div></footer>
+<p id="wake">-</p>
+<iframe id="fForeign"></iframe>
+<table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
+<script>var jsErrors = 0; window.onerror = function () { jsErrors++; };</script>
+<script src="_chrome-mock.js"></script>
+<script src="../extension/cml-const.js"></script>
+<script src="../extension/cml-shared.js"></script>
+<!-- القاموس المبنيّ (build.mjs): meta النطاق com وقائمته المولَّدة -->
+<script src="../extension/dict-com.js"></script>
+<script>
+var HOME = location.pathname + location.search;
+var BUILT = globalThis.CLAUDE_L10N;
+var CM = CMLConst.domain("com");
+// حال الجدول كما شُحن، قبل أن تشغّله هذه الصفحة لنفسها
+var SHIPPED_STATUS = JSON.stringify(CM.status), UPCOMING0 = CMLConst.upcoming("com");
+var SHIPPED_IDS0 = CMLConst.shipped().map(function (d) { return d.id; }).join(",");
+var WHERE0 = CMLConst.caps("com").where;
+// ★ (مراجعة ر15) جملة قدرةٍ لموقعٍ مشحون تسمّي المواقع ذات المتون — والنطاق القادم ليس منها حتى يُشغَّل
+var APPBOD0 = CMLConst.caps("app").bodies.why;
+var LM = CM.meta;
+// ★ تشغيل com في هذه الصفحة وحدها، كما يشغّله CM-د في الجدول: صيغة status المشحونة
+CM.status = { full: true };
+var META = Object.assign({}, LM, { live: false });   // هرمسيّ: لا ورقة حيّة
+var STR = { "Pricing": "أسعارٌ تجريبية", "Customers": "عملاءٌ تجريبيون", "Zq menu": "قائمةٌ تجريبية", "Accept all": "قبولٌ تجريبي",
+  "English": "الإنجليزية", "Zq Plans": "خططٌ تجريبية", "Zq Story": "قصةٌ تجريبية" };
+var bodyReqs = [];
+var MOCK = makeChromeMock({ session: false, sendMessage: function (msg, cb) {
+  if (msg && msg.type === "bodies") bodyReqs.push(CMLShared.pageKey(META, msg.path));
+  setTimeout(function () { if (cb) cb(null); }, 30);   // لا قطعة (CM2… لم تُترجم بعد)
+} });
+Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
+var HELLO = null;
+MOCK.chrome.runtime.onMessage = { addListener: function (fn) { HELLO = fn; } };
+window.chrome = MOCK.chrome;
+window.CLAUDE_L10N = { domain: "com", meta: META, default: "ar", langs: [{ code: "ar" }],
+  dicts: { ar: { dir: "rtl", strings: STR, patterns: [], plurals: {} } } };
+history.replaceState({}, "", "/pricing");
+var MAIN_HTML = document.getElementById("main-content").innerHTML;
+// قبل المحرّك: ما يحصده الحاصد في المسار الكامل (الواجهة خارج المتن والمستثنى)
+var HK = CMLShared.harvestDom(document.documentElement, { chat: false, max: Infinity, skip: CMLShared.harvestSkip(LM, "full") }).map(function (h) { return h.key; });
+var T_START = performance.now();
+</script>
+<script src="../extension/cml-rtl.js"></script>
+<script src="../extension/engine.js"></script>
+<script>
+var tb = document.querySelector("#tbl tbody"), pass = 0, total = 0;
+function check(name, expect, got) {
+  total++; var ok = String(expect) === String(got); if (ok) pass++;
+  var tr = document.createElement("tr");
+  [name, expect, got].forEach(function (v) { var td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+  var s = document.createElement("td"); s.className = ok ? "ok" : "bad"; s.textContent = ok ? "✓" : "✗"; tr.appendChild(s);
+  tb.appendChild(tr);
+}
+function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+var MARKS = new RegExp("[" + String.fromCharCode(0x200E) + String.fromCharCode(0x200F) + String.fromCharCode(0x2066) + "-" + String.fromCharCode(0x2069) + "]", "g");
+function $(id) { return document.getElementById(id); }
+function txt(id) { return $(id).textContent.replace(MARKS, "").replace(/\s+/g, " ").trim(); }
+function T() { return document.title.replace(MARKS, ""); }
+var H = document.documentElement;
+function attrs() { return ["dir", "lang", "data-cml", "data-cml-route"].map(function (a) { return H.getAttribute(a) || "-"; }).join("|"); }
+function hello() { var r = null; if (HELLO) HELLO({ type: "cml-hello" }, {}, function (x) { r = x; }); return r; }
+// تنقّلٌ من جهة العميل كما يفعل Next.js: العنوان ثم main مرسومٌ من جديد (عقدٌ جديدة) فيوقظ مراقب الطفرات
+function go(p, html) { history.pushState({}, "", p); if (html !== undefined) $("main-content").innerHTML = html; $("wake").textContent = p; return wait(500); }
+function frame(id, q) {
+  return new Promise(function (res) {
+    var f = $(id); f.onload = function () { res(f); }; f.src = "_comframe.html?" + q;
+  });
+}
+
+(async function () {
+  // ٤أ) قبل كل انتظار: com مشغَّلًا والترطيب لم يُعلن بعد (next-route-announcer يُضاف في القسم ٤) — السمات وحدها، والإمساك قائم
+  await wait(150);
+  var early = attrs() + "|" + H.getAttribute("data-cml-hold") + "|" + txt("navP") + "|" + T();
+  // ١) الجدول والقائمة المولَّدة والقاموس المبنيّ (دوالّ خالصة)
+  var dom = function (u) { var d = CMLConst.domainOfUrl(u); return d ? d.id : "null"; };
+  check("★ الجدول: النطاق من العنوان — claude.com كلّه، وغيره لنطاقه أو لا نطاق", "com/com/com/null/null/null/app/academy/code",
+        [dom("https://claude.com/"), dom("https://claude.com/pricing?x=1"), dom("https://claude.com/marketplace/zq"), dom("http://claude.com/pricing"),
+         dom("https://www.claude.com/pricing"), dom("https://claude.com.zq.example/pricing"), dom("https://claude.ai/new"),
+         dom("https://academy.claude.com/"), dom("https://code.claude.com/docs/en/overview")].join("/"));
+  check("★ الصفّ قادمٌ كما شُحن (status.upcoming): لا تعرضه الإعدادات ولا النافذة، والمواقع المشحونة السبعة بترتيبها",
+        '{"upcoming":true}/true/app,support,privacy,legal,academy,docs,code/false',
+        SHIPPED_STATUS + "/" + UPCOMING0 + "/" + SHIPPED_IDS0 + "/" + CMLConst.upcoming("com"));
+  var EX = LM.routes.exact, CMETA = CMLConst.COM_EXACT_META || {};
+  var sorted = EX.every(function (p, i) { return !i || EX[i - 1] < p; });
+  var shapeOk = EX.every(function (p) { return /^\/[^\s?#]*$/.test(p) && (p === "/" || !/\/$/.test(p)); });
+  var LOC2 = EX.filter(function (p) { return /^\/[a-z]{2}(-[a-z0-9]+)?(\/|$)/i.test(p); });
+  var MKT = EX.filter(function (p) { return (p + "/").indexOf("/marketplace/") === 0; });
+  check("★ القائمة المولَّدة (com-routes.mjs): مرتّبةٌ بلا تكرار وبصيغة الحارس، وعددها عدد COM_EXACT_META، وفوق الثلاثمئة، بلا بادئة لغةٍ ولا مسارٍ تحت السوق",
+        "true/true/true/true/0/0/1",
+        sorted + "/" + shapeOk + "/" + (CMETA.exact === EX.length) + "/" + (EX.length > 300) + "/" + LOC2.length + "/" + MKT.length + "/" + CMETA.minLocales);
+  check("★ القاموس المبنيّ يحمل الجدول نفسه (build.mjs يحقن meta بالقائمة المولَّدة) وقاموسُه فارغ حتى CM1",
+        "com/true/0/0", BUILT.domain + "/" + (JSON.stringify(BUILT.meta) === JSON.stringify(LM)) + "/" +
+        Object.keys(BUILT.dicts.ar.strings).length + "/" + BUILT.dicts.ar.patterns.length);
+  var caps = CMLConst.caps("com");
+  check("★ «يعمل في…» تذكر القائمة الطويلة بعددها لا بمساراتها، والمسارات معزولةٌ مقاطعَ، والعنوان المختصر claude.com",
+        "true/7/claude.com/false/false/true/true",
+        (caps.where.indexOf("يعمل في الصفحات التي تترجمها الشركة بأعيانها (" + String(EX.length).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + ")، /marketplace/ كاملًا") === 0) + "/" +
+        caps.whereSeg.filter(function (s) { return s.p !== undefined; }).length + "/" + CMLConst.siteLabel("com") + "/" +
+        caps.scan.on + "/" + caps.chat.on + "/" + caps.bodies.on + "/" + caps.live.on);
+  check("وقبل التشغيل كانت الجملة نفسها (الصيغة لا تغيّرها)", "true", WHERE0 === caps.where);
+  var CMN = "«" + CM.name + "»";
+  check("★ (مراجعة ر15) جمل القدرات لا تسمّي النطاق القادم: «تصحيحات الفقرات تخصّ…» في إعدادات التطبيق بلا «موقع Claude» ما دام قادمًا، وبه متى شُغِّل",
+        "false/true/true", (APPBOD0.indexOf(CMN) >= 0) + "/" + (CMLConst.caps("app").bodies.why.indexOf(CMN) >= 0) + "/" + (APPBOD0.indexOf("«") >= 0));
+
+  // ٢) حارس المسار بالقوائم الحقيقية
+  var RM = function (p) { return CMLShared.routeMode(LM.routes, p); };
+  check("★ exact: الصفحات المترجمة بأعيانها كاملة (والشرطة الختامية سواء)، ومنها ما تحت بادئة هيكل (قصةٌ وحلٌّ مترجمان) وفهارس hreflang",
+        "full,full,full,full,full,full,full,full",
+        ["/", "/pricing", "/pricing/", "/customers/canva", "/solutions/government", "/resources/articles", "/resources", "/product/claude-code"].map(RM).join(","));
+  check("★ shell: قصةٌ ومقالةٌ ودليلٌ وندوةٌ غير مترجمة، ونماذج التواصل والاستمارات، وحلٌّ غير مترجم، وإدارة الرعاية الصحية",
+        "shell,shell,shell,shell,shell,shell,shell,shell",
+        ["/customers/zq-story", "/resources/articles/zq-article", "/resources/guides/zq-guide", "/resources/webinars/zq", "/contact-sales/zq-form",
+         "/form/zq", "/solutions/financial-advisors", "/healthcare-administration"].map(RM).join(","));
+  check("★ full: السوق كلّه بالبادئة (الفهرس وموصِّلٌ وإضافةٌ ومنتج وكلاء)", "full,full,full,full,full",
+        ["/marketplace", "/marketplace/", "/marketplace/connectors/zq", "/marketplace/plugins/zq", "/marketplace/agents-products"].map(RM).join(","));
+  check("★ الخامل: ‎/<locale>/…‎ و‎/docs/‎ و‎/code-with-claude/‎ والمفردات المحوَّلة إلى الإنجليزية وقسمٌ جديد وما يشبه مسارًا مترجمًا",
+        "inactive,inactive,inactive,inactive,inactive,inactive,inactive,inactive,inactive,inactive,inactive,inactive,inactive",
+        ["/xx/pricing", "/xx", "/xx-YY/customers/canva", "/docs", "/docs/claude-tag/overview", "/code-with-claude", "/code-with-claude/zq",
+         "/check-files", "/hard-questions", "/marketplace-contact-sales", "/zq-new-section", "/pricingx", "/customersx/zq"].map(RM).join(","));
+  check("★ الحاصد في المسار الكامل: الترويسة والتذييل بلا لافتة الموافقة ولا منتقي اللغة (skipSel)", "true/true/true/false/false/false",
+        (HK.indexOf("Customers") >= 0) + "/" + (HK.indexOf("Pricing") >= 0) + "/" + (HK.indexOf("Zq menu") >= 0) + "/" +
+        (HK.indexOf("Accept all") >= 0) + "/" + (HK.indexOf("Zq cookie notice.") >= 0) + "/" + (HK.indexOf("English") >= 0));
+
+  // ٣) ★ com مشحونًا في إطارٍ مستقل و<html lang> بلغةٍ أخرى من البداية (والنطاق القادم خاملًا: _cominerttest.html — صفحةٌ عليا، فالنافذة
+  // لا تسأل إلا الإطار الأعلى)
+  var ff = await frame("fForeign", "m=foreign");
+  await wait(800);
+  var sf = ff.contentWindow.state();
+  check("★ com مشحونًا و<html lang> بلغةٍ أخرى من البداية على مسارٍ مترجَم: خاملٌ بحارس لغة الموقع (siteLang) — لا سمة ولا إمساك ولا تعريب، وقرأ الإعدادات",
+        "null|xx|null|null|null|null|null|null|null/Pricing|Zq Plans|Pricing|Pricing/Zq Plans | Claude by Anthropic/visible/true",
+        sf.attrs + "/" + sf.text + "/" + sf.title + "/" + sf.vis + "/" + (sf.gets > 0));
+
+  // ٤) com مشغَّلًا: الترطيب المؤجَّل — السمات مبكرًا، والنصوص بعد next-route-announcer
+  var gateBefore = txt("navP") + "|" + T();
+  document.body.appendChild(document.createElement("next-route-announcer"));
+  await wait(600);
+  check("★ hydrate \"defer\": قبل إشارة الترطيب السمات وحدها والصفحة ممسوكة والنصوص والعنوان على أصلها؛ وبعدها تُعرَّب ويُرفع الإمساك",
+        "rtl|ar|on|full|1|Pricing|Zq Plans | Claude by Anthropic > Pricing|Zq Plans | Claude by Anthropic > null|أسعارٌ تجريبية|عملاءٌ تجريبيون|قائمةٌ تجريبية|visible",
+        early + " > " + gateBefore + " > " + H.getAttribute("data-cml-hold") + "|" + txt("navP") + "|" + txt("navC") + "|" + $("navB").getAttribute("aria-label").replace(MARKS, "") + "|" + getComputedStyle(H).visibility);
+  check("★ العنوان بذيله « | Claude by Anthropic» يبقى (titleKeep) وما قبله من القاموس", "خططٌ تجريبية | Claude by Anthropic", T());
+  document.title = "Zq Unknown | Claude by Anthropic";
+  await wait(150);
+  var tU = T();
+  document.title = "Customers | Claude by Anthropic";
+  await wait(150);
+  check("★ وما قبل الذيل غير مترجَم ⇒ العنوان كلّه على أصله (لا عنوان مختلط)، والمترجَم بذيله", "Zq Unknown | Claude by Anthropic|عملاءٌ تجريبيون | Claude by Anthropic",
+        tU + "|" + T());
+  document.title = "Zq Plans | Claude by Anthropic";
+  check("★ لافتة الموافقة ومنتقي اللغة لا يُمسّان ولو طابق نصُّهما القاموس (skipSel)، والتذييل يُعرَّب", "Accept all/Zq cookie notice./English/أسعارٌ تجريبية",
+        txt("cBtn") + "/" + txt("cTxt") + "/" + txt("pickBtn") + "/" + txt("ftP"));
+  var hl = hello() || {}, gd = (hl.bodies || {}).guard || {};
+  check("★ المتن بلا قطعة (CM2… لم تُترجم): محجوبٌ «none» فيبقى إنجليزيًّا كلُّه ولو طابق القاموسَ بعضُه، والواجهة حوله عربية، والقطعة طُلبت بمفتاح الصفحة",
+        "held|none|Zq Plans|Pricing|/pricing|true/none",
+        H.getAttribute("data-cml-body") + "|" + H.getAttribute("data-cml-held") + "|" + txt("h1") + "|" + txt("p1") + "|" + bodyReqs.join(",") + "|" + gd.held + "/" + gd.why);
+  check("وجواب النافذة: النطاق والمسار والتشغيل", "com/full/true/undefined", hl.domain + "/" + hl.route + "/" + hl.enabled + "/" + hl.upcoming);
+
+  // ٥) التنقّل الناعم (Next.js): الهيكل، والمترجَم تحت بادئة الهيكل، والسوق، والخامل، والعودة
+  await go("/customers/zq-story", '<h1 id="h1">Zq Story</h1><p id="p1">Pricing</p>');
+  check("★ تنقّلٌ ناعم إلى قصةٍ غير مترجمة (هيكل): الترويسة عربية، والمتن (shellSel: main) على أصله ولو طابق القاموس، والبوابة shell",
+        "rtl|ar|on|shell|أسعارٌ تجريبية|Zq Story|Pricing", attrs() + "|" + txt("navP") + "|" + txt("h1") + "|" + txt("p1"));
+  await go("/customers/canva", MAIN_HTML);
+  check("★ ثم إلى قصةٍ مترجمة بعينها تحت بادئة الهيكل: كاملة (exact يسبق shell) وتُطلب قطعتها", "rtl|ar|on|full|/customers/canva",
+        attrs() + "|" + bodyReqs[bodyReqs.length - 1]);
+  await go("/marketplace/zq-connector", '<h1 id="h1">Zq Plans</h1><p id="p1">Pricing</p>');
+  check("★ ثم إلى موصِّلٍ في السوق: كامل بالبادئة", "rtl|ar|on|full|/marketplace/zq-connector", attrs() + "|" + bodyReqs[bodyReqs.length - 1]);
+  await go("/docs/zq-page", '<h1 id="h1">Zq Plans</h1><p id="p1">Pricing</p>');
+  check("★ ثم إلى ‎/docs/‎ (Mintlify، إنجليزي عند الشركة): خاملٌ تمامًا — السمات تُمحى والترويسة والعنوان على أصلها",
+        "-|en|-|-|Pricing|Customers|Zq Plans | Claude by Anthropic|inactive", attrs() + "|" + txt("navP") + "|" + txt("navC") + "|" + T() + "|" + (hello() || {}).route);
+  await go("/xx/pricing");
+  check("★ ثم إلى ‎/<locale>/pricing‎: خامل", "-|en|-|-|Pricing", attrs() + "|" + txt("navP"));
+  await go("/code-with-claude/zq");
+  check("★ ثم إلى ‎/code-with-claude/…‎: خامل", "-|en|-|-|Pricing", attrs() + "|" + txt("navP"));
+  await go("/pricing", MAIN_HTML);
+  check("★ والعودة إلى الصفحة المترجمة تعيد كل شيء (الترويسة والعنوان والمتن المحجوب)", "rtl|ar|on|full|أسعارٌ تجريبية|خططٌ تجريبية | Claude by Anthropic|held",
+        attrs() + "|" + txt("navP") + "|" + T() + "|" + H.getAttribute("data-cml-body"));
+
+  // ٦) حارس <html lang>: الموقع يكتب لغةً أخرى بعد التحميل ثم الإنجليزية
+  H.lang = "xx";
+  await wait(500);
+  var hx = hello() || {};
+  check("★ الموقع يكتب لغةً أخرى في <html lang>: خمولٌ تام، وجواب النافذة يحمل السبب", "-|xx|-|-|Pricing|xx/html/false",
+        attrs() + "|" + txt("navP") + "|" + hx.siteLang + "/" + hx.siteLangBy + "/" + hx.enabled);
+  H.lang = "en";
+  await wait(500);
+  check("★ ثم English: تعود الإضافة", "rtl|ar|on|full|أسعارٌ تجريبية", attrs() + "|" + txt("navP"));
+
+  check("لا أخطاء JS غير ملتقطة (الصفحة والإطار)", "0/0", jsErrors + "/" + sf.errors);
+  history.replaceState({}, "", HOME);
+  document.title = "comtest " + pass + "/" + total;
+  var h = document.createElement("p");
+  h.className = pass === total ? "ok" : "bad";
+  h.textContent = "COMTEST: " + pass + "/" + total + (pass === total ? " — all pass" : " — FAIL");
+  document.body.appendChild(h);
+})().catch(function (e) { jsErrors++; document.title = "comtest 0/1"; var p = document.createElement("pre"); p.textContent = String(e && e.stack || e); document.body.appendChild(p); });
+</script>

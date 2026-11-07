@@ -18,6 +18,14 @@
 //        (ما يُترجم بترتيب الزحف: [{fp, src}]). الحال: ui كتلةٌ من عقدةٍ واحدة يترجمها قاموس الواجهة، group-ui صفُّ
 //        لافتاتٍ بنودُه كلها في قاموس الواجهة، dict في قاموس الكتل، kept قُضي بإبقائها إنجليزية، todo ما سواها.
 //   ‎--expand‎: يفتح كل <details> مغلقٍ داخل المتن قبل الحصاد (محتوى الأكورديون لا يُركَّب قبل فتحه).
+//   ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ — دراسة ر13-أ §5.12) ‎--click=<محدِّد>‎ (يتكرّر، مع ‎--blocks‎): ما لا يُركَّب إلا بنقرة — نصُّ الفيديو في الأكاديمية
+//        يحلّ محلّ ملخّصه بعد النقر على «Transcript» (‎--click="[data-living-video] [role=radio][aria-checked=false]"‎)، ولوحات التبويب
+//        (‎--click="main [role=tab][aria-selected=false]"‎). يُنقر كل عنصرٍ طابقه المحدِّد بعد الحصاد الأول، واحدًا بعد واحد بهدوءٍ بعد كلٍّ (لوحةٌ
+//        واحدة تظهر في المرّة)، وتُحصد الكتل بعد كل نقرة وتُضمّ ما لم يُرَ منها بالبصمة؛ وحصاد الواجهة (المفاتيح ومناطقها) من الحال الأولى،
+//        ★ (ر13-ج) إلا السمات (alt وaria-label وtitle وplaceholder): ما ظهر منها بعد نقرةٍ بالحاسوب يُضمّ إليه بعدده (domain-arg.mjs: extraItems).
+//   ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ — الفحص الحيّ لـر13-أ) ‎--mobile‎ (مع ‎--blocks‎): والصفحة نفسها أيضًا بعرض الجوال (390 بمحاكاة جهازٍ ووكيلِ
+//        متصفّحه، كفحص الاتجاه rtl-audit)، وتُضمّ كتلُها (والمنقور فيها بـ‎--click‎) إلى كتل الصفحة بالبصمة: شاشاتُ أفلام حالات الاستخدام في
+//        الأكاديمية تُرسم في الجوال غيرَها في الحاسوب، فما لم يُحصد في أحد العرضين لا تحمله القطعة فيبقى إنجليزيًّا في صفحةٍ معرَّبة.
 //   ★ (S7-B، ٢١ ربيع الآخر ١٤٤٨هـ — مرجع الواجهة البرمجية في الوثائق) خياراتٌ لحصادٍ مستقلٍّ لقسمٍ من الموقع:
 //   ‎--prefix=/docs/en/api/‎: يُبقي من القائمة (‎--llms‎ و‎--url‎ و‎--urls‎) ما بدأ مساره بالبادئة وحدها.
 //   ‎--ui-zone=<محدِّد>‎ (مع ‎--blocks‎): كتلٌ داخل المتن هي أسماءٌ لا جمل (عنوان الصفحة وبنود المسار وعناوين الطرق في المرجع)
@@ -38,8 +46,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { EXT } from "./paths.mjs";
-import { C, SHARED, domainArg, workDir, label, blocksDictFile } from "./domain-arg.mjs";
+import { C, SHARED, domainArg, workDir, label, blocksDictFile, extraItems } from "./domain-arg.mjs";
 import { launch, settle } from "./cdp-lib.mjs";
+import { selProbeSrc, isBodyRoute, selVerdict, missLine } from "./sel-health.mjs";   // ★ (ر29-د)
 
 const argv = process.argv.slice(2);
 const opt = (name, def) => { const a = argv.find((x) => x.startsWith(`--${name}=`)); return a ? a.slice(name.length + 3) : def; };
@@ -87,6 +96,15 @@ const QUIET = +opt("quiet", "1500") || 1500;
 const MAXW = +opt("max-wait", "20000") || 20000;
 const BLOCKS = argv.includes("--blocks");
 if (BLOCKS && !(META.bodies && META.bodySel)) { console.error(`! ${label(D)} بلا متون (meta.bodies) — لا حصاد كتل`); process.exit(2); }
+// ★ (ر13) ما يُنقر قبل حصادٍ ثانٍ للكتل (‎--click‎، يتكرّر)
+const CLICKS = argv.filter((x) => x.startsWith("--click=")).map((x) => x.slice(8)).filter(Boolean);
+if (CLICKS.length && !BLOCKS) { console.error("! ‎--click‎ مع ‎--blocks‎ وحده: يضمّ ما يظهر بالنقر إلى حصاد الكتل"); process.exit(2); }
+let clickedAll = 0, clickAttrsAll = 0;
+// ★ (ر13) ‎--mobile‎: حصادٌ ثانٍ لكتل كل صفحةٍ بعرض الجوال يُضمّ بالبصمة
+const MOBILE = argv.includes("--mobile");
+if (MOBILE && !BLOCKS) { console.error("! ‎--mobile‎ مع ‎--blocks‎ وحده: يضمّ كتل عرض الجوال إلى حصاد الكتل"); process.exit(2); }
+let mobileAdded = 0, mobilePages = 0;
+const mobileFailed = [];
 const UI_ZONE = opt("ui-zone", "");
 const CHUNK_N = Math.max(0, +opt("chunk", "0") || 0);
 const CHUNK_NAME = opt("chunk-name", D);
@@ -129,9 +147,12 @@ let cdp = await launch(LAUNCH);
 // يعني متصفحًا عالقًا ⇒ يُعاد تشغيله ويُستأنف الطابور (قِيس: مهلة Page.enable بعد 154 صفحة أسقطت الحصاد كله)
 let openFails = 0;
 const skipped = [];
+// ★ (ر17، ٨ جمادى الأولى ١٤٤٨هـ) ‎--fresh‎ (والافتراض في claude.com): كل تحميلٍ في سياق متصفحٍ جديد معزول (cdp-lib: كملف تعريفٍ جديد) — الموقع يحوّل
+// الزائر العائد إلى claude.ai (كعكة claude_visited، دراسة ر14 §٣ج)، فكان حصاد الرئيسة بعد صفحةٍ أخرى يُحوَّل إلى خارج النطاق
+const FRESH = argv.includes("--fresh") || D === "com";
 async function openOrSkip(href) {
   for (let t = 0; t < 2; t++) {
-    try { const r = await cdp.openPage(href); openFails = 0; return r; }
+    try { const r = await cdp.openPage(href, { fresh: FRESH }); openFails = 0; return r; }
     catch (err) {
       openFails++;
       console.warn(`⚠ تعذّر فتح ${href} — ${err.message}`);
@@ -145,6 +166,59 @@ async function openOrSkip(href) {
   }
   skipped.push(href);
   return null;
+}
+// ★ (ر13) ‎--click‎: العناصر التي طابقها كل محدِّدٍ الآن تُحفظ في الصفحة ثم يُنقر كلٌّ منها وحده (ما فصله الموقع عن المستند يُترك)، ويُنتظر
+// الهدوء، وتُحصد الكتل (HB) فتُضمّ الجديدة إلى got بترتيب ظهورها — الحالُ الأولى محصودةٌ قبلها (الملخّص قبل أن يحلّ النصُّ محلّه). ونقرةٌ نقلت
+// الصفحة إلى عنوانٍ آخر (محدِّدٌ طابق رابطًا) توقف النقر فيها ولا يُضمّ ما بعدها: كتلُ صفحةٍ أخرى ليست من هذه. يعيد عدد النقرات
+// ★ (ر13-ج، ٦ جمادى الأولى ١٤٤٨هـ) ui (حصاد الحاسوب وحده): وبعد كل نقرةٍ سماتُ الحال الجديدة (alt وaria-label وtitle وplaceholder) — ما زاد منها
+// على ما حُصد بعددها يُضمّ إلى حصاد الواجهة (ui.got، وما وقع منه في جذور المتن إلى ui.bodyGot فمنطقته body): سماتٌ في لوحة تبويبٍ أو محتوى مطويّ
+// لا تكون في الحال الأولى. فحص ر13-ب وجد في المقالة 23 قيمةً كذلك لم يرها حصاد الواجهة (ومثلها في مثيلاتها حين يُعاد الحصاد)، ونصوصُ الواجهة
+// خارج السمات كما كانت من الحال الأولى (نصّ المتن تأخذه الكتل)
+async function clickInto(sessionId, url, HB, got, where, ui) {
+  let n = 0;
+  for (const sel of CLICKS) {
+    const k = await cdp.evalIn(sessionId, `(function () { try { window.__cmlClick = Array.prototype.slice.call(document.querySelectorAll(${JSON.stringify(sel)})); }
+      catch (e) { window.__cmlClick = []; } return window.__cmlClick.length; })()`);
+    for (let i = 0; i < k; i++) {
+      const ok = await cdp.evalIn(sessionId, `(function () { var x = window.__cmlClick && window.__cmlClick[${i}]; if (!x || !x.isConnected) return false;
+        try { x.click(); } catch (e) { return false; } return true; })()`);
+      if (!ok) continue;
+      n++;
+      await settle(cdp, sessionId, { quietMs: 800, maxMs: 10000 });
+      if (await cdp.evalIn(sessionId, "location.href") !== url) {
+        console.warn(`⚠ ${where} — نقرة ‎--click=${sel}‎ نقلت الصفحة إلى عنوانٍ آخر: أُوقف النقر فيها`);
+        return n;
+      }
+      const have = new Set(got.map((h) => h.fp));
+      for (const h of await cdp.evalIn(sessionId, HB, 60000)) if (!have.has(h.fp)) { got.push(h); have.add(h.fp); }
+      if (ui) {
+        const docA = await cdp.evalIn(sessionId, `CMLShared.harvestDom(document.documentElement, { chat: ${!!META.chat}, max: Infinity, skip: ${ui.SKIP} })
+          .filter(function (h) { return h.kind.indexOf("attr:") === 0; })`, 60000);
+        const addDoc = extraItems(ui.got, docA);
+        if (addDoc.length) {
+          ui.got.push(...addDoc); ui.added += addDoc.length;
+          if (META.bodySel) {
+            const bodyA = await cdp.evalIn(sessionId, `[].concat.apply([], Array.prototype.map.call(document.querySelectorAll(${JSON.stringify(META.bodySel)}),
+              function (el) { return CMLShared.harvestDom(el, { chat: ${!!META.chat}, max: Infinity, skip: ${ui.SKIP} }); }))
+              .filter(function (h) { return h.kind.indexOf("attr:") === 0; })`, 60000);
+            ui.bodyGot.push(...extraItems(ui.bodyGot, bodyA));
+          }
+        }
+      }
+    }
+  }
+  return n;
+}
+// ★ (ر13) صفحةٌ بعرض الجوال (‎--mobile‎): المحاكاة ووكيل المتصفّح قبل التنقّل، بقيم فحص الاتجاه نفسها (rtl-audit.mjs: 390 وUA_MOB) — والموقع قد
+// يرسل إلى وكيل الجوال حزمةً أخرى (ر9-د)، فالعرض وحده لا يكفي
+const UA_PHONE = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36";
+async function openPhone(href) {
+  const { targetId, sessionId } = await cdp.newTarget({ fresh: FRESH });
+  await cdp.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true }, sessionId);
+  await cdp.send("Emulation.setUserAgentOverride", { userAgent: UA_PHONE, acceptLanguage: "en-US,en" }, sessionId);
+  await cdp.send("Page.enable", {}, sessionId);
+  await cdp.send("Page.navigate", { url: href }, sessionId);
+  return { targetId, sessionId };
 }
 const keys = new Map();   // key → {kinds:Set, count, pages:[]}
 const blocks = new Map(); // fp → {tpl, count, pages:[], single, group}  (--blocks)
@@ -168,13 +242,14 @@ for (const u of urls) {
   if (!seen.has(e.href)) { seen.add(e.href); queue.push(e); }
 }
 let crawled = 0;
+const selRows = [];   // ★ (ر29-د) صفوف صحة المحدِّدات لصفحات المتن
 try {
   while (queue.length) {
     const e = queue.shift();
     const opened = await openOrSkip(e.href);
     if (!opened) continue;
     const { targetId, sessionId } = opened;
-    let got = [], bodyGot = [], blkGot = [], blkGroup = null, links = [], waited = 0, finalUrl = e.href, pageErr = null;
+    let got = [], bodyGot = [], blkGot = [], blkGroup = null, links = [], waited = 0, finalUrl = e.href, pageErr = null, title = null;
     try {
       waited = await settle(cdp, sessionId, { quietMs: QUIET, maxMs: MAXW });
       finalUrl = await cdp.evalIn(sessionId, "location.href");
@@ -203,6 +278,11 @@ try {
         throw new Error(pageErr);
       }
       await cdp.evalIn(sessionId, SRC + "\n;true");
+      // ★ (ر17) عنوان التبويب في سجلّ الصفحة: مدخل CM1 لعناوين claude.com (com-harvest ui)، وأنماط عناوين السوق
+      title = await cdp.evalIn(sessionId, "document.title");
+      // ★ (ر29-د) صحة محدِّدات النطاق في مسار متن (sel-health.mjs): تُعدّ ولا يُقرأ نصّ، والحكم في آخر التشغيل (خروجٌ بغير الصفر)
+      if (isBodyRoute(META, new URL(finalUrl).pathname, SHARED.routeMode))
+        selRows.push({ d: D, page: new URL(finalUrl).pathname, counts: await cdp.evalIn(sessionId, selProbeSrc(META)) });
       // ‎--expand‎: المطويّ في المتن لا يُركَّب قبل فتحه (أكورديونات Mintlify: قِيس في صفحة errors ‏48,665 كلمة في HTML
       // الخادم و15,863 في DOM) — فيُفتح كل <details> مغلقٍ داخل المتن بنقر ملخّصه ثم يُنتظر الهدوء، فتُحصد كتله كما
       // يراها المحرّك حين يفتحها القارئ
@@ -216,6 +296,8 @@ try {
       // المستثنى كما يستثنيه المحرّك: المرجع في shell، وmeta.skipSel (أجوبة المساعد المولَّدة) في كل مسار
       // بلا سقف طول كالمحرّك (٢١ ربيع الآخر ١٤٤٨هـ، توجيه المالك: لا يمنع حدٌّ تقني تعريب نصّ موقعٍ مهما طال)
       const SKIP = JSON.stringify(SHARED.harvestSkip(META, e.mode));
+      // ★ (ر24-ج1، ١٠ جمادى الأولى ١٤٤٨هـ) وصنفُ ما تبقيه الشركة منه (harvestKeep، meta.keepSel) كالمحرّك: ذرّةٌ داخل التتابع لا رفضٌ له
+      const KEEP = JSON.stringify(SHARED.harvestKeep(META, e.mode));
       got = await cdp.evalIn(sessionId,
         `CMLShared.harvestDom(document.documentElement, { chat: ${!!META.chat}, max: Infinity, skip: ${SKIP} })`, 60000);
       if (META.bodySel) {
@@ -224,10 +306,41 @@ try {
       }
       // الكتل في المسار الكامل وحده (المحرّك لا يطلب متونًا في shell)
       if (BLOCKS && e.mode === "full") {
-        blkGot = await cdp.evalIn(sessionId, `CMLShared.harvestBlocks(document, { body: ${JSON.stringify(META.bodySel)}, skip: ${SKIP} })`, 60000);
+        // ★ (ر24-أ، ٨ جمادى الأولى ١٤٤٨هـ — مراجعة Codex) بلا سقف طول (CX-003: كتلةٌ من 4,723 حرفًا في Claude Code كانت تسقط من الحصاد)، وبحماية
+        // المحرّك نفسها (CX-001): المستثنى والمحادثة وقابل التحرير داخل التتابع تُسقط التتابع كلَّه ولا يُقرأ نصُّها
+        const HB = `CMLShared.harvestBlocks(document, { body: ${JSON.stringify(META.bodySel)}, skip: ${SKIP}, keep: ${KEEP}, chat: ${!!META.chat} })`;
+        blkGot = await cdp.evalIn(sessionId, HB, 60000);
+        // ★ (ر13) ‎--click‎ (clickInto أعلاه)
+        // ★ (ر13-ج) وسمات ما ظهر بالنقر تُضمّ إلى حصاد الواجهة (got/bodyGot أعلاه) — بالحاسوب وحده، كحصاد الواجهة نفسه
+        const uiAcc = { SKIP, got, bodyGot, added: 0 };
+        let clickedHere = CLICKS.length ? await clickInto(sessionId, finalUrl, HB, blkGot, e.href, uiAcc) : 0;
+        if (uiAcc.added) { clickAttrsAll += uiAcc.added; console.log(`    ‎--click‎: ${uiAcc.added} سمةً لا تظهر إلا بعد النقر`); }
+        // ★ (ر13) ‎--mobile‎: الصفحة نفسها بعرض الجوال (openPhone)، بحارسي التحويل ولغة الواجهة أعلاه، وكتلُها والمنقور فيها تُضمّ بالبصمة. وإخفاقها
+        // لا يُسقط حصاد الحاسوب: يُذكر في آخر الحصاد
+        if (MOBILE) {
+          let mob = null;
+          try {
+            mob = await openPhone(finalUrl);
+            await settle(cdp, mob.sessionId, { quietMs: QUIET, maxMs: MAXW });
+            if (await cdp.evalIn(mob.sessionId, "location.href") !== finalUrl) throw new Error("حُوِّل بعرض الجوال إلى عنوانٍ آخر");
+            if (META.siteLang && await cdp.evalIn(mob.sessionId, "!/^en(-|$)/i.test(document.documentElement.getAttribute('lang') || 'en')")) {
+              throw new Error("الواجهة بعرض الجوال بلغةٍ أخرى (<html lang>)");
+            }
+            await cdp.evalIn(mob.sessionId, SRC + "\n;true");
+            const n0 = new Set(blkGot.map((h) => h.fp)).size;
+            const have = new Set(blkGot.map((h) => h.fp));
+            for (const h of await cdp.evalIn(mob.sessionId, HB, 60000)) if (!have.has(h.fp)) { blkGot.push(h); have.add(h.fp); }
+            if (CLICKS.length) clickedHere += await clickInto(mob.sessionId, finalUrl, HB, blkGot, e.href + " (390)");
+            const add = new Set(blkGot.map((h) => h.fp)).size - n0;
+            mobileAdded += add; mobilePages++;
+            if (add) console.log(`    ‎--mobile‎: ${add} كتلةً لا تظهر إلا بعرض الجوال`);
+          } catch (err) { mobileFailed.push(e.href); console.warn(`⚠ ${e.href} — ‎--mobile‎: ${err.message}`); }
+          finally { if (mob) await cdp.closePage(mob.targetId); }
+        }
+        if (clickedHere) { clickedAll += clickedHere; console.log(`    ‎--click‎: ${clickedHere} نقرة`); }
         // ‎--ui-zone‎: بصمات الكتل التي نصُّها في منطقة الأسماء — بالحاصد نفسه وجذورُه المنطقة (الحدود والقالب كما هما)
         if (UI_ZONE) {
-          const zf = new Set(await cdp.evalIn(sessionId, `CMLShared.harvestBlocks(document, { body: ${JSON.stringify(UI_ZONE)}, skip: ${SKIP} })
+          const zf = new Set(await cdp.evalIn(sessionId, `CMLShared.harvestBlocks(document, { body: ${JSON.stringify(UI_ZONE)}, skip: ${SKIP}, keep: ${KEEP}, chat: ${!!META.chat} })
             .map(function (b) { return b.fp; })`, 60000));
           for (const h of blkGot) if (zf.has(h.fp)) h.zone = "ui";
         }
@@ -247,7 +360,7 @@ try {
       await cdp.closePage(targetId);
     }
     pages.push(pageErr ? { url: e.href, final: finalUrl, mode: e.mode, keys: 0, settledMs: waited, error: pageErr }
-      : { url: e.href, final: finalUrl, mode: e.mode, keys: got.length, settledMs: waited });
+      : { url: e.href, final: finalUrl, mode: e.mode, keys: got.length, settledMs: waited, ...(title ? { title } : {}) });
     console.log(`• ${e.href}  [${e.mode}]  ${got.length} مفتاحًا`);
     // المنطقة: ما حُصد من المتن يُطرح من حصاد الصفحة بعدده — فالباقي من الواجهة
     const inBody = new Map();
@@ -386,7 +499,9 @@ try {
     // الكلمات: نصُّ الكتلة بلا عناصرها النائبة — والشيفرة (<cN>…</cN>) تُنسخ ولا تُترجم فلا تُعدّ
     const wordsOf = (s) => (String(s).replace(/<c(\d+)>[\s\S]*?<\/c\1>/g, " ").replace(/<[^>]+>/g, " ").match(/[A-Za-z][A-Za-z'’-]*/g) || []).length;
     const words = todo.reduce((n, t) => n + wordsOf(t.src), 0);
-    console.log(`\nالكتل: ${blocks.size} في ${pageBlocks.size} صفحة — ${Object.entries(tally).map(([k, v]) => k + " " + v).join("، ")}؛ للترجمة ${todo.length} (≈${words} كلمة)`);
+    console.log(`\nالكتل: ${blocks.size} في ${pageBlocks.size} صفحة — ${Object.entries(tally).map(([k, v]) => k + " " + v).join("، ")}؛ للترجمة ${todo.length} (≈${words} كلمة)` +
+      (CLICKS.length ? `؛ ونقرات ‎--click‎ ${clickedAll}` + (clickAttrsAll ? ` (وسماتٌ ظهرت بها ضُمّت إلى حصاد الواجهة: ${clickAttrsAll})` : "") : "") +
+      (MOBILE ? `؛ وعرض الجوال (‎--mobile‎) في ${mobilePages} صفحة أضاف ${mobileAdded} كتلةً` + (mobileFailed.length ? ` وتعذّر في ${mobileFailed.length}` : "") : ""));
     console.log("  " + bOut + "\n  " + tOut);
     if (UI_ZONE) {
       // الأسماء لقاموس الواجهة: ما لم يترجمه القاموس الحالي ولا يخلو من حرفٍ لاتيني
@@ -428,4 +543,18 @@ try {
   }
 } finally {
   cdp.close();
+}
+// ★★ (ر29-د، ١٣ جمادى الأولى ١٤٤٨هـ — بعد ر29-أ F1) صحة المحدِّدات: كان الحاصد ينبّه وحسب، فمرّت فوق عطل الوثائق القانونية مرحلتان. الآن يُخرج
+// بالرمز 1 إذا لم يطابق محدِّد المتن أو الاتجاه أو منتقي اللغة شيئًا في صفحة متن، أو محدِّد الإبقاء في صفحات المتن كلها — بعد كتابة مخرجاته،
+// والرسالة بالنطاق والمفتاح والمسار وحدها
+// ‎--sel-skip=<مفتاح،…>‎ يُسقط مفاتيح بأسمائها صراحةً (حصادٌ من صفحات الشرح وحدها في وثائق المطوّرين، وإبقاؤها لمرجع الواجهة البرمجية)، ويُقال ذلك
+{
+  const SKIPK = new Set(opt("sel-skip", "").split(",").map((x) => x.trim()).filter(Boolean));
+  if (SKIPK.size) console.log(`ℹ صحة المحدِّدات: لا يُحكم بـ ${[...SKIPK].join("، ")} في هذا التشغيل (‎--sel-skip‎)`);
+  const fails = selVerdict(selRows).filter((x) => !SKIPK.has(x.key));
+  if (fails.length) {
+    console.error(`✗ صحة المحدِّدات: ${fails.length} خللًا في ${selRows.length} صفحة متن — هل تغيّرت بنية الموقع؟`);
+    for (const x of fails) console.error("  " + missLine(x));
+    process.exitCode = 1;
+  } else if (selRows.length) console.log(`✓ صحة المحدِّدات: ${selRows.length} صفحة متن، كل مفتاحٍ يطابق`);
 }

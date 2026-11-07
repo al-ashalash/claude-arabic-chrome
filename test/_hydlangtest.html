@@ -1,6 +1,11 @@
 <!doctype html>
 <html lang="en">
 <meta charset="utf-8">
+<script>
+  // ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) إطار body ينقل عنوانه إلى مسار درسٍ قبل المحرّك: يُثبَّت أصل ملفات الصفحة أولًا فتُحسم به روابطها النسبية
+  if (/[?&]frame=body(&|$)/.test(location.search))
+    document.write('<base href="' + location.href.replace(/[?#].*$/, "").replace(/[^\/]*$/, "") + '">');
+</script>
 <title>hydlang test</title>
 <!--
   اختبار إشارة الترطيب "lang" (meta.hydrateSignal = "lang"، الأكاديمية — ر4، ٢٨ ربيع الآخر ١٤٤٨هـ): موقعٌ بلا next-route-announcer يكتب
@@ -12,6 +17,9 @@
    ٣) الإطار ?frame=foreign: أول كتابةٍ من الموقع لغةٌ أخرى ⇒ خمولٌ تام ولا تعريب؛ ثم English ⇒ تُعرَّب.
    ٤) الإطار ?frame=parse: كتابةٌ لـlang أثناء التحليل (سكربتٌ مضمَّن) ليست إشارة؛ وكتابة الموقع بعد التحليل تفتح البوابة.
    ٥) الإطار ?frame=cap: لا كتابة من الموقع أبدًا ⇒ سقف HYDRATE_MAX يفتح البوابة كما كان.
+   ٦) ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) الإطار ?frame=body: بجدول نطاق الأكاديمية الحقيقي (متونٌ بوضع الكتلة وبوابته المقيسة) على مسار درس، وقطعةُ
+      متن الدرس تصل من العامل قبل كتابة الموقع لـ<html lang> (عند بدء المستند): لا تُكتب منها كتلةٌ قبل فتح البوابة ولو بعد load والخمول، ثم
+      تُكتب بعد كتابته والخمول («tr»).
   العقد: document.title = "hydlang N/N".
 -->
 <style>body{font-family:system-ui;padding:16px;max-width:900px;margin:auto}
@@ -22,7 +30,7 @@ iframe{width:600px;height:100px;border:1px solid #999}</style>
 <link rel="stylesheet" href="../extension/base.css">
 <div id="root"><header><p id="t">Contact Support</p></header></div>
 <script>
-var FM = /[?&]frame=(own|foreign|parse|cap)/.exec(location.search), FRAME = FM ? FM[1] : null;
+var FM = /[?&]frame=(own|foreign|parse|cap|body)/.exec(location.search), FRAME = FM ? FM[1] : null;
 var T0 = performance.now(), jsErrors = 0;
 window.onerror = function () { jsErrors++; };
 // زمن أول تعريبٍ للنص في الإطار (ما يقيسه الإطار لنفسه، فلا جواب نافذةٍ في إطارٍ داخلي)
@@ -33,10 +41,31 @@ if (FRAME) {
   }).observe(document.getElementById("t"), { childList: true, characterData: true, subtree: true });
 }
 </script>
+<script>
+// ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) إطار body: متن الدرس بعد الجذر (كمقالة الأكاديمية)، ومراقبُ زمن أول عربيةٍ فيه
+if (FRAME === "body") {
+  document.write('<article class="mdx-article" id="art"><p id="b">Zq body paragraph of the lesson.</p></article>');
+  window.__bodyAr = null;
+  new MutationObserver(function () {
+    if (window.__bodyAr === null && /[ء-ي]/.test(document.getElementById("b").textContent)) window.__bodyAr = performance.now() - T0;
+  }).observe(document.getElementById("art"), { childList: true, characterData: true, subtree: true });
+}
+</script>
 <table id="tbl"><thead><tr><th>الحالة</th><th>المتوقَّع</th><th>الناتج</th><th></th></tr></thead><tbody></tbody></table>
 <script src="_chrome-mock.js"></script>
 <script>
-var MOCK = makeChromeMock({ session: false });
+// ★ (ر13) وفي إطار body: العامل يردّ بقطعة الصفحة فورًا عند طلبها من بدء المستند (قبل كتابة الموقع لـlang)، ويُعدّ الردّ وزمنه
+window.__bodyReplies = 0; window.__bodyReplyAt = null;
+var MOCK = makeChromeMock(FRAME === "body" ? { session: false, sendMessage: function (msg, cb) {
+  if (!msg || msg.type !== "bodies") { if (cb) cb(null); return; }
+  var blocks = {};
+  blocks[CMLShared.blockFp("Zq body paragraph of the lesson.")] = "فقرةٌ تجريبية من الدرس.";
+  setTimeout(function () {
+    window.__bodyReplies++;
+    if (window.__bodyReplyAt === null) window.__bodyReplyAt = performance.now() - T0;
+    if (cb) cb({ page: msg.path, blocks: blocks, keep: [] });
+  }, 0);
+} } : { session: false });
 Object.assign(MOCK.localStore, { cml_enabled: true, cml_rtl: true });
 // المحرّك يجيب «cml-hello» على runtime.onMessage — قشرةٌ تلتقط مستمعه فنسأله عن البوابة (في الصفحة الأعلى وحدها)
 var HELLO = [];
@@ -51,6 +80,11 @@ window.CLAUDE_L10N = { domain: "academy",
 <script>
 if (FRAME === "cap") { CMLConst.HOLD_MAX_MS = 300; CMLConst.HOLD_ABS_MS = 4000; CMLConst.HYDRATE_MAX_MS = 1500; }
 else { CMLConst.HOLD_MAX_MS = 60000; CMLConst.HOLD_ABS_MS = 60000; CMLConst.HYDRATE_MAX_MS = 60000; }
+// ★ (ر13) إطار body: جدول نطاق الأكاديمية الحقيقي (والورقة الحيّة مطفأة كما في اختبار الأكاديمية)، ومسار درسٍ قبل المحرّك (حارس المسار)
+if (FRAME === "body") {
+  window.CLAUDE_L10N.meta = Object.assign({}, CMLConst.domain("academy").meta, { live: false });
+  history.replaceState({}, "", "/courses/zq-course/zq-lesson");
+}
 </script>
 <script src="../extension/cml-shared.js"></script>
 <script src="../extension/cml-rtl.js"></script>
@@ -122,6 +156,15 @@ if (FRAME) (async function () {
     var t0 = performance.now();
     while (window.__tr === null && performance.now() - t0 < 6000) await wait(100);
     R.tr = window.__tr; R.final = txt() + "|" + attrs();
+  } else if (FRAME === "body") {
+    // ★ (ر13) قبل كتابة الموقع (بعد load والخمول): القطعة وصلت والمتن لم يُمسّ؛ ثم كتابته والخمول تفتح البوابة فتُكتب الكتلة
+    var bt = function () { return noBidi(document.getElementById("b").textContent); };
+    R.table = !!(window.CLAUDE_L10N.meta.bodies && window.CLAUDE_L10N.meta.bodySel === CMLConst.domain("academy").meta.bodySel) + "/" + location.pathname;
+    R.before = bt() + "|" + (H.getAttribute("data-cml-body") || "-") + "|" + window.__bodyReplies + "|" + (window.__bodyReplyAt !== null && window.__bodyAr === null);
+    var langAt = performance.now() - T0;
+    H.lang = "en";
+    await wait(600);
+    R.after = bt() + "|" + (H.getAttribute("data-cml-body") || "-") + "|" + (window.__bodyAr !== null && window.__bodyAr >= langAt);
   }
   R.errors = jsErrors;
   window.__res = R;
@@ -177,7 +220,13 @@ else (async function () {
   var K = await frame("cap");
   check("★ إطار cap: لا كتابة من الموقع ⇒ سقف HYDRATE_MAX يفتح البوابة (1500 مث، لا انتظار بلا حد)", "true|التواصل مع الدعم|rtl|ar|on",
         (K.tr !== null && K.tr !== undefined && K.tr >= 1400 && K.tr < 4000) + "|" + K.final);
-  check("لا أخطاء JS غير ملتقطة (الصفحة والإطارات)", "0", jsErrors + (O.errors || 0) + (F.errors || 0) + (P.errors || 0) + (K.errors || 0));
+  // ★ (ر13، ٥ جمادى الأولى ١٤٤٨هـ) متون الأكاديمية خلف البوابة نفسها: القطعة تُطلب من بدء المستند فتصل قبل الإشارة، ولا تُكتب قبلها
+  var B = await frame("body");
+  check("★ (ر13) إطار body (جدول الأكاديمية الحقيقي على مسار درس): قطعة المتن وصلت قبل كتابة الموقع لـ<html lang>، ولا تُكتب منها كتلةٌ قبل فتح البوابة (بعد load والخمول)",
+        "true//courses/zq-course/zq-lesson|Zq body paragraph of the lesson.|-|1|true", B.table + "|" + B.before);
+  check("★ (ر13) إطار body: ثم كتابة الموقع والخمول تفتحها فتُكتب الكتلة من القطعة («tr»)، وأول عربيةٍ في المتن بعد كتابته",
+        "فقرةٌ تجريبية من الدرس.|tr|true", B.after);
+  check("لا أخطاء JS غير ملتقطة (الصفحة والإطارات)", "0", jsErrors + (O.errors || 0) + (F.errors || 0) + (P.errors || 0) + (K.errors || 0) + (B.errors || 0));
   document.title = "hydlang " + pass + "/" + total;
   var h = document.createElement("p");
   h.className = pass === total ? "ok" : "bad";
